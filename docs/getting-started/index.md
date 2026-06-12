@@ -64,7 +64,14 @@ npm test
 
 ## Planned Runtime Flow
 
-The first user-facing command will be:
+The initial CLI is available after a build:
+
+```bash
+npm run build
+node packages/cli/dist/index.js memory init
+```
+
+The first user-facing command is:
 
 ```bash
 nuzo memory init
@@ -88,6 +95,13 @@ nuzo memory remember "The user prefers concise implementation notes." --kind pre
 nuzo memory recall "How should the assistant write implementation notes?"
 nuzo memory list
 nuzo memory forget mem_01HZY --archive
+```
+
+Until package binaries are wired for install, use:
+
+```bash
+node packages/cli/dist/index.js memory remember "The user prefers concise implementation notes." --kind preference
+node packages/cli/dist/index.js memory recall "implementation notes"
 ```
 
 ## Safety Reminder

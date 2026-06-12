@@ -8,6 +8,7 @@ node_modules/
 dist/
 build/
 site/
+*.tsbuildinfo
 .venv/
 .venv-*/
 .env

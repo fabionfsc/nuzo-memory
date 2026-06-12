@@ -8,7 +8,7 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build --workspaces --if-present",
+    "build": "npm run build -w @nuzo/memory-core && npm run build -w @nuzo/memory-cli",
     "check": "npm run check --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "docs:build": "mkdocs build --strict"

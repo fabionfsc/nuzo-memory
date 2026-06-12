@@ -1,6 +1,7 @@
 export * from "./errors.js";
 export * from "./policy.js";
 export * from "./ports.js";
+export * from "./runtime.js";
 export * from "./secrets.js";
 export * from "./service.js";
 export * from "./sqlite/adapter.js";

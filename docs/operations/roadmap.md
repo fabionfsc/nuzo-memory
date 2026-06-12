@@ -51,6 +51,8 @@ Exit criteria:
 
 Goal: give users direct control.
 
+Initial scaffold exists in `packages/cli` and currently exercises the core against SQLite.
+
 Deliverables:
 
 - `nuzo memory init`.

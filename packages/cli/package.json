@@ -1,0 +1,27 @@
+{
+  "name": "@nuzo/memory-cli",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Command line interface for Nuzo Memory.",
+  "type": "module",
+  "bin": {
+    "nuzo": "dist/index.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "test": "echo \"No CLI tests yet\""
+  },
+  "dependencies": {
+    "@nuzo/memory-core": "0.0.0",
+    "commander": "^14.0.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}

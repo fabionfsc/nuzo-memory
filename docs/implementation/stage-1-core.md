@@ -2,6 +2,8 @@
 
 Stage 1 creates the local memory lifecycle without depending on CLI, MCP, or Codex plugin code.
 
+The repository now also includes an early CLI package to exercise the core manually while Stage 1 continues.
+
 ## Goal
 
 Build a core package that can:

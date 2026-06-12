@@ -11,7 +11,7 @@ Nuzo Memory is a local-first, auditable memory layer for Codex and MCP-compatibl
 - GitHub Pages fallback: `https://fabionfsc.github.io/nuzo-memory/`
 - Docs engine: MkDocs Material
 - Runtime code: not implemented yet
-- Current implementation scaffold: `packages/core`
+- Current implementation scaffold: `packages/core` and `packages/cli`
 - Intended package direction: `core -> cli -> mcp-server -> codex-plugin`
 
 ## Read First
@@ -96,6 +96,12 @@ Build packages:
 
 ```bash
 npm run build
+```
+
+Run the local CLI after building:
+
+```bash
+node packages/cli/dist/index.js memory doctor
 ```
 
 Run tests:

@@ -101,6 +101,7 @@ SQLite local store
 ```
 
 The repository now includes the first TypeScript workspace scaffold for `packages/core`.
+It also includes an initial local CLI package in `packages/cli`.
 
 ## Planned Usage
 
@@ -113,6 +114,15 @@ nuzo memory recall "How should I store agent memory?"
 nuzo memory list --tag workflow
 nuzo memory forget mem_01HZY --archive
 nuzo memory doctor
+```
+
+The initial CLI already supports these commands against a local SQLite store:
+
+```bash
+npm run build
+node packages/cli/dist/index.js memory init
+node packages/cli/dist/index.js memory remember "The user prefers local-first tools." --kind preference
+node packages/cli/dist/index.js memory recall "local-first tools"
 ```
 
 Agents will use the same core through MCP tools:
@@ -216,7 +226,8 @@ nuzo-memory/
 │   └── adr/
 ├── examples/
 ├── packages/
-│   └── core/
+│   ├── core/
+│   └── cli/
 ├── mkdocs.yml
 ├── package.json
 ├── requirements-docs.txt
