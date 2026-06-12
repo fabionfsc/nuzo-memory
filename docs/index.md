@@ -2,51 +2,63 @@
 
 Local-first, auditable memory for Codex and MCP-compatible AI agents.
 
-Nuzo Memory gives assistants a durable memory layer that users can inspect, edit, export, and delete. It is designed for local execution first, with explicit control over what gets saved and how agents retrieve it later.
+Nuzo Memory gives assistants a durable memory layer that users can inspect, edit, export, and delete. It is built for developer workflows where memory should be useful, explicit, and safe to keep across sessions.
 
-## What It Is
+## The Idea
 
-- A memory system for AI agents.
-- A local SQLite-backed store by default.
-- An MCP server for agent integration.
-- A CLI for direct user control.
-- A Codex plugin target after the core and MCP server are stable.
+Modern agents can write code, inspect repositories, run tools, and help make project decisions. But without memory, every session loses important context: preferences, decisions, failed attempts, useful facts, and project-specific rules.
 
-## What It Protects
-
-Nuzo Memory is built around a simple rule: private memory should not silently become repository data.
-
-Runtime memory belongs under:
+Nuzo Memory is designed to preserve that context locally.
 
 ```text
-~/.nuzo/memory/
+remember useful context
+recall it when relevant
+keep it auditable
+let the user control it
 ```
-
-Project-level memory can exist under:
-
-```text
-<project>/.nuzo/memory/
-```
-
-Those runtime files are ignored by Git by default.
 
 ## Design Priorities
 
-- Local-first storage.
-- Auditable memory lifecycle.
-- Explicit user control.
-- Stable MCP contracts.
-- Clear package boundaries.
-- Portable import and export.
-- No network dependency by default.
+| Priority | Meaning |
+| --- | --- |
+| Local-first | Memories live on the user's machine by default. |
+| Auditable | Stored memories can be listed, inspected, edited, exported, and deleted. |
+| Agent-compatible | MCP is the first integration boundary. |
+| Git-safe | Runtime memory is ignored by default. |
+| Portable | Import/export formats are documented. |
+| Private by default | No telemetry, sync, or network dependency by default. |
+
+## Planned Interfaces
+
+- CLI for direct user control.
+- MCP server for Codex and other compatible agents.
+- Codex plugin wrapper after the MCP server is stable.
+- Documented import/export format for backup and migration.
+
+## Runtime Storage
+
+User-level memory:
+
+```text
+~/.nuzo/memory/memories.sqlite
+```
+
+Project-level memory:
+
+```text
+<project>/.nuzo/memory/memories.sqlite
+```
+
+These files are runtime state. They are not meant to be committed to the repository.
 
 ## Project Status
 
-The project is currently in the design stage. The documentation defines the product scope, architecture, storage model, tool contracts, privacy model, and implementation roadmap before code is added.
+The project is currently in the design stage. The repository defines product principles, architecture, package boundaries, storage model, tool contracts, privacy rules, and implementation roadmap before code is added.
 
 ## Start Reading
 
 - [Product vision](product/vision.md)
+- [Requirements](product/requirements.md)
 - [Architecture overview](architecture/overview.md)
 - [Package boundaries](architecture/boundaries.md)
 - [Memory model](spec/memory-model.md)
