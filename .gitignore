@@ -1,0 +1,15 @@
+.nuzo/memory/
+.nuzo/**/*.sqlite
+.nuzo/**/*.sqlite-*
+*.memory.export.md
+memories.sqlite
+memories.sqlite-*
+node_modules/
+dist/
+build/
+site/
+.venv/
+.venv-*/
+.env
+.env.*
+!.env.example
