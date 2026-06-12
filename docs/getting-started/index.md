@@ -56,6 +56,12 @@ Build:
 npm run build
 ```
 
+Run tests:
+
+```bash
+npm test
+```
+
 ## Planned Runtime Flow
 
 The first user-facing command will be:

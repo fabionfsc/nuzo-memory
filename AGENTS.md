@@ -98,12 +98,19 @@ Build packages:
 npm run build
 ```
 
+Run tests:
+
+```bash
+npm test
+```
+
 ## Before Pushing
 
 Run:
 
 ```bash
 npm run check
+npm test
 npm run build
 .venv-docs/bin/mkdocs build --strict
 ```
@@ -114,6 +121,17 @@ Check:
 - `mkdocs.yml` navigation includes new docs pages.
 - No runtime memory databases or exports are staged.
 - No real credentials or private memory examples are added.
+
+## Cleanup And Sanitization
+
+Before committing or handing work back, sanitize the workspace:
+
+- remove generated artifacts that are not meant to be committed, such as `site/` and `packages/*/dist/`;
+- keep dependency caches, temporary folders, and local virtualenvs out of Git;
+- run `npm ls --depth=0` after dependency changes to spot unexpected packages;
+- run `npm audit --audit-level=moderate` after npm dependency changes;
+- run `git status --short` and review staged files before committing;
+- do not commit local memory stores, exports, credentials, or personal notes.
 
 ## GitHub Pages
 

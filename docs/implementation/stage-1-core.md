@@ -45,6 +45,14 @@ The initial scaffold currently defines domain types and ports in:
 packages/core/src/index.ts
 ```
 
+The first implementation slice also includes:
+
+- `createMemoryService`;
+- `DefaultPolicyEngine`;
+- `RegexSecretScanner`;
+- in-memory adapters for tests;
+- Vitest coverage for remember, recall, archive, hard-delete confirmation, and secret rejection.
+
 ## Ports
 
 Core should depend on interfaces:
