@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/nuzo-logo.svg" alt="Nuzo Memory" width="96" height="96">
+  <img src="docs/assets/logo.svg" alt="Nuzo Memory" width="96" height="96">
 </p>
 
 <h1 align="center">Nuzo Memory</h1>
