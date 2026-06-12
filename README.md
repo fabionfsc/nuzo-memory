@@ -1,52 +1,104 @@
-# Nuzo Memory
+<p align="center">
+  <img src="docs/assets/logo.svg" alt="Nuzo Memory" width="96" height="96">
+</p>
 
-[![GitHub Pages](https://github.com/fabionfsc/nuzo-memory/actions/workflows/pages.yml/badge.svg)](https://github.com/fabionfsc/nuzo-memory/actions/workflows/pages.yml)
-[![Docs](https://img.shields.io/badge/docs-nuzo.com.br-111827)](https://nuzo.com.br)
-[![Status](https://img.shields.io/badge/status-design%20stage-0f766e)](#project-status)
+<h1 align="center">Nuzo Memory</h1>
 
-Local-first, auditable memory for Codex and MCP-compatible AI agents.
+<p align="center">
+  Local-first, auditable memory for Codex and MCP-compatible AI agents.
+</p>
 
-Nuzo Memory is a memory layer for assistants that should remember useful things without turning private context into invisible, unmanageable state. It is designed around a simple promise: every saved memory can be inspected, edited, exported, and deleted by the user.
+<p align="center">
+  <a href="https://github.com/fabionfsc/nuzo-memory/actions/workflows/pages.yml">
+    <img alt="GitHub Pages" src="https://github.com/fabionfsc/nuzo-memory/actions/workflows/pages.yml/badge.svg">
+  </a>
+  <a href="https://nuzo.com.br">
+    <img alt="Docs" src="https://img.shields.io/badge/docs-nuzo.com.br-111827">
+  </a>
+  <a href="#project-status">
+    <img alt="Status" src="https://img.shields.io/badge/status-design%20stage-0f766e">
+  </a>
+  <a href="#license">
+    <img alt="License" src="https://img.shields.io/badge/license-undecided-64748b">
+  </a>
+</p>
 
-The project is inspired by the usefulness of ChatGPT-style memory, but built for local-first developer workflows, open tooling, and explicit user control.
+<p align="center">
+  <a href="https://nuzo.com.br">Documentation</a>
+  ·
+  <a href="docs/spec/tools.md">Tool Contract</a>
+  ·
+  <a href="docs/architecture/overview.md">Architecture</a>
+  ·
+  <a href="docs/operations/roadmap.md">Roadmap</a>
+</p>
 
-## Why This Exists
+---
+
+Nuzo Memory is a memory layer for AI agents that should remember useful context without turning private information into hidden state.
+
+It is inspired by the usefulness of ChatGPT-style memory, but designed for local-first developer workflows: transparent storage, explicit control, documented contracts, and agent interoperability through MCP.
+
+```text
+remember useful context
+recall it when relevant
+keep it local
+make it auditable
+let the user stay in control
+```
+
+## Why Nuzo Memory?
 
 AI agents are becoming long-running collaborators, but most sessions still start from zero. They re-learn preferences, repeat old decisions, and lose project context unless the user keeps restating it.
 
-Nuzo Memory aims to make persistent memory practical for coding agents:
+Nuzo Memory aims to make persistent agent memory practical:
 
 - remember stable user preferences;
 - preserve project decisions;
 - recall relevant context across sessions;
 - keep private memory out of Git by default;
-- expose everything through auditable local storage;
-- work across agents through MCP.
+- expose memory through CLI and MCP;
+- make every saved memory inspectable and deletable.
+
+## What It Is
+
+| Layer | Purpose |
+| --- | --- |
+| Core | Memory lifecycle, validation, policy, storage ports, search ports, audit events. |
+| CLI | Direct user control: init, remember, recall, list, update, forget, export, import, doctor. |
+| MCP Server | Agent-facing memory tools for Codex and other MCP-compatible clients. |
+| Codex Plugin | Packaging and defaults for using Nuzo Memory inside Codex. |
+| Docs | Product, architecture, specs, operations, and ADRs published through GitHub Pages. |
 
 ## What Makes It Different
 
 | Principle | What it means |
 | --- | --- |
 | Local-first | Memories live on the user's machine by default. |
-| Auditable | Every memory has metadata, history, source, and scope. |
-| Explicit | Agents can suggest memories, but users stay in control. |
-| Portable | Import/export formats are documented from the start. |
-| MCP-native | The first agent interface is a stable MCP server contract. |
+| Auditable | Every memory has content, metadata, scope, source, and event history. |
+| Explicit | Agents can suggest memories, but users decide what persists. |
+| Portable | Import/export formats are documented instead of opaque. |
+| MCP-native | The first agent boundary is a stable MCP tool contract. |
 | Git-safe | Runtime databases and exports are ignored by default. |
+| Private by default | No telemetry, sync, embeddings, or network calls by default. |
 
 ## Project Status
 
 Nuzo Memory is currently in the **design stage**.
 
-This repository intentionally starts with architecture and specification documents before runtime code. The goal is to lock in the important boundaries early: storage, scopes, tool contracts, privacy rules, package ownership, and GitHub Pages publishing.
+This repository intentionally starts with architecture and specifications before runtime code. The goal is to make the important boundaries clear early: storage, scopes, package ownership, tool contracts, privacy defaults, release process, and GitHub Pages publishing.
 
-The first implementation target is:
+Current implementation target:
 
 ```text
-SQLite local store -> core memory service -> CLI -> MCP server -> Codex plugin
+SQLite local store
+    -> core memory service
+    -> CLI
+    -> MCP server
+    -> Codex plugin
 ```
 
-## Planned Experience
+## Planned Usage
 
 The CLI should eventually feel like this:
 
@@ -105,7 +157,7 @@ packages/
 
 The core rule is strict: business logic belongs in `packages/core`. CLI, MCP, and Codex integrations should call the core instead of duplicating memory behavior.
 
-## Storage Model
+## Storage
 
 User-level memory:
 
@@ -130,7 +182,7 @@ Runtime memory is intentionally outside the repository unless the user explicitl
 
 The documentation site is published with GitHub Pages and MkDocs Material:
 
-- Site: https://nuzo.com.br
+- Primary site: https://nuzo.com.br
 - GitHub Pages fallback: https://fabionfsc.github.io/nuzo-memory/
 
 Start here:
@@ -195,12 +247,14 @@ The project treats memory as user-owned state, not agent-owned state.
 
 ## Roadmap
 
-1. Documentation and public project structure.
-2. Core package with SQLite storage and FTS search.
-3. CLI for user-controlled memory management.
-4. MCP server for agent integrations.
-5. Codex plugin packaging.
-6. Optional encrypted storage, embeddings, sync, and richer UI.
+| Stage | Focus | Status |
+| --- | --- | --- |
+| 0 | Documentation and public project structure | In progress |
+| 1 | Core package with SQLite and FTS search | Planned |
+| 2 | CLI for user-controlled memory management | Planned |
+| 3 | MCP server for agent integrations | Planned |
+| 4 | Codex plugin packaging | Planned |
+| 5 | Optional encryption, embeddings, sync, and UI | Later |
 
 ## License
 
