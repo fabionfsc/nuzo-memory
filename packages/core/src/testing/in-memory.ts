@@ -89,7 +89,10 @@ export class InMemorySearchIndex implements SearchIndex {
 
     return [...this.indexed.values()]
       .filter((memory) => memory.archivedAt === null)
-      .filter((memory) => memory.scope === input.scope || input.includeGlobal === true)
+      .filter(
+        (memory) =>
+          memory.scope === input.scope || (input.includeGlobal === true && memory.scope === "user:default"),
+      )
       .map((memory) => {
         const haystack = `${memory.content} ${memory.tags.join(" ")}`.toLowerCase();
         const matches = terms.filter((term) => haystack.includes(term));

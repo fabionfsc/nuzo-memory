@@ -3,4 +3,6 @@ export * from "./policy.js";
 export * from "./ports.js";
 export * from "./secrets.js";
 export * from "./service.js";
+export * from "./sqlite/adapter.js";
+export * from "./sqlite/schema.js";
 export * from "./types.js";

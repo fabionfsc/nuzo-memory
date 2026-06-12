@@ -45,6 +45,8 @@ Input:
 }
 ```
 
+When `include_global` is true, recall should include the requested scope plus `user:default`. It should not search unrelated project, team, or agent scopes.
+
 Output:
 
 ```json
