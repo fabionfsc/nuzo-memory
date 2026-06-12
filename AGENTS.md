@@ -11,6 +11,7 @@ Nuzo Memory is a local-first, auditable memory layer for Codex and MCP-compatibl
 - GitHub Pages fallback: `https://fabionfsc.github.io/nuzo-memory/`
 - Docs engine: MkDocs Material
 - Runtime code: not implemented yet
+- Current implementation scaffold: `packages/core`
 - Intended package direction: `core -> cli -> mcp-server -> codex-plugin`
 
 ## Read First
@@ -77,11 +78,33 @@ Serve docs locally:
 .venv-docs/bin/mkdocs serve
 ```
 
+## TypeScript Commands
+
+Install workspace dependencies:
+
+```bash
+npm install
+```
+
+Type-check:
+
+```bash
+npm run check
+```
+
+Build packages:
+
+```bash
+npm run build
+```
+
 ## Before Pushing
 
 Run:
 
 ```bash
+npm run check
+npm run build
 .venv-docs/bin/mkdocs build --strict
 ```
 

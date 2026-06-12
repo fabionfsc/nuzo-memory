@@ -66,8 +66,12 @@ markdown_extensions:
 plugins:
   - search
 
+extra_css:
+  - assets/stylesheets/extra.css
+
 nav:
   - Home: index.md
+  - Getting Started: getting-started/index.md
   - Product:
       - Vision: product/vision.md
       - Requirements: product/requirements.md
@@ -88,6 +92,8 @@ nav:
       - Coding Standards: operations/coding-standards.md
       - Testing Strategy: operations/testing-strategy.md
       - GitHub Release Plan: operations/github-release-plan.md
+  - Implementation:
+      - Stage 1 Core: implementation/stage-1-core.md
   - Decisions:
       - Local First: adr/0001-local-first.md
       - SQLite First: adr/0002-sqlite-first.md

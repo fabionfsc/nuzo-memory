@@ -26,6 +26,8 @@
 <p align="center">
   <a href="https://nuzo.com.br">Documentation</a>
   ·
+  <a href="docs/getting-started/index.md">Getting Started</a>
+  ·
   <a href="docs/spec/tools.md">Tool Contract</a>
   ·
   <a href="docs/architecture/overview.md">Architecture</a>
@@ -97,6 +99,8 @@ SQLite local store
     -> MCP server
     -> Codex plugin
 ```
+
+The repository now includes the first TypeScript workspace scaffold for `packages/core`.
 
 ## Planned Usage
 
@@ -187,12 +191,14 @@ The documentation site is published with GitHub Pages and MkDocs Material:
 
 Start here:
 
+- [Getting started](docs/getting-started/index.md)
 - [Product vision](docs/product/vision.md)
 - [Requirements](docs/product/requirements.md)
 - [Architecture overview](docs/architecture/overview.md)
 - [Package boundaries](docs/architecture/boundaries.md)
 - [Memory model](docs/spec/memory-model.md)
 - [Tool contract](docs/spec/tools.md)
+- [Stage 1 core plan](docs/implementation/stage-1-core.md)
 - [Roadmap](docs/operations/roadmap.md)
 
 ## Repository Layout
@@ -201,14 +207,20 @@ Start here:
 nuzo-memory/
 ├── .github/workflows/pages.yml
 ├── docs/
+│   ├── getting-started/
 │   ├── product/
 │   ├── architecture/
 │   ├── spec/
+│   ├── implementation/
 │   ├── operations/
 │   └── adr/
 ├── examples/
+├── packages/
+│   └── core/
 ├── mkdocs.yml
+├── package.json
 ├── requirements-docs.txt
+├── tsconfig.base.json
 └── README.md
 ```
 
@@ -259,3 +271,9 @@ The project treats memory as user-owned state, not agent-owned state.
 ## License
 
 License is not selected yet. Apache-2.0 is the current recommendation because this may become infrastructure used by teams.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md).
+
+Security notes live in [SECURITY.md](SECURITY.md).

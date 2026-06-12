@@ -29,9 +29,12 @@ Exit criteria:
 
 Goal: implement local memory lifecycle.
 
+Detailed implementation plan: `docs/implementation/stage-1-core.md`.
+
 Deliverables:
 
 - `packages/core`.
+- TypeScript workspace scaffold.
 - SQLite migrations.
 - FTS search.
 - audit events.

@@ -4,14 +4,15 @@ This directory is the source of truth for the project until implementation start
 
 ## Start Here
 
-1. `product/vision.md`
-2. `product/requirements.md`
-3. `architecture/overview.md`
-4. `architecture/boundaries.md`
-5. `spec/memory-model.md`
-6. `spec/tools.md`
-7. `spec/init.md`
-8. `operations/roadmap.md`
+1. `getting-started/index.md`
+2. `product/vision.md`
+3. `product/requirements.md`
+4. `architecture/overview.md`
+5. `architecture/boundaries.md`
+6. `spec/memory-model.md`
+7. `spec/tools.md`
+8. `implementation/stage-1-core.md`
+9. `operations/roadmap.md`
 
 ## Sections
 
@@ -32,6 +33,10 @@ Defines public contracts: memory model, MCP tools, CLI behavior, init behavior, 
 Defines privacy, security, coding standards, testing strategy, release plan, and roadmap.
 
 GitHub Pages setup lives in `operations/github-pages.md`.
+
+### Implementation
+
+Defines the next implementation stages before code lands.
 
 ### ADR
 

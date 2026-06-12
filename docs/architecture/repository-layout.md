@@ -15,6 +15,17 @@ examples/
 README.md
 ```
 
+## Current Implementation Scaffold
+
+```text
+packages/
+└── core/
+    ├── src/
+    │   └── index.ts
+    ├── package.json
+    └── tsconfig.json
+```
+
 ## Future Layout
 
 ```text

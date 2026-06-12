@@ -1,0 +1,19 @@
+{
+  "name": "nuzo-memory",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Local-first, auditable memory for Codex and MCP-compatible AI agents.",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "check": "npm run check --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "docs:build": "mkdocs build --strict"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}

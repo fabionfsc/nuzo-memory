@@ -35,6 +35,18 @@ let the user control it
 - Codex plugin wrapper after the MCP server is stable.
 - Documented import/export format for backup and migration.
 
+## Current Focus
+
+The repository is moving from documentation init into Stage 1 planning.
+
+| Stage | Focus | Status |
+| --- | --- | --- |
+| 0 | Public docs and project structure | In progress |
+| 1 | Core SQLite memory lifecycle | Next |
+| 2 | CLI control plane | Planned |
+| 3 | MCP server | Planned |
+| 4 | Codex plugin | Planned |
+
 ## Runtime Storage
 
 User-level memory:
@@ -57,10 +69,12 @@ The project is currently in the design stage. The repository defines product pri
 
 ## Start Reading
 
+- [Getting started](getting-started/index.md)
 - [Product vision](product/vision.md)
 - [Requirements](product/requirements.md)
 - [Architecture overview](architecture/overview.md)
 - [Package boundaries](architecture/boundaries.md)
 - [Memory model](spec/memory-model.md)
 - [Tool contract](spec/tools.md)
+- [Stage 1 core plan](implementation/stage-1-core.md)
 - [Roadmap](operations/roadmap.md)
