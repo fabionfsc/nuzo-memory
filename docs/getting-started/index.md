@@ -104,6 +104,7 @@ Until package binaries are wired for install, use:
 node packages/cli/dist/index.js memory remember "The user prefers concise implementation notes." --kind preference
 node packages/cli/dist/index.js memory update mem_01HZY --content "The user prefers concise implementation notes and explicit tradeoffs."
 node packages/cli/dist/index.js memory recall "implementation notes"
+node packages/cli/dist/index.js memory export --path ./memories.memory.export.md
 ```
 
 ## Safety Reminder

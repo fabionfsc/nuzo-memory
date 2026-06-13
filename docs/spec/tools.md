@@ -107,7 +107,10 @@ Input:
 
 ### `memory.export`
 
-Export memories to a documented file format.
+Export memories to a documented JSON file format.
+
+The CLI can also render the same export document as Markdown for human review.
+Markdown exports are not import inputs.
 
 Input:
 
@@ -164,6 +167,7 @@ nuzo memory list --tag codex
 nuzo memory update mem_01HZY --content "The user prefers concise final answers."
 nuzo memory forget mem_01HZY --archive
 nuzo memory export --path ./memories.memory.export.json
+nuzo memory export --path ./memories.memory.export.md
 nuzo memory import ./memories.memory.export.json --dry-run
 nuzo memory doctor
 ```

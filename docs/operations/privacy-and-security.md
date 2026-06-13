@@ -70,7 +70,7 @@ Recommended MCP field:
 
 Backups should be explicit user actions.
 
-The MVP should support:
+The MVP supports:
 
 - JSON export for round-trip import;
 - Markdown export for review;

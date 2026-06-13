@@ -92,7 +92,9 @@ describe("nuzo memory cli", () => {
     const sourceStore = createStorePath();
     const targetStore = createStorePath();
     const exportPath = join(mkdtempSync(join(tmpdir(), "nuzo-export-")), "memories.memory.export.json");
-    tempDirectories.push(join(exportPath, ".."));
+    const exportDirectory = join(exportPath, "..");
+    const markdownExportPath = join(exportDirectory, "memories.memory.export.md");
+    tempDirectories.push(exportDirectory);
 
     const remembered = await runCli([
       "memory",
@@ -113,6 +115,12 @@ describe("nuzo memory cli", () => {
     const document = JSON.parse(readFileSync(exportPath, "utf8")) as { format: string; memories: unknown[] };
     expect(document.format).toBe("nuzo-memory-export");
     expect(document.memories).toHaveLength(1);
+
+    const markdownExported = await runCli(["memory", "--store", sourceStore, "export", "--path", markdownExportPath]);
+    expect(markdownExported.stdout[0]).toContain("Exported 1 memories");
+    const markdown = readFileSync(markdownExportPath, "utf8");
+    expect(markdown).toContain("# Nuzo Memory Export");
+    expect(markdown).toContain("The user prefers portable memory backups.");
 
     const dryRun = await runCli(["memory", "--store", targetStore, "import", exportPath, "--dry-run"]);
     expect(dryRun.stdout).toEqual(["Would import 1 memories"]);

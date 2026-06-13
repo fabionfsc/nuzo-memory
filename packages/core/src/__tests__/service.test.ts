@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   createMemoryService,
   DefaultPolicyEngine,
+  formatMemoryExportMarkdown,
   NuzoMemoryError,
   RegexSecretScanner,
 } from "../index.js";
@@ -170,6 +171,30 @@ describe("memory service", () => {
       scope: "user:default",
     });
     expect(imported[0]?.memory.content).toBe("The user prefers JSON exports for migrations.");
+  });
+
+  it("formats memory exports as Markdown for review", async () => {
+    const source = createTestService();
+    await source.service.remember({
+      content: "The user prefers readable memory review files.",
+      kind: "preference",
+      scope: "user:default",
+      tags: ["review"],
+      source: "test",
+    });
+
+    const document = await source.service.exportMemories({
+      actor: "test",
+      scope: "user:default",
+    });
+    const markdown = formatMemoryExportMarkdown(document);
+
+    expect(markdown).toContain("# Nuzo Memory Export");
+    expect(markdown).toContain("format: nuzo-memory-export");
+    expect(markdown).toContain("### Memory 1");
+    expect(markdown).toContain('kind: "preference"');
+    expect(markdown).toContain('  - "review"');
+    expect(markdown).toContain("The user prefers readable memory review files.");
   });
 
   it("validates import dry runs without writing", async () => {

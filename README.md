@@ -100,12 +100,12 @@ Implemented today:
 - `packages/cli` with `init`, `remember`, `recall`, `list`, `update`, `forget`, `export`, `import`, and `doctor`.
 - `packages/mcp-server` with memory tools over stdio.
 - `packages/codex-plugin` with Codex plugin metadata and MCP defaults.
+- Markdown export for human review.
 - MkDocs documentation published through GitHub Pages.
 
 Next technical focus:
 
-- Codex plugin install/update docs.
-- Markdown export for human review.
+- Codex plugin install/update helper.
 
 ## Planned Usage
 
@@ -129,6 +129,7 @@ node packages/cli/dist/index.js memory remember "The user prefers local-first to
 node packages/cli/dist/index.js memory update mem_01HZY --content "The user prefers local-first tools and explicit controls."
 node packages/cli/dist/index.js memory recall "local-first tools"
 node packages/cli/dist/index.js memory export --path ./memories.memory.export.json
+node packages/cli/dist/index.js memory export --path ./memories.memory.export.md
 node packages/mcp-server/dist/index.js
 ```
 

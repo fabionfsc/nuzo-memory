@@ -8,6 +8,7 @@ import { Command } from "commander";
 import {
   createMemoryService,
   DefaultPolicyEngine,
+  formatMemoryExportMarkdown,
   NuzoMemoryError,
   RandomIdGenerator,
   RegexSecretScanner,
@@ -55,6 +56,8 @@ type GitTrackingReport =
   | { status: "clean"; trackedFiles: string[] }
   | { status: "tracked"; trackedFiles: string[] }
   | { status: "unavailable"; reason: string; trackedFiles: [] };
+
+type ExportFormat = "json" | "markdown";
 
 export function createProgram(io: CliIO = defaultIO): Command {
   const program = new Command();
@@ -248,11 +251,17 @@ export function createProgram(io: CliIO = defaultIO): Command {
 
   memory
     .command("export")
-    .description("Export memories as a versioned JSON document.")
-    .option("--path <path>", "Write export JSON to a file instead of stdout.")
+    .description("Export memories as a versioned document.")
+    .option("--path <path>", "Write export output to a file instead of stdout.")
+    .option("--format <format>", "Export format: json or markdown.", parseExportFormat)
     .option("--tag <tag...>", "Filter by tag.")
     .option("--include-archived", "Include archived memories.", false)
-    .action(withErrorHandling(io, async (commandOptions: { path?: string; tag?: string[]; includeArchived: boolean }) => {
+    .action(withErrorHandling(io, async (commandOptions: {
+      path?: string;
+      format?: ExportFormat;
+      tag?: string[];
+      includeArchived: boolean;
+    }) => {
       const options = memory.opts<GlobalOptions>();
       const database = openDatabase(options);
       try {
@@ -267,17 +276,18 @@ export function createProgram(io: CliIO = defaultIO): Command {
         }
 
         const document = await service.exportMemories(exportInput);
-        const json = `${JSON.stringify(document, null, 2)}\n`;
+        const format = commandOptions.format ?? inferExportFormat(commandOptions.path);
+        const output = formatExportDocument(document, format);
 
         if (commandOptions.path) {
           const exportPath = resolve(commandOptions.path);
           ensureStoreDirectory(exportPath);
-          writeFileSync(exportPath, json, "utf8");
+          writeFileSync(exportPath, output, "utf8");
           io.stdout(`Exported ${document.memories.length} memories to ${exportPath}`);
           return;
         }
 
-        io.stdout(json.trimEnd());
+        io.stdout(output.trimEnd());
       } finally {
         database.close();
       }
@@ -486,6 +496,30 @@ function readExportDocument(path: string): MemoryExportDocument {
     }
     throw error;
   }
+}
+
+function formatExportDocument(document: MemoryExportDocument, format: ExportFormat): string {
+  if (format === "markdown") {
+    return formatMemoryExportMarkdown(document);
+  }
+
+  return `${JSON.stringify(document, null, 2)}\n`;
+}
+
+function inferExportFormat(path?: string): ExportFormat {
+  if (path?.toLowerCase().endsWith(".md")) {
+    return "markdown";
+  }
+
+  return "json";
+}
+
+function parseExportFormat(value: string): ExportFormat {
+  if (value === "json" || value === "markdown") {
+    return value;
+  }
+
+  throw new Error("Expected export format to be json or markdown.");
 }
 
 function parsePositiveInteger(value: string): number {

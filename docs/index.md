@@ -53,7 +53,7 @@ Nuzo is in early MVP development. The repository now includes a TypeScript core 
 | MCP | Stdio server with remember, recall, list, update, forget, export, import, and doctor tools. |
 | Codex Plugin | Plugin manifest and MCP defaults for local installation. |
 | Docs | Product, architecture, specs, operations, and ADRs. |
-| Next | Codex plugin install/update docs, Markdown export for review. |
+| Next | Codex plugin install/update helper. |
 
 ## Runtime Storage
 
