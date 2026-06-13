@@ -2,6 +2,7 @@
 import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, resolve } from "node:path";
+import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { Command } from "commander";
 import {
@@ -38,6 +39,22 @@ interface GlobalOptions {
   store?: string;
   scope?: MemoryScope;
 }
+
+interface DoctorReport {
+  storePath: string;
+  storeExists: boolean;
+  storeDirectory: string;
+  storeDirectoryExists: boolean;
+  scope: MemoryScope;
+  network: "disabled";
+  gitTracking: GitTrackingReport;
+  warnings: string[];
+}
+
+type GitTrackingReport =
+  | { status: "clean"; trackedFiles: string[] }
+  | { status: "tracked"; trackedFiles: string[] }
+  | { status: "unavailable"; reason: string; trackedFiles: [] };
 
 export function createProgram(io: CliIO = defaultIO): Command {
   const program = new Command();
@@ -299,12 +316,23 @@ export function createProgram(io: CliIO = defaultIO): Command {
     .description("Check the local memory environment.")
     .action(() => {
       const options = memory.opts<GlobalOptions>();
-      const storePath = resolveStorePath(options);
-      const exists = pathExists(storePath);
-      io.stdout(`Store: ${storePath}`);
-      io.stdout(`Exists: ${exists ? "yes" : "no"}`);
-      io.stdout(`Scope: ${options.scope ?? "user:default"}`);
-      io.stdout("Network: disabled");
+      const report = createDoctorReport(options);
+      io.stdout(`Store: ${report.storePath}`);
+      io.stdout(`Store exists: ${report.storeExists ? "yes" : "no"}`);
+      io.stdout(`Store directory: ${report.storeDirectory}`);
+      io.stdout(`Store directory exists: ${report.storeDirectoryExists ? "yes" : "no"}`);
+      io.stdout(`Scope: ${report.scope}`);
+      io.stdout(`Network: ${report.network}`);
+      io.stdout(formatGitTracking(report.gitTracking));
+      if (report.gitTracking.status === "tracked") {
+        for (const trackedFile of report.gitTracking.trackedFiles) {
+          io.stdout(`Tracked memory file: ${trackedFile}`);
+        }
+      }
+      for (const warning of report.warnings) {
+        io.stdout(`Warning: ${warning}`);
+      }
+      io.stdout(`Status: ${report.warnings.length === 0 ? "ok" : "warning"}`);
     });
 
   return program;
@@ -362,6 +390,89 @@ function pathExists(path: string): boolean {
   } catch {
     return false;
   }
+}
+
+function createDoctorReport(options: GlobalOptions): DoctorReport {
+  const storePath = resolveStorePath(options);
+  const storeDirectory = dirname(storePath);
+  const gitTracking = findTrackedMemoryFiles();
+  const warnings: string[] = [];
+
+  if (!pathExists(storePath)) {
+    warnings.push("memory store has not been initialized");
+  }
+  if (!pathExists(storeDirectory)) {
+    warnings.push("memory store directory does not exist");
+  }
+  if (gitTracking.status === "tracked") {
+    warnings.push(`${gitTracking.trackedFiles.length} local memory file(s) are tracked by Git`);
+  }
+  if (gitTracking.status === "unavailable") {
+    warnings.push(`Git tracking check unavailable: ${gitTracking.reason}`);
+  }
+
+  return {
+    storePath,
+    storeExists: pathExists(storePath),
+    storeDirectory,
+    storeDirectoryExists: pathExists(storeDirectory),
+    scope: options.scope ?? "user:default",
+    network: "disabled",
+    gitTracking,
+    warnings,
+  };
+}
+
+function findTrackedMemoryFiles(cwd = process.cwd()): GitTrackingReport {
+  const result = spawnSync("git", [
+    "ls-files",
+    "-z",
+    "--",
+    ".nuzo",
+    "*.sqlite",
+    "*.sqlite-*",
+    "*.memory.export.md",
+    "*.memory.export.json",
+    "memories.sqlite",
+    "memories.sqlite-*",
+  ], {
+    cwd,
+    encoding: "utf8",
+  });
+
+  if (result.error) {
+    return {
+      status: "unavailable",
+      reason: result.error.message,
+      trackedFiles: [],
+    };
+  }
+
+  if (result.status !== 0) {
+    const reason = result.stderr.trim().split(/\r?\n/)[0] || "not a Git worktree";
+    return {
+      status: "unavailable",
+      reason,
+      trackedFiles: [],
+    };
+  }
+
+  const trackedFiles = result.stdout.split("\0").filter(Boolean);
+  return trackedFiles.length === 0
+    ? { status: "clean", trackedFiles }
+    : { status: "tracked", trackedFiles };
+}
+
+function formatGitTracking(report: GitTrackingReport): string {
+  if (report.status === "unavailable") {
+    return `Git tracking: unavailable (${report.reason})`;
+  }
+
+  if (report.status === "tracked") {
+    return `Git tracking: warning (${report.trackedFiles.length} local memory file(s) tracked)`;
+  }
+
+  return "Git tracking: clean";
 }
 
 function readExportDocument(path: string): MemoryExportDocument {

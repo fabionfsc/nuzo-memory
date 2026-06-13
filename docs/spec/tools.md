@@ -142,11 +142,15 @@ Input:
 
 Run safety and environment checks.
 
-Checks:
+Current CLI checks:
 
 - memory path exists;
-- schema is current;
 - Git is not tracking local memory files;
+- network access is disabled.
+
+Planned checks:
+
+- schema is current;
 - exports do not contain obvious secrets;
 - MCP server can read and write the selected store.
 

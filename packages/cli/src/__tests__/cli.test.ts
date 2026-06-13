@@ -134,7 +134,10 @@ describe("nuzo memory cli", () => {
     const text = output.stdout.join("\n");
 
     expect(text).toContain(`Store: ${store}`);
-    expect(text).toContain("Exists: no");
+    expect(text).toContain("Store exists: no");
+    expect(text).toContain("Store directory exists: yes");
+    expect(text).toContain("Git tracking:");
     expect(text).toContain("Network: disabled");
+    expect(text).toContain("Status: warning");
   });
 });
