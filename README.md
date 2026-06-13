@@ -216,6 +216,7 @@ Start here:
 - [Package boundaries](docs/architecture/boundaries.md)
 - [Memory model](docs/spec/memory-model.md)
 - [Tool contract](docs/spec/tools.md)
+- [Codex plugin](docs/operations/codex-plugin.md)
 - [Stage 1 core plan](docs/implementation/stage-1-core.md)
 - [Roadmap](docs/operations/roadmap.md)
 

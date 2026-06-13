@@ -25,6 +25,7 @@ Start with:
 5. `docs/architecture/boundaries.md`
 6. `docs/spec/tools.md`
 7. `docs/spec/memory-model.md`
+8. `docs/operations/codex-plugin.md`
 
 ## Architecture Rules
 
@@ -115,6 +116,12 @@ Run the local MCP server after building:
 
 ```bash
 node packages/mcp-server/dist/index.js
+```
+
+Validate the Codex plugin manifest:
+
+```bash
+npm run check -w @nuzo/codex-plugin
 ```
 
 ## Before Pushing

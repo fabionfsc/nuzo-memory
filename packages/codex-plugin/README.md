@@ -22,6 +22,12 @@ Then the plugin MCP config can run:
 node packages/mcp-server/dist/index.js
 ```
 
+Validate the plugin manifest:
+
+```bash
+npm run check -w @nuzo/codex-plugin
+```
+
 The default memory store is:
 
 ```text
@@ -43,3 +49,5 @@ The default memory store is:
 
 Nuzo does not enable telemetry, sync, embeddings, or network calls by default.
 Runtime memory files should not be committed to Git.
+
+More detail lives in `docs/operations/codex-plugin.md`.
