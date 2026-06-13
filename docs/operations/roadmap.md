@@ -86,6 +86,8 @@ Exit criteria:
 
 Goal: package the MCP server for Codex.
 
+Initial scaffold exists in `packages/codex-plugin` with plugin metadata and MCP defaults.
+
 Deliverables:
 
 - `.codex-plugin/plugin.json`.

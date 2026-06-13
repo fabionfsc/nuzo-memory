@@ -1,0 +1,11 @@
+{
+  "name": "@nuzo/codex-plugin",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Codex plugin metadata and MCP defaults for Nuzo.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "check": "python3 ../../tools/validate-codex-plugin.py ."
+  }
+}

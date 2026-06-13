@@ -59,5 +59,5 @@ packages/
 - Repository name: `nuzo` or `nuzo-memory`.
 - CLI command: `nuzo memory`.
 - MCP server package: `nuzo-memory-mcp`.
-- Codex plugin name: `nuzo-memory`.
+- Codex plugin name: `nuzo`.
 - Default config directory: `~/.nuzo/`.

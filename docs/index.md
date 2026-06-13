@@ -44,15 +44,16 @@ The integration boundary is a stable MCP tool contract.
 
 ## Current Focus
 
-Nuzo is in early MVP development. The repository now includes a TypeScript core package, a local CLI backed by SQLite, and an MCP server.
+Nuzo is in early MVP development. The repository now includes a TypeScript core package, a local CLI backed by SQLite, an MCP server, and Codex plugin metadata.
 
 | Area | State |
 | --- | --- |
 | Core | Memory lifecycle, policy checks, SQLite storage, FTS search, tests. |
 | CLI | `init`, `remember`, `recall`, `list`, `update`, `forget`, `export`, `import`, `doctor`. |
 | MCP | Stdio server with remember, recall, list, update, forget, export, import, and doctor tools. |
+| Codex Plugin | Plugin manifest and MCP defaults for local installation. |
 | Docs | Product, architecture, specs, operations, and ADRs. |
-| Next | Codex plugin wrapper, setup docs, Markdown export for review. |
+| Next | Codex plugin install/update docs, Markdown export for review. |
 
 ## Runtime Storage
 

@@ -99,11 +99,12 @@ Implemented today:
 - `packages/core` with memory lifecycle, policy checks, SQLite storage, FTS search, and tests.
 - `packages/cli` with `init`, `remember`, `recall`, `list`, `update`, `forget`, `export`, `import`, and `doctor`.
 - `packages/mcp-server` with memory tools over stdio.
+- `packages/codex-plugin` with Codex plugin metadata and MCP defaults.
 - MkDocs documentation published through GitHub Pages.
 
 Next technical focus:
 
-- Codex plugin wrapper.
+- Codex plugin install/update docs.
 - Markdown export for human review.
 
 ## Planned Usage
@@ -235,7 +236,8 @@ nuzo-memory/
 ├── packages/
 │   ├── core/
 │   ├── cli/
-│   └── mcp-server/
+│   ├── mcp-server/
+│   └── codex-plugin/
 ├── mkdocs.yml
 ├── package.json
 ├── requirements-docs.txt
@@ -284,7 +286,7 @@ The project treats memory as user-owned state, not agent-owned state.
 | 1 | Core package with SQLite and FTS search | In progress |
 | 2 | CLI for user-controlled memory management | In progress |
 | 3 | MCP server for agent integrations | Planned |
-| 4 | Codex plugin packaging | Planned |
+| 4 | Codex plugin packaging | In progress |
 | 5 | Optional encryption, embeddings, sync, and UI | Later |
 
 ## License

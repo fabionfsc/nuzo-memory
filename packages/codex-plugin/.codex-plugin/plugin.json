@@ -1,0 +1,40 @@
+{
+  "name": "nuzo",
+  "version": "0.0.0",
+  "description": "Local-first, auditable memory for Codex through Nuzo MCP tools.",
+  "author": {
+    "name": "fabionfsc",
+    "url": "https://github.com/fabionfsc"
+  },
+  "homepage": "https://nuzo.com.br/",
+  "repository": "https://github.com/fabionfsc/nuzo-memory",
+  "license": "Apache-2.0",
+  "keywords": [
+    "memory",
+    "mcp",
+    "codex",
+    "local-first",
+    "sqlite"
+  ],
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Nuzo",
+    "shortDescription": "Local-first memory for Codex.",
+    "longDescription": "Nuzo gives Codex a local, auditable memory layer backed by SQLite and exposed through MCP tools for remembering, recalling, listing, updating, forgetting, exporting, importing, and checking memory state.",
+    "developerName": "fabionfsc",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "websiteURL": "https://nuzo.com.br/",
+    "privacyPolicyURL": "https://nuzo.com.br/operations/privacy-and-security/",
+    "termsOfServiceURL": "https://github.com/fabionfsc/nuzo-memory/blob/main/LICENSE",
+    "defaultPrompt": [
+      "Use Nuzo memory for stable project context.",
+      "Recall relevant local memories for this repo.",
+      "Remember this preference with Nuzo."
+    ],
+    "brandColor": "#0D1117"
+  }
+}
