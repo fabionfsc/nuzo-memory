@@ -80,6 +80,22 @@ Nuzo makes persistent agent memory practical without turning it into hidden stat
 | Git-safe | Runtime databases and exports are ignored by default. |
 | Private by default | No telemetry, sync, embeddings, or network calls by default. |
 
+## Host Portability
+
+Nuzo-managed memory should move across hosts that run Nuzo.
+
+Codex and Claude Code plugins should expose the same Nuzo MCP tools. Export/import remains a Nuzo format:
+
+```text
+Codex + Nuzo plugin
+  -> memory.export
+  -> nuzo-memory-export JSON
+  -> memory.import
+  -> Claude Code + Nuzo plugin
+```
+
+This does not depend on private native memory formats from Codex, Claude Code, or any other assistant.
+
 ## Project Status
 
 Nuzo is in early MVP development.

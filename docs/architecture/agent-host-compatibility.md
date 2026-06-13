@@ -36,6 +36,42 @@ The public memory contract remains:
 
 Host-specific plugin systems are distribution wrappers, not memory engines.
 
+## Portable Memory Flow
+
+Nuzo export/import belongs to Nuzo, not to a specific host.
+
+Host plugins make the Nuzo tools available inside Codex, Claude Code, or another agent environment. The data format stays the Nuzo export format.
+
+```text
+Codex + Nuzo plugin
+  -> memory.export
+  -> nuzo-memory-export JSON
+  -> memory.import
+  -> Claude Code + Nuzo plugin
+```
+
+The reverse flow should work the same way:
+
+```text
+Claude Code + Nuzo plugin
+  -> memory.export
+  -> nuzo-memory-export JSON
+  -> memory.import
+  -> Codex + Nuzo plugin
+```
+
+When both hosts run on the same machine and point to the same store, export/import may not be needed. Both hosts can use the same Nuzo MCP server and local store directly:
+
+```text
+Codex        \
+              -> Nuzo MCP server -> ~/.nuzo/memory/memories.sqlite
+Claude Code  /
+```
+
+For different machines, profiles, workspaces, or isolated stores, JSON export/import is the portability path.
+
+Nuzo should not promise migration from private native memory stores unless the host exposes an official API or documented export format. The portable guarantee applies to memories created and managed through Nuzo.
+
 ## Host Matrix
 
 | Host | Current fit | Extension path | Nuzo package direction | Notes |
@@ -103,6 +139,8 @@ Host packages must not contain:
 - secret scanning;
 - import/export implementation;
 - host-specific versions of the MCP tool contract.
+
+Host packages should expose Nuzo import/export actions when the host supports invoking MCP tools from the plugin. They should not create separate Codex or Claude export formats.
 
 ## Naming Rules
 

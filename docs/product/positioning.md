@@ -28,6 +28,8 @@ Nuzo should be presented as a complement to native assistant memory:
 
 Nuzo should not claim to know or replace private product internals. If an AI assistant exposes its own memory feature, Nuzo can still provide value as the user-owned memory layer outside that product boundary.
 
+Portability means Nuzo-managed memory can move between hosts that run Nuzo, such as Codex and Claude Code. It does not mean Nuzo can automatically read or convert a vendor's private native memory store.
+
 The practical message is:
 
 ```text
@@ -44,9 +46,11 @@ Good:
 - "Nuzo is a local-first memory layer for AI agents."
 - "Nuzo complements built-in assistant memory."
 - "Nuzo stores memories locally and exposes them through CLI and MCP."
+- "Nuzo-managed memory can move across Codex, Claude Code, and future MCP-compatible hosts."
 
 Avoid:
 
 - "Nuzo replaces assistant memory."
 - "Nuzo works exactly like a specific product's memory."
 - "Nuzo depends on hidden memory behavior from any one assistant."
+- "Nuzo imports private native memory from a host without an official export path."

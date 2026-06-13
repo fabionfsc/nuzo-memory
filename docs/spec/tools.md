@@ -109,6 +109,8 @@ Input:
 
 Export memories to a documented JSON file format.
 
+This is the Nuzo portability format. Codex, Claude Code, and future host plugins should expose this same tool instead of creating host-specific export formats.
+
 The CLI can also render the same export document as Markdown for human review.
 Markdown exports are not import inputs.
 
@@ -125,6 +127,8 @@ Input:
 ### `memory.import`
 
 Import memories from a documented file format.
+
+Imports accept Nuzo JSON export documents. A memory export created through Nuzo in one host should be importable through Nuzo in another host, as long as both hosts use compatible Nuzo versions.
 
 Input:
 
