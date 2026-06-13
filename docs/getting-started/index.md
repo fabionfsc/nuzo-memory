@@ -1,6 +1,6 @@
 # Getting Started
 
-Nuzo Memory is currently design-first. There is no installable runtime package yet.
+Nuzo is currently design-first. There is no installable runtime package yet.
 
 This page explains how to work with the repository today and how the first implementation is expected to behave.
 

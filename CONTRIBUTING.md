@@ -1,6 +1,6 @@
 # Contributing
 
-Nuzo Memory is in the design stage. Contributions should preserve the project's main promise: local-first, auditable, user-controlled memory for agents.
+Nuzo is in the design stage. Contributions should preserve the project's main promise: local-first, auditable, user-controlled memory for agents.
 
 ## Before Contributing
 

@@ -1,6 +1,6 @@
 # API Versioning
 
-Nuzo Memory has three public contracts:
+Nuzo has three public contracts:
 
 - memory export format;
 - MCP tool contract;

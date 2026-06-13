@@ -1,8 +1,8 @@
 # Agent Instructions
 
-This repository is the early design and documentation home for Nuzo Memory.
+This repository is the early design and documentation home for Nuzo.
 
-Nuzo Memory is a local-first, auditable memory layer for Codex and MCP-compatible AI agents. The project is currently in the design stage: architecture, storage, tool contracts, privacy rules, roadmap, and GitHub Pages are defined before runtime code is added.
+Nuzo is a local-first, auditable memory layer for Codex and MCP-compatible AI agents. The project is currently in the design stage: architecture, storage, tool contracts, privacy rules, roadmap, and GitHub Pages are defined before runtime code is added.
 
 ## Current State
 

@@ -43,7 +43,7 @@ export function createProgram(io: CliIO = defaultIO): Command {
     .description("Local-first, auditable memory for AI agents.")
     .version("0.0.0");
 
-  const memory = program.command("memory").description("Manage local Nuzo Memory stores.");
+  const memory = program.command("memory").description("Manage local Nuzo stores.");
 
   memory
     .option("--store <path>", "Path to the SQLite memory store.", defaultStorePath)
@@ -58,7 +58,7 @@ export function createProgram(io: CliIO = defaultIO): Command {
       ensureStoreDirectory(storePath);
       const database = new SQLiteMemoryDatabase({ path: storePath });
       database.close();
-      io.stdout("Nuzo Memory initialized");
+      io.stdout("Nuzo initialized");
       io.stdout(`Store: ${storePath}`);
       io.stdout(`Scope: ${options.scope ?? "user:default"}`);
       io.stdout("Network: disabled");

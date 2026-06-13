@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2048 2048" role="img" aria-label="Nuzo Memory">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2048 2048" role="img" aria-label="Nuzo">
   <defs>
     <linearGradient id="nuzo-gradient" gradientUnits="userSpaceOnUse" x1="1560.68" y1="990.633" x2="487.316" y2="978.356">
       <stop offset="0" stop-color="rgb(0,209,218)"/>

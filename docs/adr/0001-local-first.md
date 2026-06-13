@@ -10,7 +10,7 @@ Agent memory can contain user preferences, project decisions, personal facts, an
 
 ## Decision
 
-Nuzo Memory stores memories locally by default.
+Nuzo stores memories locally by default.
 
 The default user store is:
 

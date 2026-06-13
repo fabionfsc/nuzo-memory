@@ -2,7 +2,7 @@
 
 ## Default Privacy Model
 
-Nuzo Memory stores memory locally by default.
+Nuzo stores memory locally by default.
 
 The default configuration must not:
 

@@ -1,6 +1,6 @@
 # Tool Contract
 
-Nuzo Memory should expose the same core operations through MCP and CLI.
+Nuzo should expose the same core operations through MCP and CLI.
 
 ## MCP Tools
 

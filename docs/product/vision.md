@@ -1,8 +1,8 @@
 # Product Vision
 
-Nuzo Memory gives AI agents a persistent memory that is local, inspectable, and controlled by the user.
+Nuzo gives AI agents a persistent memory that is local, inspectable, and controlled by the user.
 
-The system should feel close to ChatGPT memory in user experience: the assistant can remember stable preferences, important facts, and project decisions across sessions. The difference is that Nuzo Memory is designed for local execution, open repositories, and agent interoperability from the start.
+The system should feel familiar to users of modern AI assistant memory: agents can remember stable preferences, important facts, and project decisions across sessions. Nuzo is designed for local execution, open repositories, and agent interoperability from the start.
 
 ## Target Users
 
@@ -32,7 +32,7 @@ The user should always be able to answer:
 
 ## Product Differentiation
 
-Nuzo Memory should be positioned as:
+Nuzo should be positioned as:
 
 - local-first memory for agents;
 - managed and auditable by design;

@@ -93,7 +93,7 @@ Rules:
 Successful output should include:
 
 ```text
-Nuzo Memory initialized
+Nuzo initialized
 Store: ~/.nuzo/memory/memories.sqlite
 Scope: user:default
 Network: disabled

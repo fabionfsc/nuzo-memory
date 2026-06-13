@@ -1,6 +1,6 @@
 # Security Policy
 
-Nuzo Memory is designed around local-first memory and explicit user control.
+Nuzo is designed around local-first memory and explicit user control.
 
 ## Current Status
 

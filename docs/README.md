@@ -1,4 +1,4 @@
-# Nuzo Memory Documentation
+# Nuzo Documentation
 
 This directory is the source of truth for the project until implementation starts.
 

@@ -1,14 +1,14 @@
-# Nuzo Memory
+# Nuzo
 
 Local-first, auditable memory for Codex and MCP-compatible AI agents.
 
-Nuzo Memory gives assistants a durable memory layer that users can inspect, edit, export, and delete. It is built for developer workflows where memory should be useful, explicit, and safe to keep across sessions.
+Nuzo gives assistants a durable memory layer that users can inspect, edit, export, and delete. It is built for developer workflows where memory should be useful, explicit, and safe to keep across sessions.
 
 ## The Idea
 
 Modern agents can write code, inspect repositories, run tools, and help make project decisions. But without memory, every session loses important context: preferences, decisions, failed attempts, useful facts, and project-specific rules.
 
-Nuzo Memory is designed to preserve that context locally.
+Nuzo is designed to preserve that context locally.
 
 ```text
 remember useful context

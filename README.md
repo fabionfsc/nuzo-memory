@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="docs/assets/logo.svg" alt="Nuzo Memory" width="96" height="96">
+  <img src="docs/assets/logo.svg" alt="Nuzo" width="96" height="96">
 </p>
 
-<h1 align="center">Nuzo Memory</h1>
+<h1 align="center">Nuzo</h1>
 
 <p align="center">
   Local-first, auditable memory for Codex and MCP-compatible AI agents.
@@ -37,9 +37,9 @@
 
 ---
 
-Nuzo Memory is a memory layer for AI agents that should remember useful context without turning private information into hidden state.
+Nuzo is a memory layer for AI agents that should remember useful context without turning private information into hidden state.
 
-It is inspired by the usefulness of ChatGPT-style memory, but designed for local-first developer workflows: transparent storage, explicit control, documented contracts, and agent interoperability through MCP.
+It is inspired by memory patterns found across modern AI assistants and web-based agents, but designed for local-first developer workflows: transparent storage, explicit control, documented contracts, and agent interoperability through MCP.
 
 ```text
 remember useful context
@@ -49,11 +49,11 @@ make it auditable
 let the user stay in control
 ```
 
-## Why Nuzo Memory?
+## Why Nuzo?
 
 AI agents are becoming long-running collaborators, but most sessions still start from zero. They re-learn preferences, repeat old decisions, and lose project context unless the user keeps restating it.
 
-Nuzo Memory aims to make persistent agent memory practical:
+Nuzo aims to make persistent agent memory practical:
 
 - remember stable user preferences;
 - preserve project decisions;
@@ -69,7 +69,7 @@ Nuzo Memory aims to make persistent agent memory practical:
 | Core | Memory lifecycle, validation, policy, storage ports, search ports, audit events. |
 | CLI | Direct user control: init, remember, recall, list, update, forget, export, import, doctor. |
 | MCP Server | Agent-facing memory tools for Codex and other MCP-compatible clients. |
-| Codex Plugin | Packaging and defaults for using Nuzo Memory inside Codex. |
+| Codex Plugin | Packaging and defaults for using Nuzo inside Codex. |
 | Docs | Product, architecture, specs, operations, and ADRs published through GitHub Pages. |
 
 ## What Makes It Different
@@ -86,7 +86,7 @@ Nuzo Memory aims to make persistent agent memory practical:
 
 ## Project Status
 
-Nuzo Memory is currently in the **design stage**.
+Nuzo is currently in the **design stage**.
 
 This repository intentionally starts with architecture and specifications before runtime code. The goal is to make the important boundaries clear early: storage, scopes, package ownership, tool contracts, privacy defaults, release process, and GitHub Pages publishing.
 
@@ -258,7 +258,7 @@ Validate strictly:
 
 ## Privacy Defaults
 
-Nuzo Memory should not:
+Nuzo should not:
 
 - send memories to a remote service by default;
 - call embedding APIs by default;

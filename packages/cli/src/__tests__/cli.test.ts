@@ -38,7 +38,7 @@ describe("nuzo memory cli", () => {
     const store = createStorePath();
 
     const init = await runCli(["memory", "--store", store, "init"]);
-    expect(init.stdout.join("\n")).toContain("Nuzo Memory initialized");
+    expect(init.stdout.join("\n")).toContain("Nuzo initialized");
 
     const remembered = await runCli([
       "memory",

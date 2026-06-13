@@ -1,6 +1,6 @@
 # Architecture Overview
 
-Nuzo Memory is split into a small core and multiple interfaces.
+Nuzo is split into a small core and multiple interfaces.
 
 ```text
 Agent / User
@@ -76,7 +76,7 @@ It should support:
 
 ### Codex Plugin
 
-The Codex plugin should package the MCP server and defaults so Codex can use Nuzo Memory without custom wiring.
+The Codex plugin should package the MCP server and defaults so Codex can use Nuzo without custom wiring.
 
 ## Default Flow
 
