@@ -82,7 +82,7 @@ Nuzo makes persistent agent memory practical without turning it into hidden stat
 
 Nuzo is in early MVP development.
 
-The repository started design-first and now includes the first TypeScript packages for core memory behavior and a local CLI backed by SQLite.
+The repository started design-first and now includes TypeScript packages for core memory behavior, a local CLI backed by SQLite, and an initial MCP server.
 
 Current path:
 
@@ -98,11 +98,12 @@ Implemented today:
 
 - `packages/core` with memory lifecycle, policy checks, SQLite storage, FTS search, and tests.
 - `packages/cli` with `init`, `remember`, `recall`, `list`, `update`, `forget`, `export`, `import`, and `doctor`.
+- `packages/mcp-server` with initial `memory.remember` and `memory.recall` tools over stdio.
 - MkDocs documentation published through GitHub Pages.
 
 Next technical focus:
 
-- MCP server package.
+- Remaining MCP tools: list, update, forget, export, import, doctor.
 - Codex plugin wrapper.
 - Markdown export for human review.
 
@@ -128,6 +129,7 @@ node packages/cli/dist/index.js memory remember "The user prefers local-first to
 node packages/cli/dist/index.js memory update mem_01HZY --content "The user prefers local-first tools and explicit controls."
 node packages/cli/dist/index.js memory recall "local-first tools"
 node packages/cli/dist/index.js memory export --path ./memories.memory.export.json
+node packages/mcp-server/dist/index.js
 ```
 
 Agents will use the same core through MCP tools:
@@ -233,7 +235,8 @@ nuzo-memory/
 ├── examples/
 ├── packages/
 │   ├── core/
-│   └── cli/
+│   ├── cli/
+│   └── mcp-server/
 ├── mkdocs.yml
 ├── package.json
 ├── requirements-docs.txt

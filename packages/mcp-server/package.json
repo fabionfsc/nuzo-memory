@@ -1,0 +1,29 @@
+{
+  "name": "@nuzo/mcp-server",
+  "version": "0.0.0",
+  "private": true,
+  "description": "MCP server for Nuzo.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": {
+    "nuzo-mcp-server": "dist/index.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "npm run build -w @nuzo/memory-core && tsc -p tsconfig.json --noEmit",
+    "test": "npm run build -w @nuzo/memory-core && npm run build && vitest run src"
+  },
+  "dependencies": {
+    "@nuzo/memory-core": "0.0.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}

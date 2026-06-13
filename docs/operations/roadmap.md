@@ -69,6 +69,8 @@ Exit criteria:
 
 Goal: make memory available to agents.
 
+Initial scaffold exists in `packages/mcp-server` and currently exposes `memory.remember` and `memory.recall` over stdio.
+
 Deliverables:
 
 - MCP tool schemas.
