@@ -204,6 +204,7 @@ Start here:
 
 - [Getting started](docs/getting-started/index.md)
 - [Product vision](docs/product/vision.md)
+- [Positioning](docs/product/positioning.md)
 - [Requirements](docs/product/requirements.md)
 - [Architecture overview](docs/architecture/overview.md)
 - [Package boundaries](docs/architecture/boundaries.md)

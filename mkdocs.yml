@@ -74,6 +74,7 @@ nav:
   - Getting Started: getting-started/index.md
   - Product:
       - Vision: product/vision.md
+      - Positioning: product/positioning.md
       - Requirements: product/requirements.md
   - Architecture:
       - Overview: architecture/overview.md

@@ -1,8 +1,10 @@
 # Product Vision
 
-Nuzo gives AI agents a persistent memory that is local, inspectable, and controlled by the user.
+Nuzo gives AI agents persistent memory that is local, inspectable, and controlled by the user.
 
-The system should feel familiar to users of modern AI assistant memory: agents can remember stable preferences, important facts, and project decisions across sessions. Nuzo is designed for local execution, open repositories, and agent interoperability from the start.
+The system should feel familiar to users of modern AI assistant memory patterns: agents can remember stable preferences, important facts, and project decisions across sessions. Nuzo is designed for local execution, open repositories, and agent interoperability from the start.
+
+For how Nuzo relates to built-in assistant memory features, see [Positioning](positioning.md).
 
 ## Target Users
 
