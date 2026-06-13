@@ -127,7 +127,12 @@ Input:
 
 ```json
 {
-  "path": "/absolute/path/to/memories.memory.export.json",
+  "document": {
+    "format": "nuzo-memory-export",
+    "version": 1,
+    "exported_at": "2026-06-13T00:00:00.000Z",
+    "memories": []
+  },
   "scope": "user:default",
   "dry_run": true
 }

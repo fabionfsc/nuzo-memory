@@ -82,7 +82,7 @@ Nuzo makes persistent agent memory practical without turning it into hidden stat
 
 Nuzo is in early MVP development.
 
-The repository started design-first and now includes TypeScript packages for core memory behavior, a local CLI backed by SQLite, and an initial MCP server.
+The repository started design-first and now includes TypeScript packages for core memory behavior, a local CLI backed by SQLite, and an MCP server.
 
 Current path:
 
@@ -98,12 +98,11 @@ Implemented today:
 
 - `packages/core` with memory lifecycle, policy checks, SQLite storage, FTS search, and tests.
 - `packages/cli` with `init`, `remember`, `recall`, `list`, `update`, `forget`, `export`, `import`, and `doctor`.
-- `packages/mcp-server` with initial `memory.remember` and `memory.recall` tools over stdio.
+- `packages/mcp-server` with memory tools over stdio.
 - MkDocs documentation published through GitHub Pages.
 
 Next technical focus:
 
-- Remaining MCP tools: list, update, forget, export, import, doctor.
 - Codex plugin wrapper.
 - Markdown export for human review.
 

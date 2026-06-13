@@ -11,7 +11,7 @@ Nuzo is a local-first, auditable memory layer for Codex and MCP-compatible AI ag
 - GitHub Pages fallback: `https://fabionfsc.github.io/nuzo-memory/`
 - Docs engine: MkDocs Material
 - Runtime code: early MVP in `packages/core`, `packages/cli`, and `packages/mcp-server`
-- Current implementation: SQLite storage, FTS recall, policy checks, JSON export/import, CLI commands, and initial MCP `remember`/`recall` tools
+- Current implementation: SQLite storage, FTS recall, policy checks, JSON export/import, CLI commands, and MCP memory tools
 - Intended package direction: `core -> cli -> mcp-server -> codex-plugin`
 
 ## Read First

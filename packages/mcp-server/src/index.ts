@@ -13,9 +13,17 @@ import {
   SQLiteMemoryDatabase,
   SystemClock,
   type MemoryService,
+  type MemoryExportDocument,
 } from "@nuzo/memory-core";
 import { createMemoryToolHandlers } from "./handlers.js";
-import type { RememberToolInput } from "./handlers.js";
+import type {
+  ExportToolInput,
+  ForgetToolInput,
+  ImportToolInput,
+  ListToolInput,
+  RememberToolInput,
+  UpdateToolInput,
+} from "./handlers.js";
 
 const defaultStorePath = resolve(homedir(), ".nuzo", "memory", "memories.sqlite");
 
@@ -80,6 +88,166 @@ export function registerMemoryTools(server: McpServer, service: MemoryService): 
     },
     async (input) => {
       return jsonToolResult(await handlers.recall(input));
+    },
+  );
+
+  server.registerTool(
+    "memory.list",
+    {
+      description: "List local Nuzo memories.",
+      inputSchema: {
+        scope: z.string().optional(),
+        tags: z.array(z.string()).default([]),
+        include_archived: z.boolean().default(false),
+      },
+    },
+    async (input) => {
+      const listInput: ListToolInput = {
+        tags: input.tags,
+        include_archived: input.include_archived,
+      };
+      if (input.scope !== undefined) {
+        listInput.scope = input.scope;
+      }
+
+      return jsonToolResult(await handlers.list(listInput));
+    },
+  );
+
+  server.registerTool(
+    "memory.update",
+    {
+      description: "Update a local Nuzo memory.",
+      inputSchema: {
+        id: z.string().min(1),
+        content: z.string().optional(),
+        kind: z.enum(["preference", "project_decision", "fact", "instruction", "note"]).optional(),
+        scope: z.string().optional(),
+        tags: z.array(z.string()).optional(),
+        confidence: z.number().min(0).max(1).optional(),
+      },
+    },
+    async (input) => {
+      const updateInput: UpdateToolInput = {
+        id: input.id,
+      };
+      if (input.content !== undefined) {
+        updateInput.content = input.content;
+      }
+      if (input.kind !== undefined) {
+        updateInput.kind = input.kind;
+      }
+      if (input.scope !== undefined) {
+        updateInput.scope = input.scope;
+      }
+      if (input.tags !== undefined) {
+        updateInput.tags = input.tags;
+      }
+      if (input.confidence !== undefined) {
+        updateInput.confidence = input.confidence;
+      }
+
+      return jsonToolResult(await handlers.update(updateInput));
+    },
+  );
+
+  server.registerTool(
+    "memory.forget",
+    {
+      description: "Archive or delete a local Nuzo memory.",
+      inputSchema: {
+        id: z.string().min(1),
+        mode: z.enum(["archive", "delete"]).default("archive"),
+        confirm: z.boolean().default(false),
+        reason: z.string().optional(),
+      },
+    },
+    async (input) => {
+      const forgetInput: ForgetToolInput = {
+        id: input.id,
+        mode: input.mode,
+        confirm: input.confirm,
+      };
+      if (input.reason !== undefined) {
+        forgetInput.reason = input.reason;
+      }
+
+      return jsonToolResult(await handlers.forget(forgetInput));
+    },
+  );
+
+  server.registerTool(
+    "memory.export",
+    {
+      description: "Export local Nuzo memories as a versioned JSON document.",
+      inputSchema: {
+        scope: z.string().optional(),
+        tags: z.array(z.string()).default([]),
+        include_archived: z.boolean().default(false),
+      },
+    },
+    async (input) => {
+      const exportInput: ExportToolInput = {
+        tags: input.tags,
+        include_archived: input.include_archived,
+      };
+      if (input.scope !== undefined) {
+        exportInput.scope = input.scope;
+      }
+
+      return jsonToolResult(await handlers.exportMemories(exportInput));
+    },
+  );
+
+  server.registerTool(
+    "memory.import",
+    {
+      description: "Import local Nuzo memories from a versioned JSON document.",
+      inputSchema: {
+        document: z.object({
+          format: z.literal("nuzo-memory-export"),
+          version: z.literal(1),
+          exported_at: z.string(),
+          memories: z.array(
+            z.object({
+              scope: z.string(),
+              kind: z.enum(["preference", "project_decision", "fact", "instruction", "note"]),
+              content: z.string(),
+              tags: z.array(z.string()),
+              source: z.string(),
+              confidence: z.number().min(0).max(1),
+              created_at: z.string(),
+              updated_at: z.string(),
+              last_used_at: z.string().nullable(),
+              archived_at: z.string().nullable(),
+            }),
+          ),
+        }),
+        scope: z.string().optional(),
+        dry_run: z.boolean().default(false),
+      },
+    },
+    async (input) => {
+      const importInput: ImportToolInput = {
+        document: input.document as MemoryExportDocument,
+        dry_run: input.dry_run,
+      };
+      if (input.scope !== undefined) {
+        importInput.scope = input.scope;
+      }
+
+      return jsonToolResult(await handlers.importMemories(importInput));
+    },
+  );
+
+  server.registerTool(
+    "memory.doctor",
+    {
+      description: "Report the local Nuzo MCP memory environment.",
+      inputSchema: {},
+    },
+    async () => {
+      return jsonToolResult(await handlers.doctor());
     },
   );
 }

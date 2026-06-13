@@ -69,7 +69,7 @@ Exit criteria:
 
 Goal: make memory available to agents.
 
-Initial scaffold exists in `packages/mcp-server` and currently exposes `memory.remember` and `memory.recall` over stdio.
+Initial scaffold exists in `packages/mcp-server` and exposes the main memory tool contract over stdio.
 
 Deliverables:
 
@@ -80,7 +80,7 @@ Deliverables:
 
 Exit criteria:
 
-- Codex or another MCP-compatible agent can remember and recall through the server.
+- Codex or another MCP-compatible agent can manage memory through the server.
 
 ## Stage 4: Codex Plugin
 

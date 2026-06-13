@@ -32,31 +32,66 @@ function createTestHandlers() {
           ]
         : [];
     },
-    async list() {
+    async list(input = {}) {
+      if (input.includeArchived !== true && memory?.archivedAt) {
+        return [];
+      }
       return memory ? [memory] : [];
     },
-    async update() {
+    async update(input) {
       if (!memory) {
         throw new Error("No memory");
       }
+      memory = {
+        ...memory,
+        content: input.content ?? memory.content,
+        tags: input.tags ?? memory.tags,
+        updatedAt: new Date("2026-06-13T01:00:00.000Z"),
+      };
       return memory;
     },
-    async exportMemories() {
+    async exportMemories(input) {
       return {
         format: "nuzo-memory-export",
         version: 1,
         exported_at: "2026-06-13T00:00:00.000Z",
-        memories: [],
+        memories:
+          memory && (input.includeArchived === true || memory.archivedAt === null)
+            ? [
+                {
+                  scope: memory.scope,
+                  kind: memory.kind,
+                  content: memory.content,
+                  tags: memory.tags,
+                  source: memory.source,
+                  confidence: memory.confidence,
+                  created_at: memory.createdAt.toISOString(),
+                  updated_at: memory.updatedAt.toISOString(),
+                  last_used_at: memory.lastUsedAt?.toISOString() ?? null,
+                  archived_at: memory.archivedAt?.toISOString() ?? null,
+                },
+              ]
+            : [],
       };
     },
-    async importMemories() {
+    async importMemories(input) {
       return {
-        imported: 0,
+        imported: input.document.memories.length,
         skipped: 0,
-        dryRun: false,
+        dryRun: input.dryRun === true,
       };
     },
-    async forget() {},
+    async forget(input) {
+      if (memory && input.mode === "archive") {
+        memory = {
+          ...memory,
+          archivedAt: new Date("2026-06-13T02:00:00.000Z"),
+        };
+      }
+      if (input.mode === "delete") {
+        memory = null;
+      }
+    },
   };
 
   return createMemoryToolHandlers(service);
@@ -95,5 +130,69 @@ describe("memory MCP handlers", () => {
       scope: "user:default",
       tags: ["mcp"],
     });
+  });
+
+  it("lists, updates, forgets, exports, imports, and reports doctor output", async () => {
+    const handlers = createTestHandlers();
+    const remembered = await handlers.remember({
+      content: "The user prefers explicit MCP contracts.",
+      kind: "preference",
+      scope: "user:default",
+      tags: ["mcp"],
+      source: "nuzo:mcp",
+    });
+
+    const listed = await handlers.list({
+      tags: [],
+      include_archived: false,
+    });
+    expect(listed.memories[0]?.id).toBe(remembered.id);
+
+    const updated = await handlers.update({
+      id: remembered.id,
+      content: "The user prefers complete MCP contracts.",
+      tags: ["mcp", "contracts"],
+    });
+    expect(updated.memory).toMatchObject({
+      content: "The user prefers complete MCP contracts.",
+      tags: ["mcp", "contracts"],
+    });
+
+    const exported = await handlers.exportMemories({
+      tags: [],
+      include_archived: false,
+    });
+    expect(exported.memories).toHaveLength(1);
+
+    const imported = await handlers.importMemories({
+      document: exported,
+      dry_run: true,
+    });
+    expect(imported).toEqual({
+      imported: 1,
+      skipped: 0,
+      dry_run: true,
+    });
+
+    const forgotten = await handlers.forget({
+      id: remembered.id,
+      mode: "archive",
+      confirm: false,
+    });
+    expect(forgotten).toEqual({
+      id: remembered.id,
+      forgotten: true,
+      mode: "archive",
+    });
+
+    const visible = await handlers.list({
+      tags: [],
+      include_archived: false,
+    });
+    expect(visible.memories).toEqual([]);
+
+    const doctor = await handlers.doctor();
+    expect(doctor.tools).toContain("memory.import");
+    expect(doctor.network).toBe("disabled");
   });
 });
