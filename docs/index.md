@@ -1,80 +1,73 @@
-# Nuzo
+<section class="nuzo-hero">
+  <img src="assets/logo.svg" alt="Nuzo" class="nuzo-hero__logo">
+  <p class="nuzo-eyebrow">Local-first memory for AI agents</p>
+  <h1>Nuzo</h1>
+  <p class="nuzo-lead">
+    Inspectable, portable memory for Codex and MCP-compatible agents.
+    Built for developer workflows where useful context should not become hidden state.
+  </p>
+  <p class="nuzo-actions">
+    <a href="getting-started/" class="nuzo-button">Get started</a>
+    <a href="spec/tools/" class="nuzo-button nuzo-button--secondary">Tool contract</a>
+  </p>
+</section>
 
-Local-first, auditable memory for Codex and MCP-compatible AI agents.
+## Why It Exists
 
-Nuzo gives assistants a durable memory layer that users can inspect, edit, export, and delete. It is built for developer workflows where memory should be useful, explicit, and safe to keep across sessions.
+Agents can write code, inspect repositories, run tools, and help make project decisions. But most sessions still start from zero. Nuzo preserves useful context locally so users can inspect, edit, export, and delete what agents remember.
 
-## The Idea
+## Principles
 
-Modern agents can write code, inspect repositories, run tools, and help make project decisions. But without memory, every session loses important context: preferences, decisions, failed attempts, useful facts, and project-specific rules.
+<div class="nuzo-grid" markdown>
 
-Nuzo is designed to preserve that context locally.
+<div class="nuzo-card" markdown>
+### Local
+Memories live on the user's machine by default.
+</div>
 
-```text
-remember useful context
-recall it when relevant
-keep it auditable
-let the user control it
-```
+<div class="nuzo-card" markdown>
+### Auditable
+Every memory should expose content, scope, source, metadata, and history.
+</div>
 
-## Design Priorities
+<div class="nuzo-card" markdown>
+### Portable
+Import/export formats are documented instead of opaque.
+</div>
 
-| Priority | Meaning |
-| --- | --- |
-| Local-first | Memories live on the user's machine by default. |
-| Auditable | Stored memories can be listed, inspected, edited, exported, and deleted. |
-| Agent-compatible | MCP is the first integration boundary. |
-| Git-safe | Runtime memory is ignored by default. |
-| Portable | Import/export formats are documented. |
-| Private by default | No telemetry, sync, or network dependency by default. |
+<div class="nuzo-card" markdown>
+### Agent-ready
+The integration boundary is a stable MCP tool contract.
+</div>
 
-## Planned Interfaces
-
-- CLI for direct user control.
-- MCP server for Codex and other compatible agents.
-- Codex plugin wrapper after the MCP server is stable.
-- Documented import/export format for backup and migration.
+</div>
 
 ## Current Focus
 
-The repository is moving from documentation init into Stage 1 planning.
+Nuzo is in early MVP development. The repository now includes a TypeScript core package and a local CLI backed by SQLite.
 
-| Stage | Focus | Status |
-| --- | --- | --- |
-| 0 | Public docs and project structure | In progress |
-| 1 | Core SQLite memory lifecycle | Next |
-| 2 | CLI control plane | Planned |
-| 3 | MCP server | Planned |
-| 4 | Codex plugin | Planned |
+| Area | State |
+| --- | --- |
+| Core | Memory lifecycle, policy checks, SQLite storage, FTS search, tests. |
+| CLI | `init`, `remember`, `recall`, `list`, `update`, `forget`, `doctor`. |
+| Docs | Product, architecture, specs, operations, and ADRs. |
+| Next | JSON export/import, MCP server, Codex plugin wrapper. |
 
 ## Runtime Storage
 
-User-level memory:
-
 ```text
 ~/.nuzo/memory/memories.sqlite
-```
-
-Project-level memory:
-
-```text
 <project>/.nuzo/memory/memories.sqlite
 ```
 
-These files are runtime state. They are not meant to be committed to the repository.
-
-## Project Status
-
-The project is currently in the design stage. The repository defines product principles, architecture, package boundaries, storage model, tool contracts, privacy rules, and implementation roadmap before code is added.
+Runtime memory is user-owned state. It is ignored by Git by default and should not be committed.
 
 ## Start Reading
 
 - [Getting started](getting-started/index.md)
 - [Product vision](product/vision.md)
-- [Requirements](product/requirements.md)
+- [Positioning](product/positioning.md)
 - [Architecture overview](architecture/overview.md)
-- [Package boundaries](architecture/boundaries.md)
 - [Memory model](spec/memory-model.md)
 - [Tool contract](spec/tools.md)
-- [Stage 1 core plan](implementation/stage-1-core.md)
 - [Roadmap](operations/roadmap.md)

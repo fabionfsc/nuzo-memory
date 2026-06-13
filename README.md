@@ -5,7 +5,9 @@
 <h1 align="center">Nuzo</h1>
 
 <p align="center">
-  Local-first, auditable memory for Codex and MCP-compatible AI agents.
+  Local-first memory for AI agents.
+  <br>
+  Inspectable, portable, and built for MCP.
 </p>
 
 <p align="center">
@@ -16,7 +18,7 @@
     <img alt="Docs" src="https://img.shields.io/badge/docs-nuzo.com.br-111827">
   </a>
   <a href="#project-status">
-    <img alt="Status" src="https://img.shields.io/badge/status-design%20stage-0f766e">
+    <img alt="Status" src="https://img.shields.io/badge/status-early%20MVP-0f766e">
   </a>
   <a href="#license">
     <img alt="License" src="https://img.shields.io/badge/license-undecided-64748b">
@@ -37,23 +39,15 @@
 
 ---
 
-Nuzo is a memory layer for AI agents that should remember useful context without turning private information into hidden state.
+Nuzo is a local memory layer for AI agents. It gives agents durable context while keeping memory visible, editable, exportable, and under user control.
 
-It is inspired by memory patterns found across modern AI assistants and web-based agents, but designed for local-first developer workflows: transparent storage, explicit control, documented contracts, and agent interoperability through MCP.
-
-```text
-remember useful context
-recall it when relevant
-keep it local
-make it auditable
-let the user stay in control
-```
+It is inspired by memory patterns found across modern AI assistants and web-based agents, but designed for developer workflows where storage, contracts, and privacy defaults should be explicit.
 
 ## Why Nuzo?
 
-AI agents are becoming long-running collaborators, but most sessions still start from zero. They re-learn preferences, repeat old decisions, and lose project context unless the user keeps restating it.
+AI agents are becoming long-running collaborators, but most sessions still start from zero. They re-learn preferences, repeat decisions, and lose project context unless the user keeps restating it.
 
-Nuzo aims to make persistent agent memory practical:
+Nuzo makes persistent agent memory practical without turning it into hidden state:
 
 - remember stable user preferences;
 - preserve project decisions;
@@ -86,11 +80,11 @@ Nuzo aims to make persistent agent memory practical:
 
 ## Project Status
 
-Nuzo is currently in the **design stage**.
+Nuzo is in early MVP development.
 
-This repository intentionally starts with architecture and specifications before runtime code. The goal is to make the important boundaries clear early: storage, scopes, package ownership, tool contracts, privacy defaults, release process, and GitHub Pages publishing.
+The repository started design-first and now includes the first TypeScript packages for core memory behavior and a local CLI backed by SQLite.
 
-Current implementation target:
+Current path:
 
 ```text
 SQLite local store
@@ -100,12 +94,21 @@ SQLite local store
     -> Codex plugin
 ```
 
-The repository now includes the first TypeScript workspace scaffold for `packages/core`.
-It also includes an initial local CLI package in `packages/cli`.
+Implemented today:
+
+- `packages/core` with memory lifecycle, policy checks, SQLite storage, FTS search, and tests.
+- `packages/cli` with `init`, `remember`, `recall`, `list`, `update`, `forget`, and `doctor`.
+- MkDocs documentation published through GitHub Pages.
+
+Next technical focus:
+
+- JSON export/import.
+- MCP server package.
+- Codex plugin wrapper.
 
 ## Planned Usage
 
-The CLI should eventually feel like this:
+The CLI is organized around the `memory` module:
 
 ```bash
 nuzo memory init
@@ -116,7 +119,7 @@ nuzo memory forget mem_01HZY --archive
 nuzo memory doctor
 ```
 
-The initial CLI already supports these commands against a local SQLite store:
+Until package binaries are wired for install, run the local build directly:
 
 ```bash
 npm run build
@@ -274,9 +277,9 @@ The project treats memory as user-owned state, not agent-owned state.
 
 | Stage | Focus | Status |
 | --- | --- | --- |
-| 0 | Documentation and public project structure | In progress |
-| 1 | Core package with SQLite and FTS search | Planned |
-| 2 | CLI for user-controlled memory management | Planned |
+| 0 | Documentation and public project structure | Active |
+| 1 | Core package with SQLite and FTS search | In progress |
+| 2 | CLI for user-controlled memory management | In progress |
 | 3 | MCP server for agent integrations | Planned |
 | 4 | Codex plugin packaging | Planned |
 | 5 | Optional encryption, embeddings, sync, and UI | Later |
