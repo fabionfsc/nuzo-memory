@@ -83,6 +83,7 @@ npm run check
 
 ## Current Limits
 
-- The wrapper is ready for local development, but install/update docs are still evolving.
+- The wrapper is ready for development, but normal use should follow the supported Codex plugin workflow.
+- Development-only install helpers should wait until the official plugin path is stable.
 - The plugin assumes the monorepo has already been built.
 - Runtime memory remains local and should not be committed to Git.

@@ -35,6 +35,13 @@ Start with:
 - Storage starts with SQLite and SQLite FTS.
 - Embeddings, sync, encryption, and UI are future optional layers.
 
+## Codex Plugin Direction
+
+- Prefer the official Codex plugin path before adding local installer scripts or development-only workarounds.
+- Do not add plugin install/update helpers until the supported Codex plugin workflow and local plugin directory contract are stable and documented.
+- The Codex plugin should remain a thin wrapper around the MCP server and should not contain memory business logic.
+- If plugin setup docs are needed, document the official workflow first; local testing notes should be clearly marked as development-only.
+
 ## Privacy And Safety Rules
 
 - Do not commit runtime memory files.

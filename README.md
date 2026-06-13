@@ -105,7 +105,7 @@ Implemented today:
 
 Next technical focus:
 
-- Codex plugin install/update helper.
+- Official Codex plugin integration path.
 
 ## Planned Usage
 

@@ -84,7 +84,7 @@ Exit criteria:
 
 ## Stage 4: Codex Plugin
 
-Goal: package the MCP server for Codex.
+Goal: package the MCP server for Codex through the supported plugin workflow.
 
 Initial scaffold exists in `packages/codex-plugin` with plugin metadata and MCP defaults.
 
@@ -92,12 +92,13 @@ Deliverables:
 
 - `.codex-plugin/plugin.json`.
 - plugin README.
-- install/update scripts.
-- Codex-specific setup docs.
+- Codex-specific setup docs aligned with the official plugin path.
+- Marketplace or official distribution metadata when the supported workflow is stable.
 
 Exit criteria:
 
-- Plugin can be installed locally and used in a fresh Codex session.
+- Plugin can be installed through a supported Codex plugin workflow and used in a fresh Codex session.
+- No development-only installer is required for normal use.
 
 ## Stage 5: Public Release
 

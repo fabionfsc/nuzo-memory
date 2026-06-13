@@ -21,7 +21,7 @@ packages/mcp-server
   Owns MCP transport, tool schemas, request/response mapping.
 
 packages/codex-plugin
-  Owns Codex packaging, plugin manifest, install helpers, Codex-specific docs.
+  Owns Codex packaging, plugin manifest, and Codex-specific docs.
 
 packages/docs-site
   Optional future package for nuzo.com.br documentation.

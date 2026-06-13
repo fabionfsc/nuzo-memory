@@ -85,13 +85,13 @@ The initial GitHub Pages setup is defined in `docs/operations/github-pages.md`.
 
 - `.codex-plugin/plugin.json`.
 - Plugin README.
-- Install/update docs.
+- Official plugin setup docs.
 - MCP server packaged through plugin defaults.
 
 ### Stage 3: Public Docs
 
 - Publish docs under `nuzo.com.br`.
-- Add install script only after manual install is stable.
+- Add development-only helper scripts only after the official plugin workflow is stable and documented.
 
 ## License
 
