@@ -9,10 +9,11 @@ This directory is the source of truth for the project until implementation start
 3. `product/requirements.md`
 4. `architecture/overview.md`
 5. `architecture/boundaries.md`
-6. `spec/memory-model.md`
-7. `spec/tools.md`
-8. `implementation/stage-1-core.md`
-9. `operations/roadmap.md`
+6. `architecture/agent-host-compatibility.md`
+7. `spec/memory-model.md`
+8. `spec/tools.md`
+9. `implementation/stage-1-core.md`
+10. `operations/roadmap.md`
 
 ## Sections
 
@@ -22,7 +23,7 @@ Defines what the project is, who it serves, and what is intentionally out of sco
 
 ### Architecture
 
-Defines system shape, storage design, package boundaries, and repository layout.
+Defines system shape, storage design, package boundaries, agent host compatibility, and repository layout.
 
 ### Spec
 

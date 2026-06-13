@@ -23,6 +23,9 @@ packages/mcp-server
 packages/codex-plugin
   Owns Codex packaging, plugin manifest, and Codex-specific docs.
 
+packages/claude-code-plugin
+  Future package for Claude Code packaging, plugin manifest, and Claude-specific docs.
+
 packages/docs-site
   Optional future package for nuzo.com.br documentation.
 ```
@@ -36,6 +39,8 @@ cli -> core
 mcp-server -> core
 codex-plugin -> mcp-server
 codex-plugin -> core docs
+claude-code-plugin -> mcp-server
+claude-code-plugin -> core docs
 docs-site -> docs
 ```
 
@@ -45,6 +50,7 @@ Not allowed:
 core -> cli
 core -> mcp-server
 core -> codex-plugin
+core -> claude-code-plugin
 mcp-server -> cli
 cli -> mcp-server
 ```
@@ -92,6 +98,7 @@ This lets the project change storage, search, CLI framework, or MCP SDK without 
 - MCP handlers writing directly to SQLite.
 - CLI commands duplicating validation.
 - Codex plugin containing business logic.
+- Claude Code plugin containing business logic.
 - Search logic mixed into persistence code.
 - Export format generated from raw SQL rows without a stable model.
 - Project config read from many places instead of one resolver.

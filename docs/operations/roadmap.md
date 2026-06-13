@@ -82,9 +82,9 @@ Exit criteria:
 
 - Codex or another MCP-compatible agent can manage memory through the server.
 
-## Stage 4: Codex Plugin
+## Stage 4: Host Plugins
 
-Goal: package the MCP server for Codex through the supported plugin workflow.
+Goal: package the MCP server for agent hosts through supported plugin workflows.
 
 Initial scaffold exists in `packages/codex-plugin` with plugin metadata and MCP defaults.
 
@@ -93,11 +93,13 @@ Deliverables:
 - `.codex-plugin/plugin.json`.
 - plugin README.
 - Codex-specific setup docs aligned with the official plugin path.
+- Claude Code compatibility notes and package plan.
 - Marketplace or official distribution metadata when the supported workflow is stable.
 
 Exit criteria:
 
-- Plugin can be installed through a supported Codex plugin workflow and used in a fresh Codex session.
+- Codex plugin can be installed through a supported Codex plugin workflow and used in a fresh Codex session.
+- Claude Code path is either documented as direct MCP setup or packaged through a supported Claude Code plugin workflow.
 - No development-only installer is required for normal use.
 
 ## Stage 5: Public Release

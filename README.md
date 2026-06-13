@@ -34,6 +34,8 @@
   ·
   <a href="docs/architecture/overview.md">Architecture</a>
   ·
+  <a href="docs/architecture/agent-host-compatibility.md">Host Compatibility</a>
+  ·
   <a href="docs/operations/roadmap.md">Roadmap</a>
 </p>
 
@@ -62,8 +64,8 @@ Nuzo makes persistent agent memory practical without turning it into hidden stat
 | --- | --- |
 | Core | Memory lifecycle, validation, policy, storage ports, search ports, audit events. |
 | CLI | Direct user control: init, remember, recall, list, update, forget, export, import, doctor. |
-| MCP Server | Agent-facing memory tools for Codex and other MCP-compatible clients. |
-| Codex Plugin | Packaging and defaults for using Nuzo inside Codex. |
+| MCP Server | Agent-facing memory tools for Codex, Claude Code, and other MCP-compatible clients. |
+| Host Plugins | Thin packaging for agent hosts, starting with Codex and planned for Claude Code. |
 | Docs | Product, architecture, specs, operations, and ADRs published through GitHub Pages. |
 
 ## What Makes It Different
@@ -91,7 +93,7 @@ SQLite local store
     -> core memory service
     -> CLI
     -> MCP server
-    -> Codex plugin
+    -> host plugins
 ```
 
 Implemented today:
@@ -105,7 +107,7 @@ Implemented today:
 
 Next technical focus:
 
-- Official Codex plugin integration path.
+- Official host integration paths for Codex and Claude Code.
 
 ## Planned Usage
 

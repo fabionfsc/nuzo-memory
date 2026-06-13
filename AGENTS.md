@@ -2,7 +2,7 @@
 
 This repository is the early design and documentation home for Nuzo.
 
-Nuzo is a local-first, auditable memory layer for Codex and MCP-compatible AI agents. The project is in early MVP development: architecture, storage, tool contracts, privacy rules, roadmap, GitHub Pages, core memory behavior, and the local CLI are already present.
+Nuzo is a local-first, auditable memory layer for Codex, Claude Code, and MCP-compatible AI agents. The project is in early MVP development: architecture, storage, tool contracts, privacy rules, roadmap, GitHub Pages, core memory behavior, and the local CLI are already present.
 
 ## Current State
 
@@ -12,7 +12,7 @@ Nuzo is a local-first, auditable memory layer for Codex and MCP-compatible AI ag
 - Docs engine: MkDocs Material
 - Runtime code: early MVP in `packages/core`, `packages/cli`, `packages/mcp-server`, and `packages/codex-plugin`
 - Current implementation: SQLite storage, FTS recall, policy checks, JSON export/import, CLI commands, and MCP memory tools
-- Intended package direction: `core -> cli -> mcp-server -> codex-plugin`
+- Intended package direction: `core -> cli -> mcp-server -> host plugins`
 
 ## Read First
 
@@ -23,23 +23,25 @@ Start with:
 3. `docs/operations/roadmap.md`
 4. `docs/architecture/overview.md`
 5. `docs/architecture/boundaries.md`
-6. `docs/spec/tools.md`
-7. `docs/spec/memory-model.md`
-8. `docs/operations/codex-plugin.md`
+6. `docs/architecture/agent-host-compatibility.md`
+7. `docs/spec/tools.md`
+8. `docs/spec/memory-model.md`
+9. `docs/operations/codex-plugin.md`
 
 ## Architecture Rules
 
 - Business logic belongs in `packages/core`.
-- CLI, MCP server, and Codex plugin must call core use cases instead of duplicating behavior.
+- CLI, MCP server, and host plugins must call core use cases instead of duplicating behavior.
 - MCP tool schemas are public contracts. Update `docs/spec/tools.md` before changing them.
 - Storage starts with SQLite and SQLite FTS.
 - Embeddings, sync, encryption, and UI are future optional layers.
 
-## Codex Plugin Direction
+## Host Plugin Direction
 
-- Prefer the official Codex plugin path before adding local installer scripts or development-only workarounds.
-- Do not add plugin install/update helpers until the supported Codex plugin workflow and local plugin directory contract are stable and documented.
-- The Codex plugin should remain a thin wrapper around the MCP server and should not contain memory business logic.
+- Nuzo is host-neutral. Codex and Claude Code are priority hosts, but MCP/core remain the product center.
+- Prefer official host plugin paths before adding local installer scripts or development-only workarounds.
+- Do not add plugin install/update helpers until the supported host plugin workflow and local plugin directory contract are stable and documented.
+- Host plugins should remain thin wrappers around the MCP server and should not contain memory business logic.
 - If plugin setup docs are needed, document the official workflow first; local testing notes should be clearly marked as development-only.
 
 ## Privacy And Safety Rules

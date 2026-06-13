@@ -1,0 +1,142 @@
+# Agent Host Compatibility
+
+Nuzo should stay host-neutral.
+
+The product is a local-first memory layer for AI agents. Codex and Claude Code are the first priority hosts because they are strong CLI-based agent environments and both support MCP-based extension paths.
+
+## Design Position
+
+Nuzo should not depend on one agent runtime.
+
+```text
+Nuzo core
+  -> CLI for direct user control
+  -> MCP server as the universal agent contract
+  -> host packages for Codex, Claude Code, and future agent CLIs
+```
+
+Host packages may differ, but they must call the same MCP tools and core use cases.
+
+## Compatibility Principle
+
+MCP is the stable center.
+
+Every host integration should be judged by whether it can expose the existing Nuzo MCP server without changing memory behavior.
+
+The public memory contract remains:
+
+- `memory.remember`
+- `memory.recall`
+- `memory.list`
+- `memory.update`
+- `memory.forget`
+- `memory.export`
+- `memory.import`
+- `memory.doctor`
+
+Host-specific plugin systems are distribution wrappers, not memory engines.
+
+## Host Matrix
+
+| Host | Current fit | Extension path | Nuzo package direction | Notes |
+| --- | --- | --- | --- | --- |
+| Codex | First supported plugin target. | Codex plugins can bundle MCP servers. Codex also supports direct MCP configuration in `config.toml`. | `packages/codex-plugin` | Keep Codex-specific metadata and docs here only. |
+| Claude Code | High-priority future target. | Claude Code plugins can include `.mcp.json` or inline MCP server config. Claude Code also supports direct MCP setup through `claude mcp`. | Future `packages/claude-plugin` or `packages/claude-code-plugin` | Validate naming and manifest shape against current Claude docs before creating the package. |
+| Other MCP-compatible agents | Future compatible target. | Direct MCP server configuration. | No package until a real host contract exists. | Support through `packages/mcp-server` first. |
+
+## Codex Notes
+
+Codex plugins can bundle skills, app integrations, and MCP servers. For Nuzo, the useful part is MCP server packaging.
+
+Codex MCP support includes:
+
+- stdio servers;
+- streamable HTTP servers;
+- server instructions;
+- user and project configuration through `config.toml`;
+- plugin-provided MCP servers.
+
+Implications for Nuzo:
+
+- Codex plugin packaging should point to the Nuzo MCP server.
+- Business logic must stay out of `packages/codex-plugin`.
+- Codex marketplace or sharing metadata should be added only after the plugin package is stable.
+- Local marketplace helpers are development convenience, not the primary product path.
+
+## Claude Code Notes
+
+Claude Code supports plugins for reusable functionality across projects and teams. Plugins can include skills, agents, hooks, MCP servers, LSP servers, background monitors, binaries, and default settings.
+
+Claude Code MCP support includes:
+
+- remote HTTP servers;
+- remote SSE servers, marked as deprecated in favor of HTTP where available;
+- local stdio servers;
+- remote WebSocket servers;
+- `.mcp.json` project configuration;
+- user and local MCP scopes;
+- plugin-provided MCP servers;
+- environment variables such as `${CLAUDE_PLUGIN_ROOT}`, `${CLAUDE_PLUGIN_DATA}`, and `${CLAUDE_PROJECT_DIR}` inside plugin MCP config.
+
+Implications for Nuzo:
+
+- A Claude Code package should use the same Nuzo MCP server.
+- It can likely be a thin plugin with `.claude-plugin/plugin.json` and `.mcp.json`, but this must be verified against Claude's current plugin reference before implementation.
+- Claude Code's direct `claude mcp add` path can be documented as a manual setup path before a full plugin package exists.
+- Do not add Claude-specific memory behavior to core or MCP handlers.
+
+## Packaging Rules
+
+Host packages may contain:
+
+- plugin manifests;
+- host-specific MCP config;
+- host-specific setup docs;
+- host-specific skill or instruction files when they improve discovery or usage;
+- validation scripts for the host manifest.
+
+Host packages must not contain:
+
+- memory storage logic;
+- recall ranking logic;
+- policy checks;
+- secret scanning;
+- import/export implementation;
+- host-specific versions of the MCP tool contract.
+
+## Naming Rules
+
+Use neutral public language:
+
+- "AI agents";
+- "agent CLIs";
+- "Codex and Claude Code";
+- "MCP-compatible agents";
+- "host integrations".
+
+Avoid positioning Nuzo as:
+
+- only a Codex plugin;
+- only a Claude plugin;
+- a replacement for built-in assistant memory;
+- a sync service by default.
+
+## Future Host Checklist
+
+Before adding a new host package:
+
+1. Confirm the host supports MCP or a compatible tool protocol.
+2. Confirm whether the host has an official plugin/package mechanism.
+3. Confirm how local processes are launched and how environment variables are passed.
+4. Confirm where user-owned state should live.
+5. Confirm how the host handles permissions, approvals, and tool visibility.
+6. Keep the host package thin and route all memory behavior through MCP/core.
+
+## Source References
+
+- Codex manual, [Model Context Protocol](https://developers.openai.com/codex/mcp): Codex supports MCP servers in CLI and IDE extension.
+- Codex manual, [Plugins](https://developers.openai.com/codex/plugins): Codex plugins can bundle MCP servers.
+- Codex manual, [Memories](https://developers.openai.com/codex/memories): Codex memories are built-in generated state under Codex home, which is separate from Nuzo's user-controlled local memory store.
+- Claude Code docs, [Create plugins](https://code.claude.com/docs/en/plugins): plugins can extend Claude Code with skills, agents, hooks, and MCP servers.
+- Claude Code docs, [MCP](https://code.claude.com/docs/en/mcp): plugin-provided MCP servers start with the plugin and can be defined in `.mcp.json` or inline in `plugin.json`.
+- Claude Code docs, [MCP](https://code.claude.com/docs/en/mcp): direct MCP setup supports HTTP, stdio, WebSocket, scoped configuration, and project `.mcp.json`.

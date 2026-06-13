@@ -74,9 +74,13 @@ It should support:
 - migrations;
 - Git safety checks.
 
-### Codex Plugin
+### Host Plugins
 
-The Codex plugin should package the MCP server and defaults so Codex can use Nuzo without custom wiring.
+Host plugins package the MCP server and defaults so agent hosts can use Nuzo without custom wiring.
+
+Codex is the first host package. Claude Code is a high-priority future host because it also supports MCP and plugin-provided MCP servers.
+
+Host plugins are wrappers. They must not contain memory business logic.
 
 ## Default Flow
 

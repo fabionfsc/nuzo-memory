@@ -8,7 +8,7 @@ It is not meant to compete with every built-in memory feature in AI assistants. 
 
 | Area | Built-in assistant memory | Nuzo |
 | --- | --- | --- |
-| Scope | Usually tied to one assistant or product. | Designed for Codex, MCP-compatible agents, and local tooling. |
+| Scope | Usually tied to one assistant or product. | Designed for Codex, Claude Code, MCP-compatible agents, and local tooling. |
 | Storage | Implementation details may be hidden or product-specific. | Local SQLite store with documented schema and export formats. |
 | Control | User controls depend on the product surface. | CLI and future MCP tools expose list, update, forget, export, import, and doctor. |
 | Auditability | Often optimized for convenience. | Every memory should be inspectable with metadata and audit events. |
