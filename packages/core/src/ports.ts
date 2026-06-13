@@ -5,6 +5,7 @@ import type {
   RecallMemoriesInput,
   RecallMemoryResult,
   RememberMemoryInput,
+  UpdateMemoryInput,
 } from "./types.js";
 
 export interface MemoryStore {
@@ -52,5 +53,6 @@ export interface SecretFinding {
 
 export interface PolicyEngine {
   assertCanRemember(input: RememberMemoryInput): Promise<void>;
+  assertCanUpdate(input: UpdateMemoryInput, current: MemoryRecord): Promise<void>;
   assertCanRecall(input: RecallMemoriesInput): Promise<void>;
 }

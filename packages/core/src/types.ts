@@ -79,6 +79,16 @@ export interface ForgetMemoryInput {
   reason?: string;
 }
 
+export interface UpdateMemoryInput {
+  id: string;
+  content?: string;
+  kind?: MemoryKind;
+  scope?: MemoryScope;
+  tags?: string[];
+  confidence?: number;
+  actor: string;
+}
+
 export interface RecallMemoryResult {
   memory: MemoryRecord;
   score: number;

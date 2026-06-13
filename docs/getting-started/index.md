@@ -92,15 +92,17 @@ After that, the expected flow is:
 
 ```bash
 nuzo memory remember "The user prefers concise implementation notes." --kind preference
+nuzo memory update mem_01HZY --content "The user prefers concise implementation notes and explicit tradeoffs."
 nuzo memory recall "How should the assistant write implementation notes?"
 nuzo memory list
-nuzo memory forget mem_01HZY --archive
+nuzo memory forget mem_01HZY
 ```
 
 Until package binaries are wired for install, use:
 
 ```bash
 node packages/cli/dist/index.js memory remember "The user prefers concise implementation notes." --kind preference
+node packages/cli/dist/index.js memory update mem_01HZY --content "The user prefers concise implementation notes and explicit tradeoffs."
 node packages/cli/dist/index.js memory recall "implementation notes"
 ```
 

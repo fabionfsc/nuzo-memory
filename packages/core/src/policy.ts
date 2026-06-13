@@ -1,7 +1,7 @@
 import { invariant } from "./errors.js";
 import type { PolicyEngine, SecretScanner } from "./ports.js";
 import { memoryKinds, type MemoryScope } from "./types.js";
-import type { RecallMemoriesInput, RememberMemoryInput } from "./types.js";
+import type { MemoryRecord, RecallMemoriesInput, RememberMemoryInput, UpdateMemoryInput } from "./types.js";
 
 const scopePattern = /^(user|project|agent|team):[A-Za-z0-9._~:/-]+$/;
 const tagPattern = /^[a-z0-9][a-z0-9._-]{0,63}$/;
@@ -52,6 +52,18 @@ export class DefaultPolicyEngine implements PolicyEngine {
     invariant(secretScan.ok, "MEMORY_SECRET_DETECTED", "Memory content looks sensitive.", {
       findings: secretScan.findings,
     });
+  }
+
+  async assertCanUpdate(input: UpdateMemoryInput, current: MemoryRecord): Promise<void> {
+    await this.assertCanRemember({
+      content: input.content ?? current.content,
+      kind: input.kind ?? current.kind,
+      scope: input.scope ?? current.scope,
+      tags: input.tags ?? current.tags,
+      source: current.source,
+      confidence: input.confidence ?? current.confidence,
+    });
+    invariant(input.actor.trim().length > 0, "MEMORY_ACTOR_EMPTY", "Memory actor cannot be empty.");
   }
 
   async assertCanRecall(input: RecallMemoriesInput): Promise<void> {

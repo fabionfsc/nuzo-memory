@@ -7,6 +7,7 @@ import type {
   RecallMemoriesInput,
   RecallMemoryResult,
   RememberMemoryInput,
+  UpdateMemoryInput,
 } from "./types.js";
 
 export interface MemoryServiceDependencies {
@@ -22,6 +23,7 @@ export interface MemoryService {
   remember(input: RememberMemoryInput): Promise<MemoryRecord>;
   recall(input: RecallMemoriesInput): Promise<RecallMemoryResult[]>;
   list(input?: ListMemoriesInput): Promise<MemoryRecord[]>;
+  update(input: UpdateMemoryInput): Promise<MemoryRecord>;
   forget(input: ForgetMemoryInput): Promise<void>;
 }
 
@@ -90,6 +92,58 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
 
     async list(input = {}) {
       return store.list(input);
+    },
+
+    async update(input) {
+      const current = await store.findById(input.id);
+      if (!current) {
+        throw new NuzoMemoryError("MEMORY_NOT_FOUND", "Memory was not found.", { id: input.id });
+      }
+
+      const hasChanges =
+        input.content !== undefined ||
+        input.kind !== undefined ||
+        input.scope !== undefined ||
+        input.tags !== undefined ||
+        input.confidence !== undefined;
+      if (!hasChanges) {
+        throw new NuzoMemoryError("MEMORY_UPDATE_EMPTY", "At least one memory field must be updated.", {
+          id: input.id,
+        });
+      }
+
+      await policy.assertCanUpdate(input, current);
+
+      const updated: MemoryRecord = {
+        ...current,
+        content: input.content?.trim() ?? current.content,
+        kind: input.kind ?? current.kind,
+        scope: input.scope ?? current.scope,
+        tags: input.tags ? [...new Set(input.tags)] : current.tags,
+        confidence: input.confidence ?? current.confidence,
+        updatedAt: clock.now(),
+      };
+
+      await store.update(updated);
+      await searchIndex.index(updated);
+      await auditLog.append({
+        id: ids.eventId(),
+        memoryId: updated.id,
+        eventType: "memory.updated",
+        actor: input.actor,
+        payload: {
+          changed: {
+            content: input.content !== undefined,
+            kind: input.kind !== undefined,
+            scope: input.scope !== undefined,
+            tags: input.tags !== undefined,
+            confidence: input.confidence !== undefined,
+          },
+        },
+        createdAt: updated.updatedAt,
+      });
+
+      return updated;
     },
 
     async forget(input) {

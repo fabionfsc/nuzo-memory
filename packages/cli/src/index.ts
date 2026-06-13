@@ -16,6 +16,7 @@ import {
   type ListMemoriesInput,
   type MemoryScope,
   type ForgetMemoryInput,
+  type UpdateMemoryInput,
 } from "@nuzo/memory-core";
 
 const defaultStorePath = resolve(homedir(), ".nuzo", "memory", "memories.sqlite");
@@ -147,6 +148,56 @@ export function createProgram(io: CliIO = defaultIO): Command {
     }));
 
   memory
+    .command("update")
+    .description("Update a memory.")
+    .argument("<id>", "Memory ID.")
+    .option("--content <content>", "Replacement memory content.")
+    .option("--kind <kind>", "Replacement memory kind.")
+    .option("--scope <scope>", "Replacement memory scope.")
+    .option("--tag <tag...>", "Replacement memory tags.")
+    .option("--confidence <number>", "Replacement confidence between 0 and 1.", parseConfidence)
+    .action(withErrorHandling(io, async (
+      id: string,
+      commandOptions: {
+        content?: string;
+        kind?: MemoryKind;
+        scope?: MemoryScope;
+        tag?: string[];
+        confidence?: number;
+      },
+    ) => {
+      const options = memory.opts<GlobalOptions>();
+      const database = openDatabase(options);
+      try {
+        const service = createService(database);
+        const updateInput: UpdateMemoryInput = {
+          id,
+          actor: "nuzo:cli",
+        };
+        if (commandOptions.content !== undefined) {
+          updateInput.content = commandOptions.content;
+        }
+        if (commandOptions.kind !== undefined) {
+          updateInput.kind = commandOptions.kind;
+        }
+        if (commandOptions.scope !== undefined) {
+          updateInput.scope = commandOptions.scope;
+        }
+        if (commandOptions.tag !== undefined) {
+          updateInput.tags = commandOptions.tag;
+        }
+        if (commandOptions.confidence !== undefined) {
+          updateInput.confidence = commandOptions.confidence;
+        }
+
+        const updated = await service.update(updateInput);
+        io.stdout(updated.id);
+      } finally {
+        database.close();
+      }
+    }));
+
+  memory
     .command("forget")
     .description("Archive or delete a memory.")
     .argument("<id>", "Memory ID.")
@@ -249,6 +300,14 @@ function parsePositiveInteger(value: string): number {
   const parsed = Number.parseInt(value, 10);
   if (!Number.isInteger(parsed) || parsed <= 0) {
     throw new Error("Expected a positive integer.");
+  }
+  return parsed;
+}
+
+function parseConfidence(value: string): number {
+  const parsed = Number.parseFloat(value);
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 1) {
+    throw new Error("Expected a number between 0 and 1.");
   }
   return parsed;
 }

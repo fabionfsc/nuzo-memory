@@ -34,7 +34,7 @@ async function runCli(args: string[]): Promise<{ stderr: string[]; stdout: strin
 }
 
 describe("nuzo memory cli", () => {
-  it("initializes, remembers, recalls, lists, and archives memory", async () => {
+  it("initializes, remembers, updates, recalls, lists, and archives memory", async () => {
     const store = createStorePath();
 
     const init = await runCli(["memory", "--store", store, "init"]);
@@ -54,9 +54,28 @@ describe("nuzo memory cli", () => {
     const id = remembered.stdout[0] ?? "";
     expect(id).toMatch(/^mem_/);
 
+    const updated = await runCli([
+      "memory",
+      "--store",
+      store,
+      "update",
+      id,
+      "--content",
+      "The user prefers concise final answers.",
+      "--kind",
+      "preference",
+      "--tag",
+      "style",
+      "codex",
+    ]);
+    expect(updated.stdout).toEqual([id]);
+
     const recall = await runCli(["memory", "--store", store, "recall", "local-first"]);
-    expect(recall.stdout.join("\n")).toContain(id);
-    expect(recall.stdout.join("\n")).toContain("local-first memory tools");
+    expect(recall.stdout).toEqual([]);
+
+    const updatedRecall = await runCli(["memory", "--store", store, "recall", "concise answers"]);
+    expect(updatedRecall.stdout.join("\n")).toContain(id);
+    expect(updatedRecall.stdout.join("\n")).toContain("concise final answers");
 
     const list = await runCli(["memory", "--store", store, "list"]);
     expect(list.stdout.join("\n")).toContain(id);

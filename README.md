@@ -122,6 +122,7 @@ The initial CLI already supports these commands against a local SQLite store:
 npm run build
 node packages/cli/dist/index.js memory init
 node packages/cli/dist/index.js memory remember "The user prefers local-first tools." --kind preference
+node packages/cli/dist/index.js memory update mem_01HZY --content "The user prefers local-first tools and explicit controls."
 node packages/cli/dist/index.js memory recall "local-first tools"
 ```
 

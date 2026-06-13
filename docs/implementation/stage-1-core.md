@@ -54,7 +54,7 @@ The first implementation slice also includes:
 - `RegexSecretScanner`;
 - `SQLiteMemoryDatabase` with SQLite tables and FTS5 search;
 - in-memory adapters for tests;
-- Vitest coverage for remember, recall, archive, hard-delete confirmation, and secret rejection.
+- Vitest coverage for remember, recall, update, archive, hard-delete confirmation, and secret rejection.
 
 ## Ports
 
