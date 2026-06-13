@@ -2,7 +2,7 @@
 
 This repository is the early design and documentation home for Nuzo.
 
-Nuzo is a local-first, auditable memory layer for Codex and MCP-compatible AI agents. The project is currently in the design stage: architecture, storage, tool contracts, privacy rules, roadmap, and GitHub Pages are defined before runtime code is added.
+Nuzo is a local-first, auditable memory layer for Codex and MCP-compatible AI agents. The project is in early MVP development: architecture, storage, tool contracts, privacy rules, roadmap, GitHub Pages, core memory behavior, and the local CLI are already present.
 
 ## Current State
 
@@ -10,8 +10,8 @@ Nuzo is a local-first, auditable memory layer for Codex and MCP-compatible AI ag
 - Primary docs site: `https://nuzo.com.br`
 - GitHub Pages fallback: `https://fabionfsc.github.io/nuzo-memory/`
 - Docs engine: MkDocs Material
-- Runtime code: not implemented yet
-- Current implementation scaffold: `packages/core` and `packages/cli`
+- Runtime code: early MVP in `packages/core` and `packages/cli`
+- Current implementation: SQLite storage, FTS recall, policy checks, JSON export/import, and CLI commands
 - Intended package direction: `core -> cli -> mcp-server -> codex-plugin`
 
 ## Read First
@@ -28,7 +28,7 @@ Start with:
 
 ## Architecture Rules
 
-- Business logic belongs in future `packages/core`.
+- Business logic belongs in `packages/core`.
 - CLI, MCP server, and Codex plugin must call core use cases instead of duplicating behavior.
 - MCP tool schemas are public contracts. Update `docs/spec/tools.md` before changing them.
 - Storage starts with SQLite and SQLite FTS.
@@ -52,6 +52,7 @@ Keep these ignored:
 .nuzo/**/*.sqlite
 .nuzo/**/*.sqlite-*
 *.memory.export.md
+*.memory.export.json
 site/
 .venv/
 .venv-*/

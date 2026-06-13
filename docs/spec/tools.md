@@ -114,7 +114,7 @@ Input:
 ```json
 {
   "scope": "user:default",
-  "format": "markdown",
+  "format": "json",
   "include_archived": false
 }
 ```
@@ -127,7 +127,7 @@ Input:
 
 ```json
 {
-  "path": "/absolute/path/to/memory.export.md",
+  "path": "/absolute/path/to/memories.memory.export.json",
   "scope": "user:default",
   "dry_run": true
 }
@@ -154,7 +154,7 @@ nuzo memory recall "output style"
 nuzo memory list --tag codex
 nuzo memory update mem_01HZY --content "The user prefers concise final answers."
 nuzo memory forget mem_01HZY --archive
-nuzo memory export --format markdown
-nuzo memory import ./memory.export.md --dry-run
+nuzo memory export --path ./memories.memory.export.json
+nuzo memory import ./memories.memory.export.json --dry-run
 nuzo memory doctor
 ```

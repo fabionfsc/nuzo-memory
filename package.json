@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "description": "Local-first, auditable memory for Codex and MCP-compatible AI agents.",
+  "license": "Apache-2.0",
   "type": "module",
   "workspaces": [
     "packages/*"

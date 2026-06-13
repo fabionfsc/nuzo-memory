@@ -48,9 +48,11 @@ Non-breaking changes:
 
 Every export file must include:
 
-```yaml
-format: nuzo-memory-export
-version: 1
+```json
+{
+  "format": "nuzo-memory-export",
+  "version": 1
+}
 ```
 
 Importers should reject unknown major versions and explain why.

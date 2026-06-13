@@ -1,8 +1,13 @@
 import { NuzoMemoryError } from "./errors.js";
 import type { AuditLog, Clock, IdGenerator, MemoryStore, PolicyEngine, SearchIndex } from "./ports.js";
 import type {
+  ExportMemoriesInput,
   ForgetMemoryInput,
+  ImportMemoriesInput,
+  ImportMemoriesResult,
   ListMemoriesInput,
+  MemoryExportDocument,
+  MemoryExportItem,
   MemoryRecord,
   RecallMemoriesInput,
   RecallMemoryResult,
@@ -24,6 +29,8 @@ export interface MemoryService {
   recall(input: RecallMemoriesInput): Promise<RecallMemoryResult[]>;
   list(input?: ListMemoriesInput): Promise<MemoryRecord[]>;
   update(input: UpdateMemoryInput): Promise<MemoryRecord>;
+  exportMemories(input: ExportMemoriesInput): Promise<MemoryExportDocument>;
+  importMemories(input: ImportMemoriesInput): Promise<ImportMemoriesResult>;
   forget(input: ForgetMemoryInput): Promise<void>;
 }
 
@@ -146,6 +153,89 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       return updated;
     },
 
+    async exportMemories(input) {
+      const memories = await store.list(input);
+      const now = clock.now();
+      await auditLog.append({
+        id: ids.eventId(),
+        memoryId: null,
+        eventType: "memory.exported",
+        actor: input.actor,
+        payload: {
+          scope: input.scope ?? null,
+          tags: input.tags ?? [],
+          includeArchived: input.includeArchived === true,
+          count: memories.length,
+        },
+        createdAt: now,
+      });
+
+      return {
+        format: "nuzo-memory-export",
+        version: 1,
+        exported_at: now.toISOString(),
+        memories: memories.map(toExportItem),
+      };
+    },
+
+    async importMemories(input) {
+      assertExportDocument(input.document);
+
+      let imported = 0;
+      for (const item of input.document.memories) {
+        const scope = input.scope ?? item.scope;
+        await policy.assertCanRemember({
+          content: item.content,
+          kind: item.kind,
+          scope,
+          tags: item.tags,
+          source: item.source,
+          confidence: item.confidence,
+        });
+
+        if (input.dryRun === true) {
+          imported += 1;
+          continue;
+        }
+
+        const memory: MemoryRecord = {
+          id: ids.memoryId(),
+          scope,
+          kind: item.kind,
+          content: item.content.trim(),
+          tags: [...new Set(item.tags)],
+          source: item.source,
+          confidence: item.confidence,
+          createdAt: parseExportDate(item.created_at, "created_at"),
+          updatedAt: parseExportDate(item.updated_at, "updated_at"),
+          lastUsedAt: item.last_used_at ? parseExportDate(item.last_used_at, "last_used_at") : null,
+          archivedAt: item.archived_at ? parseExportDate(item.archived_at, "archived_at") : null,
+        };
+
+        await store.create(memory);
+        await searchIndex.index(memory);
+        await auditLog.append({
+          id: ids.eventId(),
+          memoryId: memory.id,
+          eventType: "memory.imported",
+          actor: input.actor,
+          payload: {
+            originalScope: item.scope,
+            scope,
+            archived: memory.archivedAt !== null,
+          },
+          createdAt: clock.now(),
+        });
+        imported += 1;
+      }
+
+      return {
+        imported,
+        skipped: 0,
+        dryRun: input.dryRun === true,
+      };
+    },
+
     async forget(input) {
       const memory = await store.findById(input.id);
       if (!memory) {
@@ -189,4 +279,42 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       });
     },
   };
+}
+
+function toExportItem(memory: MemoryRecord): MemoryExportItem {
+  return {
+    scope: memory.scope,
+    kind: memory.kind,
+    content: memory.content,
+    tags: [...memory.tags],
+    source: memory.source,
+    confidence: memory.confidence,
+    created_at: memory.createdAt.toISOString(),
+    updated_at: memory.updatedAt.toISOString(),
+    last_used_at: memory.lastUsedAt?.toISOString() ?? null,
+    archived_at: memory.archivedAt?.toISOString() ?? null,
+  };
+}
+
+function assertExportDocument(document: MemoryExportDocument): void {
+  if (document.format !== "nuzo-memory-export" || document.version !== 1) {
+    throw new NuzoMemoryError("MEMORY_EXPORT_UNSUPPORTED", "Memory export format is not supported.", {
+      format: document.format,
+      version: document.version,
+    });
+  }
+  if (!Array.isArray(document.memories)) {
+    throw new NuzoMemoryError("MEMORY_EXPORT_INVALID", "Memory export document is invalid.");
+  }
+}
+
+function parseExportDate(value: string, field: string): Date {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    throw new NuzoMemoryError("MEMORY_EXPORT_INVALID", "Memory export contains an invalid date.", {
+      field,
+      value,
+    });
+  }
+  return date;
 }

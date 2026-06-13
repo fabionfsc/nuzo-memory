@@ -49,9 +49,9 @@ Nuzo is in early MVP development. The repository now includes a TypeScript core 
 | Area | State |
 | --- | --- |
 | Core | Memory lifecycle, policy checks, SQLite storage, FTS search, tests. |
-| CLI | `init`, `remember`, `recall`, `list`, `update`, `forget`, `doctor`. |
+| CLI | `init`, `remember`, `recall`, `list`, `update`, `forget`, `export`, `import`, `doctor`. |
 | Docs | Product, architecture, specs, operations, and ADRs. |
-| Next | JSON export/import, MCP server, Codex plugin wrapper. |
+| Next | MCP server, Codex plugin wrapper, Markdown export for review. |
 
 ## Runtime Storage
 

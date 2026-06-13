@@ -102,7 +102,7 @@ Goal: publish the project.
 Deliverables:
 
 - GitHub repository.
-- license.
+- Apache-2.0 license.
 - SECURITY.md.
 - CONTRIBUTING.md.
 - docs site on `nuzo.com.br`.

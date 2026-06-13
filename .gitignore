@@ -2,6 +2,7 @@
 .nuzo/**/*.sqlite
 .nuzo/**/*.sqlite-*
 *.memory.export.md
+*.memory.export.json
 memories.sqlite
 memories.sqlite-*
 node_modules/

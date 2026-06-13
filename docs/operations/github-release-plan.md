@@ -36,7 +36,7 @@ developer-tools
 
 ## Before First Public Push
 
-- Choose license.
+- Confirm Apache-2.0 license metadata.
 - Add `.gitignore`.
 - Add `SECURITY.md`.
 - Add `CONTRIBUTING.md`.
@@ -93,9 +93,6 @@ The initial GitHub Pages setup is defined in `docs/operations/github-pages.md`.
 - Publish docs under `nuzo.com.br`.
 - Add install script only after manual install is stable.
 
-## License Candidates
+## License
 
-- Apache-2.0: permissive, patent grant, good for infrastructure.
-- MIT: simple and permissive.
-
-Recommendation: Apache-2.0 if the project may become infrastructure used by teams.
+Nuzo uses Apache-2.0 because it is permissive, includes an explicit patent grant, and fits infrastructure that may be adopted by teams.

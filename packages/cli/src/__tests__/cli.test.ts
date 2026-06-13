@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -86,6 +86,45 @@ describe("nuzo memory cli", () => {
 
     const visible = await runCli(["memory", "--store", store, "list"]);
     expect(visible.stdout).toEqual([]);
+  });
+
+  it("exports, dry-runs import, and imports memories", async () => {
+    const sourceStore = createStorePath();
+    const targetStore = createStorePath();
+    const exportPath = join(mkdtempSync(join(tmpdir(), "nuzo-export-")), "memories.memory.export.json");
+    tempDirectories.push(join(exportPath, ".."));
+
+    const remembered = await runCli([
+      "memory",
+      "--store",
+      sourceStore,
+      "remember",
+      "The user prefers portable memory backups.",
+      "--kind",
+      "preference",
+      "--tag",
+      "backup",
+    ]);
+    expect(remembered.stdout[0]).toMatch(/^mem_/);
+
+    const exported = await runCli(["memory", "--store", sourceStore, "export", "--path", exportPath]);
+    expect(exported.stdout[0]).toContain("Exported 1 memories");
+
+    const document = JSON.parse(readFileSync(exportPath, "utf8")) as { format: string; memories: unknown[] };
+    expect(document.format).toBe("nuzo-memory-export");
+    expect(document.memories).toHaveLength(1);
+
+    const dryRun = await runCli(["memory", "--store", targetStore, "import", exportPath, "--dry-run"]);
+    expect(dryRun.stdout).toEqual(["Would import 1 memories"]);
+
+    const empty = await runCli(["memory", "--store", targetStore, "list"]);
+    expect(empty.stdout).toEqual([]);
+
+    const imported = await runCli(["memory", "--store", targetStore, "import", exportPath]);
+    expect(imported.stdout).toEqual(["Imported 1 memories"]);
+
+    const recall = await runCli(["memory", "--store", targetStore, "recall", "portable backups"]);
+    expect(recall.stdout.join("\n")).toContain("portable memory backups");
   });
 
   it("reports doctor information", async () => {

@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "description": "Core memory lifecycle, ports, and domain contracts for Nuzo.",
+  "license": "Apache-2.0",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

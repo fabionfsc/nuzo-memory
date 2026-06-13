@@ -21,6 +21,7 @@ The repository should include ignore rules for local runtime memory:
 .nuzo/**/*.sqlite
 .nuzo/**/*.sqlite-*
 *.memory.export.md
+*.memory.export.json
 ```
 
 The CLI should warn when memory files are tracked by Git.
@@ -71,6 +72,6 @@ Backups should be explicit user actions.
 
 The MVP should support:
 
-- Markdown export for review;
 - JSON export for round-trip import;
+- Markdown export for review;
 - dry-run import.

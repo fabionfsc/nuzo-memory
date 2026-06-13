@@ -21,7 +21,7 @@
     <img alt="Status" src="https://img.shields.io/badge/status-early%20MVP-0f766e">
   </a>
   <a href="#license">
-    <img alt="License" src="https://img.shields.io/badge/license-undecided-64748b">
+    <img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-64748b">
   </a>
 </p>
 
@@ -97,14 +97,14 @@ SQLite local store
 Implemented today:
 
 - `packages/core` with memory lifecycle, policy checks, SQLite storage, FTS search, and tests.
-- `packages/cli` with `init`, `remember`, `recall`, `list`, `update`, `forget`, and `doctor`.
+- `packages/cli` with `init`, `remember`, `recall`, `list`, `update`, `forget`, `export`, `import`, and `doctor`.
 - MkDocs documentation published through GitHub Pages.
 
 Next technical focus:
 
-- JSON export/import.
 - MCP server package.
 - Codex plugin wrapper.
+- Markdown export for human review.
 
 ## Planned Usage
 
@@ -127,6 +127,7 @@ node packages/cli/dist/index.js memory init
 node packages/cli/dist/index.js memory remember "The user prefers local-first tools." --kind preference
 node packages/cli/dist/index.js memory update mem_01HZY --content "The user prefers local-first tools and explicit controls."
 node packages/cli/dist/index.js memory recall "local-first tools"
+node packages/cli/dist/index.js memory export --path ./memories.memory.export.json
 ```
 
 Agents will use the same core through MCP tools:
@@ -286,7 +287,7 @@ The project treats memory as user-owned state, not agent-owned state.
 
 ## License
 
-License is not selected yet. Apache-2.0 is the current recommendation because this may become infrastructure used by teams.
+Nuzo is licensed under the [Apache License 2.0](LICENSE).
 
 ## Contributing
 

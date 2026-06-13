@@ -59,6 +59,6 @@ nuzo memory init
 nuzo memory remember "The user prefers local-first tools." --kind preference --tag example
 nuzo memory recall "local-first"
 nuzo memory list
-nuzo memory export --format markdown
+nuzo memory export --path ./memories.memory.export.json
 nuzo memory doctor
 ```

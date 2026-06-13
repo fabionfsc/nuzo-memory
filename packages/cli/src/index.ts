@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { mkdirSync, statSync } from "node:fs";
+import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -17,6 +17,9 @@ import {
   type MemoryScope,
   type ForgetMemoryInput,
   type UpdateMemoryInput,
+  type MemoryExportDocument,
+  type ExportMemoriesInput,
+  type ImportMemoriesInput,
 } from "@nuzo/memory-core";
 
 const defaultStorePath = resolve(homedir(), ".nuzo", "memory", "memories.sqlite");
@@ -227,6 +230,71 @@ export function createProgram(io: CliIO = defaultIO): Command {
     }));
 
   memory
+    .command("export")
+    .description("Export memories as a versioned JSON document.")
+    .option("--path <path>", "Write export JSON to a file instead of stdout.")
+    .option("--tag <tag...>", "Filter by tag.")
+    .option("--include-archived", "Include archived memories.", false)
+    .action(withErrorHandling(io, async (commandOptions: { path?: string; tag?: string[]; includeArchived: boolean }) => {
+      const options = memory.opts<GlobalOptions>();
+      const database = openDatabase(options);
+      try {
+        const service = createService(database);
+        const exportInput: ExportMemoriesInput = {
+          actor: "nuzo:cli",
+          scope: options.scope ?? "user:default",
+          includeArchived: commandOptions.includeArchived,
+        };
+        if (commandOptions.tag !== undefined) {
+          exportInput.tags = commandOptions.tag;
+        }
+
+        const document = await service.exportMemories(exportInput);
+        const json = `${JSON.stringify(document, null, 2)}\n`;
+
+        if (commandOptions.path) {
+          const exportPath = resolve(commandOptions.path);
+          ensureStoreDirectory(exportPath);
+          writeFileSync(exportPath, json, "utf8");
+          io.stdout(`Exported ${document.memories.length} memories to ${exportPath}`);
+          return;
+        }
+
+        io.stdout(json.trimEnd());
+      } finally {
+        database.close();
+      }
+    }));
+
+  memory
+    .command("import")
+    .description("Import memories from a versioned JSON document.")
+    .argument("<path>", "Path to a Nuzo memory export JSON file.")
+    .option("--dry-run", "Validate and count memories without writing.", false)
+    .option("--scope <scope>", "Override imported memory scope.")
+    .action(withErrorHandling(io, async (path: string, commandOptions: { dryRun: boolean; scope?: MemoryScope }) => {
+      const options = memory.opts<GlobalOptions>();
+      const database = openDatabase(options);
+      try {
+        const service = createService(database);
+        const document = readExportDocument(resolve(path));
+        const importInput: ImportMemoriesInput = {
+          document,
+          actor: "nuzo:cli",
+          dryRun: commandOptions.dryRun,
+        };
+        if (commandOptions.scope !== undefined) {
+          importInput.scope = commandOptions.scope;
+        }
+
+        const result = await service.importMemories(importInput);
+        io.stdout(`${result.dryRun ? "Would import" : "Imported"} ${result.imported} memories`);
+      } finally {
+        database.close();
+      }
+    }));
+
+  memory
     .command("doctor")
     .description("Check the local memory environment.")
     .action(() => {
@@ -293,6 +361,19 @@ function pathExists(path: string): boolean {
     return true;
   } catch {
     return false;
+  }
+}
+
+function readExportDocument(path: string): MemoryExportDocument {
+  try {
+    return JSON.parse(readFileSync(path, "utf8")) as MemoryExportDocument;
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      throw new NuzoMemoryError("MEMORY_EXPORT_INVALID", "Memory export JSON is invalid.", {
+        path,
+      });
+    }
+    throw error;
   }
 }
 

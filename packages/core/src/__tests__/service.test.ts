@@ -131,6 +131,75 @@ describe("memory service", () => {
     });
   });
 
+  it("exports and imports memories", async () => {
+    const source = createTestService();
+    await source.service.remember({
+      content: "The user prefers JSON exports for migrations.",
+      kind: "preference",
+      scope: "user:default",
+      tags: ["export"],
+      source: "test",
+    });
+
+    const document = await source.service.exportMemories({
+      actor: "test",
+      scope: "user:default",
+    });
+
+    expect(document).toMatchObject({
+      format: "nuzo-memory-export",
+      version: 1,
+    });
+    expect(document.memories).toHaveLength(1);
+    expect(document.memories[0]?.content).toBe("The user prefers JSON exports for migrations.");
+
+    const target = createTestService();
+    const result = await target.service.importMemories({
+      document,
+      actor: "test",
+    });
+
+    expect(result).toEqual({
+      imported: 1,
+      skipped: 0,
+      dryRun: false,
+    });
+
+    const imported = await target.service.recall({
+      query: "JSON exports",
+      scope: "user:default",
+    });
+    expect(imported[0]?.memory.content).toBe("The user prefers JSON exports for migrations.");
+  });
+
+  it("validates import dry runs without writing", async () => {
+    const source = createTestService();
+    await source.service.remember({
+      content: "Validate import before writing.",
+      kind: "note",
+      scope: "user:default",
+      source: "test",
+    });
+    const document = await source.service.exportMemories({
+      actor: "test",
+      scope: "user:default",
+    });
+
+    const target = createTestService();
+    const result = await target.service.importMemories({
+      document,
+      actor: "test",
+      dryRun: true,
+    });
+
+    expect(result).toEqual({
+      imported: 1,
+      skipped: 0,
+      dryRun: true,
+    });
+    await expect(target.service.list()).resolves.toEqual([]);
+  });
+
   it("archives by default when forgetting", async () => {
     const { service, store } = createTestService();
     const memory = await service.remember({

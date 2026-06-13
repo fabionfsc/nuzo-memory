@@ -89,6 +89,43 @@ export interface UpdateMemoryInput {
   actor: string;
 }
 
+export interface ExportMemoriesInput extends ListMemoriesInput {
+  actor: string;
+}
+
+export interface ImportMemoriesInput {
+  document: MemoryExportDocument;
+  actor: string;
+  scope?: MemoryScope;
+  dryRun?: boolean;
+}
+
+export interface ImportMemoriesResult {
+  imported: number;
+  skipped: number;
+  dryRun: boolean;
+}
+
+export interface MemoryExportDocument {
+  format: "nuzo-memory-export";
+  version: 1;
+  exported_at: string;
+  memories: MemoryExportItem[];
+}
+
+export interface MemoryExportItem {
+  scope: MemoryScope;
+  kind: MemoryKind;
+  content: string;
+  tags: string[];
+  source: string;
+  confidence: number;
+  created_at: string;
+  updated_at: string;
+  last_used_at: string | null;
+  archived_at: string | null;
+}
+
 export interface RecallMemoryResult {
   memory: MemoryRecord;
   score: number;

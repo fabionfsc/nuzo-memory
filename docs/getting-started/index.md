@@ -115,6 +115,7 @@ The project should keep ignoring:
 ```text
 .nuzo/memory/
 *.memory.export.md
+*.memory.export.json
 *.sqlite
 *.sqlite-*
 ```
