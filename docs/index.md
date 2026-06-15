@@ -3,7 +3,7 @@
   <p class="nuzo-eyebrow">Local-first memory for AI agents</p>
   <h1>Nuzo</h1>
   <p class="nuzo-lead">
-    Inspectable, portable memory for Codex and MCP-compatible agents.
+    Inspectable, portable memory for Codex, Claude Code, and MCP-compatible agents.
     Built for developer workflows where useful context should not become hidden state.
   </p>
   <p class="nuzo-actions">

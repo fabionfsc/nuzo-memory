@@ -315,7 +315,8 @@ export function createProgram(io: CliIO = defaultIO): Command {
         }
 
         const result = await service.importMemories(importInput);
-        io.stdout(`${result.dryRun ? "Would import" : "Imported"} ${result.imported} memories`);
+        const skipped = result.skipped > 0 ? `, skipped ${result.skipped}` : "";
+        io.stdout(`${result.dryRun ? "Would import" : "Imported"} ${result.imported} memories${skipped}`);
       } finally {
         database.close();
       }

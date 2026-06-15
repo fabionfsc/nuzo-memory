@@ -119,11 +119,14 @@ Implemented today:
 - `packages/mcp-server` with memory tools over stdio.
 - `packages/codex-plugin` with Codex plugin metadata and MCP defaults.
 - Markdown export for human review.
+- Idempotent JSON import for equivalent memories.
+- Competitive positioning against cloud memory platforms and native host memory.
 - MkDocs documentation published through GitHub Pages.
 
 Next technical focus:
 
-- Official host integration paths for Codex and Claude Code.
+- Claude Code host package plan and official plugin packaging.
+- Lifecycle hooks for safer recall/capture inside supported hosts.
 
 ## Planned Usage
 
@@ -192,10 +195,11 @@ packages/
 ├── core/         # memory lifecycle, validation, policy, ports
 ├── cli/          # user-facing command line
 ├── mcp-server/   # MCP transport and tool schemas
-└── codex-plugin/ # Codex packaging and defaults
+├── codex-plugin/ # Codex packaging and defaults
+└── claude-code-plugin/ # planned Claude Code packaging
 ```
 
-The core rule is strict: business logic belongs in `packages/core`. CLI, MCP, and Codex integrations should call the core instead of duplicating memory behavior.
+The core rule is strict: business logic belongs in `packages/core`. CLI, MCP, and host integrations should call the core instead of duplicating memory behavior.
 
 ## Storage
 
@@ -230,6 +234,7 @@ Start here:
 - [Getting started](docs/getting-started/index.md)
 - [Product vision](docs/product/vision.md)
 - [Positioning](docs/product/positioning.md)
+- [Competitive landscape](docs/product/competitive-landscape.md)
 - [Requirements](docs/product/requirements.md)
 - [Architecture overview](docs/architecture/overview.md)
 - [Package boundaries](docs/architecture/boundaries.md)

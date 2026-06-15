@@ -182,6 +182,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       assertExportDocument(input.document);
 
       let imported = 0;
+      let skipped = 0;
       for (const item of input.document.memories) {
         const scope = input.scope ?? item.scope;
         await policy.assertCanRemember({
@@ -193,6 +194,20 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
           confidence: item.confidence,
         });
 
+        const tags = [...new Set(item.tags)];
+        const existing = await store.list({ scope, includeArchived: true });
+        const duplicate = existing.find((memory) => isDuplicateImport(memory, {
+          scope,
+          kind: item.kind,
+          content: item.content,
+          tags,
+        }));
+
+        if (duplicate) {
+          skipped += 1;
+          continue;
+        }
+
         if (input.dryRun === true) {
           imported += 1;
           continue;
@@ -203,7 +218,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
           scope,
           kind: item.kind,
           content: item.content.trim(),
-          tags: [...new Set(item.tags)],
+          tags,
           source: item.source,
           confidence: item.confidence,
           createdAt: parseExportDate(item.created_at, "created_at"),
@@ -231,7 +246,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
 
       return {
         imported,
-        skipped: 0,
+        skipped,
         dryRun: input.dryRun === true,
       };
     },
@@ -317,4 +332,22 @@ function parseExportDate(value: string, field: string): Date {
     });
   }
   return date;
+}
+
+function isDuplicateImport(
+  memory: MemoryRecord,
+  candidate: Pick<MemoryRecord, "scope" | "kind" | "content" | "tags">,
+): boolean {
+  return memory.scope === candidate.scope &&
+    memory.kind === candidate.kind &&
+    normalizeContent(memory.content) === normalizeContent(candidate.content) &&
+    normalizeTags(memory.tags) === normalizeTags(candidate.tags);
+}
+
+function normalizeContent(content: string): string {
+  return content.trim().replace(/\s+/g, " ");
+}
+
+function normalizeTags(tags: string[]): string {
+  return [...new Set(tags)].sort().join("\0");
 }

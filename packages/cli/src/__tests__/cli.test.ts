@@ -131,6 +131,9 @@ describe("nuzo memory cli", () => {
     const imported = await runCli(["memory", "--store", targetStore, "import", exportPath]);
     expect(imported.stdout).toEqual(["Imported 1 memories"]);
 
+    const duplicate = await runCli(["memory", "--store", targetStore, "import", exportPath]);
+    expect(duplicate.stdout).toEqual(["Imported 0 memories, skipped 1"]);
+
     const recall = await runCli(["memory", "--store", targetStore, "recall", "portable backups"]);
     expect(recall.stdout.join("\n")).toContain("portable memory backups");
   });

@@ -31,16 +31,34 @@ export interface NuzoMcpServerOptions {
   storePath?: string;
 }
 
+export interface NuzoMcpServerRuntime {
+  server: McpServer;
+  close(): void;
+}
+
 export function createNuzoMcpServer(options: NuzoMcpServerOptions = {}): McpServer {
+  return createNuzoMcpServerRuntime(options).server;
+}
+
+export function createNuzoMcpServerRuntime(options: NuzoMcpServerOptions = {}): NuzoMcpServerRuntime {
   const database = openDatabase(options.storePath ?? defaultStorePath);
   const service = createService(database);
+  let closed = false;
   const server = new McpServer({
     name: "nuzo",
     version: "0.0.0",
   });
 
   registerMemoryTools(server, service);
-  return server;
+  return {
+    server,
+    close: () => {
+      if (!closed) {
+        database.close();
+        closed = true;
+      }
+    },
+  };
 }
 
 export function registerMemoryTools(server: McpServer, service: MemoryService): void {
@@ -257,8 +275,21 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   if (process.env.NUZO_MEMORY_STORE !== undefined) {
     options.storePath = process.env.NUZO_MEMORY_STORE;
   }
-  const server = createNuzoMcpServer(options);
-  await server.connect(new StdioServerTransport());
+  const runtime = createNuzoMcpServerRuntime(options);
+  const closeRuntime = () => {
+    runtime.close();
+  };
+  process.once("SIGINT", () => {
+    closeRuntime();
+    process.exit(130);
+  });
+  process.once("SIGTERM", () => {
+    closeRuntime();
+    process.exit(143);
+  });
+  process.once("beforeExit", closeRuntime);
+
+  await runtime.server.connect(new StdioServerTransport());
 }
 
 function openDatabase(storePath: string): SQLiteMemoryDatabase {

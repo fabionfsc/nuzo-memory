@@ -94,12 +94,14 @@ Deliverables:
 - plugin README.
 - Codex-specific setup docs aligned with the official plugin path.
 - Claude Code compatibility notes and package plan.
+- lifecycle hook plan for recall/capture in hosts that support hooks.
 - Marketplace or official distribution metadata when the supported workflow is stable.
 
 Exit criteria:
 
 - Codex plugin can be installed through a supported Codex plugin workflow and used in a fresh Codex session.
 - Claude Code path is either documented as direct MCP setup or packaged through a supported Claude Code plugin workflow.
+- Recall/capture hooks are documented before implementation.
 - No development-only installer is required for normal use.
 
 ## Stage 5: Public Release

@@ -75,6 +75,7 @@ nav:
   - Product:
       - Vision: product/vision.md
       - Positioning: product/positioning.md
+      - Competitive Landscape: product/competitive-landscape.md
       - Requirements: product/requirements.md
   - Architecture:
       - Overview: architecture/overview.md

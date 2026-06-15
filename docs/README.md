@@ -6,14 +6,16 @@ This directory is the source of truth for the project until implementation start
 
 1. `getting-started/index.md`
 2. `product/vision.md`
-3. `product/requirements.md`
-4. `architecture/overview.md`
-5. `architecture/boundaries.md`
-6. `architecture/agent-host-compatibility.md`
-7. `spec/memory-model.md`
-8. `spec/tools.md`
-9. `implementation/stage-1-core.md`
-10. `operations/roadmap.md`
+3. `product/positioning.md`
+4. `product/competitive-landscape.md`
+5. `product/requirements.md`
+6. `architecture/overview.md`
+7. `architecture/boundaries.md`
+8. `architecture/agent-host-compatibility.md`
+9. `spec/memory-model.md`
+10. `spec/tools.md`
+11. `implementation/stage-1-core.md`
+12. `operations/roadmap.md`
 
 ## Sections
 

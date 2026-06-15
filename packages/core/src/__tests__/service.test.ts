@@ -173,6 +173,43 @@ describe("memory service", () => {
     expect(imported[0]?.memory.content).toBe("The user prefers JSON exports for migrations.");
   });
 
+  it("skips duplicate imports in the same target scope", async () => {
+    const source = createTestService();
+    await source.service.remember({
+      content: "The user prefers portable memory imports.",
+      kind: "preference",
+      scope: "user:default",
+      tags: ["import", "portable"],
+      source: "test",
+    });
+    const document = await source.service.exportMemories({
+      actor: "test",
+      scope: "user:default",
+    });
+
+    const target = createTestService();
+    const first = await target.service.importMemories({
+      document,
+      actor: "test",
+    });
+    const second = await target.service.importMemories({
+      document,
+      actor: "test",
+    });
+
+    expect(first).toEqual({
+      imported: 1,
+      skipped: 0,
+      dryRun: false,
+    });
+    expect(second).toEqual({
+      imported: 0,
+      skipped: 1,
+      dryRun: false,
+    });
+    await expect(target.service.list()).resolves.toHaveLength(1);
+  });
+
   it("formats memory exports as Markdown for review", async () => {
     const source = createTestService();
     await source.service.remember({
@@ -223,6 +260,38 @@ describe("memory service", () => {
       dryRun: true,
     });
     await expect(target.service.list()).resolves.toEqual([]);
+  });
+
+  it("reports duplicate skips during import dry runs", async () => {
+    const source = createTestService();
+    await source.service.remember({
+      content: "Validate duplicate imports before writing.",
+      kind: "note",
+      scope: "user:default",
+      source: "test",
+    });
+    const document = await source.service.exportMemories({
+      actor: "test",
+      scope: "user:default",
+    });
+
+    const target = createTestService();
+    await target.service.importMemories({
+      document,
+      actor: "test",
+    });
+    const dryRun = await target.service.importMemories({
+      document,
+      actor: "test",
+      dryRun: true,
+    });
+
+    expect(dryRun).toEqual({
+      imported: 0,
+      skipped: 1,
+      dryRun: true,
+    });
+    await expect(target.service.list()).resolves.toHaveLength(1);
   });
 
   it("archives by default when forgetting", async () => {
