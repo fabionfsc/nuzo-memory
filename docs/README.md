@@ -15,7 +15,9 @@ This directory is the source of truth for the project until implementation start
 9. `spec/memory-model.md`
 10. `spec/tools.md`
 11. `implementation/stage-1-core.md`
-12. `operations/roadmap.md`
+12. `operations/codex-plugin.md`
+13. `operations/claude-code-plugin.md`
+14. `operations/roadmap.md`
 
 ## Sections
 
@@ -33,7 +35,7 @@ Defines public contracts: memory model, MCP tools, CLI behavior, init behavior, 
 
 ### Operations
 
-Defines privacy, security, coding standards, testing strategy, release plan, and roadmap.
+Defines privacy, security, host plugin setup, coding standards, testing strategy, release plan, and roadmap.
 
 GitHub Pages setup lives in `operations/github-pages.md`.
 

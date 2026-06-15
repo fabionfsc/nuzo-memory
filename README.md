@@ -65,7 +65,7 @@ Nuzo makes persistent agent memory practical without turning it into hidden stat
 | Core | Memory lifecycle, validation, policy, storage ports, search ports, audit events. |
 | CLI | Direct user control: init, remember, recall, list, update, forget, export, import, doctor. |
 | MCP Server | Agent-facing memory tools for Codex, Claude Code, and other MCP-compatible clients. |
-| Host Plugins | Thin packaging for agent hosts, starting with Codex and planned for Claude Code. |
+| Host Plugins | Thin packaging for agent hosts, starting with Codex and Claude Code. |
 | Docs | Product, architecture, specs, operations, and ADRs published through GitHub Pages. |
 
 ## What Makes It Different
@@ -118,6 +118,7 @@ Implemented today:
 - `packages/cli` with `init`, `remember`, `recall`, `list`, `update`, `forget`, `export`, `import`, and `doctor`.
 - `packages/mcp-server` with memory tools over stdio.
 - `packages/codex-plugin` with Codex plugin metadata and MCP defaults.
+- `packages/claude-code-plugin` with Claude Code plugin metadata, MCP defaults, and host guidance.
 - Markdown export for human review.
 - Idempotent JSON import for equivalent memories.
 - Competitive positioning against cloud memory platforms and native host memory.
@@ -125,7 +126,7 @@ Implemented today:
 
 Next technical focus:
 
-- Claude Code host package plan and official plugin packaging.
+- Validate host plugin install flows against supported Codex and Claude Code workflows.
 - Lifecycle hooks for safer recall/capture inside supported hosts.
 
 ## Planned Usage
@@ -188,7 +189,7 @@ Core Memory Service
 Local SQLite Store
 ```
 
-Future package layout:
+Package layout:
 
 ```text
 packages/
@@ -196,7 +197,7 @@ packages/
 ├── cli/          # user-facing command line
 ├── mcp-server/   # MCP transport and tool schemas
 ├── codex-plugin/ # Codex packaging and defaults
-└── claude-code-plugin/ # planned Claude Code packaging
+└── claude-code-plugin/ # Claude Code packaging and defaults
 ```
 
 The core rule is strict: business logic belongs in `packages/core`. CLI, MCP, and host integrations should call the core instead of duplicating memory behavior.
@@ -241,6 +242,7 @@ Start here:
 - [Memory model](docs/spec/memory-model.md)
 - [Tool contract](docs/spec/tools.md)
 - [Codex plugin](docs/operations/codex-plugin.md)
+- [Claude Code plugin](docs/operations/claude-code-plugin.md)
 - [Stage 1 core plan](docs/implementation/stage-1-core.md)
 - [Roadmap](docs/operations/roadmap.md)
 
@@ -262,7 +264,8 @@ nuzo-memory/
 │   ├── core/
 │   ├── cli/
 │   ├── mcp-server/
-│   └── codex-plugin/
+│   ├── codex-plugin/
+│   └── claude-code-plugin/
 ├── mkdocs.yml
 ├── package.json
 ├── requirements-docs.txt
@@ -310,8 +313,8 @@ The project treats memory as user-owned state, not agent-owned state.
 | 0 | Documentation and public project structure | Active |
 | 1 | Core package with SQLite and FTS search | In progress |
 | 2 | CLI for user-controlled memory management | In progress |
-| 3 | MCP server for agent integrations | Planned |
-| 4 | Codex plugin packaging | In progress |
+| 3 | MCP server for agent integrations | In progress |
+| 4 | Codex and Claude Code plugin packaging | In progress |
 | 5 | Optional encryption, embeddings, sync, and UI | Later |
 
 ## License

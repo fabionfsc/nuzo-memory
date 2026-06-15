@@ -1,0 +1,21 @@
+{
+  "name": "nuzo",
+  "version": "0.0.0",
+  "description": "Local-first, auditable memory for Claude Code through Nuzo MCP tools.",
+  "author": {
+    "name": "fabionfsc",
+    "url": "https://github.com/fabionfsc"
+  },
+  "homepage": "https://nuzo.com.br/",
+  "repository": "https://github.com/fabionfsc/nuzo-memory",
+  "license": "Apache-2.0",
+  "keywords": [
+    "memory",
+    "mcp",
+    "claude-code",
+    "local-first",
+    "sqlite"
+  ],
+  "mcpServers": "./.mcp.json",
+  "skills": "./skills/"
+}

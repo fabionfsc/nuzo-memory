@@ -92,6 +92,7 @@ nav:
       - Roadmap: operations/roadmap.md
       - Privacy And Security: operations/privacy-and-security.md
       - Codex Plugin: operations/codex-plugin.md
+      - Claude Code Plugin: operations/claude-code-plugin.md
       - GitHub Pages: operations/github-pages.md
       - Coding Standards: operations/coding-standards.md
       - Testing Strategy: operations/testing-strategy.md

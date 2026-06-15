@@ -8,7 +8,7 @@ Business logic belongs in `packages/core`.
 
 Interfaces call the core. Interfaces do not own memory rules.
 
-## Future Package Boundaries
+## Package Boundaries
 
 ```text
 packages/core
@@ -24,7 +24,7 @@ packages/codex-plugin
   Owns Codex packaging, plugin manifest, and Codex-specific docs.
 
 packages/claude-code-plugin
-  Future package for Claude Code packaging, plugin manifest, and Claude-specific docs.
+  Owns Claude Code packaging, plugin manifest, MCP defaults, and Claude-specific docs.
 
 packages/docs-site
   Optional future package for nuzo.com.br documentation.

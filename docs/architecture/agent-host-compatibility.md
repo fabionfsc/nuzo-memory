@@ -77,7 +77,7 @@ Nuzo should not promise migration from private native memory stores unless the h
 | Host | Current fit | Extension path | Nuzo package direction | Notes |
 | --- | --- | --- | --- | --- |
 | Codex | First supported plugin target. | Codex plugins can bundle MCP servers. Codex also supports direct MCP configuration in `config.toml`. | `packages/codex-plugin` | Keep Codex-specific metadata and docs here only. |
-| Claude Code | High-priority future target. | Claude Code plugins can include `.mcp.json` or inline MCP server config. Claude Code also supports direct MCP setup through `claude mcp`. | Future `packages/claude-plugin` or `packages/claude-code-plugin` | Validate naming and manifest shape against current Claude docs before creating the package. |
+| Claude Code | Initial plugin wrapper scaffolded. | Claude Code plugins can include `.mcp.json` or inline MCP server config. Claude Code also supports direct MCP setup through `claude mcp`. | `packages/claude-code-plugin` | Keep Claude-specific metadata, MCP defaults, skills, and docs here only. |
 | Other MCP-compatible agents | Future compatible target. | Direct MCP server configuration. | No package until a real host contract exists. | Support through `packages/mcp-server` first. |
 
 ## Codex Notes
@@ -117,8 +117,8 @@ Claude Code MCP support includes:
 Implications for Nuzo:
 
 - A Claude Code package should use the same Nuzo MCP server.
-- It can likely be a thin plugin with `.claude-plugin/plugin.json` and `.mcp.json`, but this must be verified against Claude's current plugin reference before implementation.
-- Claude Code's direct `claude mcp add` path can be documented as a manual setup path before a full plugin package exists.
+- The current package is a thin plugin with `.claude-plugin/plugin.json`, `.mcp.json`, and a host-specific skill.
+- Claude Code's direct `claude mcp add` path can remain documented as a manual setup path, but the primary direction is the supported plugin workflow.
 - Do not add Claude-specific memory behavior to core or MCP handlers.
 
 ## Packaging Rules
