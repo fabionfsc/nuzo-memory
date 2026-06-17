@@ -1,0 +1,42 @@
+name: Feature
+description: Propose a scoped Nuzo feature or implementation task.
+title: "[Feature]: "
+labels:
+  - type:feature
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What should exist when this issue is done?
+      placeholder: Nuzo should...
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Link relevant docs, decisions, or package boundaries.
+      placeholder: Related docs, decisions, or constraints.
+    validations:
+      required: true
+  - type: textarea
+    id: tasks
+    attributes:
+      label: Tasks
+      description: Keep tasks concrete and reviewable.
+      value: |
+        - [ ] 
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      description: What must be true before this can close?
+      value: |
+        - [ ] Tests or validation pass.
+        - [ ] Docs are updated if behavior changes.
+        - [ ] No runtime memory, credentials, or generated artifacts are committed.
+    validations:
+      required: true

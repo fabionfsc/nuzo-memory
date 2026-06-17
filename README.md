@@ -244,6 +244,7 @@ Start here:
 - [Codex plugin](docs/operations/codex-plugin.md)
 - [Claude Code plugin](docs/operations/claude-code-plugin.md)
 - [Lifecycle hooks](docs/operations/lifecycle-hooks.md)
+- [Issue tracking](docs/operations/issue-tracking.md)
 - [Stage 1 core plan](docs/implementation/stage-1-core.md)
 - [Roadmap](docs/operations/roadmap.md)
 

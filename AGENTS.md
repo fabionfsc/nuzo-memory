@@ -29,6 +29,7 @@ Start with:
 9. `docs/operations/codex-plugin.md`
 10. `docs/operations/claude-code-plugin.md`
 11. `docs/operations/lifecycle-hooks.md`
+12. `docs/operations/issue-tracking.md`
 
 ## Architecture Rules
 
@@ -170,6 +171,13 @@ Before committing or handing work back, sanitize the workspace:
 - run `npm audit --audit-level=moderate` after npm dependency changes;
 - run `git status --short` and review staged files before committing;
 - do not commit local memory stores, exports, credentials, or personal notes.
+
+## Issue Tracking
+
+- Use GitHub Issues for executable work, not broad notes.
+- Prefer labels from `docs/operations/issue-tracking.md`.
+- Keep roadmap/docs as direction and issues as assignable tasks.
+- Do not put secrets, real memory exports, or private user data in issues.
 
 ## GitHub Pages
 

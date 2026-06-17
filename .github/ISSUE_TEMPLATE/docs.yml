@@ -1,0 +1,28 @@
+name: Documentation
+description: Improve README, MkDocs, examples, or operational docs.
+title: "[Docs]: "
+labels:
+  - type:docs
+  - area:docs
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What should the docs make clearer?
+    validations:
+      required: true
+  - type: input
+    id: page
+    attributes:
+      label: Page or File
+      placeholder: docs/operations/roadmap.md
+    validations:
+      required: false
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Include constraints, related issues, or public-facing wording concerns.
+    validations:
+      required: false
