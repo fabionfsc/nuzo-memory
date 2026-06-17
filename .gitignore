@@ -6,6 +6,8 @@
 memories.sqlite
 memories.sqlite-*
 node_modules/
+.npm/
+.npm-cache/
 dist/
 build/
 site/

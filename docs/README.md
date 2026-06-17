@@ -15,11 +15,12 @@ This directory is the source of truth for the project until implementation start
 9. `spec/memory-model.md`
 10. `spec/tools.md`
 11. `implementation/stage-1-core.md`
-12. `operations/codex-plugin.md`
-13. `operations/claude-code-plugin.md`
-14. `operations/lifecycle-hooks.md`
-15. `operations/issue-tracking.md`
-16. `operations/roadmap.md`
+12. `operations/local-cli.md`
+13. `operations/codex-plugin.md`
+14. `operations/claude-code-plugin.md`
+15. `operations/lifecycle-hooks.md`
+16. `operations/issue-tracking.md`
+17. `operations/roadmap.md`
 
 ## Sections
 

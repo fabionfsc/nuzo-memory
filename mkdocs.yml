@@ -91,6 +91,7 @@ nav:
   - Operations:
       - Roadmap: operations/roadmap.md
       - Privacy And Security: operations/privacy-and-security.md
+      - Local CLI: operations/local-cli.md
       - Codex Plugin: operations/codex-plugin.md
       - Claude Code Plugin: operations/claude-code-plugin.md
       - Lifecycle Hooks: operations/lifecycle-hooks.md

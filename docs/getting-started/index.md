@@ -1,8 +1,8 @@
 # Getting Started
 
-Nuzo is currently design-first. There is no installable runtime package yet.
+Nuzo is in early MVP development.
 
-This page explains how to work with the repository today and how the first implementation is expected to behave.
+This page explains how to work with the repository today and how to run the local CLI from the monorepo.
 
 ## Read The Project
 
@@ -62,13 +62,13 @@ Run tests:
 npm test
 ```
 
-## Planned Runtime Flow
+## Local Runtime Flow
 
 The initial CLI is available after a build:
 
 ```bash
 npm run build
-node packages/cli/dist/index.js memory init
+npm run nuzo -- memory init
 ```
 
 The first user-facing command is:
@@ -98,14 +98,16 @@ nuzo memory list
 nuzo memory forget mem_01HZY
 ```
 
-Until package binaries are wired for install, use:
+Until release packaging is finalized, use the workspace wrapper:
 
 ```bash
-node packages/cli/dist/index.js memory remember "The user prefers concise implementation notes." --kind preference
-node packages/cli/dist/index.js memory update mem_01HZY --content "The user prefers concise implementation notes and explicit tradeoffs."
-node packages/cli/dist/index.js memory recall "implementation notes"
-node packages/cli/dist/index.js memory export --path ./memories.memory.export.md
+npm run nuzo -- memory remember "The user prefers concise implementation notes." --kind preference
+npm run nuzo -- memory update mem_01HZY --content "The user prefers concise implementation notes and explicit tradeoffs."
+npm run nuzo -- memory recall "implementation notes"
+npm run nuzo -- memory export --path ./memories.memory.export.md
 ```
+
+See `docs/operations/local-cli.md` for the current CLI packaging direction.
 
 ## Safety Reminder
 

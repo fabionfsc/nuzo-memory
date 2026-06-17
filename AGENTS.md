@@ -26,10 +26,11 @@ Start with:
 6. `docs/architecture/agent-host-compatibility.md`
 7. `docs/spec/tools.md`
 8. `docs/spec/memory-model.md`
-9. `docs/operations/codex-plugin.md`
-10. `docs/operations/claude-code-plugin.md`
-11. `docs/operations/lifecycle-hooks.md`
-12. `docs/operations/issue-tracking.md`
+9. `docs/operations/local-cli.md`
+10. `docs/operations/codex-plugin.md`
+11. `docs/operations/claude-code-plugin.md`
+12. `docs/operations/lifecycle-hooks.md`
+13. `docs/operations/issue-tracking.md`
 
 ## Architecture Rules
 
@@ -116,7 +117,7 @@ npm run build
 Run the local CLI after building:
 
 ```bash
-node packages/cli/dist/index.js memory doctor
+npm run nuzo -- memory doctor
 ```
 
 Run tests:

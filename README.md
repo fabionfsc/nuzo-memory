@@ -142,16 +142,21 @@ nuzo memory forget mem_01HZY --archive
 nuzo memory doctor
 ```
 
-Until package binaries are wired for install, run the local build directly:
+Until release packaging is finalized, run the local workspace command:
 
 ```bash
 npm run build
-node packages/cli/dist/index.js memory init
-node packages/cli/dist/index.js memory remember "The user prefers local-first tools." --kind preference
-node packages/cli/dist/index.js memory update mem_01HZY --content "The user prefers local-first tools and explicit controls."
-node packages/cli/dist/index.js memory recall "local-first tools"
-node packages/cli/dist/index.js memory export --path ./memories.memory.export.json
-node packages/cli/dist/index.js memory export --path ./memories.memory.export.md
+npm run nuzo -- memory init
+npm run nuzo -- memory remember "The user prefers local-first tools." --kind preference
+npm run nuzo -- memory update mem_01HZY --content "The user prefers local-first tools and explicit controls."
+npm run nuzo -- memory recall "local-first tools"
+npm run nuzo -- memory export --path ./memories.memory.export.json
+npm run nuzo -- memory export --path ./memories.memory.export.md
+```
+
+The MCP server still runs directly from the built package:
+
+```bash
 node packages/mcp-server/dist/index.js
 ```
 
@@ -241,6 +246,7 @@ Start here:
 - [Package boundaries](docs/architecture/boundaries.md)
 - [Memory model](docs/spec/memory-model.md)
 - [Tool contract](docs/spec/tools.md)
+- [Local CLI](docs/operations/local-cli.md)
 - [Codex plugin](docs/operations/codex-plugin.md)
 - [Claude Code plugin](docs/operations/claude-code-plugin.md)
 - [Lifecycle hooks](docs/operations/lifecycle-hooks.md)

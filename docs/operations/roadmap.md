@@ -53,12 +53,15 @@ Goal: give users direct control.
 
 Initial scaffold exists in `packages/cli` and currently exercises the core against SQLite.
 
+The monorepo exposes the local CLI through `npm run nuzo --`.
+
 Deliverables:
 
 - `nuzo memory init`.
 - remember, recall, list, update, forget.
 - export/import.
 - doctor.
+- local smoke test command.
 
 Exit criteria:
 
