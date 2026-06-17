@@ -28,6 +28,7 @@ Start with:
 8. `docs/spec/memory-model.md`
 9. `docs/operations/codex-plugin.md`
 10. `docs/operations/claude-code-plugin.md`
+11. `docs/operations/lifecycle-hooks.md`
 
 ## Architecture Rules
 
@@ -43,6 +44,7 @@ Start with:
 - Prefer official host plugin paths before adding local installer scripts or development-only workarounds.
 - Do not add plugin install/update helpers until the supported host plugin workflow and local plugin directory contract are stable and documented.
 - Host plugins should remain thin wrappers around the MCP server and should not contain memory business logic.
+- Automatic recall or capture hooks must follow `docs/operations/lifecycle-hooks.md` and require confirmation before inferred writes.
 - If plugin setup docs are needed, document the official workflow first; local testing notes should be clearly marked as development-only.
 
 ## Privacy And Safety Rules

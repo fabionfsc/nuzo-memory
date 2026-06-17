@@ -127,7 +127,7 @@ Implemented today:
 Next technical focus:
 
 - Validate host plugin install flows against supported Codex and Claude Code workflows.
-- Lifecycle hooks for safer recall/capture inside supported hosts.
+- Prototype read-only recall hooks after the lifecycle hook policy.
 
 ## Planned Usage
 
@@ -243,6 +243,7 @@ Start here:
 - [Tool contract](docs/spec/tools.md)
 - [Codex plugin](docs/operations/codex-plugin.md)
 - [Claude Code plugin](docs/operations/claude-code-plugin.md)
+- [Lifecycle hooks](docs/operations/lifecycle-hooks.md)
 - [Stage 1 core plan](docs/implementation/stage-1-core.md)
 - [Roadmap](docs/operations/roadmap.md)
 

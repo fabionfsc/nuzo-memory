@@ -95,7 +95,7 @@ Deliverables:
 - plugin READMEs.
 - Codex-specific setup docs aligned with the official plugin path.
 - Claude Code setup docs aligned with the official plugin path.
-- lifecycle hook plan for recall/capture in hosts that support hooks.
+- lifecycle hook policy for recall/capture in hosts that support hooks.
 - Marketplace or official distribution metadata when the supported workflow is stable.
 
 Exit criteria:

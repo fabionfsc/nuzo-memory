@@ -91,3 +91,4 @@ npm run check
 - Development-only install helpers should wait until the official plugin path is stable.
 - The plugin assumes the monorepo has already been built.
 - Runtime memory remains local and should not be committed to Git.
+- Automatic recall or capture hooks must follow `docs/operations/lifecycle-hooks.md` before implementation.

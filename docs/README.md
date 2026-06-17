@@ -17,7 +17,8 @@ This directory is the source of truth for the project until implementation start
 11. `implementation/stage-1-core.md`
 12. `operations/codex-plugin.md`
 13. `operations/claude-code-plugin.md`
-14. `operations/roadmap.md`
+14. `operations/lifecycle-hooks.md`
+15. `operations/roadmap.md`
 
 ## Sections
 

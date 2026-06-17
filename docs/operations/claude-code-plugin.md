@@ -77,7 +77,9 @@ Memory lifecycle, policy checks, recall ranking, import/export, and storage belo
 
 Claude Code supports hooks, but Nuzo should not add automatic recall or capture hooks until the policy is documented.
 
-Before adding hooks, document:
+The hook policy is defined in `docs/operations/lifecycle-hooks.md`.
+
+Before adding host-specific hooks, document:
 
 - when recall is triggered;
 - when capture is suggested;
@@ -98,4 +100,3 @@ Claude Code + Nuzo plugin
 ```
 
 This covers memories created and managed through Nuzo. It does not promise access to Claude Code's private native memory unless Claude Code exposes an official API or export format.
-
