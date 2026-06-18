@@ -47,6 +47,8 @@ nuzo memory doctor
 
 against a temporary store path under `/tmp`.
 
+For a fuller clean install and import/export walkthrough, see `docs/getting-started/clean-install.md`.
+
 ## Package Direction
 
 The public command should remain:

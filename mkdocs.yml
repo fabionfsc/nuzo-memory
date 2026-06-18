@@ -71,7 +71,9 @@ extra_css:
 
 nav:
   - Home: index.md
-  - Getting Started: getting-started/index.md
+  - Getting Started:
+      - Overview: getting-started/index.md
+      - Clean Install Walkthrough: getting-started/clean-install.md
   - Product:
       - Vision: product/vision.md
       - Positioning: product/positioning.md

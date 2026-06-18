@@ -5,23 +5,24 @@ This directory is the source of truth for the project until implementation start
 ## Start Here
 
 1. `getting-started/index.md`
-2. `product/vision.md`
-3. `product/positioning.md`
-4. `product/competitive-landscape.md`
-5. `product/requirements.md`
-6. `architecture/overview.md`
-7. `architecture/boundaries.md`
-8. `architecture/agent-host-compatibility.md`
-9. `spec/memory-model.md`
-10. `spec/tools.md`
-11. `implementation/stage-1-core.md`
-12. `operations/local-cli.md`
-13. `operations/codex-plugin.md`
-14. `operations/claude-code-plugin.md`
-15. `operations/lifecycle-hooks.md`
-16. `operations/issue-tracking.md`
-17. `operations/versioning.md`
-18. `operations/roadmap.md`
+2. `getting-started/clean-install.md`
+3. `product/vision.md`
+4. `product/positioning.md`
+5. `product/competitive-landscape.md`
+6. `product/requirements.md`
+7. `architecture/overview.md`
+8. `architecture/boundaries.md`
+9. `architecture/agent-host-compatibility.md`
+10. `spec/memory-model.md`
+11. `spec/tools.md`
+12. `implementation/stage-1-core.md`
+13. `operations/local-cli.md`
+14. `operations/codex-plugin.md`
+15. `operations/claude-code-plugin.md`
+16. `operations/lifecycle-hooks.md`
+17. `operations/issue-tracking.md`
+18. `operations/versioning.md`
+19. `operations/roadmap.md`
 
 ## Sections
 

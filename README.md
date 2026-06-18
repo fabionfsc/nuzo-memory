@@ -30,6 +30,8 @@
   ·
   <a href="docs/getting-started/index.md">Getting Started</a>
   ·
+  <a href="docs/getting-started/clean-install.md">Clean Install</a>
+  ·
   <a href="docs/spec/tools.md">Tool Contract</a>
   ·
   <a href="docs/architecture/overview.md">Architecture</a>
@@ -238,6 +240,7 @@ The documentation site is published with GitHub Pages and MkDocs Material:
 Start here:
 
 - [Getting started](docs/getting-started/index.md)
+- [Clean install walkthrough](docs/getting-started/clean-install.md)
 - [Product vision](docs/product/vision.md)
 - [Positioning](docs/product/positioning.md)
 - [Competitive landscape](docs/product/competitive-landscape.md)

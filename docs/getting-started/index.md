@@ -109,6 +109,8 @@ npm run nuzo -- memory export --path ./memories.memory.export.md
 
 See `docs/operations/local-cli.md` for the current CLI packaging direction.
 
+For a clean checkout walkthrough that exercises install, build, remember, recall, export, and import, see `docs/getting-started/clean-install.md`.
+
 ## Safety Reminder
 
 Runtime memory does not belong in Git.
