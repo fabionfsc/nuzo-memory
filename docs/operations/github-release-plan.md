@@ -19,7 +19,7 @@ nuzo
 Short description:
 
 ```text
-Local-first, auditable memory for Codex and MCP-compatible AI agents.
+Local-first, auditable memory for Codex, Claude Code, and MCP-compatible AI agents.
 ```
 
 Topics:
@@ -29,6 +29,7 @@ ai-agents
 mcp
 memory
 codex
+claude-code
 local-first
 sqlite
 developer-tools
