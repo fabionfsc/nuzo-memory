@@ -34,6 +34,12 @@ Start with:
 14. `docs/operations/versioning.md`
 15. `docs/operations/release-checklist.md`
 
+## Local Operator Notes
+
+If `AGENTS.local.md` exists at the repository root, read it after this file.
+
+`AGENTS.local.md` is for machine-local operator preferences, temporary environment notes, and non-public workflow guidance. It must stay untracked and must not be committed.
+
 ## Architecture Rules
 
 - Business logic belongs in `packages/core`.
@@ -145,6 +151,14 @@ Validate the Claude Code plugin manifest:
 ```bash
 npm run check -w @nuzo/claude-code-plugin
 ```
+
+Validate with host-native CLIs when available:
+
+```bash
+claude plugin validate packages/claude-code-plugin
+```
+
+If a required validation tool is missing, install it through the official upstream installation path when feasible, then document any persistent local setup detail in `AGENTS.local.md` rather than in public project docs.
 
 ## Before Pushing
 
