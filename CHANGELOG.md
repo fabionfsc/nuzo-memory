@@ -14,10 +14,12 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Codex and Claude Code plugin wrapper scaffolds.
 - MkDocs documentation site and GitHub Pages publishing.
 - GitHub Issues workflow, labels, milestones, and issue templates.
+- Codex plugin validation now checks the bundled MCP config shape.
 
 ### Changed
 
 - Public docs now treat Nuzo as host-neutral across Codex, Claude Code, and MCP-compatible agents.
+- Codex plugin docs now separate official plugin packaging, development marketplace testing, and direct MCP debugging.
 
 ### Fixed
 

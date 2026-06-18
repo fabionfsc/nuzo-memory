@@ -28,6 +28,8 @@ Validate the plugin manifest:
 npm run check -w @nuzo/codex-plugin
 ```
 
+The validator also checks that `.mcp.json` exposes the `nuzo` MCP server through `node ../mcp-server/dist/index.js`.
+
 The default memory store is:
 
 ```text

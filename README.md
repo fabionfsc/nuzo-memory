@@ -119,7 +119,7 @@ Implemented today:
 - `packages/core` with memory lifecycle, policy checks, SQLite storage, FTS search, and tests.
 - `packages/cli` with `init`, `remember`, `recall`, `list`, `update`, `forget`, `export`, `import`, and `doctor`.
 - `packages/mcp-server` with memory tools over stdio.
-- `packages/codex-plugin` with Codex plugin metadata and MCP defaults.
+- `packages/codex-plugin` with Codex plugin metadata, MCP defaults, and validation docs.
 - `packages/claude-code-plugin` with Claude Code plugin metadata, MCP defaults, and host guidance.
 - Markdown export for human review.
 - Idempotent JSON import for equivalent memories.
@@ -128,7 +128,8 @@ Implemented today:
 
 Next technical focus:
 
-- Validate host plugin install flows against supported Codex and Claude Code workflows.
+- Validate the Claude Code plugin install flow against supported host workflows.
+- Package the Codex plugin for a stable marketplace or workspace-sharing path.
 - Prototype read-only recall hooks after the lifecycle hook policy.
 
 ## Planned Usage
