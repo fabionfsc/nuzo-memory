@@ -33,7 +33,8 @@ Start with:
 13. `docs/operations/lifecycle-hooks.md`
 14. `docs/operations/issue-tracking.md`
 15. `docs/operations/versioning.md`
-16. `docs/operations/release-checklist.md`
+16. `docs/operations/runtime-support.md`
+17. `docs/operations/release-checklist.md`
 
 ## Local Operator Notes
 
@@ -105,6 +106,9 @@ Serve docs locally:
 ```
 
 ## TypeScript Commands
+
+Use Node.js 22 LTS or 24 LTS with npm 10 or newer. Keep the root and workspace
+`engines` fields, CI matrix, and `docs/operations/runtime-support.md` aligned.
 
 Install workspace dependencies:
 

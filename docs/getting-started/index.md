@@ -38,6 +38,10 @@ Validate:
 
 ## Work On The TypeScript Workspace
 
+Use Node.js 22 LTS or 24 LTS with npm 10 or newer. These are the runtime lines
+validated in CI. See [Runtime Support](../operations/runtime-support.md) for
+the full policy and native SQLite troubleshooting.
+
 Install dependencies:
 
 ```bash

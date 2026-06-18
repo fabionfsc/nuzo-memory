@@ -5,6 +5,10 @@
   "description": "Local-first, auditable memory for Codex, Claude Code, and MCP-compatible AI agents.",
   "license": "Apache-2.0",
   "type": "module",
+  "engines": {
+    "node": ">=22",
+    "npm": ">=10"
+  },
   "workspaces": [
     "packages/*"
   ],

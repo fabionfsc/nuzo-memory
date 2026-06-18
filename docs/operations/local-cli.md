@@ -6,6 +6,8 @@ The CLI package currently lives at `packages/cli` and exposes the `nuzo` binary 
 
 ## Current Monorepo Path
 
+Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
+
 Until release packaging is finalized, use the root workspace wrapper:
 
 ```bash

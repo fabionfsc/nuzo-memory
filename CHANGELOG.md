@@ -19,6 +19,7 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Capture suggestion specification for inferred memories without silent writes.
 - MCP `memory.recall_hook` prototype for read-only task-start recall.
 - GitHub Actions CI for package checks, tests, builds, CLI smoke testing, and strict docs validation.
+- Runtime support policy for Node.js 22/24 LTS, npm 10+, and native SQLite build troubleshooting.
 
 ### Changed
 
@@ -27,6 +28,7 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Claude Code plugin docs now separate official plugin packaging, development `--plugin-dir` testing, marketplace direction, and direct MCP debugging.
 - Lifecycle hook docs now route inferred writes through confirmed capture drafts before `memory.remember`.
 - MCP tool docs now distinguish normal recall from the read-only recall hook entrypoint.
+- Package engine declarations and CI now agree on the supported Node.js baseline.
 
 ### Fixed
 

@@ -5,6 +5,10 @@
   "description": "Codex plugin metadata and MCP defaults for Nuzo.",
   "license": "Apache-2.0",
   "type": "module",
+  "engines": {
+    "node": ">=22",
+    "npm": ">=10"
+  },
   "scripts": {
     "check": "python3 ../../tools/validate-codex-plugin.py ."
   }

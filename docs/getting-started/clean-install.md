@@ -7,8 +7,8 @@ It verifies the current monorepo workflow before public package installation is 
 ## Prerequisites
 
 - Git.
-- Node.js 20 or newer.
-- npm.
+- Node.js 22 LTS or 24 LTS.
+- npm 10 or newer.
 - Python 3, only if building the docs site locally.
 
 Check:
@@ -18,6 +18,9 @@ node --version
 npm --version
 python3 --version
 ```
+
+Other Node.js major versions are not claimed as supported until they are part
+of the CI matrix. See the [runtime support policy](../operations/runtime-support.md).
 
 ## Clone And Install
 
@@ -131,13 +134,17 @@ Do not commit runtime memory stores or exports.
 
 ### `better-sqlite3` install or build fails
 
-Use a supported Node.js version and reinstall dependencies:
+Confirm that Node.js 22 LTS or 24 LTS and npm 10 or newer are active:
 
 ```bash
 node --version
-rm -rf node_modules
+npm --version
 npm ci
 ```
+
+If npm cannot use a prebuilt binary, `better-sqlite3` requires a local C/C++
+build toolchain and Python. Follow the platform-specific steps in the
+[runtime support policy](../operations/runtime-support.md).
 
 ### `nuzo memory doctor` reports Git tracking unavailable
 
@@ -161,4 +168,3 @@ Use the ignored export suffixes:
 ```
 
 Avoid custom export filenames that do not match those patterns.
-

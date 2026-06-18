@@ -26,6 +26,17 @@ Start from a clean worktree:
 git status --short
 ```
 
+Confirm a supported runtime is active:
+
+```bash
+node --version
+npm --version
+```
+
+The release baseline is Node.js 22 LTS or 24 LTS with npm 10 or newer. Confirm
+that the engine declarations, CI matrix, and
+`docs/operations/runtime-support.md` still agree.
+
 Install dependencies from the lockfile:
 
 ```bash
@@ -75,6 +86,9 @@ docs/getting-started/clean-install.md
 ```
 
 Use fake data only.
+
+If `better-sqlite3` falls back to a native build, validate the documented
+platform toolchain path in `docs/operations/runtime-support.md`.
 
 ## Security And Sanitization
 

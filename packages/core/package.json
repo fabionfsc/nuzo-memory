@@ -5,6 +5,10 @@
   "description": "Core memory lifecycle, ports, and domain contracts for Nuzo.",
   "license": "Apache-2.0",
   "type": "module",
+  "engines": {
+    "node": ">=22",
+    "npm": ">=10"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [

@@ -73,7 +73,7 @@ GitHub Actions runs validation from:
 
 The workflow runs on pull requests, pushes to `main`, and manual dispatch.
 
-Node validation uses the lockfile and runs:
+Node validation uses the lockfile on Node.js 22 LTS and 24 LTS and runs:
 
 ```bash
 npm ci
@@ -90,5 +90,9 @@ mkdocs build --strict
 ```
 
 CI does not deploy GitHub Pages and only receives read access to repository contents.
+
+The matrix is the supported Node.js policy for the MVP. The `package.json`
+engine declarations provide a minimum version guard, while CI defines the
+major versions Nuzo actively claims and tests.
 
 `npm audit --audit-level=moderate` remains a dependency-change and release gate. Advisory changes outside the repository should not make ordinary pull requests nondeterministically fail.

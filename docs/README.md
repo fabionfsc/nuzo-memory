@@ -23,8 +23,9 @@ This directory is the source of truth for the project until implementation start
 17. `operations/lifecycle-hooks.md`
 18. `operations/issue-tracking.md`
 19. `operations/versioning.md`
-20. `operations/release-checklist.md`
-21. `operations/roadmap.md`
+20. `operations/runtime-support.md`
+21. `operations/release-checklist.md`
+22. `operations/roadmap.md`
 
 ## Sections
 

@@ -117,6 +117,10 @@ SQLite local store
     -> host plugins
 ```
 
+Development and clean installs require Node.js 22 LTS or 24 LTS with npm 10
+or newer. See [Runtime support](docs/operations/runtime-support.md) for the
+tested-version policy and native SQLite build requirements.
+
 Implemented today:
 
 - `packages/core` with memory lifecycle, policy checks, SQLite storage, FTS search, and tests.
@@ -261,6 +265,7 @@ Start here:
 - [Lifecycle hooks](docs/operations/lifecycle-hooks.md)
 - [Issue tracking](docs/operations/issue-tracking.md)
 - [Versioning](docs/operations/versioning.md)
+- [Runtime support](docs/operations/runtime-support.md)
 - [Release checklist](docs/operations/release-checklist.md)
 - [Stage 1 core plan](docs/implementation/stage-1-core.md)
 - [Roadmap](docs/operations/roadmap.md)
