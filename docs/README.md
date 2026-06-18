@@ -14,16 +14,17 @@ This directory is the source of truth for the project until implementation start
 8. `architecture/boundaries.md`
 9. `architecture/agent-host-compatibility.md`
 10. `spec/memory-model.md`
-11. `spec/tools.md`
-12. `implementation/stage-1-core.md`
-13. `operations/local-cli.md`
-14. `operations/codex-plugin.md`
-15. `operations/claude-code-plugin.md`
-16. `operations/lifecycle-hooks.md`
-17. `operations/issue-tracking.md`
-18. `operations/versioning.md`
-19. `operations/release-checklist.md`
-20. `operations/roadmap.md`
+11. `spec/capture-suggestions.md`
+12. `spec/tools.md`
+13. `implementation/stage-1-core.md`
+14. `operations/local-cli.md`
+15. `operations/codex-plugin.md`
+16. `operations/claude-code-plugin.md`
+17. `operations/lifecycle-hooks.md`
+18. `operations/issue-tracking.md`
+19. `operations/versioning.md`
+20. `operations/release-checklist.md`
+21. `operations/roadmap.md`
 
 ## Sections
 

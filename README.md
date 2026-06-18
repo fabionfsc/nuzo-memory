@@ -124,12 +124,13 @@ Implemented today:
 - Markdown export for human review.
 - Idempotent JSON import for equivalent memories.
 - Competitive positioning against cloud memory platforms and native host memory.
+- Capture suggestion policy for inferred memories without silent writes.
 - MkDocs documentation published through GitHub Pages.
 
 Next technical focus:
 
 - Package the Codex and Claude Code plugins for stable marketplace or workspace-sharing paths.
-- Prototype read-only recall hooks after the lifecycle hook policy.
+- Prototype read-only recall hooks using the documented lifecycle and capture suggestion policies.
 
 ## Planned Usage
 

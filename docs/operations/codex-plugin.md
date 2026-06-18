@@ -185,6 +185,7 @@ test -f packages/mcp-server/dist/index.js
 - The plugin assumes the monorepo has already been built.
 - Runtime memory remains local and should not be committed to Git.
 - Automatic recall or capture hooks must follow `docs/operations/lifecycle-hooks.md` before implementation.
+- Capture suggestions must follow `docs/spec/capture-suggestions.md` and call `memory.remember` only after confirmation.
 
 ## Source References
 

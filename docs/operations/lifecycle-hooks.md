@@ -55,6 +55,8 @@ Capture hooks are write-suggestion hooks.
 
 They may detect candidate memories, but they must not persist them without user confirmation.
 
+The capture suggestion contract is defined in `docs/spec/capture-suggestions.md`.
+
 Allowed behavior:
 
 - propose a memory draft;
@@ -133,10 +135,11 @@ All hook writes and reads must go through the Nuzo MCP tools.
 ## Initial Implementation Order
 
 1. Manual recall through MCP tools.
-2. Read-only recall hook prototype.
-3. Capture suggestion prompt with no persistence.
-4. Confirmed capture calling `memory.remember`.
-5. Optional update suggestions calling `memory.update`.
+2. Capture suggestion specification and examples.
+3. Read-only recall hook prototype.
+4. Capture suggestion prompt with no persistence.
+5. Confirmed capture calling `memory.remember`.
+6. Optional update suggestions calling `memory.update`.
 
 Do not implement hard-delete hooks.
 
@@ -150,4 +153,3 @@ Before shipping a host hook:
 - policy checks run in core;
 - tests cover allowed and blocked capture examples;
 - README and roadmap mention the behavior accurately.
-

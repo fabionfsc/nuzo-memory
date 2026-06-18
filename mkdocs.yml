@@ -87,6 +87,7 @@ nav:
       - Repository Layout: architecture/repository-layout.md
   - Specification:
       - Memory Model: spec/memory-model.md
+      - Capture Suggestions: spec/capture-suggestions.md
       - Tools: spec/tools.md
       - Init: spec/init.md
       - API Versioning: spec/api-versioning.md

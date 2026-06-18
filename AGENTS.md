@@ -26,13 +26,14 @@ Start with:
 6. `docs/architecture/agent-host-compatibility.md`
 7. `docs/spec/tools.md`
 8. `docs/spec/memory-model.md`
-9. `docs/operations/local-cli.md`
-10. `docs/operations/codex-plugin.md`
-11. `docs/operations/claude-code-plugin.md`
-12. `docs/operations/lifecycle-hooks.md`
-13. `docs/operations/issue-tracking.md`
-14. `docs/operations/versioning.md`
-15. `docs/operations/release-checklist.md`
+9. `docs/spec/capture-suggestions.md`
+10. `docs/operations/local-cli.md`
+11. `docs/operations/codex-plugin.md`
+12. `docs/operations/claude-code-plugin.md`
+13. `docs/operations/lifecycle-hooks.md`
+14. `docs/operations/issue-tracking.md`
+15. `docs/operations/versioning.md`
+16. `docs/operations/release-checklist.md`
 
 ## Local Operator Notes
 
@@ -55,6 +56,7 @@ If `AGENTS.local.md` exists at the repository root, read it after this file.
 - Do not add plugin install/update helpers until the supported host plugin workflow and local plugin directory contract are stable and documented.
 - Host plugins should remain thin wrappers around the MCP server and should not contain memory business logic.
 - Automatic recall or capture hooks must follow `docs/operations/lifecycle-hooks.md` and require confirmation before inferred writes.
+- Capture suggestions must follow `docs/spec/capture-suggestions.md`; inferred memories are drafts until the user confirms them.
 - If plugin setup docs are needed, document the official workflow first; local testing notes should be clearly marked as development-only.
 
 ## Privacy And Safety Rules

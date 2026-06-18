@@ -8,6 +8,8 @@ Nuzo should expose the same core operations through MCP and CLI.
 
 Store a memory.
 
+Inferred memories must not call this tool until the user confirms a capture draft. See `docs/spec/capture-suggestions.md`.
+
 Input:
 
 ```json

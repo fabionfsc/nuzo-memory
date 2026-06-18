@@ -177,6 +177,8 @@ Claude Code supports hooks, but Nuzo should not add automatic recall or capture 
 
 The hook policy is defined in `docs/operations/lifecycle-hooks.md`.
 
+The capture suggestion contract is defined in `docs/spec/capture-suggestions.md`.
+
 Before adding host-specific hooks, document:
 
 - when recall is triggered;
