@@ -80,6 +80,7 @@ npm ci
 npm run check
 npm test
 npm run build
+npm run package:plugins
 npm run smoke:cli
 ```
 

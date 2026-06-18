@@ -23,6 +23,8 @@ Codex identifies the plugin by the manifest `name`, so Nuzo keeps the stable ide
 
 ## Package Layout
 
+Development source:
+
 ```text
 packages/codex-plugin/
 ├── .codex-plugin/
@@ -32,40 +34,52 @@ packages/codex-plugin/
 └── package.json
 ```
 
-## Build First
+Generated release artifact:
 
-The plugin MCP config expects the MCP server build output to exist:
-
-```bash
-npm run build
+```text
+build/plugins/codex/nuzo/
+├── .codex-plugin/
+│   └── plugin.json
+├── .mcp.json
+└── LICENSE
 ```
 
-This creates:
+Generate and validate it with:
+
+```bash
+npm run package:plugins
+```
+
+The generated artifact is ignored by Git. Release automation should recreate
+it from a clean checkout.
+
+## Runtime Resolution
+
+The source plugin uses the monorepo build for development:
 
 ```text
 packages/mcp-server/dist/index.js
 ```
 
-Check that output before testing a plugin install:
-
-```bash
-test -f packages/mcp-server/dist/index.js
-```
-
-## MCP Defaults
-
-The plugin config points to the local MCP server:
+The generated release plugin does not rely on that sibling directory. It pins
+the published MCP package to the same version as the plugin:
 
 ```json
 {
   "mcpServers": {
     "nuzo": {
-      "command": "node",
-      "args": ["../mcp-server/dist/index.js"]
+      "command": "npx",
+      "args": ["--yes", "@nuzo/mcp-server@0.1.0"]
     }
   }
 }
 ```
+
+`0.1.0` is illustrative. Packaging uses the actual shared package version and
+rejects version drift.
+
+The first launch may need npm registry access. Nuzo does not use `latest` and
+does not require a global install.
 
 The MCP server uses the default local memory store:
 
@@ -81,7 +95,8 @@ NUZO_MEMORY_STORE=/absolute/path/to/memories.sqlite node packages/mcp-server/dis
 
 ## Development Install Flow
 
-This flow is for validating Nuzo during development. It is not a product installer and should not be automated until the supported Codex packaging path is stable.
+This flow validates the monorepo source package. It is separate from the
+generated release artifact.
 
 1. Build the monorepo:
 
@@ -95,7 +110,14 @@ npm run build
 npm run check -w @nuzo/codex-plugin
 ```
 
-3. Copy the plugin package into a Codex marketplace plugin directory for local testing, or point a local marketplace entry at a copied package. The marketplace entry should use `source.path` relative to the marketplace root.
+3. For release-layout testing, generate the artifact:
+
+```bash
+npm run package:plugins
+```
+
+4. Point a local marketplace entry at `build/plugins/codex/nuzo`. The
+marketplace entry should use `source.path` relative to the marketplace root.
 
 Example entry:
 
@@ -114,18 +136,20 @@ Example entry:
 }
 ```
 
-4. Restart Codex.
+5. Restart Codex.
 
-5. Open the plugin directory:
+6. Open the plugin directory:
 
 ```text
 codex
 /plugins
 ```
 
-6. Install or enable `Nuzo`, then start a new thread before relying on the plugin.
+7. Install or enable `Nuzo`, then start a new thread before relying on the plugin.
 
-The copied package must be able to reach the built MCP server path declared in `.mcp.json`. Until release packaging is finalized, this makes local marketplace testing a development validation step rather than an end-user installation path.
+The generated config becomes runnable only after its matching
+`@nuzo/mcp-server` version exists in npm. Until the first package publication,
+this validates layout and host metadata rather than a public end-user install.
 
 ## Direct MCP Fallback
 
@@ -164,7 +188,13 @@ The validator checks:
 - the plugin identifier is stable kebab-case;
 - the license is `Apache-2.0`;
 - `mcpServers` points to an existing relative `.mcp.json` file;
-- `.mcp.json` defines the `nuzo` MCP server using `node ../mcp-server/dist/index.js`.
+- source `.mcp.json` defines the development MCP server path.
+
+Release validation additionally checks:
+
+- the MCP server runs through `npx`;
+- `@nuzo/mcp-server` is pinned to the plugin version;
+- no sibling monorepo path remains in the artifact.
 
 The repository check also validates the plugin metadata:
 
@@ -172,18 +202,15 @@ The repository check also validates the plugin metadata:
 npm run check
 ```
 
-For runtime validation, build first and confirm the MCP server output exists:
+Generate and validate both host artifacts with:
 
 ```bash
-npm run build
-test -f packages/mcp-server/dist/index.js
+npm run package:plugins
 ```
 
 ## Current Limits
 
-- The wrapper is ready for development validation, but normal use should follow the supported Codex plugin workflow.
-- Development-only install helpers should wait until the official plugin path and package layout are stable.
-- The plugin assumes the monorepo has already been built.
+- Public installation waits for publication of the matching MCP package.
 - Runtime memory remains local and should not be committed to Git.
 - Automatic recall or capture hooks must follow `docs/operations/lifecycle-hooks.md` before implementation.
 - Capture suggestions must follow `docs/spec/capture-suggestions.md` and call `memory.remember` only after confirmation.

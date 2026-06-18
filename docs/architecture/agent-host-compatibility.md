@@ -143,6 +143,18 @@ Host packages must not contain:
 
 Host packages should expose Nuzo import/export actions when the host supports invoking MCP tools from the plugin. They should not create separate Codex or Claude export formats.
 
+## Runtime Distribution
+
+Development plugin configs may resolve the built MCP server from the monorepo.
+Release artifacts must not.
+
+For the MVP, generated Codex and Claude Code artifacts run a version-pinned
+`@nuzo/mcp-server` through `npx`. This avoids global installation and avoids
+shipping a platform-specific copy of the native SQLite dependency.
+
+The authoritative decision is
+`docs/adr/0006-host-plugin-runtime-distribution.md`.
+
 ## Naming Rules
 
 Use neutral public language:

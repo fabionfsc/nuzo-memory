@@ -18,10 +18,15 @@ def load_json(path: pathlib.Path) -> object:
 
 
 def main() -> None:
-    if len(sys.argv) != 2:
-        fail("usage: validate-codex-plugin.py <plugin-root>")
+    release = False
+    args = sys.argv[1:]
+    if args and args[0] == "--release":
+        release = True
+        args = args[1:]
+    if len(args) != 1:
+        fail("usage: validate-codex-plugin.py [--release] <plugin-root>")
 
-    root = pathlib.Path(sys.argv[1]).resolve()
+    root = pathlib.Path(args[0]).resolve()
     manifest_path = root / ".codex-plugin" / "plugin.json"
     if not manifest_path.exists():
         fail(".codex-plugin/plugin.json is missing")
@@ -75,12 +80,26 @@ def main() -> None:
         nuzo_server = servers.get("nuzo")
         if not isinstance(nuzo_server, dict):
             fail("mcpServers target must define a 'nuzo' server")
-        if nuzo_server.get("command") != "node":
-            fail("nuzo MCP server must run with node")
-        if "../mcp-server/dist/index.js" not in nuzo_server.get("args", []):
-            fail("nuzo MCP server must point at ../mcp-server/dist/index.js")
+        validate_nuzo_server(nuzo_server, manifest["version"], release)
 
     print(f"plugin validation passed: {root}")
+
+
+def validate_nuzo_server(server: dict, version: str, release: bool) -> None:
+    args = server.get("args", [])
+    if release:
+        if server.get("command") != "npx":
+            fail("release nuzo MCP server must run with npx")
+        if args != ["--yes", f"@nuzo/mcp-server@{version}"]:
+            fail("release nuzo MCP server must pin @nuzo/mcp-server to the plugin version")
+        if any(".." in arg or "/mcp-server/" in arg for arg in args):
+            fail("release nuzo MCP server must not reference monorepo paths")
+        return
+
+    if server.get("command") != "node":
+        fail("development nuzo MCP server must run with node")
+    if args != ["../mcp-server/dist/index.js"]:
+        fail("development nuzo MCP server must point at ../mcp-server/dist/index.js")
 
 
 if __name__ == "__main__":

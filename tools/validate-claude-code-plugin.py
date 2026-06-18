@@ -18,10 +18,15 @@ def load_json(path: pathlib.Path) -> object:
 
 
 def main() -> None:
-    if len(sys.argv) != 2:
-        fail("usage: validate-claude-code-plugin.py <plugin-root>")
+    release = False
+    args = sys.argv[1:]
+    if args and args[0] == "--release":
+        release = True
+        args = args[1:]
+    if len(args) != 1:
+        fail("usage: validate-claude-code-plugin.py [--release] <plugin-root>")
 
-    root = pathlib.Path(sys.argv[1]).resolve()
+    root = pathlib.Path(args[0]).resolve()
     manifest_path = root / ".claude-plugin" / "plugin.json"
     if not manifest_path.exists():
         fail(".claude-plugin/plugin.json is missing")
@@ -77,15 +82,7 @@ def main() -> None:
     nuzo = servers.get("nuzo")
     if not isinstance(nuzo, dict):
         fail(".mcp.json must define an MCP server named nuzo")
-    if nuzo.get("command") != "node":
-        fail("nuzo MCP server command must be node")
-    args = nuzo.get("args")
-    if not isinstance(args, list) or not args:
-        fail("nuzo MCP server must define args")
-    if not any("mcp-server/dist/index.js" in str(arg) for arg in args):
-        fail("nuzo MCP server args must point to packages/mcp-server/dist/index.js")
-    if not any("${CLAUDE_PLUGIN_ROOT}" in str(arg) for arg in args):
-        fail("nuzo MCP server args must resolve through ${CLAUDE_PLUGIN_ROOT}")
+    validate_nuzo_server(nuzo, manifest["version"], release)
 
     skills_path = manifest.get("skills")
     if skills_path:
@@ -95,6 +92,28 @@ def main() -> None:
             fail(f"skills target does not exist: {skills_path}")
 
     print(f"claude code plugin validation passed: {root}")
+
+
+def validate_nuzo_server(server: dict, version: str, release: bool) -> None:
+    args = server.get("args")
+    if not isinstance(args, list) or not args:
+        fail("nuzo MCP server must define args")
+
+    if release:
+        if server.get("command") != "npx":
+            fail("release nuzo MCP server command must be npx")
+        if args != ["--yes", f"@nuzo/mcp-server@{version}"]:
+            fail("release nuzo MCP server must pin @nuzo/mcp-server to the plugin version")
+        if server.get("cwd") != "${CLAUDE_PLUGIN_ROOT}":
+            fail("release nuzo MCP server cwd must resolve through ${CLAUDE_PLUGIN_ROOT}")
+        if any(".." in arg or "/mcp-server/" in arg for arg in args):
+            fail("release nuzo MCP server must not reference monorepo paths")
+        return
+
+    if server.get("command") != "node":
+        fail("development nuzo MCP server command must be node")
+    if args != ["${CLAUDE_PLUGIN_ROOT}/../mcp-server/dist/index.js"]:
+        fail("development nuzo MCP server must point to the monorepo MCP build")
 
 
 if __name__ == "__main__":

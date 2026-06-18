@@ -8,6 +8,8 @@ Claude Code is one host package, not the product boundary. Codex and future MCP-
 
 ## Package
 
+Development source:
+
 ```text
 packages/claude-code-plugin/
 ├── .claude-plugin/plugin.json
@@ -16,6 +18,25 @@ packages/claude-code-plugin/
 │   └── nuzo-memory/
 │       └── SKILL.md
 └── README.md
+```
+
+Generated release artifact:
+
+```text
+build/plugins/claude-code/nuzo/
+├── .claude-plugin/
+│   └── plugin.json
+├── skills/
+│   └── nuzo-memory/
+│       └── SKILL.md
+├── .mcp.json
+└── LICENSE
+```
+
+Generate and validate it with:
+
+```bash
+npm run package:plugins
 ```
 
 ## Current Scope
@@ -65,7 +86,25 @@ The plugin points Claude Code at the Nuzo MCP server:
 }
 ```
 
-This is a monorepo development default. Before release, distribution packaging must confirm whether the MCP server is bundled with the plugin, resolved from an installed package, or configured by the user.
+This is the monorepo development default.
+
+The generated release artifact instead uses:
+
+```json
+{
+  "mcpServers": {
+    "nuzo": {
+      "command": "npx",
+      "args": ["--yes", "@nuzo/mcp-server@0.1.0"],
+      "cwd": "${CLAUDE_PLUGIN_ROOT}"
+    }
+  }
+}
+```
+
+`0.1.0` is illustrative. Packaging pins the actual plugin version. This keeps
+the artifact portable across supported platforms while allowing npm to install
+the correct native SQLite build.
 
 Build the monorepo before testing the MCP path:
 
@@ -78,7 +117,7 @@ Claude Code sets plugin-specific environment variables for plugin-provided MCP s
 
 ## Development Install Flow
 
-This flow is for validating Nuzo during development. It is not a product installer and should not be automated until the supported Claude Code packaging path is stable.
+This flow validates the monorepo source package.
 
 1. Build the monorepo:
 
@@ -98,7 +137,7 @@ npm run check -w @nuzo/claude-code-plugin
 claude plugin validate packages/claude-code-plugin
 ```
 
-4. For local development, load the plugin directory directly:
+4. For source-level local development, load the plugin directory directly:
 
 ```bash
 claude --plugin-dir packages/claude-code-plugin
@@ -112,7 +151,15 @@ claude --plugin-dir packages/claude-code-plugin
 
 6. Confirm the `nuzo` MCP server and the `nuzo-memory` skill are visible in Claude Code before relying on the plugin.
 
-The local development package must be able to reach the built MCP server path declared in `.mcp.json`. Until release packaging is finalized, direct `--plugin-dir` testing is a development validation step rather than an end-user installation path.
+7. To validate the release layout, generate it and run the host validator:
+
+```bash
+npm run package:plugins
+claude plugin validate build/plugins/claude-code/nuzo --strict
+```
+
+The generated config becomes runnable only after its matching
+`@nuzo/mcp-server` version is published.
 
 ## Marketplace Install Direction
 
@@ -128,7 +175,8 @@ Scopes should be selected intentionally:
 - project scope for team-shared repository setup;
 - local scope for machine-specific testing.
 
-Nuzo should not add repository-level marketplace settings until the package layout, release artifact, and update behavior are stable.
+Nuzo should not add repository-level marketplace settings until the matching
+MCP package publication and update behavior are validated.
 
 ## Direct MCP Fallback
 
@@ -156,8 +204,15 @@ The validator checks:
 - the license remains `Apache-2.0`;
 - `.mcp.json` defines an MCP server named `nuzo`;
 - the `nuzo` MCP server uses `node`;
-- the `nuzo` MCP server resolves through `${CLAUDE_PLUGIN_ROOT}`;
+- the development server resolves through `${CLAUDE_PLUGIN_ROOT}`;
 - host-specific skill files exist when referenced.
+
+Release validation additionally checks:
+
+- the MCP server runs through `npx`;
+- `@nuzo/mcp-server` is pinned to the plugin version;
+- `cwd` resolves through `${CLAUDE_PLUGIN_ROOT}`;
+- no sibling monorepo path remains.
 
 If the `claude` CLI is installed, run the host validator too:
 

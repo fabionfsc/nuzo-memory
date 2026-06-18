@@ -30,6 +30,15 @@ npm run check -w @nuzo/codex-plugin
 
 The validator also checks that `.mcp.json` exposes the `nuzo` MCP server through `node ../mcp-server/dist/index.js`.
 
+Generate the release layout with:
+
+```bash
+npm run package:plugins
+```
+
+The release artifact is written to `build/plugins/codex/nuzo` and pins the
+matching `@nuzo/mcp-server` version through `npx`.
+
 The default memory store is:
 
 ```text

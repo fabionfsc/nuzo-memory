@@ -50,6 +50,9 @@ jobs:
       - name: Build packages
         run: npm run build
 
+      - name: Package host plugins
+        run: npm run package:plugins
+
       - name: Run CLI smoke test
         run: npm run smoke:cli
 

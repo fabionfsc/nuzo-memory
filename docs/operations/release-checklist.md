@@ -59,8 +59,20 @@ Run:
 npm run check
 npm test
 npm run build
+npm run package:plugins
 npm run smoke:cli
 ```
+
+Confirm the generated host artifacts contain no monorepo runtime paths:
+
+```bash
+rg -n '\.\./mcp-server|packages/mcp-server' build/plugins
+```
+
+The command should return no matches.
+
+Confirm the matching `@nuzo/mcp-server` version is published before shipping
+the plugin artifacts.
 
 Build docs strictly:
 

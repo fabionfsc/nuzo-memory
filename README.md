@@ -128,6 +128,7 @@ Implemented today:
 - `packages/mcp-server` with memory tools over stdio.
 - `packages/codex-plugin` with Codex plugin metadata, MCP defaults, and validation docs.
 - `packages/claude-code-plugin` with Claude Code plugin metadata, MCP defaults, host guidance, and validation docs.
+- Generated Codex and Claude Code release layouts with pinned MCP runtime resolution.
 - Markdown export for human review.
 - Idempotent JSON import for equivalent memories.
 - Competitive positioning against cloud memory platforms and native host memory.
@@ -267,6 +268,7 @@ Start here:
 - [Versioning](docs/operations/versioning.md)
 - [Runtime support](docs/operations/runtime-support.md)
 - [Release checklist](docs/operations/release-checklist.md)
+- [Host plugin runtime distribution](docs/adr/0006-host-plugin-runtime-distribution.md)
 - [Stage 1 core plan](docs/implementation/stage-1-core.md)
 - [Roadmap](docs/operations/roadmap.md)
 

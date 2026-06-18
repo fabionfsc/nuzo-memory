@@ -91,6 +91,10 @@ Goal: package the MCP server for agent hosts through supported plugin workflows.
 
 Initial scaffold exists in `packages/codex-plugin` and `packages/claude-code-plugin` with plugin metadata, MCP defaults, host-specific validation, and official-path setup docs.
 
+The release layout is generated under `build/plugins/`. It keeps host wrappers
+thin and resolves a version-pinned `@nuzo/mcp-server` package instead of a
+monorepo sibling path.
+
 Deliverables:
 
 - `.codex-plugin/plugin.json`.
@@ -102,6 +106,7 @@ Deliverables:
 - capture suggestion contract for inferred memories with no silent writes.
 - MCP-level read-only recall hook prototype.
 - Marketplace or official distribution metadata when the supported workflow is stable.
+- matching MCP package publication before public plugin installation.
 
 Exit criteria:
 

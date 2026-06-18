@@ -146,6 +146,16 @@ Run the local MCP server after building:
 node packages/mcp-server/dist/index.js
 ```
 
+Generate and validate distributable host plugin layouts:
+
+```bash
+npm run package:plugins
+```
+
+Generated plugin artifacts belong under `build/plugins/` and must stay
+untracked. Release configs must pin `@nuzo/mcp-server` to the same version as
+the plugin and must not reference sibling monorepo paths.
+
 Validate the Codex plugin manifest:
 
 ```bash
@@ -174,6 +184,7 @@ Run:
 npm run check
 npm test
 npm run build
+npm run package:plugins
 npm run smoke:cli
 .venv-docs/bin/mkdocs build --strict
 ```

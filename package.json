@@ -16,6 +16,7 @@
     "build": "npm run build -w @nuzo/memory-core && npm run build -w @nuzo/memory-cli && npm run build -w @nuzo/mcp-server",
     "check": "npm run check --workspaces --if-present",
     "nuzo": "node packages/cli/dist/index.js",
+    "package:plugins": "npm run build && node tools/package-host-plugins.mjs",
     "smoke:cli": "npm run build && npm run nuzo -- memory --store /tmp/nuzo-cli-smoke/memories.sqlite init && npm run nuzo -- memory --store /tmp/nuzo-cli-smoke/memories.sqlite doctor",
     "test": "npm run test --workspaces --if-present",
     "docs:build": "mkdocs build --strict"
