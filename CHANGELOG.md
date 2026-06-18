@@ -22,4 +22,4 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 ### Fixed
 
 - CLI `memory forget` now accepts the documented `--archive` flag and rejects conflicting `--archive --delete` usage.
-
+- Import now rejects malformed export memory items with structured `MEMORY_EXPORT_INVALID` errors instead of leaking runtime type errors.

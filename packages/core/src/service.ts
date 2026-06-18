@@ -14,6 +14,7 @@ import type {
   RememberMemoryInput,
   UpdateMemoryInput,
 } from "./types.js";
+import { memoryKinds } from "./types.js";
 
 export interface MemoryServiceDependencies {
   store: MemoryStore;
@@ -312,15 +313,116 @@ function toExportItem(memory: MemoryRecord): MemoryExportItem {
 }
 
 function assertExportDocument(document: MemoryExportDocument): void {
-  if (document.format !== "nuzo-memory-export" || document.version !== 1) {
-    throw new NuzoMemoryError("MEMORY_EXPORT_UNSUPPORTED", "Memory export format is not supported.", {
-      format: document.format,
-      version: document.version,
-    });
-  }
-  if (!Array.isArray(document.memories)) {
+  const value = document as unknown;
+  if (!isRecord(value)) {
     throw new NuzoMemoryError("MEMORY_EXPORT_INVALID", "Memory export document is invalid.");
   }
+
+  if (value.format !== "nuzo-memory-export" || value.version !== 1) {
+    throw new NuzoMemoryError("MEMORY_EXPORT_UNSUPPORTED", "Memory export format is not supported.", {
+      format: value.format,
+      version: value.version,
+    });
+  }
+
+  parseExportDate(getStringField(value, "exported_at", "document"), "exported_at");
+
+  if (!Array.isArray(value.memories)) {
+    throw new NuzoMemoryError("MEMORY_EXPORT_INVALID", "Memory export document is invalid.");
+  }
+
+  value.memories.forEach(assertExportItem);
+}
+
+function assertExportItem(item: unknown, index: number): void {
+  if (!isRecord(item)) {
+    throwInvalidExportItem(index, "item must be an object");
+  }
+
+  getStringField(item, "scope", `memories[${index}]`);
+  const kind = getStringField(item, "kind", `memories[${index}]`);
+  if (!memoryKinds.includes(kind as MemoryExportItem["kind"])) {
+    throwInvalidExportItem(index, "kind is not supported", { kind });
+  }
+  getStringField(item, "content", `memories[${index}]`);
+  getStringArrayField(item, "tags", `memories[${index}]`);
+  getStringField(item, "source", `memories[${index}]`);
+  const confidence = getNumberField(item, "confidence", `memories[${index}]`);
+  if (confidence < 0 || confidence > 1) {
+    throwInvalidExportItem(index, "confidence must be between 0 and 1", {
+      confidence,
+    });
+  }
+  const createdAt = getStringField(item, "created_at", `memories[${index}]`);
+  const updatedAt = getStringField(item, "updated_at", `memories[${index}]`);
+  const lastUsedAt = getNullableStringField(item, "last_used_at", `memories[${index}]`);
+  const archivedAt = getNullableStringField(item, "archived_at", `memories[${index}]`);
+
+  parseExportDate(createdAt, `memories[${index}].created_at`);
+  parseExportDate(updatedAt, `memories[${index}].updated_at`);
+  if (lastUsedAt !== null) {
+    parseExportDate(lastUsedAt, `memories[${index}].last_used_at`);
+  }
+  if (archivedAt !== null) {
+    parseExportDate(archivedAt, `memories[${index}].archived_at`);
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function getStringField(record: Record<string, unknown>, field: string, path: string): string {
+  if (typeof record[field] !== "string") {
+    throwInvalidExportField(path, field, "must be a string", { value: record[field] });
+  }
+  return record[field];
+}
+
+function getNullableStringField(record: Record<string, unknown>, field: string, path: string): string | null {
+  if (record[field] !== null && typeof record[field] !== "string") {
+    throwInvalidExportField(path, field, "must be a string or null", { value: record[field] });
+  }
+  return record[field];
+}
+
+function getStringArrayField(record: Record<string, unknown>, field: string, path: string): string[] {
+  if (!Array.isArray(record[field]) || !record[field].every((value) => typeof value === "string")) {
+    throwInvalidExportField(path, field, "must be an array of strings", { value: record[field] });
+  }
+  return record[field];
+}
+
+function getNumberField(record: Record<string, unknown>, field: string, path: string): number {
+  if (typeof record[field] !== "number" || !Number.isFinite(record[field])) {
+    throwInvalidExportField(path, field, "must be a finite number", { value: record[field] });
+  }
+  return record[field];
+}
+
+function throwInvalidExportField(
+  path: string,
+  field: string,
+  reason: string,
+  details: Record<string, unknown> = {},
+): never {
+  throw new NuzoMemoryError("MEMORY_EXPORT_INVALID", "Memory export document is invalid.", {
+    path: `${path}.${field}`,
+    reason,
+    ...details,
+  });
+}
+
+function throwInvalidExportItem(
+  index: number,
+  reason: string,
+  details: Record<string, unknown> = {},
+): never {
+  throw new NuzoMemoryError("MEMORY_EXPORT_INVALID", "Memory export document is invalid.", {
+    path: `memories[${index}]`,
+    reason,
+    ...details,
+  });
 }
 
 function parseExportDate(value: string, field: string): Date {

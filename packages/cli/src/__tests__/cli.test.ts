@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -146,6 +146,36 @@ describe("nuzo memory cli", () => {
 
     const recall = await runCli(["memory", "--store", targetStore, "recall", "portable backups"]);
     expect(recall.stdout.join("\n")).toContain("portable memory backups");
+  });
+
+  it("reports malformed import documents without leaking runtime errors", async () => {
+    const store = createStorePath();
+    const exportPath = join(mkdtempSync(join(tmpdir(), "nuzo-bad-export-")), "bad.memory.export.json");
+    const exportDirectory = join(exportPath, "..");
+    tempDirectories.push(exportDirectory);
+    writeFileSync(exportPath, JSON.stringify({
+      format: "nuzo-memory-export",
+      version: 1,
+      exported_at: "2026-06-12T00:00:00.000Z",
+      memories: [
+        {
+          scope: "user:default",
+          kind: "note",
+          content: "Malformed import item.",
+          tags: ["valid"],
+          source: "test",
+          confidence: "high",
+          created_at: "2026-06-12T00:00:00.000Z",
+          updated_at: "2026-06-12T00:00:00.000Z",
+          last_used_at: null,
+          archived_at: null,
+        },
+      ],
+    }), "utf8");
+
+    const output = await runCli(["memory", "--store", store, "import", exportPath]);
+
+    expect(output.stderr).toEqual(["MEMORY_EXPORT_INVALID: Memory export document is invalid."]);
   });
 
   it("reports doctor information", async () => {

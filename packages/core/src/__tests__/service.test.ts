@@ -294,6 +294,41 @@ describe("memory service", () => {
     await expect(target.service.list()).resolves.toHaveLength(1);
   });
 
+  it("rejects malformed import memory items with a structured error", async () => {
+    const { service } = createTestService();
+    const document = {
+      format: "nuzo-memory-export",
+      version: 1,
+      exported_at: "2026-06-12T00:00:00.000Z",
+      memories: [
+        {
+          scope: "user:default",
+          kind: "note",
+          content: "Malformed import item.",
+          tags: ["valid"],
+          source: "test",
+          confidence: "high",
+          created_at: "2026-06-12T00:00:00.000Z",
+          updated_at: "2026-06-12T00:00:00.000Z",
+          last_used_at: null,
+          archived_at: null,
+        },
+      ],
+    };
+
+    await expect(
+      service.importMemories({
+        document: document as never,
+        actor: "test",
+      }),
+    ).rejects.toMatchObject({
+      code: "MEMORY_EXPORT_INVALID",
+      details: {
+        path: "memories[0].confidence",
+      },
+    });
+  });
+
   it("archives by default when forgetting", async () => {
     const { service, store } = createTestService();
     const memory = await service.remember({
