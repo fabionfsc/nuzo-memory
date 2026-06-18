@@ -63,6 +63,7 @@ export interface RecallMemoriesInput {
   scope: MemoryScope;
   limit?: number;
   includeGlobal?: boolean;
+  recordUsage?: boolean;
 }
 
 export interface ListMemoriesInput {

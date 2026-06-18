@@ -141,6 +141,7 @@ Use this only to isolate MCP behavior. Plugin validation should still go through
 
 - `memory.remember`
 - `memory.recall`
+- `memory.recall_hook`
 - `memory.list`
 - `memory.update`
 - `memory.forget`

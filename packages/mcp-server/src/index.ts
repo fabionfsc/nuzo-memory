@@ -21,6 +21,7 @@ import type {
   ForgetToolInput,
   ImportToolInput,
   ListToolInput,
+  RecallHookToolInput,
   RememberToolInput,
   UpdateToolInput,
 } from "./handlers.js";
@@ -106,6 +107,29 @@ export function registerMemoryTools(server: McpServer, service: MemoryService): 
     },
     async (input) => {
       return jsonToolResult(await handlers.recall(input));
+    },
+  );
+
+  server.registerTool(
+    "memory.recall_hook",
+    {
+      description: "Prototype read-only recall entrypoint for host lifecycle hooks. It never captures or creates memories.",
+      inputSchema: {
+        task_context: z.string().min(1),
+        project_scope: z.string().optional(),
+        limit: z.number().int().min(1).max(8).default(5),
+      },
+    },
+    async (input) => {
+      const recallHookInput: RecallHookToolInput = {
+        task_context: input.task_context,
+        limit: input.limit,
+      };
+      if (input.project_scope !== undefined) {
+        recallHookInput.project_scope = input.project_scope;
+      }
+
+      return jsonToolResult(await handlers.recallHook(recallHookInput));
     },
   );
 

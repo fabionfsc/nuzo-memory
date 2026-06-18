@@ -6,7 +6,9 @@ Hooks must stay conservative. They should improve recall and suggestion quality,
 
 ## Current Status
 
-Nuzo does not implement automatic host hooks yet.
+Nuzo includes a first MCP-level read-only recall hook prototype through `memory.recall_hook`.
+
+Automatic host hooks are not enabled yet.
 
 This document defines the policy that must be satisfied before adding hooks to Codex, Claude Code, or another agent host.
 
@@ -34,6 +36,8 @@ Recall hooks are read-only.
 
 They may run before or during an agent task to fetch relevant memories through `memory.recall`.
 
+The first prototype uses `memory.recall_hook`, which wraps recall with host-hook-safe defaults.
+
 Allowed behavior:
 
 - build a concise recall query from the current task;
@@ -41,6 +45,9 @@ Allowed behavior:
 - limit result count;
 - show or make available the recalled memories to the host;
 - update `last_used_at` only if core supports it explicitly.
+- return read-only metadata such as `memory_writes: false` and `capture_suggestions: false`.
+
+The `memory.recall_hook` prototype does not update `last_used_at` or append recall audit events.
 
 Not allowed:
 
@@ -136,7 +143,7 @@ All hook writes and reads must go through the Nuzo MCP tools.
 
 1. Manual recall through MCP tools.
 2. Capture suggestion specification and examples.
-3. Read-only recall hook prototype.
+3. MCP-level read-only recall hook prototype.
 4. Capture suggestion prompt with no persistence.
 5. Confirmed capture calling `memory.remember`.
 6. Optional update suggestions calling `memory.update`.

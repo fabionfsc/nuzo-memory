@@ -28,6 +28,12 @@ export interface RecallToolInput {
   include_global: boolean;
 }
 
+export interface RecallHookToolInput {
+  task_context: string;
+  project_scope?: string;
+  limit?: number;
+}
+
 export interface ListToolInput {
   scope?: string;
   tags: string[];
@@ -69,6 +75,24 @@ export interface MemoryToolHandlers {
     warnings: string[];
   }>;
   recall(input: RecallToolInput): Promise<{
+    results: Array<{
+      id: string;
+      content: string;
+      kind: MemoryKind;
+      scope: MemoryScope;
+      tags: string[];
+      score: number;
+      reason: string;
+    }>;
+  }>;
+  recallHook(input: RecallHookToolInput): Promise<{
+    mode: "read_only";
+    memory_writes: false;
+    capture_suggestions: false;
+    query: string;
+    scope: MemoryScope;
+    include_global: true;
+    limit: number;
     results: Array<{
       id: string;
       content: string;
@@ -149,6 +173,30 @@ export function createMemoryToolHandlers(service: MemoryService): MemoryToolHand
       });
 
       return {
+        results: results.map(toRecallOutput),
+      };
+    },
+
+    async recallHook(input) {
+      const query = buildRecallHookQuery(input.task_context);
+      const limit = clampRecallHookLimit(input.limit);
+      const scope = (input.project_scope ?? "project:auto") as MemoryScope;
+      const results = await service.recall({
+        query,
+        scope,
+        limit,
+        includeGlobal: true,
+        recordUsage: false,
+      });
+
+      return {
+        mode: "read_only",
+        memory_writes: false,
+        capture_suggestions: false,
+        query,
+        scope,
+        include_global: true,
+        limit,
         results: results.map(toRecallOutput),
       };
     },
@@ -256,6 +304,7 @@ export function createMemoryToolHandlers(service: MemoryService): MemoryToolHand
         tools: [
           "memory.remember",
           "memory.recall",
+          "memory.recall_hook",
           "memory.list",
           "memory.update",
           "memory.forget",
@@ -266,6 +315,17 @@ export function createMemoryToolHandlers(service: MemoryService): MemoryToolHand
       };
     },
   };
+}
+
+function buildRecallHookQuery(taskContext: string): string {
+  return taskContext.trim().replace(/\s+/g, " ").slice(0, 500);
+}
+
+function clampRecallHookLimit(limit: number | undefined): number {
+  if (limit === undefined) {
+    return 5;
+  }
+  return Math.min(Math.max(Math.trunc(limit), 1), 8);
 }
 
 function toRecallOutput(result: RecallMemoryResult) {

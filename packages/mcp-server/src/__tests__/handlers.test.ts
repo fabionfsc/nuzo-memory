@@ -4,8 +4,22 @@ import { createMemoryToolHandlers } from "../handlers.js";
 
 function createTestHandlers() {
   let memory: MemoryRecord | null = null;
+  const calls = {
+    remember: 0,
+    recall: [] as Array<{
+      query: string;
+      scope: string;
+      limit?: number;
+      includeGlobal?: boolean;
+    }>,
+    update: 0,
+    forget: 0,
+    exportMemories: 0,
+    importMemories: 0,
+  };
   const service: MemoryService = {
     async remember(input) {
+      calls.remember += 1;
       memory = {
         id: "mem_000001",
         scope: input.scope,
@@ -22,6 +36,10 @@ function createTestHandlers() {
       return memory;
     },
     async recall() {
+      calls.recall.push({
+        query: "legacy mock recall",
+        scope: "user:default",
+      });
       return memory
         ? [
             {
@@ -39,6 +57,7 @@ function createTestHandlers() {
       return memory ? [memory] : [];
     },
     async update(input) {
+      calls.update += 1;
       if (!memory) {
         throw new Error("No memory");
       }
@@ -51,6 +70,7 @@ function createTestHandlers() {
       return memory;
     },
     async exportMemories(input) {
+      calls.exportMemories += 1;
       return {
         format: "nuzo-memory-export",
         version: 1,
@@ -75,6 +95,7 @@ function createTestHandlers() {
       };
     },
     async importMemories(input) {
+      calls.importMemories += 1;
       return {
         imported: input.document.memories.length,
         skipped: 0,
@@ -82,6 +103,7 @@ function createTestHandlers() {
       };
     },
     async forget(input) {
+      calls.forget += 1;
       if (memory && input.mode === "archive") {
         memory = {
           ...memory,
@@ -94,12 +116,25 @@ function createTestHandlers() {
     },
   };
 
-  return createMemoryToolHandlers(service);
+  service.recall = async (input) => {
+    calls.recall.push(input);
+    return memory
+      ? [
+          {
+            memory,
+            score: 1,
+            reason: "Matched test memory.",
+          },
+        ]
+      : [];
+  };
+
+  return { calls, handlers: createMemoryToolHandlers(service) };
 }
 
 describe("memory MCP handlers", () => {
   it("remembers and recalls through tool-shaped inputs", async () => {
-    const handlers = createTestHandlers();
+    const { handlers } = createTestHandlers();
 
     const remembered = await handlers.remember({
       content: "The user prefers explicit MCP contracts.",
@@ -133,7 +168,7 @@ describe("memory MCP handlers", () => {
   });
 
   it("lists, updates, forgets, exports, imports, and reports doctor output", async () => {
-    const handlers = createTestHandlers();
+    const { handlers } = createTestHandlers();
     const remembered = await handlers.remember({
       content: "The user prefers explicit MCP contracts.",
       kind: "preference",
@@ -193,6 +228,48 @@ describe("memory MCP handlers", () => {
 
     const doctor = await handlers.doctor();
     expect(doctor.tools).toContain("memory.import");
+    expect(doctor.tools).toContain("memory.recall_hook");
     expect(doctor.network).toBe("disabled");
+  });
+
+  it("runs recall hook as a limited read-only recall entrypoint", async () => {
+    const { calls, handlers } = createTestHandlers();
+    await handlers.remember({
+      content: "Nuzo should use GitHub Issues as the execution tracker.",
+      kind: "instruction",
+      scope: "project:nuzo",
+      tags: ["workflow"],
+      source: "test",
+    });
+    calls.remember = 0;
+
+    const result = await handlers.recallHook({
+      task_context: "  Please continue Nuzo issue work.\nUse the project tracker.  ",
+      project_scope: "project:nuzo",
+      limit: 20,
+    });
+
+    expect(result).toMatchObject({
+      mode: "read_only",
+      memory_writes: false,
+      capture_suggestions: false,
+      query: "Please continue Nuzo issue work. Use the project tracker.",
+      scope: "project:nuzo",
+      include_global: true,
+      limit: 8,
+    });
+    expect(result.results).toHaveLength(1);
+    expect(calls.recall.at(-1)).toEqual({
+      query: "Please continue Nuzo issue work. Use the project tracker.",
+      scope: "project:nuzo",
+      limit: 8,
+      includeGlobal: true,
+      recordUsage: false,
+    });
+    expect(calls.remember).toBe(0);
+    expect(calls.update).toBe(0);
+    expect(calls.forget).toBe(0);
+    expect(calls.exportMemories).toBe(0);
+    expect(calls.importMemories).toBe(0);
   });
 });

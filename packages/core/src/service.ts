@@ -79,6 +79,10 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
         limit: input.limit ?? 8,
       });
 
+      if (input.recordUsage === false) {
+        return results;
+      }
+
       const now = clock.now();
       for (const result of results) {
         await store.update({

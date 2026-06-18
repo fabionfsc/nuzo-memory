@@ -125,12 +125,13 @@ Implemented today:
 - Idempotent JSON import for equivalent memories.
 - Competitive positioning against cloud memory platforms and native host memory.
 - Capture suggestion policy for inferred memories without silent writes.
+- MCP-level read-only recall hook prototype.
 - MkDocs documentation published through GitHub Pages.
 
 Next technical focus:
 
 - Package the Codex and Claude Code plugins for stable marketplace or workspace-sharing paths.
-- Prototype read-only recall hooks using the documented lifecycle and capture suggestion policies.
+- Expand hook ergonomics only after confirmed no-write recall behavior remains stable.
 
 ## Planned Usage
 
@@ -168,6 +169,7 @@ Agents will use the same core through MCP tools:
 ```text
 memory.remember
 memory.recall
+memory.recall_hook
 memory.list
 memory.update
 memory.forget

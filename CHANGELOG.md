@@ -17,6 +17,7 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Codex plugin validation now checks the bundled MCP config shape.
 - Claude Code plugin validation now checks display metadata and the bundled MCP config shape.
 - Capture suggestion specification for inferred memories without silent writes.
+- MCP `memory.recall_hook` prototype for read-only task-start recall.
 
 ### Changed
 
@@ -24,6 +25,7 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Codex plugin docs now separate official plugin packaging, development marketplace testing, and direct MCP debugging.
 - Claude Code plugin docs now separate official plugin packaging, development `--plugin-dir` testing, marketplace direction, and direct MCP debugging.
 - Lifecycle hook docs now route inferred writes through confirmed capture drafts before `memory.remember`.
+- MCP tool docs now distinguish normal recall from the read-only recall hook entrypoint.
 
 ### Fixed
 

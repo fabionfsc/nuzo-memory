@@ -100,13 +100,14 @@ Deliverables:
 - Claude Code setup docs aligned with the official plugin path.
 - lifecycle hook policy for recall/capture in hosts that support hooks.
 - capture suggestion contract for inferred memories with no silent writes.
+- MCP-level read-only recall hook prototype.
 - Marketplace or official distribution metadata when the supported workflow is stable.
 
 Exit criteria:
 
 - Codex plugin can be packaged through a supported Codex plugin workflow and used in a fresh Codex session.
 - Claude Code plugin can be packaged through a supported Claude Code plugin workflow and used in a fresh Claude Code session.
-- Recall/capture hooks follow the lifecycle and capture suggestion specs before implementation.
+- Recall/capture hooks follow the lifecycle and capture suggestion specs before host automation.
 - No development-only installer is required for normal use.
 
 ## Stage 5: Public Release

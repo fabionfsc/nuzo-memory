@@ -65,6 +65,47 @@ Output:
 }
 ```
 
+### `memory.recall_hook`
+
+Prototype read-only recall entrypoint for host lifecycle hooks.
+
+This tool exists so Codex, Claude Code, or another MCP-compatible host can recall relevant context at the start of a task without introducing automatic memory capture.
+
+It never creates memories and does not produce capture suggestions. Confirmed writes still go through `memory.remember`.
+
+Input:
+
+```json
+{
+  "task_context": "Continue work on the Nuzo MCP plugin packaging.",
+  "project_scope": "project:auto",
+  "limit": 5
+}
+```
+
+Behavior:
+
+- builds a concise recall query from `task_context`;
+- searches `project_scope` plus `user:default`;
+- limits results to 1-8 memories;
+- does not update `last_used_at` or append recall audit events;
+- returns inspectable recall results and read-only metadata.
+
+Output:
+
+```json
+{
+  "mode": "read_only",
+  "memory_writes": false,
+  "capture_suggestions": false,
+  "query": "Continue work on the Nuzo MCP plugin packaging.",
+  "scope": "project:auto",
+  "include_global": true,
+  "limit": 5,
+  "results": []
+}
+```
+
 ### `memory.list`
 
 List memories by filters.

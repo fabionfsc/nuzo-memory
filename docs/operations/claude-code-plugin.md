@@ -187,6 +187,8 @@ Before adding host-specific hooks, document:
 - how secrets and transient logs are filtered;
 - how users disable the behavior.
 
+The current safe prototype is the MCP tool `memory.recall_hook`. It gives Claude Code a read-only recall entrypoint without enabling automatic capture.
+
 ## Portability
 
 Export/import remains a Nuzo feature:

@@ -61,6 +61,34 @@ describe("memory service", () => {
     expect(events.map((event) => event.eventType)).toEqual(["memory.created", "memory.recalled"]);
   });
 
+  it("can recall without recording usage", async () => {
+    const { auditLog, service, store } = createTestService();
+
+    const memory = await service.remember({
+      content: "Nuzo should keep recall hooks read-only.",
+      kind: "instruction",
+      scope: "project:nuzo",
+      tags: ["hooks"],
+      source: "test",
+    });
+
+    const results = await service.recall({
+      query: "read-only hooks",
+      scope: "project:nuzo",
+      limit: 5,
+      includeGlobal: true,
+      recordUsage: false,
+    });
+
+    expect(results[0]?.memory.id).toBe(memory.id);
+    await expect(store.findById(memory.id)).resolves.toMatchObject({
+      lastUsedAt: null,
+    });
+
+    const events = await auditLog.list(memory.id);
+    expect(events.map((event) => event.eventType)).toEqual(["memory.created"]);
+  });
+
   it("rejects likely secrets", async () => {
     const { service } = createTestService();
 
