@@ -89,7 +89,7 @@ Exit criteria:
 
 Goal: package the MCP server for agent hosts through supported plugin workflows.
 
-Initial scaffold exists in `packages/codex-plugin` and `packages/claude-code-plugin` with plugin metadata and MCP defaults.
+Initial scaffold exists in `packages/codex-plugin` and `packages/claude-code-plugin` with plugin metadata, MCP defaults, host-specific validation, and official-path setup docs.
 
 Deliverables:
 
@@ -103,8 +103,8 @@ Deliverables:
 
 Exit criteria:
 
-- Codex plugin can be installed through a supported Codex plugin workflow and used in a fresh Codex session.
-- Claude Code path is either documented as direct MCP setup or packaged through a supported Claude Code plugin workflow.
+- Codex plugin can be packaged through a supported Codex plugin workflow and used in a fresh Codex session.
+- Claude Code plugin can be packaged through a supported Claude Code plugin workflow and used in a fresh Claude Code session.
 - Recall/capture hooks are documented before implementation.
 - No development-only installer is required for normal use.
 

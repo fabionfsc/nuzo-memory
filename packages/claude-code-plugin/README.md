@@ -34,7 +34,20 @@ Run:
 npm run check -w @nuzo/claude-code-plugin
 ```
 
+If Claude Code is installed locally, also run:
+
+```bash
+claude plugin validate packages/claude-code-plugin
+```
+
+For local host testing:
+
+```bash
+claude --plugin-dir packages/claude-code-plugin
+```
+
+Then use `/reload-plugins` after changing plugin components such as `.mcp.json`.
+
 ## Boundary
 
 Do not add storage, recall ranking, policy, import/export, or tool contract logic here. This package should stay a Claude Code wrapper around the Nuzo MCP server.
-

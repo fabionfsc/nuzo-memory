@@ -1,5 +1,6 @@
 {
   "name": "nuzo",
+  "displayName": "Nuzo",
   "version": "0.0.0",
   "description": "Local-first, auditable memory for Claude Code through Nuzo MCP tools.",
   "author": {

@@ -10,7 +10,7 @@ def fail(message: str) -> None:
     raise SystemExit(1)
 
 
-def load_json(path: pathlib.Path) -> dict:
+def load_json(path: pathlib.Path) -> object:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as error:
@@ -27,6 +27,8 @@ def main() -> None:
         fail(".claude-plugin/plugin.json is missing")
 
     manifest = load_json(manifest_path)
+    if not isinstance(manifest, dict):
+        fail("plugin.json must contain a JSON object")
     required = ["name", "version", "description", "author", "license", "mcpServers"]
     for key in required:
         if key not in manifest:
@@ -36,6 +38,9 @@ def main() -> None:
         fail("plugin name must be kebab-case and <= 64 chars")
     if manifest["name"] != "nuzo":
         fail("plugin name must remain host-neutral: nuzo")
+    display_name = manifest.get("displayName")
+    if display_name is not None and display_name != "Nuzo":
+        fail("plugin displayName must remain Nuzo")
     if not re.fullmatch(r"\d+\.\d+\.\d+", manifest["version"]):
         fail("plugin version must be strict semver")
     if manifest["license"] != "Apache-2.0":
@@ -52,13 +57,26 @@ def main() -> None:
         fail(f"mcpServers target does not exist: {mcp_path}")
 
     mcp_config = load_json(mcp_config_path)
+    if not isinstance(mcp_config, dict):
+        fail(".mcp.json must contain a JSON object")
     servers = mcp_config.get("mcpServers")
-    if not isinstance(servers, dict):
-        fail(".mcp.json must contain an mcpServers object")
-    if "nuzo" not in servers:
-        fail(".mcp.json must define an MCP server named nuzo")
+    if not isinstance(servers, dict) or not servers:
+        fail(".mcp.json must contain a non-empty mcpServers object")
+    for server_name, server in servers.items():
+        if not isinstance(server_name, str) or not server_name:
+            fail("MCP server names must be non-empty strings")
+        if not isinstance(server, dict):
+            fail(f"MCP server '{server_name}' must be a JSON object")
+        command = server.get("command")
+        if not isinstance(command, str) or not command:
+            fail(f"MCP server '{server_name}' must define a command")
+        args = server.get("args", [])
+        if not isinstance(args, list) or not all(isinstance(arg, str) for arg in args):
+            fail(f"MCP server '{server_name}' args must be an array of strings")
 
-    nuzo = servers["nuzo"]
+    nuzo = servers.get("nuzo")
+    if not isinstance(nuzo, dict):
+        fail(".mcp.json must define an MCP server named nuzo")
     if nuzo.get("command") != "node":
         fail("nuzo MCP server command must be node")
     args = nuzo.get("args")
@@ -66,6 +84,8 @@ def main() -> None:
         fail("nuzo MCP server must define args")
     if not any("mcp-server/dist/index.js" in str(arg) for arg in args):
         fail("nuzo MCP server args must point to packages/mcp-server/dist/index.js")
+    if not any("${CLAUDE_PLUGIN_ROOT}" in str(arg) for arg in args):
+        fail("nuzo MCP server args must resolve through ${CLAUDE_PLUGIN_ROOT}")
 
     skills_path = manifest.get("skills")
     if skills_path:
