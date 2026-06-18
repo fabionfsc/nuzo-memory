@@ -18,6 +18,7 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Claude Code plugin validation now checks display metadata and the bundled MCP config shape.
 - Capture suggestion specification for inferred memories without silent writes.
 - MCP `memory.recall_hook` prototype for read-only task-start recall.
+- GitHub Actions CI for package checks, tests, builds, CLI smoke testing, and strict docs validation.
 
 ### Changed
 

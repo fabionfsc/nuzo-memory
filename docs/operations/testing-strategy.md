@@ -62,3 +62,33 @@ nuzo memory list
 nuzo memory export --path ./memories.memory.export.json
 nuzo memory doctor
 ```
+
+## Continuous Integration
+
+GitHub Actions runs validation from:
+
+```text
+.github/workflows/ci.yml
+```
+
+The workflow runs on pull requests, pushes to `main`, and manual dispatch.
+
+Node validation uses the lockfile and runs:
+
+```bash
+npm ci
+npm run check
+npm test
+npm run build
+npm run smoke:cli
+```
+
+Documentation validation installs `requirements-docs.txt` and runs:
+
+```bash
+mkdocs build --strict
+```
+
+CI does not deploy GitHub Pages and only receives read access to repository contents.
+
+`npm audit --audit-level=moderate` remains a dependency-change and release gate. Advisory changes outside the repository should not make ordinary pull requests nondeterministically fail.

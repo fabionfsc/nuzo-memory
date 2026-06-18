@@ -182,6 +182,14 @@ Check:
 - No real credentials or private memory examples are added.
 - Release-oriented changes follow `docs/operations/release-checklist.md`.
 
+GitHub runs the same core validation gates from:
+
+```text
+.github/workflows/ci.yml
+```
+
+Keep CI validation separate from GitHub Pages deployment.
+
 ## Cleanup And Sanitization
 
 Before committing or handing work back, sanitize the workspace:

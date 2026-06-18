@@ -11,6 +11,9 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/fabionfsc/nuzo-memory/actions/workflows/ci.yml">
+    <img alt="CI" src="https://github.com/fabionfsc/nuzo-memory/actions/workflows/ci.yml/badge.svg">
+  </a>
   <a href="https://github.com/fabionfsc/nuzo-memory/actions/workflows/pages.yml">
     <img alt="GitHub Pages" src="https://github.com/fabionfsc/nuzo-memory/actions/workflows/pages.yml/badge.svg">
   </a>

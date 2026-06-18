@@ -36,6 +36,12 @@ Use `npm install` only when intentionally changing dependencies and reviewing `p
 
 ## Validation
 
+Confirm the CI workflow is green:
+
+```bash
+gh run list --repo fabionfsc/nuzo-memory --workflow ci.yml --limit 5
+```
+
 Run:
 
 ```bash
@@ -153,4 +159,3 @@ Create GitHub release notes from `CHANGELOG.md`.
 - Confirm GitHub Pages still deploys successfully.
 - Open follow-up issues for deferred work.
 - Move `CHANGELOG.md` back to an empty `[Unreleased]` section for new development.
-
