@@ -100,6 +100,7 @@ nav:
       - GitHub Pages: operations/github-pages.md
       - Issue Tracking: operations/issue-tracking.md
       - Versioning: operations/versioning.md
+      - Release Checklist: operations/release-checklist.md
       - Coding Standards: operations/coding-standards.md
       - Testing Strategy: operations/testing-strategy.md
       - GitHub Release Plan: operations/github-release-plan.md

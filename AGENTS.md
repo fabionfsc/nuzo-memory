@@ -32,6 +32,7 @@ Start with:
 12. `docs/operations/lifecycle-hooks.md`
 13. `docs/operations/issue-tracking.md`
 14. `docs/operations/versioning.md`
+15. `docs/operations/release-checklist.md`
 
 ## Architecture Rules
 
@@ -153,6 +154,7 @@ Run:
 npm run check
 npm test
 npm run build
+npm run smoke:cli
 .venv-docs/bin/mkdocs build --strict
 ```
 
@@ -162,6 +164,7 @@ Check:
 - `mkdocs.yml` navigation includes new docs pages.
 - No runtime memory databases or exports are staged.
 - No real credentials or private memory examples are added.
+- Release-oriented changes follow `docs/operations/release-checklist.md`.
 
 ## Cleanup And Sanitization
 

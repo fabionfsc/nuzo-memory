@@ -255,6 +255,7 @@ Start here:
 - [Lifecycle hooks](docs/operations/lifecycle-hooks.md)
 - [Issue tracking](docs/operations/issue-tracking.md)
 - [Versioning](docs/operations/versioning.md)
+- [Release checklist](docs/operations/release-checklist.md)
 - [Stage 1 core plan](docs/implementation/stage-1-core.md)
 - [Roadmap](docs/operations/roadmap.md)
 

@@ -97,16 +97,7 @@ Do not paste raw Git logs into the changelog. Summarize user-visible changes.
 
 ## Release Checklist
 
-Before a versioned release:
-
-1. Confirm the milestone scope is complete.
-2. Run the full validation suite.
-3. Update `CHANGELOG.md`.
-4. Bump package versions together.
-5. Commit the version bump.
-6. Tag the release as `vX.Y.Z`.
-7. Push the commit and tag.
-8. Publish release notes from the changelog.
+Before a versioned release, follow `docs/operations/release-checklist.md`.
 
 Use npm's version tooling only once release automation is ready. Until then, bump versions manually and review the diff carefully.
 
@@ -116,4 +107,3 @@ Use npm's version tooling only once release automation is ready. Until then, bum
 - Keep a Changelog: https://keepachangelog.com/en/1.1.0/
 - Conventional Commits: https://www.conventionalcommits.org/en/v1.0.0/
 - npm version command: https://docs.npmjs.com/cli/v10/commands/npm-version/
-

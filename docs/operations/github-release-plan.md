@@ -96,3 +96,7 @@ The initial GitHub Pages setup is defined in `docs/operations/github-pages.md`.
 ## License
 
 Nuzo uses Apache-2.0 because it is permissive, includes an explicit patent grant, and fits infrastructure that may be adopted by teams.
+
+## Release Checklist
+
+Use `docs/operations/release-checklist.md` before tagging a release.
