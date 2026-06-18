@@ -31,6 +31,7 @@ Start with:
 11. `docs/operations/claude-code-plugin.md`
 12. `docs/operations/lifecycle-hooks.md`
 13. `docs/operations/issue-tracking.md`
+14. `docs/operations/versioning.md`
 
 ## Architecture Rules
 
@@ -179,6 +180,16 @@ Before committing or handing work back, sanitize the workspace:
 - Prefer labels from `docs/operations/issue-tracking.md`.
 - Keep roadmap/docs as direction and issues as assignable tasks.
 - Do not put secrets, real memory exports, or private user data in issues.
+- Do periodic issue hunting after meaningful changes: scan docs, code, tests, workflows, and public GitHub state for drift, bugs, missing validation, and stale roadmap claims.
+- When issue hunting finds a small safe fix, implement it directly and mention it in the related issue or final summary; when it finds larger or uncertain work, create a focused GitHub Issue with labels, milestone, and acceptance criteria.
+
+## Versioning
+
+- Follow `docs/operations/versioning.md`.
+- Do not bump package versions for every commit.
+- Keep packages at `0.0.0` until the first public MVP release is ready.
+- Use `CHANGELOG.md` for notable user-facing changes under `[Unreleased]`.
+- Version bumps should be release commits with tags, not ordinary development commits.
 
 ## GitHub Pages
 

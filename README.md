@@ -251,6 +251,7 @@ Start here:
 - [Claude Code plugin](docs/operations/claude-code-plugin.md)
 - [Lifecycle hooks](docs/operations/lifecycle-hooks.md)
 - [Issue tracking](docs/operations/issue-tracking.md)
+- [Versioning](docs/operations/versioning.md)
 - [Stage 1 core plan](docs/implementation/stage-1-core.md)
 - [Roadmap](docs/operations/roadmap.md)
 

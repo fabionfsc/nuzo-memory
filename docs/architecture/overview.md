@@ -78,7 +78,7 @@ It should support:
 
 Host plugins package the MCP server and defaults so agent hosts can use Nuzo without custom wiring.
 
-Codex is the first host package. Claude Code is a high-priority future host because it also supports MCP and plugin-provided MCP servers.
+Codex and Claude Code are the first host packages. Both support MCP-based extension paths, and both Nuzo packages should stay thin wrappers around the same MCP server.
 
 Host plugins are wrappers. They must not contain memory business logic.
 

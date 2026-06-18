@@ -4,7 +4,7 @@ Nuzo includes a thin Codex plugin wrapper in `packages/codex-plugin`.
 
 The plugin does not implement memory behavior directly. It points Codex at the Nuzo MCP server, while the memory lifecycle remains in `packages/core`.
 
-Codex is the first host package, not the whole product boundary. Claude Code and future MCP-compatible agent CLIs should use the same MCP server and core behavior.
+Codex is one host package, not the whole product boundary. Claude Code and future MCP-compatible agent CLIs should use the same MCP server and core behavior.
 
 See `docs/architecture/agent-host-compatibility.md` before changing plugin packaging.
 

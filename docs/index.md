@@ -51,7 +51,7 @@ Nuzo is in early MVP development. The repository now includes a TypeScript core 
 | Core | Memory lifecycle, policy checks, SQLite storage, FTS search, tests. |
 | CLI | `init`, `remember`, `recall`, `list`, `update`, `forget`, `export`, `import`, `doctor`. |
 | MCP | Stdio server with remember, recall, list, update, forget, export, import, and doctor tools. |
-| Host Plugins | Codex metadata exists; Claude Code compatibility is documented as a high-priority future target. |
+| Host Plugins | Codex and Claude Code wrapper metadata exists; both remain thin MCP packaging layers. |
 | Docs | Product, architecture, specs, operations, and ADRs. |
 | Next | Official host integration paths for Codex and Claude Code. |
 

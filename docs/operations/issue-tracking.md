@@ -60,6 +60,22 @@ Good issues include:
 
 Avoid issues that only say "improve docs" or "make plugin better". Convert them into a specific deliverable before starting work.
 
+## Periodic Issue Hunting
+
+Run issue hunting after meaningful changes and before larger next-step work.
+
+Check:
+
+- docs and README for stale product claims;
+- roadmap status against implemented packages;
+- CLI, MCP, and plugin commands shown in docs against real commands;
+- generated artifacts or runtime memory accidentally staged;
+- GitHub Issues for duplicates or completed work that should be closed;
+- GitHub Pages and release workflow status when public docs change;
+- tests and validation gaps around recently changed behavior.
+
+Small safe fixes can be handled immediately. Larger work should become a focused GitHub Issue with labels, milestone, concrete tasks, and acceptance criteria.
+
 ## Security
 
 Issues must not include:

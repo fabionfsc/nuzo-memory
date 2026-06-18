@@ -20,7 +20,8 @@ This directory is the source of truth for the project until implementation start
 14. `operations/claude-code-plugin.md`
 15. `operations/lifecycle-hooks.md`
 16. `operations/issue-tracking.md`
-17. `operations/roadmap.md`
+17. `operations/versioning.md`
+18. `operations/roadmap.md`
 
 ## Sections
 

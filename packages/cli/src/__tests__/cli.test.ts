@@ -81,11 +81,21 @@ describe("nuzo memory cli", () => {
     expect(list.stdout.join("\n")).toContain(id);
     expect(list.stdout.join("\n")).toContain("preference");
 
-    const archived = await runCli(["memory", "--store", store, "forget", id]);
+    const archived = await runCli(["memory", "--store", store, "forget", id, "--archive"]);
     expect(archived.stdout).toEqual(["Archived"]);
 
     const visible = await runCli(["memory", "--store", store, "list"]);
     expect(visible.stdout).toEqual([]);
+  });
+
+  it("rejects conflicting forget modes", async () => {
+    const store = createStorePath();
+
+    const output = await runCli(["memory", "--store", store, "forget", "mem_missing", "--archive", "--delete"]);
+
+    expect(output.stderr).toEqual([
+      "MEMORY_FORGET_MODE_CONFLICT: Choose either --archive or --delete, not both.",
+    ]);
   });
 
   it("exports, dry-runs import, and imports memories", async () => {

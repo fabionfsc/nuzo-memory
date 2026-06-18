@@ -224,10 +224,19 @@ export function createProgram(io: CliIO = defaultIO): Command {
     .command("forget")
     .description("Archive or delete a memory.")
     .argument("<id>", "Memory ID.")
+    .option("--archive", "Archive the memory. This is the default.", false)
     .option("--delete", "Hard delete instead of archive.", false)
     .option("--yes", "Confirm hard delete.", false)
     .option("--reason <reason>", "Reason for forgetting.")
-    .action(withErrorHandling(io, async (id: string, commandOptions: { delete: boolean; yes: boolean; reason?: string }) => {
+    .action(withErrorHandling(io, async (id: string, commandOptions: { archive: boolean; delete: boolean; yes: boolean; reason?: string }) => {
+      if (commandOptions.archive && commandOptions.delete) {
+        throw new NuzoMemoryError(
+          "MEMORY_FORGET_MODE_CONFLICT",
+          "Choose either --archive or --delete, not both.",
+          { id },
+        );
+      }
+
       const options = memory.opts<GlobalOptions>();
       const database = openDatabase(options);
       try {
