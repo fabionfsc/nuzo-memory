@@ -10,10 +10,16 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createProgram, type CliIO } from "../index.js";
 
 let tempDirectories: string[] = [];
+let testHome: string;
+
+beforeEach(() => {
+  testHome = mkdtempSync(join(tmpdir(), "nuzo-home-"));
+  tempDirectories.push(testHome);
+});
 
 afterEach(() => {
   for (const directory of tempDirectories) {
@@ -40,11 +46,15 @@ async function runCli(
   };
 
   const program = createProgram(io);
-  const previousEnv = new Map(Object.keys(env).map((key) => [key, process.env[key]]));
+  const effectiveEnv = {
+    HOME: testHome,
+    ...env,
+  };
+  const previousEnv = new Map(Object.keys(effectiveEnv).map((key) => [key, process.env[key]]));
   const previousExitCode = process.exitCode;
   try {
     process.exitCode = 0;
-    for (const [key, value] of Object.entries(env)) {
+    for (const [key, value] of Object.entries(effectiveEnv)) {
       if (value === undefined) {
         delete process.env[key];
       } else {
@@ -67,6 +77,92 @@ async function runCli(
 }
 
 describe("nuzo memory cli", () => {
+  it("applies user config scope, recall defaults, and privacy settings", async () => {
+    const init = await runCli(["memory", "--scope", "user:custom", "init"]);
+    expect(init.stdout.join("\n")).toContain("Scope: user:custom");
+    const configPath = join(testHome, ".nuzo", "config.json");
+    const config = JSON.parse(readFileSync(configPath, "utf8")) as {
+      recall: { include_global: boolean; limit: number };
+      privacy: { allow_network: boolean; record_recall_events: boolean };
+    };
+    config.recall.limit = 1;
+    config.recall.include_global = false;
+    config.privacy.record_recall_events = true;
+    writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
+
+    const first = await runCli([
+      "memory",
+      "remember",
+      "First configured recall memory.",
+      "--kind",
+      "note",
+    ]);
+    await runCli([
+      "memory",
+      "remember",
+      "Second configured recall memory.",
+      "--kind",
+      "note",
+    ]);
+
+    const limited = await runCli(["memory", "recall", "configured recall memory"]);
+    expect(limited.stdout).toHaveLength(1);
+    const expanded = await runCli([
+      "memory",
+      "recall",
+      "configured recall memory",
+      "--limit",
+      "2",
+    ]);
+    expect(expanded.stdout).toHaveLength(2);
+    const history = await runCli(["memory", "history", first.stdout[0] ?? ""]);
+    expect(history.stdout.some((line) => line.includes("memory.recalled"))).toBe(true);
+  });
+
+  it("supports legacy user config defaults and home-relative storage", async () => {
+    const configRoot = join(testHome, ".nuzo");
+    mkdirSync(configRoot, { recursive: true });
+    writeFileSync(
+      join(configRoot, "config.json"),
+      JSON.stringify({
+        version: 1,
+        default_scope: "user:legacy",
+        storage: {
+          driver: "sqlite",
+          path: "~/.nuzo/memory/legacy.sqlite",
+        },
+      }),
+      "utf8",
+    );
+
+    const remembered = await runCli([
+      "memory",
+      "remember",
+      "Legacy config remains readable.",
+      "--kind",
+      "note",
+    ]);
+    expect(remembered.stdout[0]).toMatch(/^mem_/);
+    expect(existsSync(join(configRoot, "memory", "legacy.sqlite"))).toBe(true);
+
+    const recall = await runCli(["memory", "recall", "legacy config"]);
+    expect(recall.stdout).toHaveLength(1);
+    const history = await runCli(["memory", "history", remembered.stdout[0] ?? ""]);
+    expect(history.stdout.some((line) => line.includes("memory.recalled"))).toBe(false);
+  });
+
+  it("reports malformed user config as an operational error", async () => {
+    const configRoot = join(testHome, ".nuzo");
+    mkdirSync(configRoot, { recursive: true });
+    writeFileSync(join(configRoot, "config.json"), "{invalid", "utf8");
+
+    const output = await runCli(["memory", "list"]);
+
+    expect(output.stderr).toEqual([
+      "MEMORY_CONFIG_INVALID: Nuzo config is not valid JSON.",
+    ]);
+  });
+
   it("initializes, remembers, updates, recalls, lists, and archives memory", async () => {
     const store = createStorePath();
 
@@ -218,9 +314,58 @@ describe("nuzo memory cli", () => {
     try {
       const output = await runCli(["memory", "remember", "Do not write outside.", "--kind", "note"]);
       expect(output.stderr).toEqual([
-        "MEMORY_CONFIG_INVALID: Project Nuzo config has an unsupported shape.",
+        "MEMORY_CONFIG_INVALID: Nuzo config has an unsupported shape.",
       ]);
       expect(existsSync(outsideStore)).toBe(false);
+    } finally {
+      process.chdir(previousCwd);
+    }
+  });
+
+  it("uses project config over user config and lets flags override recall", async () => {
+    await runCli(["memory", "--scope", "user:custom", "init"]);
+    const projectRoot = mkdtempSync(join(tmpdir(), "nuzo-project-precedence-"));
+    tempDirectories.push(projectRoot);
+    const previousCwd = process.cwd();
+    process.chdir(projectRoot);
+    try {
+      await runCli(["memory", "init", "--project"]);
+      writeFileSync(join(testHome, ".nuzo", "config.json"), "{invalid", "utf8");
+      const projectMemory = await runCli([
+        "memory",
+        "remember",
+        "Shared precedence memory in the project scope.",
+        "--kind",
+        "project_decision",
+      ]);
+      await runCli([
+        "memory",
+        "--scope",
+        "user:default",
+        "remember",
+        "Shared precedence memory in the global scope.",
+        "--kind",
+        "note",
+      ]);
+
+      const configured = await runCli(["memory", "recall", "shared precedence memory"]);
+      expect(configured.stdout).toHaveLength(2);
+      const projectOnly = await runCli([
+        "memory",
+        "recall",
+        "shared precedence memory",
+        "--no-include-global",
+      ]);
+      expect(projectOnly.stdout).toHaveLength(1);
+      expect(projectOnly.stdout[0]).toContain(projectMemory.stdout[0]);
+      const explicitScope = await runCli([
+        "memory",
+        "--scope",
+        "user:default",
+        "list",
+      ]);
+      expect(explicitScope.stdout).toHaveLength(1);
+      expect(explicitScope.stdout[0]).toContain("global scope");
     } finally {
       process.chdir(previousCwd);
     }

@@ -132,6 +132,9 @@ npm run nuzo -- memory recall "local-first tools"
 npm run nuzo -- memory doctor
 ```
 
+CLI settings resolve from explicit flags, project `.nuzo/config.json`, user
+`~/.nuzo/config.json`, then built-in defaults.
+
 For project-local memory, initialize from the project root with:
 
 ```bash

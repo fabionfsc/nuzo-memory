@@ -35,8 +35,6 @@ import {
   type ImportMemoriesInput,
 } from "@nuzo/memory-core";
 
-const defaultStorePath = resolve(homedir(), ".nuzo", "memory", "memories.sqlite");
-
 export interface CliIO {
   stdout(message: string): void;
   stderr(message: string): void;
@@ -62,6 +60,14 @@ interface NuzoConfig {
   storage: {
     driver: "sqlite";
     path: string;
+  };
+  recall: {
+    limit: number;
+    include_global: boolean;
+  };
+  privacy: {
+    allow_network: false;
+    record_recall_events: boolean;
   };
 }
 
@@ -168,18 +174,24 @@ export function createProgram(io: CliIO = defaultIO): Command {
     .command("recall")
     .description("Recall relevant memories.")
     .argument("<query>", "Recall query.")
-    .option("--limit <number>", "Maximum number of results.", parsePositiveInteger, 8)
-    .option("--include-global", "Include user:default alongside the selected scope.", false)
-    .action(withErrorHandling(io, async (query: string, commandOptions: { limit: number; includeGlobal: boolean }) => {
+    .option("--limit <number>", "Maximum number of results.", parsePositiveInteger)
+    .option("--include-global", "Include user:default alongside the selected scope.")
+    .option("--no-include-global", "Exclude user:default from the selected scope.")
+    .action(withErrorHandling(io, async (
+      query: string,
+      commandOptions: { limit?: number; includeGlobal?: boolean },
+    ) => {
       const options = memory.opts<GlobalOptions>();
-      const database = openDatabase(options);
+      const runtime = resolveRuntimeConfig(options);
+      const database = openDatabase(runtime.storePath);
       try {
         const service = createService(database);
         const results = await service.recall({
           query,
-          scope: resolveScope(options),
-          limit: commandOptions.limit,
-          includeGlobal: commandOptions.includeGlobal,
+          scope: runtime.scope,
+          limit: commandOptions.limit ?? runtime.recall.limit,
+          includeGlobal: commandOptions.includeGlobal ?? runtime.recall.includeGlobal,
+          recordUsage: runtime.privacy.recordRecallEvents,
         });
 
         for (const result of results) {
@@ -531,8 +543,12 @@ function withErrorHandling<Args extends unknown[]>(io: CliIO, action: (...args: 
   };
 }
 
-function openDatabase(options: GlobalOptions): SQLiteMemoryDatabase {
-  const storePath = resolveStorePath(options);
+function openDatabase(options: GlobalOptions): SQLiteMemoryDatabase;
+function openDatabase(storePath: string): SQLiteMemoryDatabase;
+function openDatabase(optionsOrPath: GlobalOptions | string): SQLiteMemoryDatabase {
+  const storePath = typeof optionsOrPath === "string"
+    ? optionsOrPath
+    : resolveStorePath(optionsOrPath);
   ensureStoreDirectory(storePath);
   return new SQLiteMemoryDatabase({ path: storePath });
 }
@@ -550,17 +566,48 @@ function createService(database: SQLiteMemoryDatabase) {
 }
 
 function resolveStorePath(options: GlobalOptions): string {
-  if (options.store !== undefined) {
-    return resolve(options.store);
-  }
-  return readProjectConfig()?.storage.path ?? defaultStorePath;
+  return resolveRuntimeConfig(options).storePath;
 }
 
 function resolveScope(options: GlobalOptions): MemoryScope {
-  if (options.scope !== undefined) {
-    return options.scope;
+  return resolveRuntimeConfig(options).scope;
+}
+
+function resolveRuntimeConfig(options: GlobalOptions): {
+  storePath: string;
+  scope: MemoryScope;
+  recall: {
+    limit: number;
+    includeGlobal: boolean;
+  };
+  privacy: {
+    recordRecallEvents: boolean;
+  };
+} {
+  const projectConfig = readProjectConfig();
+  const activeConfig = projectConfig ?? readUserConfig();
+
+  return {
+    storePath: options.store !== undefined
+      ? resolve(options.store)
+      : activeConfig?.storage.path ?? getDefaultStorePath(),
+    scope: options.scope ?? activeConfig?.default_scope ?? "user:default",
+    recall: {
+      limit: activeConfig?.recall.limit ?? 8,
+      includeGlobal: activeConfig?.recall.include_global ?? false,
+    },
+    privacy: {
+      recordRecallEvents: activeConfig?.privacy.record_recall_events ?? false,
+    },
+  };
+}
+
+function readUserConfig(): NuzoConfig | null {
+  const configPath = join(homedir(), ".nuzo", "config.json");
+  if (!pathExists(configPath)) {
+    return null;
   }
-  return readProjectConfig()?.default_scope ?? "user:default";
+  return parseConfig(configPath, false);
 }
 
 function readProjectConfig(): NuzoConfig | null {
@@ -568,34 +615,6 @@ function readProjectConfig(): NuzoConfig | null {
   const configPath = join(projectRoot, ".nuzo", "config.json");
   if (!pathExists(configPath)) {
     return null;
-  }
-
-  let value: unknown;
-  try {
-    value = JSON.parse(readFileSync(configPath, "utf8"));
-  } catch {
-    throw new NuzoMemoryError(
-      "MEMORY_CONFIG_INVALID",
-      "Project Nuzo config is not valid JSON.",
-      { path: configPath },
-    );
-  }
-
-  if (
-    !isRecord(value) ||
-    value.version !== 1 ||
-    typeof value.default_scope !== "string" ||
-    value.default_scope.length > memoryLimits.scopeLength ||
-    !memoryScopePattern.test(value.default_scope) ||
-    !isRecord(value.storage) ||
-    value.storage.driver !== "sqlite" ||
-    value.storage.path !== ".nuzo/memory/memories.sqlite"
-  ) {
-    throw new NuzoMemoryError(
-      "MEMORY_CONFIG_INVALID",
-      "Project Nuzo config has an unsupported shape.",
-      { path: configPath },
-    );
   }
 
   const nuzoRoot = join(projectRoot, ".nuzo");
@@ -610,14 +629,110 @@ function readProjectConfig(): NuzoConfig | null {
     assertProjectPathIsLocal(storePath, nuzoRoot, configPath);
   }
 
+  return parseConfig(configPath, true, storePath);
+}
+
+function parseConfig(
+  configPath: string,
+  project: boolean,
+  projectStorePath?: string,
+): NuzoConfig {
+  let value: unknown;
+  try {
+    value = JSON.parse(readFileSync(configPath, "utf8"));
+  } catch {
+    throw new NuzoMemoryError(
+      "MEMORY_CONFIG_INVALID",
+      "Nuzo config is not valid JSON.",
+      { path: configPath },
+    );
+  }
+
+  if (
+    !isRecord(value) ||
+    value.version !== 1 ||
+    typeof value.default_scope !== "string" ||
+    value.default_scope.length > memoryLimits.scopeLength ||
+    !memoryScopePattern.test(value.default_scope) ||
+    !isRecord(value.storage) ||
+    value.storage.driver !== "sqlite" ||
+    typeof value.storage.path !== "string" ||
+    (project && value.storage.path !== ".nuzo/memory/memories.sqlite") ||
+    (!project &&
+      !isAbsolute(value.storage.path) &&
+      !value.storage.path.startsWith("~/"))
+  ) {
+    throwConfigShape(configPath);
+  }
+
+  const recall = value.recall === undefined
+    ? { limit: 8, include_global: false }
+    : parseRecallConfig(value.recall, configPath);
+  const privacy = value.privacy === undefined
+    ? { allow_network: false as const, record_recall_events: false }
+    : parsePrivacyConfig(value.privacy, configPath);
+
   return {
     version: 1,
     default_scope: value.default_scope as MemoryScope,
     storage: {
       driver: "sqlite",
-      path: storePath,
+      path: project ? projectStorePath! : resolveUserStoragePath(value.storage.path),
     },
+    recall,
+    privacy,
   };
+}
+
+function resolveUserStoragePath(path: string): string {
+  return path.startsWith("~/")
+    ? resolve(homedir(), path.slice(2))
+    : resolve(path);
+}
+
+function parseRecallConfig(
+  value: unknown,
+  configPath: string,
+): NuzoConfig["recall"] {
+  if (
+    !isRecord(value) ||
+    typeof value.limit !== "number" ||
+    !Number.isInteger(value.limit) ||
+    value.limit < 1 ||
+    value.limit > 50 ||
+    typeof value.include_global !== "boolean"
+  ) {
+    throwConfigShape(configPath);
+  }
+  return {
+    limit: value.limit,
+    include_global: value.include_global,
+  };
+}
+
+function parsePrivacyConfig(
+  value: unknown,
+  configPath: string,
+): NuzoConfig["privacy"] {
+  if (
+    !isRecord(value) ||
+    value.allow_network !== false ||
+    typeof value.record_recall_events !== "boolean"
+  ) {
+    throwConfigShape(configPath);
+  }
+  return {
+    allow_network: false,
+    record_recall_events: value.record_recall_events,
+  };
+}
+
+function throwConfigShape(configPath: string): never {
+  throw new NuzoMemoryError(
+    "MEMORY_CONFIG_INVALID",
+    "Nuzo config has an unsupported shape.",
+    { path: configPath },
+  );
 }
 
 function resolveInitContext(
@@ -651,6 +766,7 @@ function resolveInitContext(
     };
   }
 
+  const defaultStorePath = getDefaultStorePath();
   const storePath = resolve(options.store ?? defaultStorePath);
   const configRoot = storePath === defaultStorePath
     ? dirname(dirname(storePath))
@@ -663,6 +779,10 @@ function resolveInitContext(
     scope: options.scope ?? "user:default",
     storePath,
   };
+}
+
+function getDefaultStorePath(): string {
+  return resolve(homedir(), ".nuzo", "memory", "memories.sqlite");
 }
 
 function projectScope(projectRoot: string): MemoryScope {

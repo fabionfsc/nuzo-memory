@@ -164,7 +164,6 @@ Deliverables:
 - scoped authorization for stores shared across host or project trust
   boundaries;
 - optimistic concurrency control for independent local processes;
-- effective user/project config precedence and runtime settings;
 - Dependabot, CodeQL, and protected-branch enforcement;
 - lifecycle integrations that preserve confirmed capture and read-only recall
   defaults.

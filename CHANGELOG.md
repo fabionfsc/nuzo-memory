@@ -44,6 +44,10 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ### Fixed
 
+- User and project config now control runtime store, scope, recall defaults,
+  and opt-in recall audit behavior with documented precedence.
+- User config accepts absolute and `~/` storage paths, while project config
+  remains confined to `.nuzo/memory`.
 - Nuzo-created runtime files and directories now use owner-only permissions.
 - Project config can no longer redirect storage outside `.nuzo/memory`.
 - CLI numeric arguments no longer accept trailing non-numeric text.

@@ -8,7 +8,7 @@ The CLI package currently lives at `packages/cli` and exposes the `nuzo` binary 
 
 Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
 
-Until release packaging is finalized, use the root workspace wrapper:
+For repository development, use the root workspace wrapper:
 
 ```bash
 npm install
@@ -40,6 +40,11 @@ npm run nuzo -- memory forget-many --scope project:auto --apply
 Project init creates `.nuzo/config.json`, a project-local SQLite store, and
 missing Git ignore rules. Later CLI commands run from that project root resolve
 the project store and hashed project scope automatically.
+
+Runtime precedence is explicit flags, project config, user config, then
+built-in defaults. Recall reads config defaults for result limit, global-scope
+inclusion, and optional recall-event recording. Use `--no-include-global` to
+override a config that enables global recall for one command.
 
 ## Smoke Test
 
@@ -84,7 +89,8 @@ The memory commands should remain grouped under:
 nuzo memory
 ```
 
-The package name can change before public release, but the user-facing command should stay stable.
+The released package name is `@nuzo/memory-cli`; the user-facing command stays
+`nuzo`.
 
 ## Boundaries
 
