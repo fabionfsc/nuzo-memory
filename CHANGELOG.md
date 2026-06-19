@@ -44,3 +44,4 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 - CLI `memory forget` now accepts the documented `--archive` flag and rejects conflicting `--archive --delete` usage.
 - Import now rejects malformed export memory items with structured `MEMORY_EXPORT_INVALID` errors instead of leaking runtime type errors.
+- Import now preflights every item before writing and reports within-document duplicates consistently in dry-run and real modes.

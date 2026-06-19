@@ -322,6 +322,78 @@ describe("memory service", () => {
     await expect(target.service.list()).resolves.toHaveLength(1);
   });
 
+  it("reports within-document duplicates consistently in dry-run and real imports", async () => {
+    const source = createTestService();
+    await source.service.remember({
+      content: "Keep import planning deterministic.",
+      kind: "instruction",
+      scope: "project:nuzo",
+      tags: ["import", "planning"],
+      source: "test",
+    });
+    const document = await source.service.exportMemories({
+      actor: "test",
+      scope: "project:nuzo",
+    });
+    document.memories.push({
+      ...document.memories[0]!,
+      content: "  Keep   import planning deterministic.  ",
+      tags: ["planning", "import", "planning"],
+    });
+
+    const target = createTestService();
+    const dryRun = await target.service.importMemories({
+      document,
+      actor: "test",
+      dryRun: true,
+    });
+    const imported = await target.service.importMemories({
+      document,
+      actor: "test",
+    });
+
+    expect(dryRun).toEqual({
+      imported: 1,
+      skipped: 1,
+      dryRun: true,
+    });
+    expect(imported).toEqual({
+      imported: 1,
+      skipped: 1,
+      dryRun: false,
+    });
+    await expect(target.service.list({ includeArchived: true })).resolves.toHaveLength(1);
+  });
+
+  it("preflights policy for every import item before writing", async () => {
+    const source = createTestService();
+    await source.service.remember({
+      content: "This valid item must not be partially imported.",
+      kind: "note",
+      scope: "user:default",
+      source: "test",
+    });
+    const document = await source.service.exportMemories({
+      actor: "test",
+      scope: "user:default",
+    });
+    document.memories.push({
+      ...document.memories[0]!,
+      content: "github token is ghp_123456789012345678901234567890123456",
+    });
+
+    const target = createTestService();
+    await expect(
+      target.service.importMemories({
+        document,
+        actor: "test",
+      }),
+    ).rejects.toMatchObject({
+      code: "MEMORY_SECRET_DETECTED",
+    });
+    await expect(target.service.list({ includeArchived: true })).resolves.toEqual([]);
+  });
+
   it("rejects malformed import memory items with a structured error", async () => {
     const { service } = createTestService();
     const document = {

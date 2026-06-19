@@ -9,6 +9,7 @@ import type {
   MemoryExportDocument,
   MemoryExportItem,
   MemoryRecord,
+  MemoryScope,
   RecallMemoriesInput,
   RecallMemoryResult,
   RememberMemoryInput,
@@ -186,8 +187,14 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
     async importMemories(input) {
       assertExportDocument(input.document);
 
-      let imported = 0;
+      const planned: Array<{
+        item: MemoryExportItem;
+        scope: MemoryScope;
+        tags: string[];
+      }> = [];
+      const duplicateKeysByScope = new Map<MemoryScope, Set<string>>();
       let skipped = 0;
+
       for (const item of input.document.memories) {
         const scope = input.scope ?? item.scope;
         await policy.assertCanRemember({
@@ -200,24 +207,38 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
         });
 
         const tags = [...new Set(item.tags)];
-        const existing = await store.list({ scope, includeArchived: true });
-        const duplicate = existing.find((memory) => isDuplicateImport(memory, {
+        let duplicateKeys = duplicateKeysByScope.get(scope);
+        if (!duplicateKeys) {
+          const existing = await store.list({ scope, includeArchived: true });
+          duplicateKeys = new Set(existing.map(toImportDuplicateKey));
+          duplicateKeysByScope.set(scope, duplicateKeys);
+        }
+
+        const duplicateKey = toImportDuplicateKey({
           scope,
           kind: item.kind,
           content: item.content,
           tags,
-        }));
+        });
 
-        if (duplicate) {
+        if (duplicateKeys.has(duplicateKey)) {
           skipped += 1;
           continue;
         }
 
-        if (input.dryRun === true) {
-          imported += 1;
-          continue;
-        }
+        duplicateKeys.add(duplicateKey);
+        planned.push({ item, scope, tags });
+      }
 
+      if (input.dryRun === true) {
+        return {
+          imported: planned.length,
+          skipped,
+          dryRun: true,
+        };
+      }
+
+      for (const { item, scope, tags } of planned) {
         const memory: MemoryRecord = {
           id: ids.memoryId(),
           scope,
@@ -246,13 +267,12 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
           },
           createdAt: clock.now(),
         });
-        imported += 1;
       }
 
       return {
-        imported,
+        imported: planned.length,
         skipped,
-        dryRun: input.dryRun === true,
+        dryRun: false,
       };
     },
 
@@ -440,20 +460,27 @@ function parseExportDate(value: string, field: string): Date {
   return date;
 }
 
-function isDuplicateImport(
+function toImportDuplicateKey(
   memory: MemoryRecord,
-  candidate: Pick<MemoryRecord, "scope" | "kind" | "content" | "tags">,
-): boolean {
-  return memory.scope === candidate.scope &&
-    memory.kind === candidate.kind &&
-    normalizeContent(memory.content) === normalizeContent(candidate.content) &&
-    normalizeTags(memory.tags) === normalizeTags(candidate.tags);
+): string;
+function toImportDuplicateKey(
+  memory: Pick<MemoryRecord, "scope" | "kind" | "content" | "tags">,
+): string;
+function toImportDuplicateKey(
+  memory: Pick<MemoryRecord, "scope" | "kind" | "content" | "tags">,
+): string {
+  return JSON.stringify([
+    memory.scope,
+    memory.kind,
+    normalizeContent(memory.content),
+    normalizeTags(memory.tags),
+  ]);
 }
 
 function normalizeContent(content: string): string {
   return content.trim().replace(/\s+/g, " ");
 }
 
-function normalizeTags(tags: string[]): string {
-  return [...new Set(tags)].sort().join("\0");
+function normalizeTags(tags: string[]): string[] {
+  return [...new Set(tags)].sort();
 }

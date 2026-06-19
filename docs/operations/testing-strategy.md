@@ -23,6 +23,7 @@ Testing should protect the project contracts before implementation details.
 - hard delete requires explicit confirmation;
 - export produces valid versioned format;
 - import dry-run reports planned changes;
+- import preflight rejects the full request before writes and handles duplicate items consistently;
 - doctor reports tracked memory files.
 - MCP doctor reports aggregate store health without exposing memory content.
 
