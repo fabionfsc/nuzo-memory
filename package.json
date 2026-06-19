@@ -19,6 +19,8 @@
     "nuzo": "node packages/cli/dist/index.js",
     "package:npm": "npm run build && node tools/package-npm-artifacts.mjs",
     "package:plugins": "npm run build && node tools/package-host-plugins.mjs",
+    "release:check": "node tools/check-release-state.mjs",
+    "release:prepare": "node tools/prepare-release.mjs",
     "smoke:cli": "npm run build && npm run nuzo -- memory --store /tmp/nuzo-cli-smoke/memories.sqlite init && npm run nuzo -- memory --store /tmp/nuzo-cli-smoke/memories.sqlite doctor",
     "test": "npm run test --workspaces --if-present",
     "validate:npm": "npm run package:npm && node tools/validate-npm-artifacts.mjs",

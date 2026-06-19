@@ -193,6 +193,7 @@ Run:
 
 ```bash
 npm run check
+npm run release:check
 npm test
 npm run build
 npm run package:plugins
@@ -242,6 +243,9 @@ Before committing or handing work back, sanitize the workspace:
 - Follow `docs/operations/versioning.md`.
 - Do not bump package versions for every commit.
 - Keep packages at `0.0.0` until the first public MVP release is ready.
+- Use `npm run release:prepare -- X.Y.Z` only for explicit release commits,
+  after the matching changelog section exists.
+- Run `npm run release:check` after release-oriented edits.
 - Use `CHANGELOG.md` for notable user-facing changes under `[Unreleased]`.
 - Version bumps should be release commits with tags, not ordinary development commits.
 

@@ -87,6 +87,12 @@ feat(mcp)!: rename memory.remember input field
 BREAKING CHANGE: memory.remember now expects text instead of content.
 ```
 
+Conventional Commits are recommended but are not enforced in CI yet. Nuzo is
+still pre-release, and early commits should stay readable without adding a
+commit-lint dependency before the release workflow stabilizes. Revisit CI
+enforcement after the first public MVP release if commit history starts to
+drift.
+
 ## Changelog
 
 Keep `CHANGELOG.md` human-readable.
@@ -95,11 +101,61 @@ Use an `[Unreleased]` section during development. Move entries into a version se
 
 Do not paste raw Git logs into the changelog. Summarize user-visible changes.
 
+Release PRs must update `CHANGELOG.md`. The target release section must use:
+
+```text
+## [X.Y.Z] - YYYY-MM-DD
+```
+
+Keep a fresh empty `[Unreleased]` section above the released section after the
+release commit.
+
+## Release Automation
+
+Use manual release commits with repository scripts. Do not use `npm version`
+for now, because Nuzo has multiple workspace packages, host plugin manifests,
+runtime package dependencies, and source-level version strings that must move
+together.
+
+Check version consistency at any time:
+
+```bash
+npm run release:check
+```
+
+Prepare a release version after the changelog section exists:
+
+```bash
+npm run release:prepare -- 0.1.0
+npm run release:check -- 0.1.0
+```
+
+The prepare script updates:
+
+- root and workspace package versions;
+- Nuzo workspace dependency pins;
+- `package-lock.json` workspace versions;
+- CLI and MCP server runtime version strings.
+
+It refuses `0.0.0`, because that version is reserved for unreleased
+development.
+
+Tag releases as:
+
+```text
+vX.Y.Z
+```
+
+GitHub release notes should be written from the matching `CHANGELOG.md`
+section, not generated from raw commit logs.
+
 ## Release Checklist
 
 Before a versioned release, follow `docs/operations/release-checklist.md`.
 
-Use npm's version tooling only once release automation is ready. Until then, bump versions manually and review the diff carefully.
+Use `npm version` only if a future release automation change documents how it
+updates every Nuzo package, lockfile entry, host plugin manifest, and source
+version string consistently.
 
 ## References
 

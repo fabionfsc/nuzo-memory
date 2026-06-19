@@ -78,12 +78,17 @@ Node validation uses the lockfile on Node.js 22 LTS and 24 LTS and runs:
 ```bash
 npm ci
 npm run check
+npm run release:check
 npm test
 npm run build
 npm run package:plugins
 npm run validate:npm
 npm run smoke:cli
 ```
+
+Release-state validation confirms that root/workspace versions, Nuzo internal
+dependency pins, lockfile workspace entries, CLI version output, MCP server
+version metadata, and changelog structure stay aligned.
 
 The npm artifact validation installs generated core and MCP tarballs into a
 temporary project and confirms the installed MCP binary starts. It does not

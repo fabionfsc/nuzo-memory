@@ -22,6 +22,7 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Runtime support policy for Node.js 22/24 LTS, npm 10+, and native SQLite build troubleshooting.
 - Host plugin artifact generator with release-path validation for Codex and Claude Code.
 - Reproducible npm package staging and clean-install validation for core and MCP runtime artifacts.
+- Release-state tooling for coordinated version preparation and changelog validation.
 
 ### Changed
 

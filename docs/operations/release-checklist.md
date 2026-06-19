@@ -57,6 +57,7 @@ Run:
 
 ```bash
 npm run check
+npm run release:check
 npm test
 npm run build
 npm run package:plugins
@@ -143,8 +144,10 @@ docs/operations/versioning.md
 Before tagging:
 
 - move relevant `CHANGELOG.md` entries from `[Unreleased]` into the target version section;
-- bump package versions together;
-- review `package.json`, workspace package versions, and `package-lock.json`;
+- keep a fresh empty `[Unreleased]` section above the release section;
+- prepare the release version with `npm run release:prepare -- X.Y.Z`;
+- confirm `npm run release:check -- X.Y.Z` passes;
+- review `package.json`, workspace package versions, source version strings, and `package-lock.json`;
 - commit the version bump as a release commit.
 
 Do not bump versions for ordinary development commits.
@@ -177,6 +180,8 @@ If HTTPS is still not enforced, keep the GitHub Pages HTTPS issue open and menti
 After validation and version bump:
 
 ```bash
+git diff --check
+git status --short
 git tag vX.Y.Z
 git push origin main
 git push origin vX.Y.Z
