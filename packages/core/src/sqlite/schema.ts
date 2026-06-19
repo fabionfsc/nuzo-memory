@@ -5,6 +5,7 @@ export const schemaVersion = 1;
 
 export function migrate(database: Database.Database): void {
   database.pragma("journal_mode = WAL");
+  database.pragma("busy_timeout = 5000");
   database.pragma("foreign_keys = ON");
 
   const currentVersion = database.pragma("user_version", { simple: true }) as number;

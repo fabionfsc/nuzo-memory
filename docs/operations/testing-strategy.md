@@ -29,6 +29,8 @@ Testing should protect the project contracts before implementation details.
 - import preflight rejects the full request before writes and handles duplicate items consistently;
 - SQLite mutations roll back memory, FTS, and audit writes after injected failures;
 - multi-item imports are atomic when a later item fails;
+- normal recall does not persist query text or usage metadata unless the core
+  caller explicitly opts in;
 - doctor reports tracked memory files.
 - MCP doctor reports aggregate store health without exposing memory content.
 

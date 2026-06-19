@@ -13,6 +13,11 @@ MCP schemas reject malformed memory selectors before handlers run:
 - Scope IDs may contain letters, numbers, `.`, `_`, `~`, `:`, `/`, and `-`.
 - `tags` must be lowercase labels starting with a letter or number.
 - Tags may contain lowercase letters, numbers, `.`, `_`, and `-`, up to 64 characters.
+- Memory writes and filters accept at most 32 tags.
+- Memory content is limited to 8,000 characters.
+- Recall queries are limited to 2,000 characters.
+- Scope and memory identifiers are limited to 256 characters.
+- Import documents are limited to 1,000 memories.
 
 ### `memory.remember`
 
@@ -45,6 +50,9 @@ Output:
 ### `memory.recall`
 
 Find relevant memories.
+
+Normal recall is read-only with respect to memory metadata and audit history.
+It does not store the query or update `last_used_at` by default.
 
 Input:
 

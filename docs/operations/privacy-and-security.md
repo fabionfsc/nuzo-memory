@@ -48,6 +48,25 @@ This scanner is a safety guard, not a complete data-loss-prevention system.
 Users and host agents must still avoid sending private files or credentials to
 memory tools.
 
+The scanner includes npm access-token prefixes in addition to the provider
+patterns above.
+
+## Local File Protection
+
+Nuzo-created databases, SQLite sidecars, config files, and exports are
+owner-readable/writable only (`0600`). Nuzo-created memory, export, and log
+directories use `0700`.
+
+Project `.nuzo/config.json` cannot redirect storage to an absolute path,
+traverse outside the project, or resolve through a symlinked `.nuzo` path.
+
+## Scope Isolation
+
+Nuzo scopes are selectors, not security principals in `0.1.x`. Any process
+that can use a store may be able to request multiple scopes or unscoped
+operations. Use a separate SQLite store for workloads that require isolation
+between hosts, projects, teams, or trust levels.
+
 ## Auditability
 
 Every memory should expose:
@@ -85,3 +104,7 @@ The MVP supports:
 - JSON export for round-trip import;
 - Markdown export for review;
 - dry-run import.
+
+JSON imports are limited to 1,000 memories and CLI import files are limited to
+10 MiB. Memory content, tags, sources, queries, and destructive-action reasons
+also have bounded inputs.

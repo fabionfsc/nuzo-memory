@@ -51,6 +51,10 @@ After project init, CLI commands run from that project root automatically read
 Project config stores `.nuzo/memory/memories.sqlite` as a relative path so it
 does not leak a machine-specific project path and remains portable.
 
+The v1 project config accepts only this relative storage path. Nuzo rejects
+absolute paths, traversal, and symlinked `.nuzo` paths instead of allowing
+repository-controlled config to redirect memory writes.
+
 Creates:
 
 ```text
@@ -100,6 +104,8 @@ Rules:
 - apply missing migrations only;
 - append missing `.gitignore` rules without duplicating them;
 - report existing paths clearly.
+- create private runtime files with `0600` permissions and Nuzo-owned runtime
+  directories with `0700` permissions.
 
 Project init cannot be combined with a custom `--store` path. Choose either the
 project layout or an explicit custom store.

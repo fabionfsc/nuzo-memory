@@ -12,7 +12,7 @@ diagnostics.
 Run a published version with:
 
 ```bash
-npx --yes @nuzo/mcp-server@<version>
+npm exec --yes --package @nuzo/mcp-server@<version> -- nuzo-mcp-server
 ```
 
 Use a fixed version in host plugins and automated configuration. Do not depend

@@ -70,6 +70,7 @@ CREATE TABLE memory_events (
 
 CREATE VIRTUAL TABLE memories_fts USING fts5(
   id UNINDEXED,
+  scope UNINDEXED,
   content,
   tags
 );
@@ -87,7 +88,10 @@ Every write operation creates an event:
 - `memory.exported`
 - `memory.recalled`
 
-Recall events may be configurable because they can grow quickly.
+Recall events are opt-in because queries may contain sensitive task context and
+can grow quickly. Normal CLI and MCP recall do not record query text or update
+`last_used_at` by default. A caller must explicitly request usage recording
+through the core API.
 
 ## Transaction Guarantees
 
@@ -104,6 +108,20 @@ events atomically.
 
 Policy validation and import planning happen before write transactions.
 
+SQLite uses WAL mode and a five-second busy timeout so short concurrent writes
+from multiple local agent processes wait instead of failing immediately.
+
+## Local Permissions
+
+Nuzo-created SQLite databases, WAL/SHM sidecars, config files, and exports use
+owner-only `0600` permissions. Nuzo-owned memory, export, and log directories
+use `0700` when created.
+
+Project config accepts only the portable
+`.nuzo/memory/memories.sqlite` storage path. Absolute paths, traversal, and
+symlinked `.nuzo` paths are rejected so repository-controlled config cannot
+redirect writes outside the project.
+
 ## Secrets And Sensitive Data
 
 The MVP should reject obvious secret-like values:
@@ -115,3 +133,11 @@ The MVP should reject obvious secret-like values:
 - cookie/session blobs.
 
 The CLI should include a diagnostic command that reports whether any memory database or export file is tracked by Git.
+
+## Scope Boundary
+
+Scopes organize recall and lifecycle operations; they are not authorization
+boundaries in `0.1.x`. A process with access to one Nuzo store can potentially
+request other scopes or unscoped list/export operations. Use separate stores
+when host or project isolation is required until a scoped authorization policy
+is implemented.

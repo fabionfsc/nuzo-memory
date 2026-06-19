@@ -51,7 +51,7 @@ describe("nuzo CLI process contract", () => {
       "recall",
       "test",
       "--limit",
-      "0",
+      "8items",
     ]);
 
     expect(result.status).toBe(cliExitCodes.usageError);

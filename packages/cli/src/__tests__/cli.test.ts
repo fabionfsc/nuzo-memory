@@ -1,4 +1,13 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -67,6 +76,10 @@ describe("nuzo memory cli", () => {
     expect(existsSync(join(store, "..", "config.json"))).toBe(true);
     expect(existsSync(join(store, "..", "exports"))).toBe(true);
     expect(existsSync(join(store, "..", "logs"))).toBe(true);
+    expect(statSync(store).mode & 0o777).toBe(0o600);
+    expect(statSync(join(store, "..", "config.json")).mode & 0o777).toBe(0o600);
+    expect(statSync(join(store, "..", "exports")).mode & 0o777).toBe(0o700);
+    expect(statSync(join(store, "..", "logs")).mode & 0o777).toBe(0o700);
 
     const remembered = await runCli([
       "memory",
@@ -110,10 +123,9 @@ describe("nuzo memory cli", () => {
     expect(list.stdout.join("\n")).toContain("preference");
 
     const history = await runCli(["memory", "--store", store, "history", id]);
-    expect(history.stdout).toHaveLength(3);
+    expect(history.stdout).toHaveLength(2);
     expect(history.stdout[0]).toContain("memory.created");
     expect(history.stdout[1]).toContain("memory.updated");
-    expect(history.stdout[2]).toContain("memory.recalled");
     expect(history.stdout.join("\n")).not.toContain("concise final answers");
 
     const archived = await runCli(["memory", "--store", store, "forget", id, "--archive"]);
@@ -181,6 +193,70 @@ describe("nuzo memory cli", () => {
     expect(output.stderr).toEqual([
       "MEMORY_INIT_STORE_CONFLICT: Project init cannot be combined with a custom --store path.",
     ]);
+  });
+
+  it("rejects project config storage outside the local .nuzo memory path", async () => {
+    const projectRoot = mkdtempSync(join(tmpdir(), "nuzo-project-config-"));
+    tempDirectories.push(projectRoot);
+    const outsideStore = createStorePath();
+    mkdirSync(join(projectRoot, ".nuzo"), { recursive: true });
+    writeFileSync(
+      join(projectRoot, ".nuzo", "config.json"),
+      JSON.stringify({
+        version: 1,
+        default_scope: "project:test",
+        storage: {
+          driver: "sqlite",
+          path: outsideStore,
+        },
+      }),
+      "utf8",
+    );
+
+    const previousCwd = process.cwd();
+    process.chdir(projectRoot);
+    try {
+      const output = await runCli(["memory", "remember", "Do not write outside.", "--kind", "note"]);
+      expect(output.stderr).toEqual([
+        "MEMORY_CONFIG_INVALID: Project Nuzo config has an unsupported shape.",
+      ]);
+      expect(existsSync(outsideStore)).toBe(false);
+    } finally {
+      process.chdir(previousCwd);
+    }
+  });
+
+  it("rejects a project memory database symlink that escapes .nuzo", async () => {
+    const projectRoot = mkdtempSync(join(tmpdir(), "nuzo-project-symlink-"));
+    tempDirectories.push(projectRoot);
+    const outsideStore = createStorePath();
+    writeFileSync(outsideStore, "sentinel", "utf8");
+    mkdirSync(join(projectRoot, ".nuzo", "memory"), { recursive: true });
+    writeFileSync(
+      join(projectRoot, ".nuzo", "config.json"),
+      JSON.stringify({
+        version: 1,
+        default_scope: "project:test",
+        storage: {
+          driver: "sqlite",
+          path: ".nuzo/memory/memories.sqlite",
+        },
+      }),
+      "utf8",
+    );
+    symlinkSync(outsideStore, join(projectRoot, ".nuzo", "memory", "memories.sqlite"));
+
+    const previousCwd = process.cwd();
+    process.chdir(projectRoot);
+    try {
+      const output = await runCli(["memory", "list"]);
+      expect(output.stderr).toEqual([
+        "MEMORY_CONFIG_INVALID: Project Nuzo config must keep storage inside the project .nuzo directory.",
+      ]);
+      expect(readFileSync(outsideStore, "utf8")).toBe("sentinel");
+    } finally {
+      process.chdir(previousCwd);
+    }
   });
 
   it("rejects conflicting forget modes", async () => {
@@ -321,6 +397,21 @@ describe("nuzo memory cli", () => {
     const output = await runCli(["memory", "--store", store, "import", exportPath]);
 
     expect(output.stderr).toEqual(["MEMORY_EXPORT_INVALID: Memory export document is invalid."]);
+  });
+
+  it("reports missing import files as operational errors", async () => {
+    const store = createStorePath();
+    const output = await runCli([
+      "memory",
+      "--store",
+      store,
+      "import",
+      join(store, "..", "missing.memory.export.json"),
+    ]);
+
+    expect(output.stderr).toEqual([
+      "MEMORY_EXPORT_READ_FAILED: Memory export file could not be read.",
+    ]);
   });
 
   it("reports doctor information", async () => {

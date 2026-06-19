@@ -11,7 +11,7 @@ MCP-compatible AI agents. Version `0.1.0` is the first public MVP release.
 - Primary docs site: `https://nuzo.com.br`
 - GitHub Pages fallback: `https://fabionfsc.github.io/nuzo-memory/`
 - Docs engine: MkDocs Material
-- Runtime code: early MVP in `packages/core`, `packages/cli`, `packages/mcp-server`, `packages/codex-plugin`, and `packages/claude-code-plugin`
+- Runtime code: public `0.1.0` MVP in `packages/core`, `packages/cli`, `packages/mcp-server`, `packages/codex-plugin`, and `packages/claude-code-plugin`
 - Current implementation: SQLite storage, FTS recall, policy checks, JSON export/import, CLI commands, and MCP memory tools
 - Intended package direction: `core -> cli -> mcp-server -> host plugins`
 

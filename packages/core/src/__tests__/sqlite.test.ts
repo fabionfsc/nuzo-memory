@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import Database from "better-sqlite3";
@@ -63,6 +63,7 @@ describe("SQLiteMemoryDatabase", () => {
       .all() as Array<{ name: string; type: string }>;
 
     expect(database.getSchemaVersion()).toBe(1);
+    expect(database.database.pragma("busy_timeout", { simple: true })).toBe(5000);
     expect(objects).toEqual([
       { name: "idx_memories_archived_at", type: "index" },
       { name: "idx_memories_scope", type: "index" },
@@ -73,6 +74,21 @@ describe("SQLiteMemoryDatabase", () => {
     ]);
 
     database.close();
+  });
+
+  it("keeps SQLite database files private even with a permissive umask", () => {
+    const directory = mkdtempSync(join(tmpdir(), "nuzo-permissions-"));
+    tempDirectories.push(directory);
+    const path = join(directory, "memories.sqlite");
+    const previousUmask = process.umask(0o022);
+    try {
+      const database = new SQLiteMemoryDatabase({ path });
+      expect(statSync(path).mode & 0o777).toBe(0o600);
+      database.close();
+      expect(statSync(path).mode & 0o777).toBe(0o600);
+    } finally {
+      process.umask(previousUmask);
+    }
   });
 
   it("reopens idempotently without losing memory or audit data", async () => {
@@ -149,6 +165,7 @@ describe("SQLiteMemoryDatabase", () => {
     const results = await service.recall({
       query: "SQLite prototypes",
       scope: "user:default",
+      recordUsage: true,
     });
 
     expect(results).toHaveLength(1);
@@ -157,6 +174,24 @@ describe("SQLiteMemoryDatabase", () => {
     const events = await database.list(memory.id);
     expect(events.map((event) => event.eventType)).toEqual(["memory.created", "memory.recalled"]);
 
+    database.close();
+  });
+
+  it("recalls accented Unicode terms through SQLite FTS", async () => {
+    const { database, service } = createTempDatabase();
+    const memory = await service.remember({
+      content: "A memória portátil deve continuar auditável.",
+      kind: "instruction",
+      scope: "user:default",
+      source: "test",
+    });
+
+    const results = await service.recall({
+      query: "memória auditável",
+      scope: "user:default",
+    });
+
+    expect(results[0]?.memory.id).toBe(memory.id);
     database.close();
   });
 

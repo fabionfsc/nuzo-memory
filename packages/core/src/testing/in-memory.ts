@@ -84,7 +84,7 @@ export class InMemorySearchIndex implements SearchIndex {
   async search(input: RecallMemoriesInput): Promise<RecallMemoryResult[]> {
     const terms = input.query
       .toLowerCase()
-      .split(/\W+/)
+      .split(/[^\p{L}\p{N}_]+/u)
       .filter(Boolean);
 
     return [...this.indexed.values()]

@@ -12,6 +12,11 @@ const patterns: Array<{ kind: string; regex: RegExp; message: string }> = [
     message: "GitHub tokens should not be stored as memory.",
   },
   {
+    kind: "npm_token",
+    regex: /\bnpm_[A-Za-z0-9]{20,}\b/,
+    message: "npm access tokens should not be stored as memory.",
+  },
+  {
     kind: "provider_api_key",
     regex: /\b(?:sk-(?:proj-|ant-[A-Za-z0-9-]+-)?[A-Za-z0-9_-]{20,}|sk_live_[A-Za-z0-9]{20,}|AIza[A-Za-z0-9_-]{30,})\b/,
     message: "Provider API keys should not be stored as memory.",

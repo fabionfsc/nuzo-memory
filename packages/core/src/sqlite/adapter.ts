@@ -1,4 +1,5 @@
 import Database from "better-sqlite3";
+import { chmodSync, closeSync, existsSync, openSync } from "node:fs";
 import { NuzoMemoryError } from "../errors.js";
 import type { AuditLog, MemoryStore, SearchIndex, TransactionManager } from "../ports.js";
 import type {
@@ -48,17 +49,21 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
   private transactionQueue: Promise<void> = Promise.resolve();
 
   constructor(options: SQLiteMemoryDatabaseOptions) {
+    createPrivateDatabaseFile(options.path);
     this.database = new Database(options.path);
     try {
       migrate(this.database);
+      protectDatabaseFiles(options.path);
     } catch (error) {
       this.database.close();
+      protectDatabaseFiles(options.path);
       throw error;
     }
   }
 
   close(): void {
     this.database.close();
+    protectDatabaseFiles(this.database.name);
   }
 
   getSchemaVersion(): number {
@@ -77,6 +82,7 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
     try {
       this.database.exec("BEGIN IMMEDIATE");
       started = true;
+      protectDatabaseFiles(this.database.name);
       const result = await operation();
       this.database.exec("COMMIT");
       return result;
@@ -86,6 +92,7 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
       }
       throw error;
     } finally {
+      protectDatabaseFiles(this.database.name);
       release();
     }
   }
@@ -317,8 +324,25 @@ function parsePayload(value: string): Record<string, unknown> {
 function toFtsQuery(query: string): string {
   return query
     .trim()
-    .split(/\W+/)
+    .split(/[^\p{L}\p{N}_]+/u)
     .filter(Boolean)
     .map((term) => `"${term.replaceAll('"', '""')}"`)
     .join(" OR ");
+}
+
+function protectDatabaseFiles(path: string): void {
+  for (const candidate of [path, `${path}-wal`, `${path}-shm`]) {
+    if (existsSync(candidate)) {
+      chmodSync(candidate, 0o600);
+    }
+  }
+}
+
+function createPrivateDatabaseFile(path: string): void {
+  if (path === ":memory:") {
+    return;
+  }
+  const descriptor = openSync(path, "a", 0o600);
+  closeSync(descriptor);
+  chmodSync(path, 0o600);
 }

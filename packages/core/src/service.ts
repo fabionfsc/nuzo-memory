@@ -26,6 +26,7 @@ import type {
   RememberMemoryInput,
   UpdateMemoryInput,
 } from "./types.js";
+import { memoryLimits } from "./policy.js";
 import { memoryKinds } from "./types.js";
 
 export interface MemoryServiceDependencies {
@@ -57,7 +58,9 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
     : <T>(operation: () => Promise<T>) => operation();
 
   async function forgetMemory(input: ForgetMemoryInput): Promise<void> {
+    assertMemoryId(input.id);
     assertActor(input.actor);
+    assertReason(input.reason);
 
     const memory = await store.findById(input.id);
     if (!memory) {
@@ -148,7 +151,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
         limit: input.limit ?? 8,
       });
 
-      if (input.recordUsage === false) {
+      if (input.recordUsage !== true) {
         return results;
       }
 
@@ -179,6 +182,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
     },
 
     async update(input) {
+      assertMemoryId(input.id);
       const current = await store.findById(input.id);
       if (!current) {
         throw new NuzoMemoryError("MEMORY_NOT_FOUND", "Memory was not found.", { id: input.id });
@@ -233,9 +237,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
     },
 
     async history(memoryId) {
-      if (memoryId.trim().length === 0) {
-        throw new NuzoMemoryError("MEMORY_ID_EMPTY", "Memory ID cannot be empty.");
-      }
+      assertMemoryId(memoryId);
       return auditLog.list(memoryId);
     },
 
@@ -381,6 +383,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
         );
       }
       assertActor(input.actor);
+      assertReason(input.reason);
       await policy.assertCanList({
         ...(input.scope === undefined ? {} : { scope: input.scope }),
         ...(input.tags === undefined ? {} : { tags: input.tags }),
@@ -437,6 +440,30 @@ function assertActor(actor: string): void {
   if (actor.trim().length === 0) {
     throw new NuzoMemoryError("MEMORY_ACTOR_EMPTY", "Memory actor cannot be empty.");
   }
+  if (actor.length > memoryLimits.actorLength) {
+    throw new NuzoMemoryError("MEMORY_ACTOR_INVALID", "Memory actor is too long.", {
+      maxLength: memoryLimits.actorLength,
+    });
+  }
+}
+
+function assertMemoryId(memoryId: string): void {
+  if (memoryId.trim().length === 0) {
+    throw new NuzoMemoryError("MEMORY_ID_EMPTY", "Memory ID cannot be empty.");
+  }
+  if (memoryId.length > memoryLimits.identifierLength) {
+    throw new NuzoMemoryError("MEMORY_ID_INVALID", "Memory ID is too long.", {
+      maxLength: memoryLimits.identifierLength,
+    });
+  }
+}
+
+function assertReason(reason: string | undefined): void {
+  if (reason !== undefined && reason.length > memoryLimits.reasonLength) {
+    throw new NuzoMemoryError("MEMORY_REASON_TOO_LONG", "Memory reason is too long.", {
+      maxLength: memoryLimits.reasonLength,
+    });
+  }
 }
 
 function toExportItem(memory: MemoryRecord): MemoryExportItem {
@@ -471,6 +498,13 @@ function assertExportDocument(document: MemoryExportDocument): void {
 
   if (!Array.isArray(value.memories)) {
     throw new NuzoMemoryError("MEMORY_EXPORT_INVALID", "Memory export document is invalid.");
+  }
+  if (value.memories.length > memoryLimits.importItems) {
+    throw new NuzoMemoryError(
+      "MEMORY_IMPORT_LIMIT_EXCEEDED",
+      "Memory import contains too many items.",
+      { maxItems: memoryLimits.importItems },
+    );
   }
 
   value.memories.forEach(assertExportItem);
@@ -568,6 +602,12 @@ function throwInvalidExportItem(
 }
 
 function parseExportDate(value: string, field: string): Date {
+  if (value.length > memoryLimits.dateLength) {
+    throw new NuzoMemoryError("MEMORY_EXPORT_INVALID", "Memory export contains an invalid date.", {
+      field,
+      maxLength: memoryLimits.dateLength,
+    });
+  }
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     throw new NuzoMemoryError("MEMORY_EXPORT_INVALID", "Memory export contains an invalid date.", {

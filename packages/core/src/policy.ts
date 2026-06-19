@@ -11,6 +11,18 @@ import type {
 
 export const memoryScopePattern = /^(user|project|agent|team):[A-Za-z0-9._~:/-]+$/;
 export const memoryTagPattern = /^[a-z0-9][a-z0-9._-]{0,63}$/;
+export const memoryLimits = {
+  actorLength: 256,
+  contentLength: 8000,
+  dateLength: 64,
+  identifierLength: 256,
+  importItems: 1000,
+  queryLength: 2000,
+  reasonLength: 1000,
+  scopeLength: 256,
+  sourceLength: 256,
+  tags: 32,
+} as const;
 
 export class DefaultPolicyEngine implements PolicyEngine {
   constructor(private readonly secretScanner: SecretScanner) {}
@@ -22,10 +34,10 @@ export class DefaultPolicyEngine implements PolicyEngine {
       "Memory content cannot be empty.",
     );
     invariant(
-      input.content.length <= 8000,
+      input.content.length <= memoryLimits.contentLength,
       "MEMORY_CONTENT_TOO_LONG",
       "Memory content is too long.",
-      { maxLength: 8000 },
+      { maxLength: memoryLimits.contentLength },
     );
     invariant(
       memoryKinds.includes(input.kind),
@@ -39,6 +51,12 @@ export class DefaultPolicyEngine implements PolicyEngine {
       "MEMORY_SOURCE_EMPTY",
       "Memory source cannot be empty.",
     );
+    invariant(
+      input.source.length <= memoryLimits.sourceLength,
+      "MEMORY_SOURCE_TOO_LONG",
+      "Memory source is too long.",
+      { maxLength: memoryLimits.sourceLength },
+    );
 
     const confidence = input.confidence ?? 1;
     invariant(
@@ -48,7 +66,14 @@ export class DefaultPolicyEngine implements PolicyEngine {
       { confidence },
     );
 
-    for (const tag of input.tags ?? []) {
+    const tags = input.tags ?? [];
+    invariant(
+      tags.length <= memoryLimits.tags,
+      "MEMORY_TAG_LIMIT_EXCEEDED",
+      "Memory has too many tags.",
+      { maxTags: memoryLimits.tags },
+    );
+    for (const tag of tags) {
       assertTag(tag);
     }
 
@@ -72,6 +97,12 @@ export class DefaultPolicyEngine implements PolicyEngine {
 
   async assertCanRecall(input: RecallMemoriesInput): Promise<void> {
     invariant(input.query.trim().length > 0, "RECALL_QUERY_EMPTY", "Recall query cannot be empty.");
+    invariant(
+      input.query.length <= memoryLimits.queryLength,
+      "RECALL_QUERY_TOO_LONG",
+      "Recall query is too long.",
+      { maxLength: memoryLimits.queryLength },
+    );
     assertScope(input.scope);
 
     const limit = input.limit ?? 8;
@@ -84,16 +115,26 @@ export class DefaultPolicyEngine implements PolicyEngine {
     if (input.scope !== undefined) {
       assertScope(input.scope);
     }
-    for (const tag of input.tags ?? []) {
+    const tags = input.tags ?? [];
+    invariant(
+      tags.length <= memoryLimits.tags,
+      "MEMORY_TAG_LIMIT_EXCEEDED",
+      "Memory filter has too many tags.",
+      { maxTags: memoryLimits.tags },
+    );
+    for (const tag of tags) {
       assertTag(tag);
     }
   }
 }
 
 function assertScope(scope: MemoryScope): void {
-  invariant(memoryScopePattern.test(scope), "MEMORY_SCOPE_INVALID", "Memory scope is invalid.", {
-    scope,
-  });
+  invariant(
+    scope.length <= memoryLimits.scopeLength && memoryScopePattern.test(scope),
+    "MEMORY_SCOPE_INVALID",
+    "Memory scope is invalid.",
+    { scope, maxLength: memoryLimits.scopeLength },
+  );
 }
 
 function assertTag(tag: string): void {

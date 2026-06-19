@@ -13,6 +13,7 @@ import {
   RegexSecretScanner,
   SQLiteMemoryDatabase,
   SystemClock,
+  memoryLimits,
   memoryScopePattern,
   memoryTagPattern,
   schemaVersion,
@@ -34,8 +35,10 @@ import type {
 } from "./handlers.js";
 
 const defaultStorePath = resolve(homedir(), ".nuzo", "memory", "memories.sqlite");
-const scopeSchema = z.string().regex(memoryScopePattern);
+const scopeSchema = z.string().max(memoryLimits.scopeLength).regex(memoryScopePattern);
 const tagSchema = z.string().regex(memoryTagPattern);
+const memoryIdSchema = z.string().min(1).max(memoryLimits.identifierLength);
+const exportDateSchema = z.string().max(memoryLimits.dateLength);
 
 export interface NuzoMcpServerOptions {
   storePath?: string;
@@ -100,11 +103,11 @@ export function registerMemoryTools(
     {
       description: "Store a local Nuzo memory.",
       inputSchema: {
-        content: z.string().min(1),
+        content: z.string().min(1).max(memoryLimits.contentLength),
         kind: z.enum(["preference", "project_decision", "fact", "instruction", "note"]),
         scope: scopeSchema.default("user:default"),
-        tags: z.array(tagSchema).default([]),
-        source: z.string().min(1).default("nuzo:mcp"),
+        tags: z.array(tagSchema).max(memoryLimits.tags).default([]),
+        source: z.string().min(1).max(memoryLimits.sourceLength).default("nuzo:mcp"),
         confidence: z.number().min(0).max(1).optional(),
       },
     },
@@ -129,7 +132,7 @@ export function registerMemoryTools(
     {
       description: "Recall relevant local Nuzo memories.",
       inputSchema: {
-        query: z.string().min(1),
+        query: z.string().min(1).max(memoryLimits.queryLength),
         scope: scopeSchema.default("user:default"),
         limit: z.number().int().min(1).max(50).default(8),
         include_global: z.boolean().default(false),
@@ -145,7 +148,7 @@ export function registerMemoryTools(
     {
       description: "Prototype read-only recall entrypoint for host lifecycle hooks. It never captures or creates memories.",
       inputSchema: {
-        task_context: z.string().min(1),
+        task_context: z.string().min(1).max(8000),
         project_scope: scopeSchema.optional(),
         limit: z.number().int().min(1).max(8).default(5),
       },
@@ -169,7 +172,7 @@ export function registerMemoryTools(
       description: "List local Nuzo memories.",
       inputSchema: {
         scope: scopeSchema.optional(),
-        tags: z.array(tagSchema).default([]),
+        tags: z.array(tagSchema).max(memoryLimits.tags).default([]),
         include_archived: z.boolean().default(false),
       },
     },
@@ -191,11 +194,11 @@ export function registerMemoryTools(
     {
       description: "Update a local Nuzo memory.",
       inputSchema: {
-        id: z.string().min(1),
-        content: z.string().optional(),
+        id: memoryIdSchema,
+        content: z.string().max(memoryLimits.contentLength).optional(),
         kind: z.enum(["preference", "project_decision", "fact", "instruction", "note"]).optional(),
         scope: scopeSchema.optional(),
-        tags: z.array(tagSchema).optional(),
+        tags: z.array(tagSchema).max(memoryLimits.tags).optional(),
         confidence: z.number().min(0).max(1).optional(),
       },
     },
@@ -228,7 +231,7 @@ export function registerMemoryTools(
     {
       description: "List audit events for one Nuzo memory ID.",
       inputSchema: {
-        id: z.string().min(1),
+        id: memoryIdSchema,
       },
     },
     async (input) => {
@@ -244,10 +247,10 @@ export function registerMemoryTools(
     {
       description: "Archive or delete a local Nuzo memory.",
       inputSchema: {
-        id: z.string().min(1),
+        id: memoryIdSchema,
         mode: z.enum(["archive", "delete"]).default("archive"),
         confirm: z.boolean().default(false),
-        reason: z.string().optional(),
+        reason: z.string().max(memoryLimits.reasonLength).optional(),
       },
     },
     async (input) => {
@@ -270,12 +273,12 @@ export function registerMemoryTools(
       description: "Preview or apply a filtered bulk archive/delete operation.",
       inputSchema: {
         scope: scopeSchema.optional(),
-        tags: z.array(tagSchema).default([]),
+        tags: z.array(tagSchema).max(memoryLimits.tags).default([]),
         all: z.boolean().default(false),
         mode: z.enum(["archive", "delete"]).default("archive"),
         confirm: z.boolean().default(false),
         dry_run: z.boolean().default(true),
-        reason: z.string().optional(),
+        reason: z.string().max(memoryLimits.reasonLength).optional(),
       },
     },
     async (input) => {
@@ -303,7 +306,7 @@ export function registerMemoryTools(
       description: "Export local Nuzo memories as a versioned JSON document.",
       inputSchema: {
         scope: scopeSchema.optional(),
-        tags: z.array(tagSchema).default([]),
+        tags: z.array(tagSchema).max(memoryLimits.tags).default([]),
         include_archived: z.boolean().default(false),
       },
     },
@@ -328,21 +331,21 @@ export function registerMemoryTools(
         document: z.object({
           format: z.literal("nuzo-memory-export"),
           version: z.literal(1),
-          exported_at: z.string(),
+          exported_at: exportDateSchema,
           memories: z.array(
             z.object({
               scope: scopeSchema,
               kind: z.enum(["preference", "project_decision", "fact", "instruction", "note"]),
-              content: z.string(),
-              tags: z.array(tagSchema),
-              source: z.string().min(1),
+              content: z.string().max(memoryLimits.contentLength),
+              tags: z.array(tagSchema).max(memoryLimits.tags),
+              source: z.string().min(1).max(memoryLimits.sourceLength),
               confidence: z.number().min(0).max(1),
-              created_at: z.string(),
-              updated_at: z.string(),
-              last_used_at: z.string().nullable(),
-              archived_at: z.string().nullable(),
+              created_at: exportDateSchema,
+              updated_at: exportDateSchema,
+              last_used_at: exportDateSchema.nullable(),
+              archived_at: exportDateSchema.nullable(),
             }),
-          ),
+          ).max(memoryLimits.importItems),
         }),
         scope: scopeSchema.optional(),
         dry_run: z.boolean().default(false),
@@ -409,7 +412,7 @@ function isMainModule(): boolean {
 }
 
 function openDatabase(storePath: string): SQLiteMemoryDatabase {
-  mkdirSync(dirname(storePath), { recursive: true });
+  mkdirSync(dirname(storePath), { recursive: true, mode: 0o700 });
   return new SQLiteMemoryDatabase({ path: storePath });
 }
 

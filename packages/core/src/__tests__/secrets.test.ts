@@ -4,6 +4,7 @@ import { RegexSecretScanner } from "../index.js";
 const blocked = [
   ["private_key", "-----BEGIN PRIVATE KEY-----\nfake-private-key-material"],
   ["github_token", "ghp_123456789012345678901234567890123456"],
+  ["npm_token", "npm_1234567890abcdefghijklmnopqrstuvwxyz"],
   ["provider_api_key", "sk-proj-abcdefghijklmnopqrstuvwxyz123456"],
   ["provider_api_key", "sk-ant-api03-abcdefghijklmnopqrstuvwxyz123456"],
   ["provider_api_key", "AIzaSyA12345678901234567890123456789012"],

@@ -81,7 +81,8 @@ Release validation covers:
 - live `memory.doctor` calls through both host plugin configurations.
 
 Post-MVP work focuses on public marketplace distribution, trusted npm
-publishing, lifecycle integrations, and feedback from real workflows.
+publishing, scoped authorization, multi-process concurrency, effective runtime
+configuration, security automation, and feedback from real workflows.
 
 ## Shape
 

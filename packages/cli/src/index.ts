@@ -1,8 +1,15 @@
 #!/usr/bin/env node
 import { createHash } from "node:crypto";
-import { mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  mkdirSync,
+  readFileSync,
+  realpathSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { homedir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { Command, CommanderError, InvalidArgumentError } from "commander";
@@ -15,6 +22,8 @@ import {
   RegexSecretScanner,
   SQLiteMemoryDatabase,
   SystemClock,
+  memoryLimits,
+  memoryScopePattern,
   type MemoryKind,
   type ListMemoriesInput,
   type MemoryScope,
@@ -110,8 +119,8 @@ export function createProgram(io: CliIO = defaultIO): Command {
       const init = resolveInitContext(options, commandOptions);
       ensureStoreDirectory(init.storePath);
       if (!init.project) {
-        mkdirSync(join(dirname(init.storePath), "exports"), { recursive: true });
-        mkdirSync(join(dirname(init.storePath), "logs"), { recursive: true });
+        ensurePrivateDirectory(join(dirname(init.storePath), "exports"));
+        ensurePrivateDirectory(join(dirname(init.storePath), "logs"));
       }
       writeConfigIfMissing(
         init.configPath,
@@ -407,7 +416,7 @@ export function createProgram(io: CliIO = defaultIO): Command {
         if (commandOptions.path) {
           const exportPath = resolve(commandOptions.path);
           ensureStoreDirectory(exportPath);
-          writeFileSync(exportPath, output, "utf8");
+          writePrivateFile(exportPath, output);
           io.stdout(`Exported ${document.memories.length} memories to ${exportPath}`);
           return;
         }
@@ -576,9 +585,11 @@ function readProjectConfig(): NuzoConfig | null {
     !isRecord(value) ||
     value.version !== 1 ||
     typeof value.default_scope !== "string" ||
+    value.default_scope.length > memoryLimits.scopeLength ||
+    !memoryScopePattern.test(value.default_scope) ||
     !isRecord(value.storage) ||
     value.storage.driver !== "sqlite" ||
-    typeof value.storage.path !== "string"
+    value.storage.path !== ".nuzo/memory/memories.sqlite"
   ) {
     throw new NuzoMemoryError(
       "MEMORY_CONFIG_INVALID",
@@ -587,12 +598,24 @@ function readProjectConfig(): NuzoConfig | null {
     );
   }
 
+  const nuzoRoot = join(projectRoot, ".nuzo");
+  const storeDirectory = join(nuzoRoot, "memory");
+  const storePath = join(storeDirectory, "memories.sqlite");
+  assertProjectPathIsLocal(nuzoRoot, nuzoRoot, configPath);
+  assertProjectPathIsLocal(configPath, nuzoRoot, configPath);
+  if (pathExists(storeDirectory)) {
+    assertProjectPathIsLocal(storeDirectory, nuzoRoot, configPath);
+  }
+  if (pathExists(storePath)) {
+    assertProjectPathIsLocal(storePath, nuzoRoot, configPath);
+  }
+
   return {
     version: 1,
     default_scope: value.default_scope as MemoryScope,
     storage: {
       driver: "sqlite",
-      path: resolve(projectRoot, value.storage.path),
+      path: storePath,
     },
   };
 }
@@ -648,7 +671,15 @@ function projectScope(projectRoot: string): MemoryScope {
 }
 
 function ensureStoreDirectory(storePath: string): void {
-  mkdirSync(dirname(storePath), { recursive: true });
+  mkdirSync(dirname(storePath), { recursive: true, mode: 0o700 });
+}
+
+function ensurePrivateDirectory(path: string): void {
+  const existed = pathExists(path);
+  mkdirSync(path, { recursive: true, mode: 0o700 });
+  if (!existed) {
+    chmodSync(path, 0o700);
+  }
 }
 
 function writeConfigIfMissing(
@@ -660,8 +691,8 @@ function writeConfigIfMissing(
     return;
   }
 
-  mkdirSync(dirname(configPath), { recursive: true });
-  writeFileSync(
+  mkdirSync(dirname(configPath), { recursive: true, mode: 0o700 });
+  writePrivateFile(
     configPath,
     `${JSON.stringify({
       version: 1,
@@ -679,7 +710,6 @@ function writeConfigIfMissing(
         record_recall_events: false,
       },
     }, null, 2)}\n`,
-    "utf8",
   );
 }
 
@@ -811,14 +841,34 @@ function formatGitTracking(report: GitTrackingReport): string {
 
 function readExportDocument(path: string): MemoryExportDocument {
   try {
+    const stats = statSync(path);
+    if (!stats.isFile()) {
+      throw new NuzoMemoryError(
+        "MEMORY_EXPORT_READ_FAILED",
+        "Memory export path is not a file.",
+        { path },
+      );
+    }
+    if (stats.size > 10 * 1024 * 1024) {
+      throw new NuzoMemoryError(
+        "MEMORY_EXPORT_TOO_LARGE",
+        "Memory export file is too large.",
+        { maxBytes: 10 * 1024 * 1024, path },
+      );
+    }
     return JSON.parse(readFileSync(path, "utf8")) as MemoryExportDocument;
   } catch (error) {
+    if (error instanceof NuzoMemoryError) {
+      throw error;
+    }
     if (error instanceof SyntaxError) {
       throw new NuzoMemoryError("MEMORY_EXPORT_INVALID", "Memory export JSON is invalid.", {
         path,
       });
     }
-    throw error;
+    throw new NuzoMemoryError("MEMORY_EXPORT_READ_FAILED", "Memory export file could not be read.", {
+      path,
+    });
   }
 }
 
@@ -847,7 +897,7 @@ function parseExportFormat(value: string): ExportFormat {
 }
 
 function parsePositiveInteger(value: string): number {
-  const parsed = Number.parseInt(value, 10);
+  const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed <= 0) {
     throw new InvalidArgumentError("Expected a positive integer.");
   }
@@ -855,7 +905,7 @@ function parsePositiveInteger(value: string): number {
 }
 
 function parseConfidence(value: string): number {
-  const parsed = Number.parseFloat(value);
+  const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed < 0 || parsed > 1) {
     throw new InvalidArgumentError("Expected a number between 0 and 1.");
   }
@@ -872,5 +922,39 @@ function isMain(): boolean {
     return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(entrypoint);
   } catch {
     return false;
+  }
+}
+
+function writePrivateFile(path: string, content: string): void {
+  writeFileSync(path, content, {
+    encoding: "utf8",
+    mode: 0o600,
+  });
+  chmodSync(path, 0o600);
+}
+
+function assertProjectPathIsLocal(path: string, nuzoRoot: string, configPath: string): void {
+  let canonicalPath: string;
+  try {
+    canonicalPath = realpathSync(path);
+  } catch {
+    throw new NuzoMemoryError(
+      "MEMORY_CONFIG_INVALID",
+      "Project Nuzo config resolves through an invalid local path.",
+      { path: configPath },
+    );
+  }
+
+  const relativePath = relative(nuzoRoot, canonicalPath);
+  if (
+    canonicalPath !== path ||
+    relativePath.startsWith("..") ||
+    isAbsolute(relativePath)
+  ) {
+    throw new NuzoMemoryError(
+      "MEMORY_CONFIG_INVALID",
+      "Project Nuzo config must keep storage inside the project .nuzo directory.",
+      { path: configPath },
+    );
   }
 }

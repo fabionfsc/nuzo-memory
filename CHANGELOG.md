@@ -8,8 +8,17 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ### Added
 
+- Bounded core and MCP inputs for memory content, tags, sources, recall queries,
+  destructive-action reasons, and import size.
+- SQLite busy timeout and Unicode-aware recall tokenization.
+- Secret scanning for npm access tokens.
+
 ### Documentation
 
+- Documented local file permissions, project-config path containment, input
+  limits, and the current scope-isolation boundary.
+- Corrected the published MCP package invocation and recorded post-MVP
+  authorization, concurrency, config, and repository-security work.
 - Marked the public `0.1.0` MVP, npm packages, and clean Codex/Claude Code host
   validation as released.
 - Moved trusted npm publishing and public marketplace distribution into
@@ -17,7 +26,16 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ### Changed
 
+- Recall usage recording is now opt-in so normal recall does not persist query
+  text or update `last_used_at`.
+
 ### Fixed
+
+- Nuzo-created runtime files and directories now use owner-only permissions.
+- Project config can no longer redirect storage outside `.nuzo/memory`.
+- CLI numeric arguments no longer accept trailing non-numeric text.
+- Missing or oversized import files now return structured operational errors.
+- Accented terms such as Portuguese words remain intact during recall.
 
 ## [0.1.0] - 2026-06-19
 

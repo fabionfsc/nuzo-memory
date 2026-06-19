@@ -35,7 +35,7 @@ function createTestService() {
 }
 
 describe("memory service", () => {
-  it("remembers and recalls a memory", async () => {
+  it("remembers and recalls without recording usage by default", async () => {
     const { auditLog, service } = createTestService();
 
     const memory = await service.remember({
@@ -58,10 +58,27 @@ describe("memory service", () => {
     expect(results[0]?.memory.id).toBe(memory.id);
 
     const events = await auditLog.list(memory.id);
-    expect(events.map((event) => event.eventType)).toEqual(["memory.created", "memory.recalled"]);
+    expect(events.map((event) => event.eventType)).toEqual(["memory.created"]);
   });
 
-  it("can recall without recording usage", async () => {
+  it("recalls Unicode words without splitting accented characters", async () => {
+    const { service } = createTestService();
+    const memory = await service.remember({
+      content: "A memória local deve permanecer auditável.",
+      kind: "instruction",
+      scope: "user:default",
+      source: "test",
+    });
+
+    const results = await service.recall({
+      query: "memória auditável",
+      scope: "user:default",
+    });
+
+    expect(results[0]?.memory.id).toBe(memory.id);
+  });
+
+  it("records recall usage only when explicitly requested", async () => {
     const { auditLog, service, store } = createTestService();
 
     const memory = await service.remember({
@@ -77,16 +94,16 @@ describe("memory service", () => {
       scope: "project:nuzo",
       limit: 5,
       includeGlobal: true,
-      recordUsage: false,
+      recordUsage: true,
     });
 
     expect(results[0]?.memory.id).toBe(memory.id);
     await expect(store.findById(memory.id)).resolves.toMatchObject({
-      lastUsedAt: null,
+      lastUsedAt: new Date("2026-06-12T00:00:00.000Z"),
     });
 
     const events = await auditLog.list(memory.id);
-    expect(events.map((event) => event.eventType)).toEqual(["memory.created"]);
+    expect(events.map((event) => event.eventType)).toEqual(["memory.created", "memory.recalled"]);
   });
 
   it("rejects likely secrets", async () => {
@@ -102,6 +119,88 @@ describe("memory service", () => {
     ).rejects.toMatchObject({
       code: "MEMORY_SECRET_DETECTED",
     });
+  });
+
+  it("rejects oversized recall, tag, source, import, and reason inputs", async () => {
+    const { service } = createTestService();
+    await expect(
+      service.recall({
+        query: "x".repeat(2001),
+        scope: "user:default",
+      }),
+    ).rejects.toMatchObject({ code: "RECALL_QUERY_TOO_LONG" });
+    await expect(service.history("x".repeat(257))).rejects.toMatchObject({
+      code: "MEMORY_ID_INVALID",
+    });
+    await expect(
+      service.exportMemories({
+        actor: "x".repeat(257),
+      }),
+    ).rejects.toMatchObject({ code: "MEMORY_ACTOR_INVALID" });
+    await expect(
+      service.remember({
+        content: "Too many tags.",
+        kind: "note",
+        scope: "user:default",
+        tags: Array.from({ length: 33 }, (_, index) => `tag-${index}`),
+        source: "test",
+      }),
+    ).rejects.toMatchObject({ code: "MEMORY_TAG_LIMIT_EXCEEDED" });
+    await expect(
+      service.remember({
+        content: "Oversized source.",
+        kind: "note",
+        scope: "user:default",
+        source: "x".repeat(257),
+      }),
+    ).rejects.toMatchObject({ code: "MEMORY_SOURCE_TOO_LONG" });
+    await expect(
+      service.importMemories({
+        actor: "test",
+        document: {
+          format: "nuzo-memory-export",
+          version: 1,
+          exported_at: "2026-06-19T00:00:00.000Z",
+          memories: Array.from({ length: 1001 }, () => ({
+            scope: "user:default" as const,
+            kind: "note" as const,
+            content: "Bounded import.",
+            tags: [],
+            source: "test",
+            confidence: 1,
+            created_at: "2026-06-19T00:00:00.000Z",
+            updated_at: "2026-06-19T00:00:00.000Z",
+            last_used_at: null,
+            archived_at: null,
+          })),
+        },
+      }),
+    ).rejects.toMatchObject({ code: "MEMORY_IMPORT_LIMIT_EXCEEDED" });
+    await expect(
+      service.importMemories({
+        actor: "test",
+        document: {
+          format: "nuzo-memory-export",
+          version: 1,
+          exported_at: "x".repeat(65),
+          memories: [],
+        },
+      }),
+    ).rejects.toMatchObject({ code: "MEMORY_EXPORT_INVALID" });
+
+    const memory = await service.remember({
+      content: "Bound reasons in audit events.",
+      kind: "note",
+      scope: "user:default",
+      source: "test",
+    });
+    await expect(
+      service.forget({
+        id: memory.id,
+        actor: "test",
+        reason: "x".repeat(1001),
+      }),
+    ).rejects.toMatchObject({ code: "MEMORY_REASON_TOO_LONG" });
   });
 
   it("applies secret policy consistently to updates and imports", async () => {
@@ -175,7 +274,6 @@ describe("memory service", () => {
     expect(events.map((event) => event.eventType)).toEqual([
       "memory.created",
       "memory.updated",
-      "memory.recalled",
     ]);
   });
 

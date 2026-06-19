@@ -109,7 +109,6 @@ describe("MCP protocol contract", () => {
       })) as { events: Array<{ event_type: string; memory_id: string }> };
       expect(history.events.map((event) => event.event_type)).toEqual([
         "memory.created",
-        "memory.recalled",
       ]);
       expect(history.events.every((event) => event.memory_id === remembered.id)).toBe(true);
 
