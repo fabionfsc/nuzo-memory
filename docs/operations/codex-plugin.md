@@ -175,6 +175,16 @@ Use this only to isolate MCP behavior. Plugin validation should still go through
 - `memory.import`
 - `memory.doctor`
 
+## Nuzo Skill
+
+The plugin ships `skills/nuzo-memory/SKILL.md`. It guides Codex to use
+read-only task-start recall, keep Nuzo separate from Codex built-in generated
+memories, and propose inferred memory drafts before calling
+`memory.remember`.
+
+The skill is host guidance only. Secret scanning, validation, storage, search,
+audit, and import/export behavior remain in core and MCP.
+
 ## Validation
 
 Validate the plugin manifest with:

@@ -79,7 +79,7 @@ Nuzo should not promise migration from private native memory stores unless the h
 
 | Host | Current fit | Extension path | Nuzo package direction | Notes |
 | --- | --- | --- | --- | --- |
-| Codex | First supported plugin target. | Codex plugins can bundle MCP servers. Codex also supports direct MCP configuration in `config.toml`. | `packages/codex-plugin` | Keep Codex-specific metadata and docs here only. Codex plugin validation now covers the manifest and bundled MCP config shape. |
+| Codex | First supported plugin target. | Codex plugins can bundle MCP servers and skills. Codex also supports direct MCP configuration in `config.toml`. | `packages/codex-plugin` | The wrapper includes MCP metadata and concise host guidance for recall and confirmed capture. |
 | Claude Code | Initial plugin wrapper scaffolded. | Claude Code plugins can include `.mcp.json` or inline MCP server config. Claude Code also supports direct MCP setup through `claude mcp`. | `packages/claude-code-plugin` | Keep Claude-specific metadata, MCP defaults, skills, and docs here only. |
 | Other MCP-compatible agents | Future compatible target. | Direct MCP server configuration. | No package until a real host contract exists. | Support through `packages/mcp-server` first. |
 

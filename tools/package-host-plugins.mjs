@@ -20,7 +20,7 @@ const artifacts = [
     host: "codex",
     source: join(repositoryRoot, "packages", "codex-plugin"),
     destination: join(outputRoot, "codex", "nuzo"),
-    include: [".codex-plugin"],
+    include: [".codex-plugin", "skills"],
     mcp: {
       mcpServers: {
         nuzo: {

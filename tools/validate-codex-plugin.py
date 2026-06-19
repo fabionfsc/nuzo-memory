@@ -82,6 +82,8 @@ def main() -> None:
             fail("mcpServers target must define a 'nuzo' server")
         validate_nuzo_server(nuzo_server, manifest["version"], release)
 
+    validate_nuzo_skill(root / "skills" / "nuzo-memory" / "SKILL.md")
+
     print(f"plugin validation passed: {root}")
 
 
@@ -100,6 +102,35 @@ def validate_nuzo_server(server: dict, version: str, release: bool) -> None:
         fail("development nuzo MCP server must run with node")
     if args != ["../mcp-server/dist/index.js"]:
         fail("development nuzo MCP server must point at ../mcp-server/dist/index.js")
+
+
+def validate_nuzo_skill(path: pathlib.Path) -> None:
+    if not path.exists():
+        fail("skills/nuzo-memory/SKILL.md is missing")
+
+    content = path.read_text(encoding="utf-8")
+    frontmatter = re.match(r"\A---\n(.*?)\n---\n", content, re.DOTALL)
+    if not frontmatter:
+        fail("Nuzo skill must contain YAML frontmatter")
+    metadata = frontmatter.group(1)
+    if not re.search(r"^name:\s*nuzo-memory$", metadata, re.MULTILINE):
+        fail("Nuzo skill name must be nuzo-memory")
+    if not re.search(r"^description:\s*\S.+$", metadata, re.MULTILINE):
+        fail("Nuzo skill must contain a non-empty description")
+    if "[TODO:" in content:
+        fail("Nuzo skill contains a TODO placeholder")
+
+    required_guidance = [
+        "only after the user confirms or",
+        "Do not silently save inferred memories.",
+        "Never store secrets",
+        "Codex built-in generated memories",
+        "memory.recall_hook",
+        "memory.forget_many",
+    ]
+    for guidance in required_guidance:
+        if guidance not in content:
+            fail(f"Nuzo skill missing required guidance: {guidance}")
 
 
 if __name__ == "__main__":

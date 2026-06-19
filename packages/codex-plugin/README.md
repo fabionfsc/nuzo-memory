@@ -7,6 +7,7 @@ The plugin is intentionally thin:
 - memory behavior lives in `packages/core`;
 - the transport lives in `packages/mcp-server`;
 - this package provides Codex plugin metadata and MCP defaults.
+- `skills/nuzo-memory/SKILL.md` guides recall and confirmed capture behavior.
 
 ## Local Development
 
