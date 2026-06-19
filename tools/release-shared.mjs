@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -70,6 +70,64 @@ export function updateNuzoDependencyVersions(pkg, version) {
       }
     }
   }
+}
+
+export function assertReleaseFileListsAreComplete() {
+  assertSameSet("release package paths", packagePaths, discoverPackagePaths());
+  assertSameSet("plugin manifest paths", pluginManifestPaths, discoverPluginManifestPaths());
+}
+
+function discoverPackagePaths() {
+  const paths = ["package.json"];
+  for (const directoryName of readdirSync(join(repositoryRoot, "packages")).sort()) {
+    const packageJsonPath = join("packages", directoryName, "package.json");
+    if (isFile(packageJsonPath)) {
+      paths.push(packageJsonPath);
+    }
+  }
+  return paths;
+}
+
+function discoverPluginManifestPaths() {
+  const paths = [];
+  for (const directoryName of readdirSync(join(repositoryRoot, "packages")).sort()) {
+    for (const manifestDirectory of [".claude-plugin", ".codex-plugin"]) {
+      const manifestPath = join("packages", directoryName, manifestDirectory, "plugin.json");
+      if (isFile(manifestPath)) {
+        paths.push(manifestPath);
+      }
+    }
+  }
+  return paths;
+}
+
+function isFile(relativePath) {
+  try {
+    return statSync(join(repositoryRoot, relativePath)).isFile();
+  } catch (error) {
+    if (error?.code === "ENOENT") {
+      return false;
+    }
+    throw error;
+  }
+}
+
+function assertSameSet(label, configured, discovered) {
+  const configuredSet = new Set(configured);
+  const discoveredSet = new Set(discovered);
+  const missing = discovered.filter((path) => !configuredSet.has(path));
+  const stale = configured.filter((path) => !discoveredSet.has(path));
+  if (missing.length > 0 || stale.length > 0) {
+    fail(
+      `${label} are out of date` +
+        formatPathList("missing", missing) +
+        formatPathList("stale", stale),
+    );
+  }
+}
+
+function formatPathList(label, paths) {
+  return paths.length === 0 ? "" : `; ${label}: ${paths.join(", ")}`;
 }
 
 export function fail(message) {

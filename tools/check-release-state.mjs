@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import {
+  assertReleaseFileListsAreComplete,
   assertReleaseVersion,
   fail,
   packagePaths,
@@ -12,6 +13,7 @@ import {
 const rootPackage = readJson("package.json");
 const version = process.argv[2] ?? rootPackage.version;
 assertReleaseVersion(version);
+assertReleaseFileListsAreComplete();
 
 for (const packagePath of packagePaths) {
   const pkg = readJson(packagePath);

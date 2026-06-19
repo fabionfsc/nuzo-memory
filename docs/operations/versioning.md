@@ -123,6 +123,10 @@ Check version consistency at any time:
 npm run release:check
 ```
 
+The check also verifies that every `packages/*/package.json` and host plugin
+`plugin.json` manifest is covered by release tooling. If a new workspace package
+or host plugin is added, update the release scripts in the same change.
+
 Prepare a release version after the changelog section exists:
 
 ```bash
@@ -147,7 +151,7 @@ The prepare script updates:
 - root and workspace package versions;
 - Nuzo workspace dependency pins;
 - `package-lock.json` workspace versions;
-- CLI and MCP server runtime version strings.
+- CLI and MCP server runtime version strings;
 - Codex and Claude Code plugin manifest versions.
 
 It refuses `0.0.0`, because that version is reserved for unreleased
