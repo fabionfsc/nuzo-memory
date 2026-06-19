@@ -19,7 +19,10 @@ function createStorePath(): string {
   return join(directory, "memories.sqlite");
 }
 
-async function runCli(args: string[]): Promise<{ stderr: string[]; stdout: string[] }> {
+async function runCli(
+  args: string[],
+  env: NodeJS.ProcessEnv = {},
+): Promise<{ stderr: string[]; stdout: string[] }> {
   const stdout: string[] = [];
   const stderr: string[] = [];
   const io: CliIO = {
@@ -28,7 +31,25 @@ async function runCli(args: string[]): Promise<{ stderr: string[]; stdout: strin
   };
 
   const program = createProgram(io);
-  await program.parseAsync(["node", "nuzo", ...args], { from: "node" });
+  const previousEnv = new Map(Object.keys(env).map((key) => [key, process.env[key]]));
+  try {
+    for (const [key, value] of Object.entries(env)) {
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
+    await program.parseAsync(["node", "nuzo", ...args], { from: "node" });
+  } finally {
+    for (const [key, value] of previousEnv) {
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
+  }
 
   return { stderr, stdout };
 }
@@ -189,6 +210,35 @@ describe("nuzo memory cli", () => {
     expect(text).toContain("Store directory exists: yes");
     expect(text).toContain("Git tracking:");
     expect(text).toContain("Network: disabled");
+    expect(text).toContain("Status: warning");
+  });
+
+  it("skips Git tracking when requested by restricted environments", async () => {
+    const store = createStorePath();
+    await runCli(["memory", "--store", store, "init"]);
+
+    const output = await runCli(["memory", "--store", store, "doctor"], {
+      NUZO_DOCTOR_SKIP_GIT: "1",
+    });
+    const text = output.stdout.join("\n");
+
+    expect(text).toContain("Store exists: yes");
+    expect(text).toContain("Git tracking: skipped (NUZO_DOCTOR_SKIP_GIT=1)");
+    expect(text).not.toContain("Warning: Git tracking check unavailable");
+    expect(text).toContain("Status: ok");
+  });
+
+  it("still warns about missing stores when Git tracking is skipped", async () => {
+    const store = createStorePath();
+
+    const output = await runCli(["memory", "--store", store, "doctor"], {
+      NUZO_DOCTOR_SKIP_GIT: "1",
+    });
+    const text = output.stdout.join("\n");
+
+    expect(text).toContain("Store exists: no");
+    expect(text).toContain("Git tracking: skipped (NUZO_DOCTOR_SKIP_GIT=1)");
+    expect(text).toContain("Warning: memory store has not been initialized");
     expect(text).toContain("Status: warning");
   });
 });

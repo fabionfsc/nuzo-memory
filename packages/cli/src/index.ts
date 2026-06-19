@@ -55,7 +55,8 @@ interface DoctorReport {
 type GitTrackingReport =
   | { status: "clean"; trackedFiles: string[] }
   | { status: "tracked"; trackedFiles: string[] }
-  | { status: "unavailable"; reason: string; trackedFiles: [] };
+  | { status: "unavailable"; reason: string; trackedFiles: [] }
+  | { status: "skipped"; reason: string; trackedFiles: [] };
 
 type ExportFormat = "json" | "markdown";
 
@@ -444,6 +445,14 @@ function createDoctorReport(options: GlobalOptions): DoctorReport {
 }
 
 function findTrackedMemoryFiles(cwd = process.cwd()): GitTrackingReport {
+  if (process.env.NUZO_DOCTOR_SKIP_GIT === "1") {
+    return {
+      status: "skipped",
+      reason: "NUZO_DOCTOR_SKIP_GIT=1",
+      trackedFiles: [],
+    };
+  }
+
   const result = spawnSync("git", [
     "ls-files",
     "-z",
@@ -484,6 +493,10 @@ function findTrackedMemoryFiles(cwd = process.cwd()): GitTrackingReport {
 }
 
 function formatGitTracking(report: GitTrackingReport): string {
+  if (report.status === "skipped") {
+    return `Git tracking: skipped (${report.reason})`;
+  }
+
   if (report.status === "unavailable") {
     return `Git tracking: unavailable (${report.reason})`;
   }

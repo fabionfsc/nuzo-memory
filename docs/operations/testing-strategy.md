@@ -63,6 +63,10 @@ nuzo memory export --path ./memories.memory.export.json
 nuzo memory doctor
 ```
 
+Smoke tests may set `NUZO_DOCTOR_SKIP_GIT=1` so restricted environments do not
+warn only because Git tracking inspection is unavailable. Tests should still
+cover normal warning behavior for missing stores and tracked memory files.
+
 ## Continuous Integration
 
 GitHub Actions runs validation from:

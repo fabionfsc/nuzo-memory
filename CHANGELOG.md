@@ -34,10 +34,12 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Package engine declarations and CI now agree on the supported Node.js baseline.
 - Release plugins now pin the shared MCP server package instead of relying on monorepo sibling paths.
 - Package builds now remove stale output and exclude tests from publish candidates.
+- CLI smoke testing now skips Git tracking checks explicitly through `NUZO_DOCTOR_SKIP_GIT=1`.
 
 ### Fixed
 
 - The installed MCP binary now starts correctly when invoked through the npm-generated `node_modules/.bin` symlink.
+- `nuzo memory doctor` can now report a clean status in restricted environments when only the Git tracking check is intentionally skipped.
 
 - CLI `memory forget` now accepts the documented `--archive` flag and rejects conflicting `--archive --delete` usage.
 - Import now rejects malformed export memory items with structured `MEMORY_EXPORT_INVALID` errors instead of leaking runtime type errors.

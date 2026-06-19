@@ -49,6 +49,17 @@ nuzo memory doctor
 
 against a temporary store path under `/tmp`.
 
+The smoke script sets:
+
+```bash
+NUZO_DOCTOR_SKIP_GIT=1
+```
+
+This keeps restricted agent environments from turning an otherwise healthy
+temporary store into a warning only because Git process execution is
+unavailable. Normal `nuzo memory doctor` runs still check for tracked memory
+files by default.
+
 For a fuller clean install and import/export walkthrough, see `docs/getting-started/clean-install.md`.
 
 ## Package Direction
@@ -85,3 +96,13 @@ Runtime memory and exports must stay out of Git:
 *.sqlite
 *.sqlite-*
 ```
+
+If a host blocks child process execution and the Git tracking check is not
+meaningful, run doctor with:
+
+```bash
+NUZO_DOCTOR_SKIP_GIT=1 nuzo memory doctor
+```
+
+Use this only for restricted environments or smoke tests. In a normal checkout,
+leave Git tracking enabled so doctor can warn about committed memory files.

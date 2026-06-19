@@ -150,6 +150,16 @@ build toolchain and Python. Follow the platform-specific steps in the
 
 This can happen in restricted sandboxes that block child processes. In a normal Git checkout, doctor should be able to inspect tracked memory files.
 
+For smoke tests or restricted hosts where Git process execution is not
+available, use:
+
+```bash
+NUZO_DOCTOR_SKIP_GIT=1 npm run nuzo -- memory --store "$NUZO_STORE" doctor
+```
+
+This skips only the Git tracking check. Missing stores, missing directories,
+and tracked memory files in normal checkouts remain warnings.
+
 ### `npm run nuzo` cannot find `dist/index.js`
 
 Build first:
