@@ -25,6 +25,7 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Reproducible npm package staging and installed-binary validation for the Nuzo CLI.
 - Release-state tooling for coordinated version preparation and changelog validation.
 - Release-state validation now detects drift when workspace packages or plugin manifests are not covered by release tooling.
+- Manual GitHub Actions release rehearsal for target-version validation before tagging.
 - MCP `memory.doctor` now reports read-only store health, aggregate counts, tool names, and warnings.
 - CLI and MCP audit history access for individual memory IDs.
 - Dry-run-first bulk forget by scope, tags, or explicit all selection through CLI and MCP.

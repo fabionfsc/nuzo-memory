@@ -145,6 +145,7 @@ docs/operations/versioning.md
 Before tagging:
 
 - rehearse the target with `npm run release:rehearse -- X.Y.Z`;
+- optionally run the CI workflow manually with the same release rehearsal version;
 - move relevant `CHANGELOG.md` entries from `[Unreleased]` into the target version section;
 - keep a fresh empty `[Unreleased]` section above the release section;
 - prepare the release version with `npm run release:prepare -- X.Y.Z`;

@@ -114,6 +114,15 @@ npm run validate:npm
 npm run smoke:cli
 ```
 
+Manual dispatch can also run a release rehearsal job. It uses Node.js 24 and
+executes:
+
+```bash
+npm run release:rehearse -- X.Y.Z
+```
+
+The default dispatch input is `0.1.0`.
+
 Release-state validation confirms that root/workspace versions, Nuzo internal
 dependency pins, lockfile workspace entries, CLI version output, MCP server
 version metadata, and changelog structure stay aligned.
