@@ -46,6 +46,11 @@ MCP and CLI should have snapshot-style contract tests for:
 
 Snapshots should avoid timestamps and generated IDs unless normalized.
 
+MCP protocol coverage connects an SDK `Client` and the Nuzo server through
+`InMemoryTransport`. It asserts exact tool discovery, registered schema
+defaults, representative JSON responses, and invalid-input rejection without
+network access or a stdio subprocess.
+
 ## Migration Tests
 
 Each migration should be tested from:

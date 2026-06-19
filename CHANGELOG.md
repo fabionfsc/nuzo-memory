@@ -29,6 +29,7 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Dry-run-first bulk forget by scope, tags, or explicit all selection through CLI and MCP.
 - Idempotent user/project initialization with config files, deterministic project scopes, auxiliary directories, and Git ignore protection.
 - Codex plugin skill guidance for read-only recall and confirmed capture suggestions.
+- Protocol-level MCP contract tests using the official SDK client and in-memory transport.
 
 ### Changed
 
