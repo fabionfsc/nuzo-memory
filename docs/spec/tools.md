@@ -226,19 +226,20 @@ To apply an archive, set `dry_run` to `false`. Hard deletion also requires
 
 ### `memory.export`
 
-Export memories to a documented JSON file format.
+Export memories as a versioned JSON document.
 
 This is the Nuzo portability format. Codex, Claude Code, and future host plugins should expose this same tool instead of creating host-specific export formats.
 
-The CLI can also render the same export document as Markdown for human review.
-Markdown exports are not import inputs.
+The MCP tool returns JSON only. The CLI can also render the same document as
+Markdown for human review based on the output path extension. Markdown exports
+are not import inputs.
 
 Input:
 
 ```json
 {
   "scope": "user:default",
-  "format": "json",
+  "tags": [],
   "include_archived": false
 }
 ```
@@ -297,7 +298,19 @@ MCP doctor returns a read-only diagnostic summary for host agents:
     "archived_memories": 1,
     "total_memories": 5
   },
-  "tools": ["memory.remember", "memory.recall", "memory.doctor"],
+  "tools": [
+    "memory.remember",
+    "memory.recall",
+    "memory.recall_hook",
+    "memory.list",
+    "memory.update",
+    "memory.history",
+    "memory.forget",
+    "memory.forget_many",
+    "memory.export",
+    "memory.import",
+    "memory.doctor"
+  ],
   "warnings": []
 }
 ```

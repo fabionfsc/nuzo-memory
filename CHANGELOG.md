@@ -38,6 +38,7 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 ### Documentation
 
 - Public MVP status and roadmap wording now reflect implemented core, CLI, MCP, plugin packaging, and release rehearsal work.
+- MCP export and doctor examples now match the current tool contract.
 
 ### Changed
 
