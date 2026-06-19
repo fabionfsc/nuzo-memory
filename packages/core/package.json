@@ -3,6 +3,12 @@
   "version": "0.0.0",
   "private": true,
   "description": "Core memory lifecycle, ports, and domain contracts for Nuzo.",
+  "keywords": [
+    "ai-agents",
+    "memory",
+    "local-first",
+    "sqlite"
+  ],
   "license": "Apache-2.0",
   "type": "module",
   "engines": {
@@ -11,6 +17,12 @@
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "files": [
     "dist"
   ],

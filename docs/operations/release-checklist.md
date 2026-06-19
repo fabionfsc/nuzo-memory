@@ -60,6 +60,7 @@ npm run check
 npm test
 npm run build
 npm run package:plugins
+npm run validate:npm
 npm run smoke:cli
 ```
 
@@ -73,6 +74,10 @@ The command should return no matches.
 
 Confirm the matching `@nuzo/mcp-server` version is published before shipping
 the plugin artifacts.
+
+Follow `docs/operations/npm-publishing.md`. Confirm the `@nuzo` organization
+scope and maintainer access before changing source package privacy or running
+any publish command.
 
 Build docs strictly:
 

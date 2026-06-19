@@ -34,7 +34,8 @@ Start with:
 14. `docs/operations/issue-tracking.md`
 15. `docs/operations/versioning.md`
 16. `docs/operations/runtime-support.md`
-17. `docs/operations/release-checklist.md`
+17. `docs/operations/npm-publishing.md`
+18. `docs/operations/release-checklist.md`
 
 ## Local Operator Notes
 
@@ -152,9 +153,19 @@ Generate and validate distributable host plugin layouts:
 npm run package:plugins
 ```
 
+Generate and validate npm publish candidates without publishing:
+
+```bash
+npm run validate:npm
+```
+
 Generated plugin artifacts belong under `build/plugins/` and must stay
 untracked. Release configs must pin `@nuzo/mcp-server` to the same version as
 the plugin and must not reference sibling monorepo paths.
+
+Source workspace packages must remain private. Publish only generated staging
+packages under `build/npm/packages/` after following
+`docs/operations/npm-publishing.md`.
 
 Validate the Codex plugin manifest:
 
@@ -185,6 +196,7 @@ npm run check
 npm test
 npm run build
 npm run package:plugins
+npm run validate:npm
 npm run smoke:cli
 .venv-docs/bin/mkdocs build --strict
 ```

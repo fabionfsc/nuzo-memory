@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-import { mkdirSync } from "node:fs";
+import { mkdirSync, realpathSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
@@ -294,7 +295,7 @@ export function registerMemoryTools(server: McpServer, service: MemoryService): 
   );
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMainModule()) {
   const options: NuzoMcpServerOptions = {};
   if (process.env.NUZO_MEMORY_STORE !== undefined) {
     options.storePath = process.env.NUZO_MEMORY_STORE;
@@ -314,6 +315,19 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   process.once("beforeExit", closeRuntime);
 
   await runtime.server.connect(new StdioServerTransport());
+}
+
+function isMainModule(): boolean {
+  const entrypoint = process.argv[1];
+  if (entrypoint === undefined) {
+    return false;
+  }
+
+  try {
+    return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(entrypoint);
+  } catch {
+    return false;
+  }
 }
 
 function openDatabase(storePath: string): SQLiteMemoryDatabase {

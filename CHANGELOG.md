@@ -21,6 +21,7 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - GitHub Actions CI for package checks, tests, builds, CLI smoke testing, and strict docs validation.
 - Runtime support policy for Node.js 22/24 LTS, npm 10+, and native SQLite build troubleshooting.
 - Host plugin artifact generator with release-path validation for Codex and Claude Code.
+- Reproducible npm package staging and clean-install validation for core and MCP runtime artifacts.
 
 ### Changed
 
@@ -31,8 +32,11 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - MCP tool docs now distinguish normal recall from the read-only recall hook entrypoint.
 - Package engine declarations and CI now agree on the supported Node.js baseline.
 - Release plugins now pin the shared MCP server package instead of relying on monorepo sibling paths.
+- Package builds now remove stale output and exclude tests from publish candidates.
 
 ### Fixed
+
+- The installed MCP binary now starts correctly when invoked through the npm-generated `node_modules/.bin` symlink.
 
 - CLI `memory forget` now accepts the documented `--archive` flag and rejects conflicting `--archive --delete` usage.
 - Import now rejects malformed export memory items with structured `MEMORY_EXPORT_INVALID` errors instead of leaking runtime type errors.

@@ -53,6 +53,9 @@ jobs:
       - name: Package host plugins
         run: npm run package:plugins
 
+      - name: Validate npm artifacts
+        run: npm run validate:npm
+
       - name: Run CLI smoke test
         run: npm run smoke:cli
 

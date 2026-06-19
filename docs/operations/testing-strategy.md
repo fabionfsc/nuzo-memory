@@ -81,8 +81,13 @@ npm run check
 npm test
 npm run build
 npm run package:plugins
+npm run validate:npm
 npm run smoke:cli
 ```
+
+The npm artifact validation installs generated core and MCP tarballs into a
+temporary project and confirms the installed MCP binary starts. It does not
+publish packages or require npm credentials.
 
 Documentation validation installs `requirements-docs.txt` and runs:
 

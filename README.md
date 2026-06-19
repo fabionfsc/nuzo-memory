@@ -267,6 +267,7 @@ Start here:
 - [Issue tracking](docs/operations/issue-tracking.md)
 - [Versioning](docs/operations/versioning.md)
 - [Runtime support](docs/operations/runtime-support.md)
+- [npm publishing](docs/operations/npm-publishing.md)
 - [Release checklist](docs/operations/release-checklist.md)
 - [Host plugin runtime distribution](docs/adr/0006-host-plugin-runtime-distribution.md)
 - [Stage 1 core plan](docs/implementation/stage-1-core.md)

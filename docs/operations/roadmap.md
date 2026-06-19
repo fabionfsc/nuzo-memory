@@ -107,6 +107,7 @@ Deliverables:
 - MCP-level read-only recall hook prototype.
 - Marketplace or official distribution metadata when the supported workflow is stable.
 - matching MCP package publication before public plugin installation.
+- reproducible npm pack validation and clean tarball installation.
 
 Exit criteria:
 
