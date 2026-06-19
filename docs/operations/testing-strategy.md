@@ -76,9 +76,10 @@ Each migration should be tested from:
 - the immediately previous schema;
 - a small realistic fixture.
 
-For schema version 1, the empty database is the previous state. Migration tests
-also reopen a populated version 1 database to verify idempotency and reject a
-fixture with a newer unsupported `user_version`.
+For schema version 2, migration tests verify an empty database, reopen a
+populated store to confirm idempotency, and reject a fixture with a newer
+unsupported `user_version`. Future schema bumps should add a fixture for the
+immediately previous schema before changing `schemaVersion`.
 
 ## Manual Smoke Test
 

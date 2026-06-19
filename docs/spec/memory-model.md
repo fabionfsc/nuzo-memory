@@ -7,6 +7,7 @@ A memory is a durable record the user expects the agent to use in future session
 ```json
 {
   "id": "mem_01HZY...",
+  "revision": 1,
   "scope": "user:default",
   "kind": "preference",
   "content": "The user prefers concise implementation plans before large edits.",
@@ -74,6 +75,27 @@ Deletion should support two modes:
 - archive: hide from recall but retain audit metadata;
 - hard delete: remove content from the store.
 
+## Revisions
+
+Each memory has a monotonically increasing `revision`.
+
+The initial revision is `1`. Updates, archive operations, hard deletes, and
+explicit recall-usage metadata writes compare against the revision that was
+read before the write transaction. If another process commits a newer revision
+first, the operation must fail with `MEMORY_REVISION_CONFLICT` instead of
+silently overwriting the newer state.
+
+Clients that edit or delete a memory after showing it to a user should pass the
+last seen revision as `expected_revision`. If the current revision differs,
+the client should re-read the memory, show the newer state, and ask the user to
+confirm the operation again.
+
+Import deduplication uses the normalized memory identity of scope, kind,
+content, and tags. For the SQLite MVP, import planning runs inside the write
+transaction so equivalent concurrent imports serialize deterministically. A
+database-level normalized uniqueness index remains optional future hardening if
+Nuzo adds storage adapters without equivalent transactional behavior.
+
 ## Retrieval Result
 
 Recall responses should include enough context for the agent to use memory responsibly:
@@ -82,6 +104,7 @@ Recall responses should include enough context for the agent to use memory respo
 {
   "memory": {
     "id": "mem_01HZY...",
+    "revision": 1,
     "kind": "preference",
     "content": "The user prefers concise implementation plans before large edits.",
     "tags": ["codex", "workflow"]

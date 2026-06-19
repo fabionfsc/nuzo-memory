@@ -16,6 +16,7 @@ nuzo memory init
 nuzo memory remember "The demo project uses SQLite." --kind project_decision
 nuzo memory recall "SQLite"
 nuzo memory list
+nuzo memory update mem_01HZY --expected-revision 1 --tag sqlite
 nuzo memory doctor
 ```
 

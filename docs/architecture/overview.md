@@ -51,6 +51,12 @@ The core groups each logical mutation behind a storage-neutral transaction
 port. The SQLite adapter commits memory rows, FTS changes, and audit events
 together or rolls them all back.
 
+Stateful writes use optimistic concurrency. Memory rows carry a monotonically
+increasing revision, and update/archive/delete operations compare the last read
+revision with the row that is committed. A mismatch returns
+`MEMORY_REVISION_CONFLICT` so agents can re-read and ask for confirmation
+instead of overwriting a newer local change.
+
 ### Policy Engine
 
 The policy engine decides whether a memory action is allowed, suggested, blocked, or requires confirmation.

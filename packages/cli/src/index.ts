@@ -224,7 +224,7 @@ export function createProgram(io: CliIO = defaultIO): Command {
 
         for (const item of memories) {
           const archived = item.archivedAt ? " archived" : "";
-          io.stdout(`${item.id}\t${item.kind}${archived}\t${item.content}`);
+          io.stdout(`${item.id}\trev=${item.revision}\t${item.kind}${archived}\t${item.content}`);
         }
       } finally {
         database.close();
@@ -240,6 +240,7 @@ export function createProgram(io: CliIO = defaultIO): Command {
     .option("--scope <scope>", "Replacement memory scope.")
     .option("--tag <tag...>", "Replacement memory tags.")
     .option("--confidence <number>", "Replacement confidence between 0 and 1.", parseConfidence)
+    .option("--expected-revision <number>", "Only update if the memory is still at this revision.", parsePositiveInteger)
     .action(withErrorHandling(io, async (
       id: string,
       commandOptions: {
@@ -248,6 +249,7 @@ export function createProgram(io: CliIO = defaultIO): Command {
         scope?: MemoryScope;
         tag?: string[];
         confidence?: number;
+        expectedRevision?: number;
       },
     ) => {
       const options = memory.opts<GlobalOptions>();
@@ -258,6 +260,9 @@ export function createProgram(io: CliIO = defaultIO): Command {
           id,
           actor: "nuzo:cli",
         };
+        if (commandOptions.expectedRevision !== undefined) {
+          updateInput.expectedRevision = commandOptions.expectedRevision;
+        }
         if (commandOptions.content !== undefined) {
           updateInput.content = commandOptions.content;
         }
@@ -289,7 +294,14 @@ export function createProgram(io: CliIO = defaultIO): Command {
     .option("--delete", "Hard delete instead of archive.", false)
     .option("--yes", "Confirm hard delete.", false)
     .option("--reason <reason>", "Reason for forgetting.")
-    .action(withErrorHandling(io, async (id: string, commandOptions: { archive: boolean; delete: boolean; yes: boolean; reason?: string }) => {
+    .option("--expected-revision <number>", "Only forget if the memory is still at this revision.", parsePositiveInteger)
+    .action(withErrorHandling(io, async (id: string, commandOptions: {
+      archive: boolean;
+      delete: boolean;
+      yes: boolean;
+      reason?: string;
+      expectedRevision?: number;
+    }) => {
       if (commandOptions.archive && commandOptions.delete) {
         throw new NuzoMemoryError(
           "MEMORY_FORGET_MODE_CONFLICT",
@@ -308,6 +320,9 @@ export function createProgram(io: CliIO = defaultIO): Command {
           confirm: commandOptions.yes,
           actor: "nuzo:cli",
         };
+        if (commandOptions.expectedRevision !== undefined) {
+          forgetInput.expectedRevision = commandOptions.expectedRevision;
+        }
         if (commandOptions.reason) {
           forgetInput.reason = commandOptions.reason;
         }

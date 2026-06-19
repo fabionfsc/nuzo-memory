@@ -15,6 +15,7 @@ import { migrate } from "./schema.js";
 
 interface MemoryRow {
   id: string;
+  revision: number;
   scope: MemoryScope;
   kind: MemoryKind;
   content: string;
@@ -114,12 +115,14 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
       .run(toMemoryRow(memory));
   }
 
-  async update(memory: MemoryRecord): Promise<void> {
-    this.database
+  async update(memory: MemoryRecord, expectedRevision?: number): Promise<boolean> {
+    const where = expectedRevision === undefined ? "id = @id" : "id = @id AND revision = @expected_revision";
+    const result = this.database
       .prepare(
         `
           UPDATE memories
-          SET scope = @scope,
+          SET revision = @revision,
+              scope = @scope,
               kind = @kind,
               content = @content,
               tags = @tags,
@@ -129,10 +132,14 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
               updated_at = @updated_at,
               last_used_at = @last_used_at,
               archived_at = @archived_at
-          WHERE id = @id
+          WHERE ${where}
         `,
       )
-      .run(toMemoryRow(memory));
+      .run({
+        ...toMemoryRow(memory),
+        expected_revision: expectedRevision,
+      });
+    return result.changes === 1;
   }
 
   async findById(id: string): Promise<MemoryRecord | null> {
@@ -142,14 +149,29 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
     return row ? fromMemoryRow(row) : null;
   }
 
-  async archive(id: string, archivedAt: Date): Promise<void> {
-    this.database
-      .prepare("UPDATE memories SET archived_at = @archived_at, updated_at = @archived_at WHERE id = @id")
-      .run({ id, archived_at: archivedAt.toISOString() });
+  async archive(id: string, archivedAt: Date, expectedRevision?: number): Promise<boolean> {
+    const where = expectedRevision === undefined ? "id = @id" : "id = @id AND revision = @expected_revision";
+    const result = this.database
+      .prepare(
+        `
+          UPDATE memories
+          SET revision = revision + 1,
+              archived_at = @archived_at,
+              updated_at = @archived_at
+          WHERE ${where}
+        `,
+      )
+      .run({ id, archived_at: archivedAt.toISOString(), expected_revision: expectedRevision });
+    return result.changes === 1;
   }
 
-  async delete(id: string): Promise<void> {
-    this.database.prepare("DELETE FROM memories WHERE id = ?").run(id);
+  async delete(id: string, expectedRevision?: number): Promise<boolean> {
+    const where = expectedRevision === undefined ? "id = ?" : "id = ? AND revision = ?";
+    const result =
+      expectedRevision === undefined
+        ? this.database.prepare(`DELETE FROM memories WHERE ${where}`).run(id)
+        : this.database.prepare(`DELETE FROM memories WHERE ${where}`).run(id, expectedRevision);
+    return result.changes === 1;
   }
 
   async index(memory: MemoryRecord): Promise<void> {
@@ -254,6 +276,7 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
 function toMemoryRow(memory: MemoryRecord): Record<string, unknown> {
   return {
     id: memory.id,
+    revision: memory.revision,
     scope: memory.scope,
     kind: memory.kind,
     content: memory.content,
@@ -270,6 +293,7 @@ function toMemoryRow(memory: MemoryRecord): Record<string, unknown> {
 function fromMemoryRow(row: MemoryRow): MemoryRecord {
   return {
     id: row.id,
+    revision: row.revision,
     scope: row.scope,
     kind: row.kind,
     content: row.content,

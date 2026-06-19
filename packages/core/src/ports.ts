@@ -10,11 +10,11 @@ import type {
 
 export interface MemoryStore {
   create(memory: MemoryRecord): Promise<void>;
-  update(memory: MemoryRecord): Promise<void>;
+  update(memory: MemoryRecord, expectedRevision?: number): Promise<boolean>;
   findById(id: string): Promise<MemoryRecord | null>;
   list(filter: ListMemoriesInput): Promise<MemoryRecord[]>;
-  archive(id: string, archivedAt: Date): Promise<void>;
-  delete(id: string): Promise<void>;
+  archive(id: string, archivedAt: Date, expectedRevision?: number): Promise<boolean>;
+  delete(id: string, expectedRevision?: number): Promise<boolean>;
 }
 
 export interface SearchIndex {

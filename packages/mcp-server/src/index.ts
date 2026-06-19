@@ -195,6 +195,7 @@ export function registerMemoryTools(
       description: "Update a local Nuzo memory.",
       inputSchema: {
         id: memoryIdSchema,
+        expected_revision: z.number().int().min(1).optional(),
         content: z.string().max(memoryLimits.contentLength).optional(),
         kind: z.enum(["preference", "project_decision", "fact", "instruction", "note"]).optional(),
         scope: scopeSchema.optional(),
@@ -206,6 +207,9 @@ export function registerMemoryTools(
       const updateInput: UpdateToolInput = {
         id: input.id,
       };
+      if (input.expected_revision !== undefined) {
+        updateInput.expected_revision = input.expected_revision;
+      }
       if (input.content !== undefined) {
         updateInput.content = input.content;
       }
@@ -248,6 +252,7 @@ export function registerMemoryTools(
       description: "Archive or delete a local Nuzo memory.",
       inputSchema: {
         id: memoryIdSchema,
+        expected_revision: z.number().int().min(1).optional(),
         mode: z.enum(["archive", "delete"]).default("archive"),
         confirm: z.boolean().default(false),
         reason: z.string().max(memoryLimits.reasonLength).optional(),
@@ -259,6 +264,9 @@ export function registerMemoryTools(
         mode: input.mode,
         confirm: input.confirm,
       };
+      if (input.expected_revision !== undefined) {
+        forgetInput.expected_revision = input.expected_revision;
+      }
       if (input.reason !== undefined) {
         forgetInput.reason = input.reason;
       }

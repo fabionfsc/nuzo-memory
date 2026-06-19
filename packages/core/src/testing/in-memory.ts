@@ -41,8 +41,13 @@ export class InMemoryStore implements MemoryStore {
     this.memories.set(memory.id, cloneMemory(memory));
   }
 
-  async update(memory: MemoryRecord): Promise<void> {
+  async update(memory: MemoryRecord, expectedRevision?: number): Promise<boolean> {
+    const current = this.memories.get(memory.id);
+    if (expectedRevision !== undefined && current?.revision !== expectedRevision) {
+      return false;
+    }
     this.memories.set(memory.id, cloneMemory(memory));
+    return true;
   }
 
   async findById(id: string): Promise<MemoryRecord | null> {
@@ -58,15 +63,27 @@ export class InMemoryStore implements MemoryStore {
       .map(cloneMemory);
   }
 
-  async archive(id: string, archivedAt: Date): Promise<void> {
+  async archive(id: string, archivedAt: Date, expectedRevision?: number): Promise<boolean> {
     const memory = this.memories.get(id);
-    if (memory) {
-      this.memories.set(id, cloneMemory({ ...memory, archivedAt }));
+    if (!memory) {
+      return false;
     }
+    if (expectedRevision !== undefined && memory.revision !== expectedRevision) {
+      return false;
+    }
+    this.memories.set(id, cloneMemory({ ...memory, revision: memory.revision + 1, updatedAt: archivedAt, archivedAt }));
+    return true;
   }
 
-  async delete(id: string): Promise<void> {
-    this.memories.delete(id);
+  async delete(id: string, expectedRevision?: number): Promise<boolean> {
+    const memory = this.memories.get(id);
+    if (!memory) {
+      return false;
+    }
+    if (expectedRevision !== undefined && memory.revision !== expectedRevision) {
+      return false;
+    }
+    return this.memories.delete(id);
   }
 }
 

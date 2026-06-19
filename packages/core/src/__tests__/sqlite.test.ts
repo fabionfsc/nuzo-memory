@@ -11,6 +11,7 @@ import {
   SQLiteMemoryDatabase,
 } from "../index.js";
 import { FixedClock, SequentialIdGenerator } from "../testing.js";
+import type { IdGenerator } from "../ports.js";
 
 let tempDirectories: string[] = [];
 
@@ -21,25 +22,51 @@ afterEach(() => {
   tempDirectories = [];
 });
 
-function createTempDatabase() {
+function createTempDatabase(ids: IdGenerator = new SequentialIdGenerator()) {
   const directory = mkdtempSync(join(tmpdir(), "nuzo-core-"));
   tempDirectories.push(directory);
   const database = new SQLiteMemoryDatabase({ path: join(directory, "memories.sqlite") });
+  const service = createServiceForDatabase(database, ids);
+
+  return { database, directory, service };
+}
+
+function createServiceForDatabase(
+  database: SQLiteMemoryDatabase,
+  ids: IdGenerator = new SequentialIdGenerator(),
+) {
   const service = createMemoryService({
     store: database,
     searchIndex: database,
     auditLog: database,
     clock: new FixedClock(),
-    ids: new SequentialIdGenerator(),
+    ids,
     policy: new DefaultPolicyEngine(new RegexSecretScanner()),
     transactions: database,
   });
 
-  return { database, service };
+  return service;
+}
+
+class PrefixedIdGenerator implements IdGenerator {
+  private memoryCounter = 0;
+  private eventCounter = 0;
+
+  constructor(private readonly prefix: string) {}
+
+  memoryId(): string {
+    this.memoryCounter += 1;
+    return `mem_${this.prefix}_${String(this.memoryCounter).padStart(6, "0")}`;
+  }
+
+  eventId(): string {
+    this.eventCounter += 1;
+    return `evt_${this.prefix}_${String(this.eventCounter).padStart(6, "0")}`;
+  }
 }
 
 describe("SQLiteMemoryDatabase", () => {
-  it("creates the complete version 1 schema from an empty database", () => {
+  it("creates the complete version 2 schema from an empty database", () => {
     const directory = mkdtempSync(join(tmpdir(), "nuzo-schema-"));
     tempDirectories.push(directory);
     const database = new SQLiteMemoryDatabase({ path: join(directory, "memories.sqlite") });
@@ -62,8 +89,11 @@ describe("SQLiteMemoryDatabase", () => {
       )
       .all() as Array<{ name: string; type: string }>;
 
-    expect(database.getSchemaVersion()).toBe(1);
+    const columns = database.database.pragma("table_info(memories)") as Array<{ name: string }>;
+
+    expect(database.getSchemaVersion()).toBe(2);
     expect(database.database.pragma("busy_timeout", { simple: true })).toBe(5000);
+    expect(columns.some((column) => column.name === "revision")).toBe(true);
     expect(objects).toEqual([
       { name: "idx_memories_archived_at", type: "index" },
       { name: "idx_memories_scope", type: "index" },
@@ -116,8 +146,9 @@ describe("SQLiteMemoryDatabase", () => {
 
     const reopened = new SQLiteMemoryDatabase({ path });
 
-    expect(reopened.getSchemaVersion()).toBe(1);
+    expect(reopened.getSchemaVersion()).toBe(2);
     await expect(reopened.findById(memory.id)).resolves.toMatchObject({
+      revision: 1,
       content: "Migration tests preserve fake memory data.",
       tags: ["migration"],
     });
@@ -137,15 +168,15 @@ describe("SQLiteMemoryDatabase", () => {
     tempDirectories.push(directory);
     const path = join(directory, "memories.sqlite");
     const database = new Database(path);
-    database.pragma("user_version = 2");
+    database.pragma("user_version = 3");
     database.close();
 
     expect(() => new SQLiteMemoryDatabase({ path })).toThrowError(
       expect.objectContaining({
         code: "MEMORY_SCHEMA_UNSUPPORTED",
         details: {
-          currentVersion: 2,
-          supportedVersion: 1,
+          currentVersion: 3,
+          supportedVersion: 2,
         },
       }),
     );
@@ -175,6 +206,104 @@ describe("SQLiteMemoryDatabase", () => {
     expect(events.map((event) => event.eventType)).toEqual(["memory.created", "memory.recalled"]);
 
     database.close();
+  });
+
+  it("rejects stale update and forget revisions across SQLite connections", async () => {
+    const { database: firstDatabase, directory, service: firstService } = createTempDatabase();
+    const secondDatabase = new SQLiteMemoryDatabase({ path: join(directory, "memories.sqlite") });
+    const secondService = createServiceForDatabase(secondDatabase, new PrefixedIdGenerator("b"));
+
+    const memory = await firstService.remember({
+      content: "Concurrent writes must not silently overwrite committed state.",
+      kind: "instruction",
+      scope: "project:nuzo",
+      source: "test",
+    });
+
+    const updated = await secondService.update({
+      id: memory.id,
+      expectedRevision: memory.revision,
+      content: "The second connection committed first.",
+      actor: "test",
+    });
+    expect(updated.revision).toBe(2);
+
+    await expect(
+      firstService.update({
+        id: memory.id,
+        expectedRevision: memory.revision,
+        content: "This stale update must fail.",
+        actor: "test",
+      }),
+    ).rejects.toMatchObject({
+      code: "MEMORY_REVISION_CONFLICT",
+      details: {
+        id: memory.id,
+        expectedRevision: 1,
+        currentRevision: 2,
+      },
+    });
+
+    await expect(
+      firstService.forget({
+        id: memory.id,
+        expectedRevision: memory.revision,
+        actor: "test",
+      }),
+    ).rejects.toMatchObject({
+      code: "MEMORY_REVISION_CONFLICT",
+    });
+
+    await expect(firstDatabase.findById(memory.id)).resolves.toMatchObject({
+      revision: 2,
+      content: "The second connection committed first.",
+      archivedAt: null,
+    });
+    await expect(firstDatabase.list(memory.id)).resolves.toHaveLength(2);
+
+    secondDatabase.close();
+    firstDatabase.close();
+  });
+
+  it("deduplicates equivalent imports deterministically across SQLite connections", async () => {
+    const { database: firstDatabase, directory, service: firstService } = createTempDatabase();
+    const secondDatabase = new SQLiteMemoryDatabase({ path: join(directory, "memories.sqlite") });
+    const secondService = createServiceForDatabase(secondDatabase);
+    const document: MemoryExportDocument = {
+      format: "nuzo-memory-export",
+      version: 1,
+      exported_at: "2026-06-12T00:00:00.000Z",
+      memories: [
+        {
+          scope: "user:default",
+          kind: "note",
+          content: "Equivalent import writes should serialize cleanly.",
+          tags: ["import", "concurrency"],
+          source: "test",
+          confidence: 1,
+          created_at: "2026-06-12T00:00:00.000Z",
+          updated_at: "2026-06-12T00:00:00.000Z",
+          last_used_at: null,
+          archived_at: null,
+        },
+      ],
+    };
+
+    const results = [
+      await firstService.importMemories({ document, actor: "test" }),
+      await secondService.importMemories({ document, actor: "test" }),
+    ];
+
+    expect(results).toEqual(
+      expect.arrayContaining([
+        { imported: 1, skipped: 0, dryRun: false },
+        { imported: 0, skipped: 1, dryRun: false },
+      ]),
+    );
+    await expect(firstService.list({ includeArchived: true })).resolves.toHaveLength(1);
+
+    secondDatabase.close();
+    firstDatabase.close();
   });
 
   it("recalls accented Unicode terms through SQLite FTS", async () => {

@@ -111,17 +111,18 @@ After that, the expected flow is:
 
 ```bash
 nuzo memory remember "The user prefers concise implementation notes." --kind preference
-nuzo memory update mem_01HZY --content "The user prefers concise implementation notes and explicit tradeoffs."
-nuzo memory recall "How should the assistant write implementation notes?"
 nuzo memory list
-nuzo memory forget mem_01HZY
+nuzo memory update mem_01HZY --expected-revision 1 --content "The user prefers concise implementation notes and explicit tradeoffs."
+nuzo memory recall "How should the assistant write implementation notes?"
+nuzo memory forget mem_01HZY --expected-revision 2
 ```
 
 When developing from the repository, use the workspace wrapper:
 
 ```bash
 npm run nuzo -- memory remember "The user prefers concise implementation notes." --kind preference
-npm run nuzo -- memory update mem_01HZY --content "The user prefers concise implementation notes and explicit tradeoffs."
+npm run nuzo -- memory list
+npm run nuzo -- memory update mem_01HZY --expected-revision 1 --content "The user prefers concise implementation notes and explicit tradeoffs."
 npm run nuzo -- memory recall "implementation notes"
 npm run nuzo -- memory export --path ./memories.memory.export.md
 ```

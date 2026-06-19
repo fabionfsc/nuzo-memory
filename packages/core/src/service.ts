@@ -66,6 +66,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
     if (!memory) {
       throw new NuzoMemoryError("MEMORY_NOT_FOUND", "Memory was not found.", { id: input.id });
     }
+    assertExpectedRevision(input.expectedRevision, memory);
 
     const mode = input.mode ?? "archive";
     const now = clock.now();
@@ -80,7 +81,8 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       }
 
       await runTransaction(async () => {
-        await store.delete(input.id);
+        const deleted = await store.delete(input.id, memory.revision);
+        assertRevisionCommitted(deleted, input.id, memory.revision);
         await searchIndex.remove(input.id);
         await auditLog.append({
           id: ids.eventId(),
@@ -95,7 +97,8 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
     }
 
     await runTransaction(async () => {
-      await store.archive(input.id, now);
+      const archived = await store.archive(input.id, now, memory.revision);
+      assertRevisionCommitted(archived, input.id, memory.revision);
       await searchIndex.remove(input.id);
       await auditLog.append({
         id: ids.eventId(),
@@ -115,6 +118,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       const now = clock.now();
       const memory: MemoryRecord = {
         id: ids.memoryId(),
+        revision: 1,
         scope: input.scope,
         kind: input.kind,
         content: input.content.trim(),
@@ -158,13 +162,21 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       const now = clock.now();
       await runTransaction(async () => {
         for (const result of results) {
-          await store.update({
-            ...result.memory,
+          const current = await store.findById(result.memory.id);
+          if (!current || current.archivedAt !== null) {
+            continue;
+          }
+
+          const updated: MemoryRecord = {
+            ...current,
+            revision: current.revision + 1,
             lastUsedAt: now,
-          });
+          };
+          const committed = await store.update(updated, current.revision);
+          assertRevisionCommitted(committed, current.id, current.revision);
           await auditLog.append({
             id: ids.eventId(),
-            memoryId: result.memory.id,
+            memoryId: current.id,
             eventType: "memory.recalled",
             actor: "core",
             payload: { query: input.query, score: result.score },
@@ -187,6 +199,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       if (!current) {
         throw new NuzoMemoryError("MEMORY_NOT_FOUND", "Memory was not found.", { id: input.id });
       }
+      assertExpectedRevision(input.expectedRevision, current);
 
       const hasChanges =
         input.content !== undefined ||
@@ -204,6 +217,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
 
       const updated: MemoryRecord = {
         ...current,
+        revision: current.revision + 1,
         content: input.content?.trim() ?? current.content,
         kind: input.kind ?? current.kind,
         scope: input.scope ?? current.scope,
@@ -213,7 +227,8 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       };
 
       await runTransaction(async () => {
-        await store.update(updated);
+        const committed = await store.update(updated, current.revision);
+        assertRevisionCommitted(committed, input.id, current.revision);
         await searchIndex.index(updated);
         await auditLog.append({
           id: ids.eventId(),
@@ -273,14 +288,6 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       assertActor(input.actor);
       assertExportDocument(input.document);
 
-      const planned: Array<{
-        item: MemoryExportItem;
-        scope: MemoryScope;
-        tags: string[];
-      }> = [];
-      const duplicateKeysByScope = new Map<MemoryScope, Set<string>>();
-      let skipped = 0;
-
       for (const item of input.document.memories) {
         const scope = input.scope ?? item.scope;
         await policy.assertCanRemember({
@@ -292,31 +299,55 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
           confidence: item.confidence,
         });
 
-        const tags = [...new Set(item.tags)];
-        let duplicateKeys = duplicateKeysByScope.get(scope);
-        if (!duplicateKeys) {
-          const existing = await store.list({ scope, includeArchived: true });
-          duplicateKeys = new Set(existing.map(toImportDuplicateKey));
-          duplicateKeysByScope.set(scope, duplicateKeys);
-        }
-
-        const duplicateKey = toImportDuplicateKey({
-          scope,
-          kind: item.kind,
-          content: item.content,
-          tags,
-        });
-
-        if (duplicateKeys.has(duplicateKey)) {
-          skipped += 1;
-          continue;
-        }
-
-        duplicateKeys.add(duplicateKey);
-        planned.push({ item, scope, tags });
       }
 
+      const planImport = async (): Promise<{
+        planned: Array<{
+          item: MemoryExportItem;
+          scope: MemoryScope;
+          tags: string[];
+        }>;
+        skipped: number;
+      }> => {
+        const planned: Array<{
+          item: MemoryExportItem;
+          scope: MemoryScope;
+          tags: string[];
+        }> = [];
+        const duplicateKeysByScope = new Map<MemoryScope, Set<string>>();
+        let skipped = 0;
+
+        for (const item of input.document.memories) {
+          const scope = input.scope ?? item.scope;
+          const tags = [...new Set(item.tags)];
+          let duplicateKeys = duplicateKeysByScope.get(scope);
+          if (!duplicateKeys) {
+            const existing = await store.list({ scope, includeArchived: true });
+            duplicateKeys = new Set(existing.map(toImportDuplicateKey));
+            duplicateKeysByScope.set(scope, duplicateKeys);
+          }
+
+          const duplicateKey = toImportDuplicateKey({
+            scope,
+            kind: item.kind,
+            content: item.content,
+            tags,
+          });
+
+          if (duplicateKeys.has(duplicateKey)) {
+            skipped += 1;
+            continue;
+          }
+
+          duplicateKeys.add(duplicateKey);
+          planned.push({ item, scope, tags });
+        }
+
+        return { planned, skipped };
+      };
+
       if (input.dryRun === true) {
+        const { planned, skipped } = await planImport();
         return {
           imported: planned.length,
           skipped,
@@ -324,10 +355,16 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
         };
       }
 
+      let imported = 0;
+      let skipped = 0;
       await runTransaction(async () => {
-        for (const { item, scope, tags } of planned) {
+        const plan = await planImport();
+        imported = plan.planned.length;
+        skipped = plan.skipped;
+        for (const { item, scope, tags } of plan.planned) {
           const memory: MemoryRecord = {
             id: ids.memoryId(),
+            revision: 1,
             scope,
             kind: item.kind,
             content: item.content.trim(),
@@ -358,7 +395,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       });
 
       return {
-        imported: planned.length,
+        imported,
         skipped,
         dryRun: false,
       };
@@ -412,6 +449,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
         for (const memory of memories) {
           const forgetInput: ForgetMemoryInput = {
             id: memory.id,
+            expectedRevision: memory.revision,
             mode,
             actor: input.actor,
           };
@@ -434,6 +472,33 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       };
     },
   };
+}
+
+function assertExpectedRevision(expectedRevision: number | undefined, memory: MemoryRecord): void {
+  if (expectedRevision === undefined) {
+    return;
+  }
+  if (!Number.isInteger(expectedRevision) || expectedRevision < 1) {
+    throw new NuzoMemoryError("MEMORY_REVISION_INVALID", "Memory revision is invalid.", {
+      expectedRevision,
+    });
+  }
+  if (memory.revision !== expectedRevision) {
+    throw new NuzoMemoryError("MEMORY_REVISION_CONFLICT", "Memory changed before this operation could commit.", {
+      id: memory.id,
+      expectedRevision,
+      currentRevision: memory.revision,
+    });
+  }
+}
+
+function assertRevisionCommitted(committed: boolean, id: string, expectedRevision: number): void {
+  if (!committed) {
+    throw new NuzoMemoryError("MEMORY_REVISION_CONFLICT", "Memory changed before this operation could commit.", {
+      id,
+      expectedRevision,
+    });
+  }
 }
 
 function assertActor(actor: string): void {

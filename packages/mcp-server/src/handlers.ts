@@ -43,6 +43,7 @@ export interface ListToolInput {
 
 export interface UpdateToolInput {
   id: string;
+  expected_revision?: number;
   content?: string;
   kind?: MemoryKind;
   scope?: string;
@@ -56,6 +57,7 @@ export interface HistoryToolInput {
 
 export interface ForgetToolInput {
   id: string;
+  expected_revision?: number;
   mode: "archive" | "delete";
   confirm: boolean;
   reason?: string;
@@ -105,6 +107,7 @@ export interface MemoryToolHandlers {
   recall(input: RecallToolInput): Promise<{
     results: Array<{
       id: string;
+      revision: number;
       content: string;
       kind: MemoryKind;
       scope: MemoryScope;
@@ -123,6 +126,7 @@ export interface MemoryToolHandlers {
     limit: number;
     results: Array<{
       id: string;
+      revision: number;
       content: string;
       kind: MemoryKind;
       scope: MemoryScope;
@@ -183,6 +187,7 @@ export interface MemoryToolHandlers {
 
 export type MemoryToolRecord = {
   id: string;
+  revision: number;
   content: string;
   kind: MemoryKind;
   scope: MemoryScope;
@@ -289,6 +294,9 @@ export function createMemoryToolHandlers(
         id: input.id,
         actor: "nuzo:mcp",
       };
+      if (input.expected_revision !== undefined) {
+        updateInput.expectedRevision = input.expected_revision;
+      }
       if (input.content !== undefined) {
         updateInput.content = input.content;
       }
@@ -332,6 +340,9 @@ export function createMemoryToolHandlers(
         confirm: input.confirm,
         actor: "nuzo:mcp",
       };
+      if (input.expected_revision !== undefined) {
+        forgetInput.expectedRevision = input.expected_revision;
+      }
       if (input.reason !== undefined) {
         forgetInput.reason = input.reason;
       }
@@ -520,6 +531,7 @@ function clampRecallHookLimit(limit: number | undefined): number {
 function toRecallOutput(result: RecallMemoryResult) {
   return {
     id: result.memory.id,
+    revision: result.memory.revision,
     content: result.memory.content,
     kind: result.memory.kind,
     scope: result.memory.scope,
@@ -532,6 +544,7 @@ function toRecallOutput(result: RecallMemoryResult) {
 function toToolRecord(memory: MemoryRecord): MemoryToolRecord {
   return {
     id: memory.id,
+    revision: memory.revision,
     content: memory.content,
     kind: memory.kind,
     scope: memory.scope,

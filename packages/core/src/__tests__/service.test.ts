@@ -47,6 +47,7 @@ describe("memory service", () => {
     });
 
     expect(memory.id).toBe("mem_000001");
+    expect(memory.revision).toBe(1);
 
     const results = await service.recall({
       query: "local-first tools",
@@ -260,6 +261,7 @@ describe("memory service", () => {
     });
 
     expect(updated.content).toBe("The user prefers concise final answers.");
+    expect(updated.revision).toBe(2);
     expect(updated.kind).toBe("preference");
     expect(updated.tags).toEqual(["style", "codex"]);
     expect(updated.updatedAt).toEqual(new Date("2026-06-12T00:00:00.000Z"));
@@ -330,6 +332,39 @@ describe("memory service", () => {
       }),
     ).rejects.toMatchObject({
       code: "MEMORY_UPDATE_EMPTY",
+    });
+  });
+
+  it("rejects stale expected revisions", async () => {
+    const { service } = createTestService();
+    const memory = await service.remember({
+      content: "Protect this memory from stale writes.",
+      kind: "instruction",
+      scope: "user:default",
+      source: "test",
+    });
+
+    await service.update({
+      id: memory.id,
+      expectedRevision: memory.revision,
+      content: "The current revision is now newer.",
+      actor: "test",
+    });
+
+    await expect(
+      service.update({
+        id: memory.id,
+        expectedRevision: memory.revision,
+        content: "This stale update must not commit.",
+        actor: "test",
+      }),
+    ).rejects.toMatchObject({
+      code: "MEMORY_REVISION_CONFLICT",
+      details: {
+        id: memory.id,
+        expectedRevision: 1,
+        currentRevision: 2,
+      },
     });
   });
 

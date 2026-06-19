@@ -74,6 +74,7 @@ Output:
   "results": [
     {
       "id": "mem_01HZY...",
+      "revision": 1,
       "content": "The user prefers SQLite for local-first prototypes.",
       "score": 0.91,
       "scope": "user:default",
@@ -142,15 +143,22 @@ Input:
 
 Edit metadata or content for a memory.
 
+`expected_revision` is optional but recommended when the caller is editing a
+memory it previously listed or recalled. If provided and the stored revision no
+longer matches, the operation fails with `MEMORY_REVISION_CONFLICT`.
+
 Input:
 
 ```json
 {
   "id": "mem_01HZY...",
+  "expected_revision": 1,
   "content": "The user prefers SQLite for simple local-first prototypes.",
   "tags": ["storage", "architecture", "sqlite"]
 }
 ```
+
+Output includes the updated memory and its next revision.
 
 ### `memory.history`
 
@@ -200,6 +208,7 @@ Input:
 ```json
 {
   "id": "mem_01HZY...",
+  "expected_revision": 1,
   "mode": "archive",
   "reason": "No longer accurate."
 }
@@ -353,9 +362,9 @@ nuzo memory init
 nuzo memory remember "The user prefers concise output." --kind preference --tag codex
 nuzo memory recall "output style"
 nuzo memory list --tag codex
-nuzo memory update mem_01HZY --content "The user prefers concise final answers."
+nuzo memory update mem_01HZY --expected-revision 1 --content "The user prefers concise final answers."
 nuzo memory history mem_01HZY
-nuzo memory forget mem_01HZY --archive
+nuzo memory forget mem_01HZY --expected-revision 2 --archive
 nuzo memory forget-many --tag obsolete
 nuzo memory forget-many --scope project:auto --apply
 nuzo memory export --path ./memories.memory.export.json

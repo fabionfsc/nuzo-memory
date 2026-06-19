@@ -26,6 +26,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Dependabot update configuration for npm, GitHub Actions, and Python docs
   dependencies.
 - CodeQL analysis workflow for JavaScript and TypeScript security checks.
+- Optimistic memory revisions with structured conflict handling for stale
+  update, archive, and delete operations.
 
 ### Documentation
 

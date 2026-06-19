@@ -106,10 +106,16 @@ events atomically.
   may leave earlier memories committed while the failing memory is rolled back;
 - dry runs do not open write transactions.
 
-Policy validation and import planning happen before write transactions.
+Policy validation happens before write transactions. Import duplicate planning
+happens inside the write transaction so equivalent imports from multiple local
+processes serialize deterministically.
 
 SQLite uses WAL mode and a five-second busy timeout so short concurrent writes
 from multiple local agent processes wait instead of failing immediately.
+
+Memory rows include a monotonically increasing `revision`. Stateful writes use
+compare-and-swap semantics and return `MEMORY_REVISION_CONFLICT` when another
+process commits a newer row before the operation can commit.
 
 ## Local Permissions
 

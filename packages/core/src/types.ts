@@ -21,6 +21,7 @@ export type MemoryScope =
 
 export interface MemoryRecord {
   id: string;
+  revision: number;
   scope: MemoryScope;
   kind: MemoryKind;
   content: string;
@@ -74,6 +75,7 @@ export interface ListMemoriesInput {
 
 export interface ForgetMemoryInput {
   id: string;
+  expectedRevision?: number;
   mode?: "archive" | "delete";
   confirm?: boolean;
   actor: string;
@@ -101,6 +103,7 @@ export interface ForgetMemoriesResult {
 
 export interface UpdateMemoryInput {
   id: string;
+  expectedRevision?: number;
   content?: string;
   kind?: MemoryKind;
   scope?: MemoryScope;

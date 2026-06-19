@@ -216,6 +216,7 @@ describe("nuzo memory cli", () => {
 
     const list = await runCli(["memory", "--store", store, "list"]);
     expect(list.stdout.join("\n")).toContain(id);
+    expect(list.stdout.join("\n")).toContain("rev=2");
     expect(list.stdout.join("\n")).toContain("preference");
 
     const history = await runCli(["memory", "--store", store, "history", id]);

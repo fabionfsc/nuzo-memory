@@ -30,6 +30,7 @@ function createTestHandlers(options: {
       calls.remember += 1;
       memory = {
         id: "mem_000001",
+        revision: 1,
         scope: input.scope,
         kind: input.kind,
         content: input.content,
@@ -74,6 +75,7 @@ function createTestHandlers(options: {
       }
       memory = {
         ...memory,
+        revision: memory.revision + 1,
         content: input.content ?? memory.content,
         tags: input.tags ?? memory.tags,
         updatedAt: new Date("2026-06-13T01:00:00.000Z"),
@@ -133,6 +135,7 @@ function createTestHandlers(options: {
       if (memory && input.mode === "archive") {
         memory = {
           ...memory,
+          revision: memory.revision + 1,
           archivedAt: new Date("2026-06-13T02:00:00.000Z"),
         };
       }
@@ -162,6 +165,7 @@ function createTestHandlers(options: {
         } else {
           memory = {
             ...item,
+            revision: item.revision + 1,
             archivedAt: new Date("2026-06-13T02:00:00.000Z"),
           };
         }
