@@ -8,6 +8,16 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ### Added
 
+### Documentation
+
+### Changed
+
+### Fixed
+
+## [0.1.0] - 2026-06-19
+
+### Added
+
 - Local-first memory core backed by SQLite and FTS.
 - Local CLI commands for init, remember, recall, list, update, forget, export, import, and doctor.
 - MCP server exposing the Nuzo memory tool contract.

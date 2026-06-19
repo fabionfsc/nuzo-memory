@@ -22,7 +22,7 @@ describe("nuzo CLI process contract", () => {
     const result = runProcess(["--version"]);
 
     expect(result.status).toBe(cliExitCodes.success);
-    expect(result.stdout.trim()).toBe("0.0.0");
+    expect(result.stdout.trim()).toBe("0.1.0");
     expect(result.stderr).toBe("");
   });
 
