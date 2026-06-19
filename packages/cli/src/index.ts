@@ -536,6 +536,7 @@ function createService(database: SQLiteMemoryDatabase) {
     clock: new SystemClock(),
     ids: new RandomIdGenerator(),
     policy: new DefaultPolicyEngine(new RegexSecretScanner()),
+    transactions: database,
   });
 }
 

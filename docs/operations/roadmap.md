@@ -31,8 +31,9 @@ Goal: implement local memory lifecycle.
 
 Detailed implementation plan: `docs/implementation/stage-1-core.md`.
 
-Status: implemented for the MVP, including audit history, safe bulk forgetting,
-import preflight, migration coverage, and expanded secret detection.
+Status: implemented for the MVP, including audit history, transactional SQLite
+mutations, safe bulk forgetting, import preflight, migration coverage, and
+expanded secret detection.
 
 Deliverables:
 

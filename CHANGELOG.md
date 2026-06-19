@@ -62,3 +62,4 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Import now preflights every item before writing and reports within-document duplicates consistently in dry-run and real modes.
 - SQLite migration failures for newer schemas now use a structured error, with coverage for schema creation and idempotency.
 - All audited core operations now reject empty actor identities consistently.
+- SQLite mutations now roll back memory, FTS, and audit writes atomically, including complete multi-item imports.

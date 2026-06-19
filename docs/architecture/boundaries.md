@@ -79,6 +79,7 @@ The core should depend on ports:
 - `MemoryStore`
 - `SearchIndex`
 - `AuditLog`
+- `TransactionManager`
 - `Clock`
 - `IdGenerator`
 - `SecretScanner`
@@ -86,9 +87,7 @@ The core should depend on ports:
 
 Adapters implement those ports:
 
-- `SQLiteMemoryStore`
-- `SQLiteFtsSearchIndex`
-- `FileAuditLog`
+- `SQLiteMemoryDatabase` implements storage, FTS, audit, and transaction ports.
 - `RegexSecretScanner`
 
 ## Why This Matters

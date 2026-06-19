@@ -89,6 +89,21 @@ Every write operation creates an event:
 
 Recall events may be configurable because they can grow quickly.
 
+## Transaction Guarantees
+
+SQLite-backed logical mutations commit memory rows, FTS changes, and audit
+events atomically.
+
+- remember, update, forget, and usage-recording recall use one transaction per
+  command;
+- import uses one transaction for the complete planned document and rolls back
+  every item if any persistence step fails;
+- bulk forget uses one transaction per matched memory, so an unexpected failure
+  may leave earlier memories committed while the failing memory is rolled back;
+- dry runs do not open write transactions.
+
+Policy validation and import planning happen before write transactions.
+
 ## Secrets And Sensitive Data
 
 The MVP should reject obvious secret-like values:

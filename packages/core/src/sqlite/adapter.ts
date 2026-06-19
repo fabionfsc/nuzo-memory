@@ -1,6 +1,6 @@
 import Database from "better-sqlite3";
 import { NuzoMemoryError } from "../errors.js";
-import type { AuditLog, MemoryStore, SearchIndex } from "../ports.js";
+import type { AuditLog, MemoryStore, SearchIndex, TransactionManager } from "../ports.js";
 import type {
   ListMemoriesInput,
   MemoryEvent,
@@ -43,8 +43,9 @@ export interface SQLiteMemoryDatabaseOptions {
   path: string;
 }
 
-export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog {
+export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog, TransactionManager {
   readonly database: Database.Database;
+  private transactionQueue: Promise<void> = Promise.resolve();
 
   constructor(options: SQLiteMemoryDatabaseOptions) {
     this.database = new Database(options.path);
@@ -62,6 +63,31 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog 
 
   getSchemaVersion(): number {
     return this.database.pragma("user_version", { simple: true }) as number;
+  }
+
+  async run<T>(operation: () => Promise<T>): Promise<T> {
+    const previous = this.transactionQueue;
+    let release!: () => void;
+    this.transactionQueue = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+
+    await previous;
+    let started = false;
+    try {
+      this.database.exec("BEGIN IMMEDIATE");
+      started = true;
+      const result = await operation();
+      this.database.exec("COMMIT");
+      return result;
+    } catch (error) {
+      if (started && this.database.inTransaction) {
+        this.database.exec("ROLLBACK");
+      }
+      throw error;
+    } finally {
+      release();
+    }
   }
 
   async create(memory: MemoryRecord): Promise<void> {

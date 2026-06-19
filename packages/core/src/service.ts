@@ -1,5 +1,13 @@
 import { NuzoMemoryError } from "./errors.js";
-import type { AuditLog, Clock, IdGenerator, MemoryStore, PolicyEngine, SearchIndex } from "./ports.js";
+import type {
+  AuditLog,
+  Clock,
+  IdGenerator,
+  MemoryStore,
+  PolicyEngine,
+  SearchIndex,
+  TransactionManager,
+} from "./ports.js";
 import type {
   ExportMemoriesInput,
   ForgetMemoryInput,
@@ -27,6 +35,7 @@ export interface MemoryServiceDependencies {
   clock: Clock;
   ids: IdGenerator;
   policy: PolicyEngine;
+  transactions?: TransactionManager;
 }
 
 export interface MemoryService {
@@ -42,7 +51,10 @@ export interface MemoryService {
 }
 
 export function createMemoryService(dependencies: MemoryServiceDependencies): MemoryService {
-  const { auditLog, clock, ids, policy, searchIndex, store } = dependencies;
+  const { auditLog, clock, ids, policy, searchIndex, store, transactions } = dependencies;
+  const runTransaction = transactions
+    ? <T>(operation: () => Promise<T>) => transactions.run(operation)
+    : <T>(operation: () => Promise<T>) => operation();
 
   async function forgetMemory(input: ForgetMemoryInput): Promise<void> {
     assertActor(input.actor);
@@ -64,28 +76,32 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
         );
       }
 
-      await store.delete(input.id);
-      await searchIndex.remove(input.id);
-      await auditLog.append({
-        id: ids.eventId(),
-        memoryId: input.id,
-        eventType: "memory.deleted",
-        actor: input.actor,
-        payload: { reason: input.reason ?? null },
-        createdAt: now,
+      await runTransaction(async () => {
+        await store.delete(input.id);
+        await searchIndex.remove(input.id);
+        await auditLog.append({
+          id: ids.eventId(),
+          memoryId: input.id,
+          eventType: "memory.deleted",
+          actor: input.actor,
+          payload: { reason: input.reason ?? null },
+          createdAt: now,
+        });
       });
       return;
     }
 
-    await store.archive(input.id, now);
-    await searchIndex.remove(input.id);
-    await auditLog.append({
-      id: ids.eventId(),
-      memoryId: input.id,
-      eventType: "memory.archived",
-      actor: input.actor,
-      payload: { reason: input.reason ?? null },
-      createdAt: now,
+    await runTransaction(async () => {
+      await store.archive(input.id, now);
+      await searchIndex.remove(input.id);
+      await auditLog.append({
+        id: ids.eventId(),
+        memoryId: input.id,
+        eventType: "memory.archived",
+        actor: input.actor,
+        payload: { reason: input.reason ?? null },
+        createdAt: now,
+      });
     });
   }
 
@@ -108,15 +124,17 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
         archivedAt: null,
       };
 
-      await store.create(memory);
-      await searchIndex.index(memory);
-      await auditLog.append({
-        id: ids.eventId(),
-        memoryId: memory.id,
-        eventType: "memory.created",
-        actor: input.source,
-        payload: { kind: memory.kind, scope: memory.scope, tags: memory.tags },
-        createdAt: now,
+      await runTransaction(async () => {
+        await store.create(memory);
+        await searchIndex.index(memory);
+        await auditLog.append({
+          id: ids.eventId(),
+          memoryId: memory.id,
+          eventType: "memory.created",
+          actor: input.source,
+          payload: { kind: memory.kind, scope: memory.scope, tags: memory.tags },
+          createdAt: now,
+        });
       });
 
       return memory;
@@ -135,20 +153,22 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       }
 
       const now = clock.now();
-      for (const result of results) {
-        await store.update({
-          ...result.memory,
-          lastUsedAt: now,
-        });
-        await auditLog.append({
-          id: ids.eventId(),
-          memoryId: result.memory.id,
-          eventType: "memory.recalled",
-          actor: "core",
-          payload: { query: input.query, score: result.score },
-          createdAt: now,
-        });
-      }
+      await runTransaction(async () => {
+        for (const result of results) {
+          await store.update({
+            ...result.memory,
+            lastUsedAt: now,
+          });
+          await auditLog.append({
+            id: ids.eventId(),
+            memoryId: result.memory.id,
+            eventType: "memory.recalled",
+            actor: "core",
+            payload: { query: input.query, score: result.score },
+            createdAt: now,
+          });
+        }
+      });
 
       return results;
     },
@@ -187,23 +207,25 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
         updatedAt: clock.now(),
       };
 
-      await store.update(updated);
-      await searchIndex.index(updated);
-      await auditLog.append({
-        id: ids.eventId(),
-        memoryId: updated.id,
-        eventType: "memory.updated",
-        actor: input.actor,
-        payload: {
-          changed: {
-            content: input.content !== undefined,
-            kind: input.kind !== undefined,
-            scope: input.scope !== undefined,
-            tags: input.tags !== undefined,
-            confidence: input.confidence !== undefined,
+      await runTransaction(async () => {
+        await store.update(updated);
+        await searchIndex.index(updated);
+        await auditLog.append({
+          id: ids.eventId(),
+          memoryId: updated.id,
+          eventType: "memory.updated",
+          actor: input.actor,
+          payload: {
+            changed: {
+              content: input.content !== undefined,
+              kind: input.kind !== undefined,
+              scope: input.scope !== undefined,
+              tags: input.tags !== undefined,
+              confidence: input.confidence !== undefined,
+            },
           },
-        },
-        createdAt: updated.updatedAt,
+          createdAt: updated.updatedAt,
+        });
       });
 
       return updated;
@@ -298,36 +320,38 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
         };
       }
 
-      for (const { item, scope, tags } of planned) {
-        const memory: MemoryRecord = {
-          id: ids.memoryId(),
-          scope,
-          kind: item.kind,
-          content: item.content.trim(),
-          tags,
-          source: item.source,
-          confidence: item.confidence,
-          createdAt: parseExportDate(item.created_at, "created_at"),
-          updatedAt: parseExportDate(item.updated_at, "updated_at"),
-          lastUsedAt: item.last_used_at ? parseExportDate(item.last_used_at, "last_used_at") : null,
-          archivedAt: item.archived_at ? parseExportDate(item.archived_at, "archived_at") : null,
-        };
-
-        await store.create(memory);
-        await searchIndex.index(memory);
-        await auditLog.append({
-          id: ids.eventId(),
-          memoryId: memory.id,
-          eventType: "memory.imported",
-          actor: input.actor,
-          payload: {
-            originalScope: item.scope,
+      await runTransaction(async () => {
+        for (const { item, scope, tags } of planned) {
+          const memory: MemoryRecord = {
+            id: ids.memoryId(),
             scope,
-            archived: memory.archivedAt !== null,
-          },
-          createdAt: clock.now(),
-        });
-      }
+            kind: item.kind,
+            content: item.content.trim(),
+            tags,
+            source: item.source,
+            confidence: item.confidence,
+            createdAt: parseExportDate(item.created_at, "created_at"),
+            updatedAt: parseExportDate(item.updated_at, "updated_at"),
+            lastUsedAt: item.last_used_at ? parseExportDate(item.last_used_at, "last_used_at") : null,
+            archivedAt: item.archived_at ? parseExportDate(item.archived_at, "archived_at") : null,
+          };
+
+          await store.create(memory);
+          await searchIndex.index(memory);
+          await auditLog.append({
+            id: ids.eventId(),
+            memoryId: memory.id,
+            eventType: "memory.imported",
+            actor: input.actor,
+            payload: {
+              originalScope: item.scope,
+              scope,
+              archived: memory.archivedAt !== null,
+            },
+            createdAt: clock.now(),
+          });
+        }
+      });
 
       return {
         imported: planned.length,

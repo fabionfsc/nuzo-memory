@@ -16,6 +16,7 @@ Core Memory Service
     +-- Search Adapter
     +-- Audit Log
     +-- Policy Engine
+    +-- Transaction Manager
     |
     v
 Local Store
@@ -43,6 +44,12 @@ The MVP storage adapter uses SQLite. The adapter boundary keeps the project open
 ### Search Adapter
 
 The MVP uses SQLite FTS for local full-text search. Embeddings can be added later as an optional second adapter.
+
+### Transaction Manager
+
+The core groups each logical mutation behind a storage-neutral transaction
+port. The SQLite adapter commits memory rows, FTS changes, and audit events
+together or rolls them all back.
 
 ### Policy Engine
 

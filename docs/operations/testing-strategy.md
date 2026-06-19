@@ -27,6 +27,8 @@ Testing should protect the project contracts before implementation details.
 - export produces valid versioned format;
 - import dry-run reports planned changes;
 - import preflight rejects the full request before writes and handles duplicate items consistently;
+- SQLite mutations roll back memory, FTS, and audit writes after injected failures;
+- multi-item imports are atomic when a later item fails;
 - doctor reports tracked memory files.
 - MCP doctor reports aggregate store health without exposing memory content.
 

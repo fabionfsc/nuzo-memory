@@ -28,6 +28,10 @@ export interface AuditLog {
   list(memoryId: string): Promise<MemoryEvent[]>;
 }
 
+export interface TransactionManager {
+  run<T>(operation: () => Promise<T>): Promise<T>;
+}
+
 export interface Clock {
   now(): Date;
 }
