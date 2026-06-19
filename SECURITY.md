@@ -20,6 +20,19 @@ release integrity, host-tool boundaries, and safe repository practices.
 - Repository-controlled project config must not redirect storage outside the
   project `.nuzo` directory.
 
+## Repository Controls
+
+The public repository should keep these controls enabled:
+
+- GitHub secret scanning and push protection.
+- Dependabot alerts and security updates.
+- CodeQL analysis for JavaScript and TypeScript.
+- Branch protection or repository rules that prevent force pushes and require
+  the release validation checks before untrusted changes merge.
+
+Maintainer bypass rules, if any, must be intentional and documented in the
+release checklist. Do not weaken repository controls to speed up a release.
+
 ## Sensitive Data
 
 Do not store or commit:

@@ -23,6 +23,9 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Documented sequential execution for gates that share generated `dist`
   directories.
 - npm staging now rejects local dependency references.
+- Dependabot update configuration for npm, GitHub Actions, and Python docs
+  dependencies.
+- CodeQL analysis workflow for JavaScript and TypeScript security checks.
 
 ### Documentation
 
@@ -34,6 +37,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
   validation as released.
 - Moved trusted npm publishing and public marketplace distribution into
   post-MVP work.
+- Documented repository security automation expectations in the release
+  checklist, issue-hunting workflow, and security policy.
 
 ### Changed
 

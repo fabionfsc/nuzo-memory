@@ -72,6 +72,8 @@ Check:
 - generated artifacts or runtime memory accidentally staged;
 - GitHub Issues for duplicates or completed work that should be closed;
 - GitHub Pages and release workflow status when public docs change;
+- repository controls such as branch protection, Dependabot alerts and security
+  updates, CodeQL, secret scanning, and push protection;
 - tests and validation gaps around recently changed behavior.
 
 Small safe fixes can be handled immediately. Larger work should become a focused GitHub Issue with labels, milestone, concrete tasks, and acceptance criteria.

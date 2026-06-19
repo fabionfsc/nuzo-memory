@@ -52,6 +52,7 @@ Confirm the CI workflow is green:
 
 ```bash
 gh run list --repo fabionfsc/nuzo-memory --workflow ci.yml --limit 5
+gh run list --repo fabionfsc/nuzo-memory --workflow codeql.yml --limit 5
 ```
 
 Run:
@@ -95,7 +96,17 @@ Check dependency state:
 ```bash
 npm ls --depth=0
 npm audit --audit-level=moderate
+npm audit signatures
 ```
+
+Confirm repository security automation is active:
+
+- Dependabot alerts and security updates are enabled.
+- Dependabot config covers npm, GitHub Actions, and Python docs dependencies.
+- CodeQL runs on pushes, pull requests, and the weekly scheduled scan.
+- Secret scanning and push protection remain enabled.
+- The `main` branch protection or repository rules are intentional and include
+  the required release checks for non-maintainer changes.
 
 ## Clean Install
 
