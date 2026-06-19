@@ -12,8 +12,38 @@ const patterns: Array<{ kind: string; regex: RegExp; message: string }> = [
     message: "GitHub tokens should not be stored as memory.",
   },
   {
+    kind: "provider_api_key",
+    regex: /\b(?:sk-(?:proj-|ant-[A-Za-z0-9-]+-)?[A-Za-z0-9_-]{20,}|sk_live_[A-Za-z0-9]{20,}|AIza[A-Za-z0-9_-]{30,})\b/,
+    message: "Provider API keys should not be stored as memory.",
+  },
+  {
+    kind: "aws_access_key",
+    regex: /\b(?:AKIA|ASIA)[A-Z0-9]{16}\b/,
+    message: "AWS access keys should not be stored as memory.",
+  },
+  {
+    kind: "jwt",
+    regex: /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/,
+    message: "JSON Web Tokens should not be stored as memory.",
+  },
+  {
+    kind: "bearer_token",
+    regex: /\bBearer\s+(?!(?:redacted|placeholder|example)\b)[A-Za-z0-9._~+/-]{20,}=*\b/i,
+    message: "Bearer tokens should not be stored as memory.",
+  },
+  {
+    kind: "credential_url",
+    regex: /\b(?:postgres(?:ql)?|mysql|mariadb|mongodb(?:\+srv)?|redis|rediss):\/\/[^:\s/@]+:(?!(?:redacted|password|placeholder|changeme|\*+)@)[^@\s/]{4,}@/i,
+    message: "Database URLs containing credentials should not be stored as memory.",
+  },
+  {
+    kind: "session_cookie",
+    regex: /\b(?:cookie|set-cookie|session(?:_?id)?)\s*[:=]\s*['"]?(?!(?:redacted|placeholder|example|\*+)\b)[A-Za-z0-9%._~+/=-]{16,}/i,
+    message: "Cookie and session values should not be stored as memory.",
+  },
+  {
     kind: "generic_api_key",
-    regex: /\b(?:api[_-]?key|token|secret|password)\s*[:=]\s*['"]?[A-Za-z0-9._~/-]{16,}/i,
+    regex: /\b(?:api[_-]?key|token|secret|password)\s*[:=]\s*['"]?(?!(?:redacted|placeholder|example|changeme|\*+)\b)[A-Za-z0-9._~/-]{16,}/i,
     message: "Credentials should not be stored as memory.",
   },
 ];

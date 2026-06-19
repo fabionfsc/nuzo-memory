@@ -104,6 +104,44 @@ describe("memory service", () => {
     });
   });
 
+  it("applies secret policy consistently to updates and imports", async () => {
+    const { service } = createTestService();
+    const memory = await service.remember({
+      content: "Keep credentials outside durable memory.",
+      kind: "instruction",
+      scope: "user:default",
+      source: "test",
+    });
+
+    await expect(
+      service.update({
+        id: memory.id,
+        content: "Authorization: Bearer abcdefghijklmnopqrstuvwxyz123456",
+        actor: "test",
+      }),
+    ).rejects.toMatchObject({
+      code: "MEMORY_SECRET_DETECTED",
+    });
+
+    const document = await service.exportMemories({
+      actor: "test",
+      scope: "user:default",
+    });
+    document.memories[0]!.content =
+      "postgresql://demo:supersensitive@localhost:5432/app";
+
+    const target = createTestService();
+    await expect(
+      target.service.importMemories({
+        document,
+        actor: "test",
+      }),
+    ).rejects.toMatchObject({
+      code: "MEMORY_SECRET_DETECTED",
+    });
+    await expect(target.service.list({ includeArchived: true })).resolves.toEqual([]);
+  });
+
   it("updates and reindexes a memory", async () => {
     const { auditLog, service } = createTestService();
     const memory = await service.remember({

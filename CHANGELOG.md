@@ -30,6 +30,7 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Idempotent user/project initialization with config files, deterministic project scopes, auxiliary directories, and Git ignore protection.
 - Codex plugin skill guidance for read-only recall and confirmed capture suggestions.
 - Protocol-level MCP contract tests using the official SDK client and in-memory transport.
+- Expanded local secret detection for common provider keys, AWS keys, JWTs, bearer tokens, credential URLs, and session values.
 
 ### Changed
 

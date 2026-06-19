@@ -38,6 +38,16 @@ The system should reject or warn on likely sensitive data:
 - cookies;
 - private personal identifiers unless explicitly allowed.
 
+The MVP scanner uses local, high-confidence patterns for private key headers,
+GitHub and common provider keys, AWS access keys, JWTs, bearer tokens,
+credential-bearing database URLs, and cookie/session assignments. It allows
+redacted placeholders and environment-variable instructions so safe
+documentation can still be remembered.
+
+This scanner is a safety guard, not a complete data-loss-prevention system.
+Users and host agents must still avoid sending private files or credentials to
+memory tools.
+
 ## Auditability
 
 Every memory should expose:

@@ -16,6 +16,7 @@ Testing should protect the project contracts before implementation details.
 - init is idempotent;
 - remember stores valid memories;
 - remember rejects obvious secrets;
+- secret scanning blocks common credential formats while allowing redacted examples;
 - recall returns relevant FTS results;
 - list filters by scope and tag;
 - update records audit event;
