@@ -80,6 +80,25 @@ export interface ForgetMemoryInput {
   reason?: string;
 }
 
+export interface ForgetMemoriesInput {
+  scope?: MemoryScope;
+  tags?: string[];
+  all?: boolean;
+  mode?: "archive" | "delete";
+  confirm?: boolean;
+  dryRun?: boolean;
+  actor: string;
+  reason?: string;
+}
+
+export interface ForgetMemoriesResult {
+  matched: number;
+  affected: number;
+  mode: "archive" | "delete";
+  dryRun: boolean;
+  ids: string[];
+}
+
 export interface UpdateMemoryInput {
   id: string;
   content?: string;

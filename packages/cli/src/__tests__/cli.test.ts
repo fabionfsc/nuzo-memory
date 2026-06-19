@@ -126,6 +126,56 @@ describe("nuzo memory cli", () => {
     ]);
   });
 
+  it("previews and applies bulk forget by tag", async () => {
+    const store = createStorePath();
+    const remembered = await runCli([
+      "memory",
+      "--store",
+      store,
+      "remember",
+      "Archive this CLI bulk memory.",
+      "--kind",
+      "note",
+      "--tag",
+      "obsolete",
+    ]);
+    const id = remembered.stdout[0] ?? "";
+
+    const preview = await runCli([
+      "memory",
+      "--store",
+      store,
+      "forget-many",
+      "--tag",
+      "obsolete",
+    ]);
+    expect(preview.stdout).toEqual([
+      "Preview\tmatched=1\taffected=0\tmode=archive",
+      id,
+    ]);
+    await expect(runCli(["memory", "--store", store, "list"])).resolves.toMatchObject({
+      stdout: [expect.stringContaining(id)],
+    });
+
+    const applied = await runCli([
+      "memory",
+      "--store",
+      store,
+      "forget-many",
+      "--tag",
+      "obsolete",
+      "--apply",
+    ]);
+    expect(applied.stdout).toEqual([
+      "Applied\tmatched=1\taffected=1\tmode=archive",
+      id,
+    ]);
+    await expect(runCli(["memory", "--store", store, "list"])).resolves.toEqual({
+      stderr: [],
+      stdout: [],
+    });
+  });
+
   it("exports, dry-runs import, and imports memories", async () => {
     const sourceStore = createStorePath();
     const targetStore = createStorePath();

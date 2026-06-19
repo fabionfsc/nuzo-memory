@@ -32,6 +32,7 @@ The public memory contract remains:
 - `memory.update`
 - `memory.history`
 - `memory.forget`
+- `memory.forget_many`
 - `memory.export`
 - `memory.import`
 - `memory.doctor`

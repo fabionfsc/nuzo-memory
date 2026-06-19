@@ -54,6 +54,7 @@ The default memory store is:
 - `memory.update`
 - `memory.history`
 - `memory.forget`
+- `memory.forget_many`
 - `memory.export`
 - `memory.import`
 - `memory.doctor`

@@ -504,4 +504,117 @@ describe("memory service", () => {
       }),
     ).rejects.toBeInstanceOf(NuzoMemoryError);
   });
+
+  it("previews and applies bulk archive with isolated filters", async () => {
+    const { service } = createTestService();
+    const first = await service.remember({
+      content: "Archive the obsolete project decision.",
+      kind: "project_decision",
+      scope: "project:nuzo",
+      tags: ["obsolete"],
+      source: "test",
+    });
+    await service.remember({
+      content: "Keep the active project decision.",
+      kind: "project_decision",
+      scope: "project:nuzo",
+      tags: ["active"],
+      source: "test",
+    });
+    await service.remember({
+      content: "Keep the obsolete tag in another scope.",
+      kind: "note",
+      scope: "project:other",
+      tags: ["obsolete"],
+      source: "test",
+    });
+
+    const preview = await service.forgetMany({
+      scope: "project:nuzo",
+      tags: ["obsolete"],
+      actor: "test",
+    });
+    expect(preview).toEqual({
+      matched: 1,
+      affected: 0,
+      mode: "archive",
+      dryRun: true,
+      ids: [first.id],
+    });
+    await expect(service.list({ includeArchived: true })).resolves.toHaveLength(3);
+
+    const applied = await service.forgetMany({
+      scope: "project:nuzo",
+      tags: ["obsolete"],
+      actor: "test",
+      dryRun: false,
+    });
+    expect(applied).toEqual({
+      matched: 1,
+      affected: 1,
+      mode: "archive",
+      dryRun: false,
+      ids: [first.id],
+    });
+    await expect(service.list({ scope: "project:nuzo" })).resolves.toHaveLength(1);
+    await expect(service.list({ scope: "project:other" })).resolves.toHaveLength(1);
+  });
+
+  it("requires explicit selectors and hard-delete confirmation for bulk forget", async () => {
+    const { service } = createTestService();
+    await service.remember({
+      content: "Delete this fake bulk memory.",
+      kind: "note",
+      scope: "user:default",
+      source: "test",
+    });
+
+    await expect(
+      service.forgetMany({
+        actor: "test",
+      }),
+    ).rejects.toMatchObject({
+      code: "MEMORY_BULK_SELECTOR_REQUIRED",
+    });
+    await expect(
+      service.forgetMany({
+        all: true,
+        scope: "user:default",
+        actor: "test",
+      }),
+    ).rejects.toMatchObject({
+      code: "MEMORY_BULK_SELECTOR_CONFLICT",
+    });
+
+    const preview = await service.forgetMany({
+      all: true,
+      mode: "delete",
+      actor: "test",
+    });
+    expect(preview).toMatchObject({
+      matched: 1,
+      affected: 0,
+      mode: "delete",
+      dryRun: true,
+    });
+    await expect(
+      service.forgetMany({
+        all: true,
+        mode: "delete",
+        actor: "test",
+        dryRun: false,
+      }),
+    ).rejects.toMatchObject({
+      code: "MEMORY_DELETE_CONFIRMATION_REQUIRED",
+    });
+    const deleted = await service.forgetMany({
+      all: true,
+      mode: "delete",
+      actor: "test",
+      dryRun: false,
+      confirm: true,
+    });
+    expect(deleted.affected).toBe(1);
+    await expect(service.list({ includeArchived: true })).resolves.toEqual([]);
+  });
 });

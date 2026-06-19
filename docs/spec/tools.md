@@ -187,6 +187,43 @@ Input:
 }
 ```
 
+### `memory.forget_many`
+
+Preview or apply a filtered bulk archive/delete operation.
+
+Dry-run is the default. A request must select memories by `scope`, `tags`, or
+explicit `all: true`. An empty selector is rejected, and `all` cannot be
+combined with filters.
+
+Input:
+
+```json
+{
+  "scope": "project:auto",
+  "tags": ["obsolete"],
+  "all": false,
+  "mode": "archive",
+  "dry_run": true,
+  "confirm": false,
+  "reason": "Project decision was replaced."
+}
+```
+
+Output:
+
+```json
+{
+  "matched": 2,
+  "affected": 0,
+  "mode": "archive",
+  "dry_run": true,
+  "ids": ["mem_01HZY...", "mem_01HZZ..."]
+}
+```
+
+To apply an archive, set `dry_run` to `false`. Hard deletion also requires
+`confirm: true`.
+
 ### `memory.export`
 
 Export memories to a documented JSON file format.
@@ -279,6 +316,8 @@ nuzo memory list --tag codex
 nuzo memory update mem_01HZY --content "The user prefers concise final answers."
 nuzo memory history mem_01HZY
 nuzo memory forget mem_01HZY --archive
+nuzo memory forget-many --tag obsolete
+nuzo memory forget-many --scope project:auto --apply
 nuzo memory export --path ./memories.memory.export.json
 nuzo memory export --path ./memories.memory.export.md
 nuzo memory import ./memories.memory.export.json --dry-run

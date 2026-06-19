@@ -170,6 +170,7 @@ Use this only to isolate MCP behavior. Plugin validation should still go through
 - `memory.update`
 - `memory.history`
 - `memory.forget`
+- `memory.forget_many`
 - `memory.export`
 - `memory.import`
 - `memory.doctor`

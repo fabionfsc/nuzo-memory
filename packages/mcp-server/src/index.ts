@@ -20,6 +20,7 @@ import { createMemoryToolHandlers } from "./handlers.js";
 import type {
   ExportToolInput,
   ForgetToolInput,
+  ForgetManyToolInput,
   HistoryToolInput,
   ImportToolInput,
   ListToolInput,
@@ -239,6 +240,39 @@ export function registerMemoryTools(
       }
 
       return jsonToolResult(await handlers.forget(forgetInput));
+    },
+  );
+
+  server.registerTool(
+    "memory.forget_many",
+    {
+      description: "Preview or apply a filtered bulk archive/delete operation.",
+      inputSchema: {
+        scope: z.string().optional(),
+        tags: z.array(z.string()).default([]),
+        all: z.boolean().default(false),
+        mode: z.enum(["archive", "delete"]).default("archive"),
+        confirm: z.boolean().default(false),
+        dry_run: z.boolean().default(true),
+        reason: z.string().optional(),
+      },
+    },
+    async (input) => {
+      const forgetInput: ForgetManyToolInput = {
+        tags: input.tags,
+        all: input.all,
+        mode: input.mode,
+        confirm: input.confirm,
+        dry_run: input.dry_run,
+      };
+      if (input.scope !== undefined) {
+        forgetInput.scope = input.scope;
+      }
+      if (input.reason !== undefined) {
+        forgetInput.reason = input.reason;
+      }
+
+      return jsonToolResult(await handlers.forgetMany(forgetInput));
     },
   );
 

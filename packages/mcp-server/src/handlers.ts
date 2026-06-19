@@ -1,5 +1,6 @@
 import type {
   ForgetMemoryInput,
+  ForgetMemoriesInput,
   ImportMemoriesInput,
   ListMemoriesInput,
   MemoryExportDocument,
@@ -57,6 +58,16 @@ export interface ForgetToolInput {
   id: string;
   mode: "archive" | "delete";
   confirm: boolean;
+  reason?: string;
+}
+
+export interface ForgetManyToolInput {
+  scope?: string;
+  tags: string[];
+  all: boolean;
+  mode: "archive" | "delete";
+  confirm: boolean;
+  dry_run: boolean;
   reason?: string;
 }
 
@@ -124,6 +135,13 @@ export interface MemoryToolHandlers {
     id: string;
     forgotten: true;
     mode: "archive" | "delete";
+  }>;
+  forgetMany(input: ForgetManyToolInput): Promise<{
+    matched: number;
+    affected: number;
+    mode: "archive" | "delete";
+    dry_run: boolean;
+    ids: string[];
   }>;
   exportMemories(input: ExportToolInput): Promise<MemoryExportDocument>;
   importMemories(input: ImportToolInput): Promise<{
@@ -312,6 +330,32 @@ export function createMemoryToolHandlers(
       };
     },
 
+    async forgetMany(input) {
+      const forgetInput: ForgetMemoriesInput = {
+        tags: input.tags,
+        all: input.all,
+        mode: input.mode,
+        confirm: input.confirm,
+        dryRun: input.dry_run,
+        actor: "nuzo:mcp",
+      };
+      if (input.scope !== undefined) {
+        forgetInput.scope = input.scope as MemoryScope;
+      }
+      if (input.reason !== undefined) {
+        forgetInput.reason = input.reason;
+      }
+
+      const result = await service.forgetMany(forgetInput);
+      return {
+        matched: result.matched,
+        affected: result.affected,
+        mode: result.mode,
+        dry_run: result.dryRun,
+        ids: result.ids,
+      };
+    },
+
     async exportMemories(input) {
       const exportInput: ListMemoriesInput & { actor: string } = {
         actor: "nuzo:mcp",
@@ -386,6 +430,7 @@ export function createMemoryToolHandlers(
           "memory.update",
           "memory.history",
           "memory.forget",
+          "memory.forget_many",
           "memory.export",
           "memory.import",
           "memory.doctor",

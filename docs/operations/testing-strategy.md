@@ -22,6 +22,7 @@ Testing should protect the project contracts before implementation details.
 - history returns only the requested memory's audit events;
 - forget archives by default;
 - hard delete requires explicit confirmation;
+- bulk forget defaults to dry-run and isolates scope/tag filters;
 - export produces valid versioned format;
 - import dry-run reports planned changes;
 - import preflight rejects the full request before writes and handles duplicate items consistently;

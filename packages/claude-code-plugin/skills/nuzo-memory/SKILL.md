@@ -29,6 +29,7 @@ Prefer the Nuzo MCP tools:
 - `memory.update`
 - `memory.history`
 - `memory.forget`
+- `memory.forget_many`
 - `memory.export`
 - `memory.import`
 - `memory.doctor`

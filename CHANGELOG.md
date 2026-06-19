@@ -26,6 +26,7 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Release-state tooling for coordinated version preparation and changelog validation.
 - MCP `memory.doctor` now reports read-only store health, aggregate counts, tool names, and warnings.
 - CLI and MCP audit history access for individual memory IDs.
+- Dry-run-first bulk forget by scope, tags, or explicit all selection through CLI and MCP.
 
 ### Changed
 

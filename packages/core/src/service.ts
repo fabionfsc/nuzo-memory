@@ -3,6 +3,8 @@ import type { AuditLog, Clock, IdGenerator, MemoryStore, PolicyEngine, SearchInd
 import type {
   ExportMemoriesInput,
   ForgetMemoryInput,
+  ForgetMemoriesInput,
+  ForgetMemoriesResult,
   ImportMemoriesInput,
   ImportMemoriesResult,
   ListMemoriesInput,
@@ -36,10 +38,54 @@ export interface MemoryService {
   exportMemories(input: ExportMemoriesInput): Promise<MemoryExportDocument>;
   importMemories(input: ImportMemoriesInput): Promise<ImportMemoriesResult>;
   forget(input: ForgetMemoryInput): Promise<void>;
+  forgetMany(input: ForgetMemoriesInput): Promise<ForgetMemoriesResult>;
 }
 
 export function createMemoryService(dependencies: MemoryServiceDependencies): MemoryService {
   const { auditLog, clock, ids, policy, searchIndex, store } = dependencies;
+
+  async function forgetMemory(input: ForgetMemoryInput): Promise<void> {
+    const memory = await store.findById(input.id);
+    if (!memory) {
+      throw new NuzoMemoryError("MEMORY_NOT_FOUND", "Memory was not found.", { id: input.id });
+    }
+
+    const mode = input.mode ?? "archive";
+    const now = clock.now();
+
+    if (mode === "delete") {
+      if (input.confirm !== true) {
+        throw new NuzoMemoryError(
+          "MEMORY_DELETE_CONFIRMATION_REQUIRED",
+          "Hard delete requires explicit confirmation.",
+          { id: input.id },
+        );
+      }
+
+      await store.delete(input.id);
+      await searchIndex.remove(input.id);
+      await auditLog.append({
+        id: ids.eventId(),
+        memoryId: input.id,
+        eventType: "memory.deleted",
+        actor: input.actor,
+        payload: { reason: input.reason ?? null },
+        createdAt: now,
+      });
+      return;
+    }
+
+    await store.archive(input.id, now);
+    await searchIndex.remove(input.id);
+    await auditLog.append({
+      id: ids.eventId(),
+      memoryId: input.id,
+      eventType: "memory.archived",
+      actor: input.actor,
+      payload: { reason: input.reason ?? null },
+      createdAt: now,
+    });
+  }
 
   return {
     async remember(input) {
@@ -285,47 +331,71 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       };
     },
 
-    async forget(input) {
-      const memory = await store.findById(input.id);
-      if (!memory) {
-        throw new NuzoMemoryError("MEMORY_NOT_FOUND", "Memory was not found.", { id: input.id });
+    forget: forgetMemory,
+
+    async forgetMany(input) {
+      const hasScope = input.scope !== undefined;
+      const hasTags = (input.tags?.length ?? 0) > 0;
+      const selectsAll = input.all === true;
+      if (!selectsAll && !hasScope && !hasTags) {
+        throw new NuzoMemoryError(
+          "MEMORY_BULK_SELECTOR_REQUIRED",
+          "Bulk forget requires a scope, at least one tag, or all.",
+        );
+      }
+      if (selectsAll && (hasScope || hasTags)) {
+        throw new NuzoMemoryError(
+          "MEMORY_BULK_SELECTOR_CONFLICT",
+          "Bulk forget all cannot be combined with scope or tags.",
+        );
+      }
+      if (input.actor.trim().length === 0) {
+        throw new NuzoMemoryError("MEMORY_ACTOR_EMPTY", "Memory actor cannot be empty.");
       }
 
       const mode = input.mode ?? "archive";
-      const now = clock.now();
-
-      if (mode === "delete") {
-        if (input.confirm !== true) {
-          throw new NuzoMemoryError(
-            "MEMORY_DELETE_CONFIRMATION_REQUIRED",
-            "Hard delete requires explicit confirmation.",
-            { id: input.id },
-          );
-        }
-
-        await store.delete(input.id);
-        await searchIndex.remove(input.id);
-        await auditLog.append({
-          id: ids.eventId(),
-          memoryId: input.id,
-          eventType: "memory.deleted",
-          actor: input.actor,
-          payload: { reason: input.reason ?? null },
-          createdAt: now,
-        });
-        return;
+      const dryRun = input.dryRun !== false;
+      if (!dryRun && mode === "delete" && input.confirm !== true) {
+        throw new NuzoMemoryError(
+          "MEMORY_DELETE_CONFIRMATION_REQUIRED",
+          "Hard delete requires explicit confirmation.",
+        );
       }
 
-      await store.archive(input.id, now);
-      await searchIndex.remove(input.id);
-      await auditLog.append({
-        id: ids.eventId(),
-        memoryId: input.id,
-        eventType: "memory.archived",
-        actor: input.actor,
-        payload: { reason: input.reason ?? null },
-        createdAt: now,
-      });
+      const filter: ListMemoriesInput = {};
+      if (input.scope !== undefined) {
+        filter.scope = input.scope;
+      }
+      if (hasTags) {
+        filter.tags = input.tags!;
+      }
+      const memories = await store.list(filter);
+      const memoryIds = memories.map((memory) => memory.id);
+
+      if (!dryRun) {
+        for (const memory of memories) {
+          const forgetInput: ForgetMemoryInput = {
+            id: memory.id,
+            mode,
+            actor: input.actor,
+          };
+          if (input.confirm !== undefined) {
+            forgetInput.confirm = input.confirm;
+          }
+          if (input.reason !== undefined) {
+            forgetInput.reason = input.reason;
+          }
+          await forgetMemory(forgetInput);
+        }
+      }
+
+      return {
+        matched: memories.length,
+        affected: dryRun ? 0 : memories.length,
+        mode,
+        dryRun,
+        ids: memoryIds,
+      };
     },
   };
 }

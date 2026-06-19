@@ -15,6 +15,7 @@ function createTestHandlers(options: { failList?: boolean } = {}) {
     update: 0,
     history: 0,
     forget: 0,
+    forgetMany: 0,
     exportMemories: 0,
     importMemories: 0,
   };
@@ -132,6 +133,40 @@ function createTestHandlers(options: { failList?: boolean } = {}) {
       if (input.mode === "delete") {
         memory = null;
       }
+    },
+    async forgetMany(input) {
+      calls.forgetMany += 1;
+      const matches = memory &&
+        (input.all === true || input.scope === memory.scope) &&
+        (!input.tags || input.tags.every((tag) => memory?.tags.includes(tag)))
+        ? [memory]
+        : [];
+      if (input.dryRun !== false) {
+        return {
+          matched: matches.length,
+          affected: 0,
+          mode: input.mode ?? "archive",
+          dryRun: true,
+          ids: matches.map((item) => item.id),
+        };
+      }
+      for (const item of matches) {
+        if (input.mode === "delete") {
+          memory = null;
+        } else {
+          memory = {
+            ...item,
+            archivedAt: new Date("2026-06-13T02:00:00.000Z"),
+          };
+        }
+      }
+      return {
+        matched: matches.length,
+        affected: matches.length,
+        mode: input.mode ?? "archive",
+        dryRun: false,
+        ids: matches.map((item) => item.id),
+      };
     },
   };
 
@@ -284,6 +319,49 @@ describe("memory MCP handlers", () => {
     expect(doctor.warnings).toEqual([]);
   });
 
+  it("previews and applies filtered bulk forget operations", async () => {
+    const { handlers } = createTestHandlers();
+    const remembered = await handlers.remember({
+      content: "Archive this MCP bulk memory.",
+      kind: "note",
+      scope: "project:nuzo",
+      tags: ["obsolete"],
+      source: "nuzo:mcp",
+    });
+
+    const preview = await handlers.forgetMany({
+      scope: "project:nuzo",
+      tags: ["obsolete"],
+      all: false,
+      mode: "archive",
+      confirm: false,
+      dry_run: true,
+    });
+    expect(preview).toEqual({
+      matched: 1,
+      affected: 0,
+      mode: "archive",
+      dry_run: true,
+      ids: [remembered.id],
+    });
+
+    const applied = await handlers.forgetMany({
+      scope: "project:nuzo",
+      tags: ["obsolete"],
+      all: false,
+      mode: "archive",
+      confirm: false,
+      dry_run: false,
+    });
+    expect(applied).toEqual({
+      matched: 1,
+      affected: 1,
+      mode: "archive",
+      dry_run: false,
+      ids: [remembered.id],
+    });
+  });
+
   it("reports MCP doctor warnings without exposing memory content", async () => {
     const { handlers } = createTestHandlers({ failList: true });
 
@@ -344,6 +422,7 @@ describe("memory MCP handlers", () => {
     expect(calls.update).toBe(0);
     expect(calls.history).toBe(0);
     expect(calls.forget).toBe(0);
+    expect(calls.forgetMany).toBe(0);
     expect(calls.exportMemories).toBe(0);
     expect(calls.importMemories).toBe(0);
   });

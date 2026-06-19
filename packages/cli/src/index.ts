@@ -18,6 +18,7 @@ import {
   type ListMemoriesInput,
   type MemoryScope,
   type ForgetMemoryInput,
+  type ForgetMemoriesInput,
   type UpdateMemoryInput,
   type MemoryExportDocument,
   type ExportMemoriesInput,
@@ -276,6 +277,59 @@ export function createProgram(io: CliIO = defaultIO): Command {
             event.actor,
             JSON.stringify(event.payload),
           ].join("\t"));
+        }
+      } finally {
+        database.close();
+      }
+    }));
+
+  memory
+    .command("forget-many")
+    .description("Preview or apply a filtered bulk archive/delete operation.")
+    .option("--scope <scope>", "Select one memory scope.")
+    .option("--tag <tag...>", "Select memories containing every tag.")
+    .option("--all", "Select all active memories.", false)
+    .option("--delete", "Hard delete instead of archive.", false)
+    .option("--apply", "Apply the operation. The default is dry-run.", false)
+    .option("--yes", "Confirm hard delete.", false)
+    .option("--reason <reason>", "Reason for forgetting.")
+    .action(withErrorHandling(io, async (commandOptions: {
+      scope?: MemoryScope;
+      tag?: string[];
+      all: boolean;
+      delete: boolean;
+      apply: boolean;
+      yes: boolean;
+      reason?: string;
+    }) => {
+      const options = memory.opts<GlobalOptions>();
+      const database = openDatabase(options);
+      try {
+        const service = createService(database);
+        const forgetInput: ForgetMemoriesInput = {
+          tags: commandOptions.tag ?? [],
+          all: commandOptions.all,
+          mode: commandOptions.delete ? "delete" : "archive",
+          confirm: commandOptions.yes,
+          dryRun: !commandOptions.apply,
+          actor: "nuzo:cli",
+        };
+        if (commandOptions.scope !== undefined) {
+          forgetInput.scope = commandOptions.scope;
+        }
+        if (commandOptions.reason !== undefined) {
+          forgetInput.reason = commandOptions.reason;
+        }
+
+        const result = await service.forgetMany(forgetInput);
+        io.stdout([
+          result.dryRun ? "Preview" : "Applied",
+          `matched=${result.matched}`,
+          `affected=${result.affected}`,
+          `mode=${result.mode}`,
+        ].join("\t"));
+        for (const id of result.ids) {
+          io.stdout(id);
         }
       } finally {
         database.close();
