@@ -10,6 +10,9 @@ It is intentionally thin:
 
 Memory behavior stays in `packages/core` and is exposed through `packages/mcp-server`.
 
+The shared MCP contract includes `memory.history` for read-only audit
+inspection.
+
 ## Current Scope
 
 This package is a scaffold for the supported Claude Code plugin path. It is not a separate memory engine and it does not add lifecycle hooks yet.

@@ -31,6 +31,7 @@ npm run nuzo -- memory init
 npm run nuzo -- memory remember "The project uses SQLite for local storage." --kind project_decision --tag storage
 npm run nuzo -- memory recall "local storage"
 npm run nuzo -- memory export --path ./memories.memory.export.json
+npm run nuzo -- memory history mem_01HZY
 ```
 
 ## Smoke Test

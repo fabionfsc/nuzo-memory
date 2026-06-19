@@ -57,7 +57,7 @@ decisions, and lose project context unless the user keeps restating it.
 Nuzo makes persistent memory practical without turning it into hidden state:
 
 - local SQLite storage by default;
-- CLI control for remember, recall, list, update, forget, export, import, and doctor;
+- CLI control for remember, recall, list, update, history, forget, export, import, and doctor;
 - MCP tools for Codex, Claude Code, and MCP-compatible hosts;
 - documented JSON/Markdown export formats;
 - no telemetry, sync, embeddings, or network calls by default.
@@ -135,6 +135,7 @@ memory.recall
 memory.recall_hook
 memory.list
 memory.update
+memory.history
 memory.forget
 memory.export
 memory.import

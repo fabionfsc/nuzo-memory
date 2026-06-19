@@ -134,6 +134,45 @@ Input:
 }
 ```
 
+### `memory.history`
+
+List the audit history for one memory ID.
+
+This is a read-only operation. Audit metadata remains available after hard
+deletion so users can verify that the deletion occurred.
+
+Input:
+
+```json
+{
+  "id": "mem_01HZY..."
+}
+```
+
+Output:
+
+```json
+{
+  "events": [
+    {
+      "id": "evt_01HZY...",
+      "memory_id": "mem_01HZY...",
+      "event_type": "memory.created",
+      "actor": "nuzo:mcp",
+      "payload": {
+        "kind": "preference",
+        "scope": "user:default",
+        "tags": ["workflow"]
+      },
+      "created_at": "2026-06-19T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+The tool returns only events associated with the requested memory ID. It does
+not include memory content or events from other memories.
+
 ### `memory.forget`
 
 Archive or delete a memory.
@@ -238,6 +277,7 @@ nuzo memory remember "The user prefers concise output." --kind preference --tag 
 nuzo memory recall "output style"
 nuzo memory list --tag codex
 nuzo memory update mem_01HZY --content "The user prefers concise final answers."
+nuzo memory history mem_01HZY
 nuzo memory forget mem_01HZY --archive
 nuzo memory export --path ./memories.memory.export.json
 nuzo memory export --path ./memories.memory.export.md

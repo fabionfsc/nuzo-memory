@@ -49,6 +49,10 @@ export interface UpdateToolInput {
   confidence?: number;
 }
 
+export interface HistoryToolInput {
+  id: string;
+}
+
 export interface ForgetToolInput {
   id: string;
   mode: "archive" | "delete";
@@ -113,6 +117,9 @@ export interface MemoryToolHandlers {
   update(input: UpdateToolInput): Promise<{
     memory: MemoryToolRecord;
   }>;
+  history(input: HistoryToolInput): Promise<{
+    events: MemoryToolEvent[];
+  }>;
   forget(input: ForgetToolInput): Promise<{
     id: string;
     forgotten: true;
@@ -154,6 +161,15 @@ export type MemoryToolRecord = {
   updated_at: string;
   last_used_at: string | null;
   archived_at: string | null;
+};
+
+export type MemoryToolEvent = {
+  id: string;
+  memory_id: string | null;
+  event_type: string;
+  actor: string;
+  payload: Record<string, unknown>;
+  created_at: string;
 };
 
 export function createMemoryToolHandlers(
@@ -263,6 +279,20 @@ export function createMemoryToolHandlers(
       };
     },
 
+    async history(input) {
+      const events = await service.history(input.id);
+      return {
+        events: events.map((event) => ({
+          id: event.id,
+          memory_id: event.memoryId,
+          event_type: event.eventType,
+          actor: event.actor,
+          payload: event.payload,
+          created_at: event.createdAt.toISOString(),
+        })),
+      };
+    },
+
     async forget(input) {
       const forgetInput: ForgetMemoryInput = {
         id: input.id,
@@ -354,6 +384,7 @@ export function createMemoryToolHandlers(
           "memory.recall_hook",
           "memory.list",
           "memory.update",
+          "memory.history",
           "memory.forget",
           "memory.export",
           "memory.import",

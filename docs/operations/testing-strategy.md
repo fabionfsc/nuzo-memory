@@ -19,6 +19,7 @@ Testing should protect the project contracts before implementation details.
 - recall returns relevant FTS results;
 - list filters by scope and tag;
 - update records audit event;
+- history returns only the requested memory's audit events;
 - forget archives by default;
 - hard delete requires explicit confirmation;
 - export produces valid versioned format;

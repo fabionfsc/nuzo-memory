@@ -25,6 +25,7 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Reproducible npm package staging and installed-binary validation for the Nuzo CLI.
 - Release-state tooling for coordinated version preparation and changelog validation.
 - MCP `memory.doctor` now reports read-only store health, aggregate counts, tool names, and warnings.
+- CLI and MCP audit history access for individual memory IDs.
 
 ### Changed
 

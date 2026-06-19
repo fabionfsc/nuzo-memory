@@ -20,6 +20,7 @@ import { createMemoryToolHandlers } from "./handlers.js";
 import type {
   ExportToolInput,
   ForgetToolInput,
+  HistoryToolInput,
   ImportToolInput,
   ListToolInput,
   RecallHookToolInput,
@@ -197,6 +198,22 @@ export function registerMemoryTools(
       }
 
       return jsonToolResult(await handlers.update(updateInput));
+    },
+  );
+
+  server.registerTool(
+    "memory.history",
+    {
+      description: "List audit events for one Nuzo memory ID.",
+      inputSchema: {
+        id: z.string().min(1),
+      },
+    },
+    async (input) => {
+      const historyInput: HistoryToolInput = {
+        id: input.id,
+      };
+      return jsonToolResult(await handlers.history(historyInput));
     },
   );
 

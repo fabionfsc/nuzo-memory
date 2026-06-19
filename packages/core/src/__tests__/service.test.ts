@@ -141,6 +141,43 @@ describe("memory service", () => {
     ]);
   });
 
+  it("returns isolated audit history after hard deletion", async () => {
+    const { service } = createTestService();
+    const first = await service.remember({
+      content: "Keep an auditable deletion trail.",
+      kind: "instruction",
+      scope: "project:nuzo",
+      source: "test",
+    });
+    await service.remember({
+      content: "This unrelated memory must stay out of the history.",
+      kind: "note",
+      scope: "project:nuzo",
+      source: "test",
+    });
+    await service.update({
+      id: first.id,
+      tags: ["audit"],
+      actor: "test",
+    });
+    await service.forget({
+      id: first.id,
+      mode: "delete",
+      confirm: true,
+      actor: "test",
+    });
+
+    const history = await service.history(first.id);
+
+    expect(history.map((event) => event.eventType)).toEqual([
+      "memory.created",
+      "memory.updated",
+      "memory.deleted",
+    ]);
+    expect(history.every((event) => event.memoryId === first.id)).toBe(true);
+    await expect(service.list({ includeArchived: true })).resolves.toHaveLength(1);
+  });
+
   it("rejects empty updates", async () => {
     const { service } = createTestService();
     const memory = await service.remember({

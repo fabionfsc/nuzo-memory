@@ -6,6 +6,9 @@ agents.
 The server exposes Nuzo memory tools and stores memory locally under
 `~/.nuzo/memory/` by default.
 
+Its read-only tools include recall, listing, audit history, export, and doctor
+diagnostics.
+
 Run a published version with:
 
 ```bash

@@ -27,6 +27,7 @@ Prefer the Nuzo MCP tools:
 - `memory.recall_hook`
 - `memory.list`
 - `memory.update`
+- `memory.history`
 - `memory.forget`
 - `memory.export`
 - `memory.import`

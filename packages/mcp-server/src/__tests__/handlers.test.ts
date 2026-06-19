@@ -13,6 +13,7 @@ function createTestHandlers(options: { failList?: boolean } = {}) {
       includeGlobal?: boolean;
     }>,
     update: 0,
+    history: 0,
     forget: 0,
     exportMemories: 0,
     importMemories: 0,
@@ -71,6 +72,21 @@ function createTestHandlers(options: { failList?: boolean } = {}) {
         updatedAt: new Date("2026-06-13T01:00:00.000Z"),
       };
       return memory;
+    },
+    async history(id) {
+      calls.history += 1;
+      return memory?.id === id
+        ? [
+            {
+              id: "evt_000001",
+              memoryId: id,
+              eventType: "memory.created",
+              actor: "nuzo:mcp",
+              payload: { kind: memory.kind, scope: memory.scope, tags: memory.tags },
+              createdAt: new Date("2026-06-13T00:00:00.000Z"),
+            },
+          ]
+        : [];
     },
     async exportMemories(input) {
       calls.exportMemories += 1;
@@ -199,6 +215,22 @@ describe("memory MCP handlers", () => {
       tags: ["mcp", "contracts"],
     });
 
+    const history = await handlers.history({ id: remembered.id });
+    expect(history.events).toEqual([
+      {
+        id: "evt_000001",
+        memory_id: remembered.id,
+        event_type: "memory.created",
+        actor: "nuzo:mcp",
+        payload: {
+          kind: "preference",
+          scope: "user:default",
+          tags: ["mcp", "contracts"],
+        },
+        created_at: "2026-06-13T00:00:00.000Z",
+      },
+    ]);
+
     const exported = await handlers.exportMemories({
       tags: [],
       include_archived: false,
@@ -245,6 +277,7 @@ describe("memory MCP handlers", () => {
       total_memories: 1,
     });
     expect(doctor.tools).toContain("memory.import");
+    expect(doctor.tools).toContain("memory.history");
     expect(doctor.tools).toContain("memory.recall_hook");
     expect(doctor.network).toBe("disabled");
     expect(JSON.stringify(doctor)).not.toContain("complete MCP contracts");
@@ -309,6 +342,7 @@ describe("memory MCP handlers", () => {
     });
     expect(calls.remember).toBe(0);
     expect(calls.update).toBe(0);
+    expect(calls.history).toBe(0);
     expect(calls.forget).toBe(0);
     expect(calls.exportMemories).toBe(0);
     expect(calls.importMemories).toBe(0);

@@ -8,6 +8,7 @@ import type {
   ListMemoriesInput,
   MemoryExportDocument,
   MemoryExportItem,
+  MemoryEvent,
   MemoryRecord,
   MemoryScope,
   RecallMemoriesInput,
@@ -31,6 +32,7 @@ export interface MemoryService {
   recall(input: RecallMemoriesInput): Promise<RecallMemoryResult[]>;
   list(input?: ListMemoriesInput): Promise<MemoryRecord[]>;
   update(input: UpdateMemoryInput): Promise<MemoryRecord>;
+  history(memoryId: string): Promise<MemoryEvent[]>;
   exportMemories(input: ExportMemoriesInput): Promise<MemoryExportDocument>;
   importMemories(input: ImportMemoriesInput): Promise<ImportMemoriesResult>;
   forget(input: ForgetMemoryInput): Promise<void>;
@@ -157,6 +159,13 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       });
 
       return updated;
+    },
+
+    async history(memoryId) {
+      if (memoryId.trim().length === 0) {
+        throw new NuzoMemoryError("MEMORY_ID_EMPTY", "Memory ID cannot be empty.");
+      }
+      return auditLog.list(memoryId);
     },
 
     async exportMemories(input) {

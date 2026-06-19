@@ -102,6 +102,13 @@ describe("nuzo memory cli", () => {
     expect(list.stdout.join("\n")).toContain(id);
     expect(list.stdout.join("\n")).toContain("preference");
 
+    const history = await runCli(["memory", "--store", store, "history", id]);
+    expect(history.stdout).toHaveLength(3);
+    expect(history.stdout[0]).toContain("memory.created");
+    expect(history.stdout[1]).toContain("memory.updated");
+    expect(history.stdout[2]).toContain("memory.recalled");
+    expect(history.stdout.join("\n")).not.toContain("concise final answers");
+
     const archived = await runCli(["memory", "--store", store, "forget", id, "--archive"]);
     expect(archived.stdout).toEqual(["Archived"]);
 

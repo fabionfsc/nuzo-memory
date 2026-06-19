@@ -260,6 +260,29 @@ export function createProgram(io: CliIO = defaultIO): Command {
     }));
 
   memory
+    .command("history")
+    .description("List audit events for a memory.")
+    .argument("<id>", "Memory ID.")
+    .action(withErrorHandling(io, async (id: string) => {
+      const options = memory.opts<GlobalOptions>();
+      const database = openDatabase(options);
+      try {
+        const service = createService(database);
+        const events = await service.history(id);
+        for (const event of events) {
+          io.stdout([
+            event.createdAt.toISOString(),
+            event.eventType,
+            event.actor,
+            JSON.stringify(event.payload),
+          ].join("\t"));
+        }
+      } finally {
+        database.close();
+      }
+    }));
+
+  memory
     .command("export")
     .description("Export memories as a versioned document.")
     .option("--path <path>", "Write export output to a file instead of stdout.")
