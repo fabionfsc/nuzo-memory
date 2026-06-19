@@ -147,6 +147,10 @@ Before tagging:
 
 - rehearse the target with `npm run release:rehearse -- X.Y.Z`;
 - optionally run the CI workflow manually with the same release rehearsal version;
+- always provide an explicit future version to the manual workflow; it has no
+  default target and rejects a changelog version that already exists;
+- keep workflow inputs in environment variables and quote them in shell
+  commands; do not interpolate user-controlled dispatch inputs directly;
 - move relevant `CHANGELOG.md` entries from `[Unreleased]` into the target version section;
 - keep a fresh empty `[Unreleased]` section above the release section;
 - prepare the release version with `npm run release:prepare -- X.Y.Z`;

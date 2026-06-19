@@ -1,0 +1,94 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import test from "node:test";
+import { fileURLToPath } from "node:url";
+import {
+  isLocalDependencyReference,
+  isSensitiveRehearsalPath,
+  isValidReleaseVersion,
+} from "./release-shared.mjs";
+
+const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+
+test("release version validation accepts strict SemVer", () => {
+  for (const version of [
+    "0.1.0",
+    "1.0.0",
+    "1.0.0-alpha.1",
+    "1.0.0-alpha-1+build.7",
+  ]) {
+    assert.equal(isValidReleaseVersion(version), true, version);
+  }
+});
+
+for (const version of [
+  "v1.0.0",
+  "1.0",
+  "1.0.0-01",
+  "1.0.0-alpha..1",
+  "1.0.0+build..1",
+]) {
+  test(`release version validation rejects ${version}`, () => {
+    assert.equal(isValidReleaseVersion(version), false);
+  });
+}
+
+test("manual release input is quoted through an environment variable", () => {
+  const workflow = readFileSync(
+    join(repositoryRoot, ".github", "workflows", "ci.yml"),
+    "utf8",
+  );
+
+  assert.match(
+    workflow,
+    /RELEASE_REHEARSAL_VERSION: \$\{\{ inputs\.release_rehearsal_version \}\}/,
+  );
+  assert.match(
+    workflow,
+    /npm run release:rehearse -- "\$RELEASE_REHEARSAL_VERSION"/,
+  );
+  assert.doesNotMatch(
+    workflow,
+    /run:.*\$\{\{ inputs\.release_rehearsal_version \}\}/,
+  );
+});
+
+test("local npm credentials and debug logs are ignored", () => {
+  const gitignore = readFileSync(join(repositoryRoot, ".gitignore"), "utf8");
+
+  assert.match(gitignore, /^\.npmrc$/m);
+  assert.match(gitignore, /^npm-debug\.log\*$/m);
+});
+
+test("release rehearsal excludes local secrets and memory artifacts", () => {
+  for (const path of [
+    ".npmrc",
+    ".env",
+    ".env.local",
+    "AGENTS.local.md",
+    "npm-debug.log",
+    ".nuzo/memory/memories.sqlite",
+    "backup.memory.export.json",
+  ]) {
+    assert.equal(isSensitiveRehearsalPath(path), true, path);
+  }
+  for (const path of [".env.example", "docs/example.md", "packages/core/package.json"]) {
+    assert.equal(isSensitiveRehearsalPath(path), false, path);
+  }
+});
+
+test("npm staging rejects local dependency references", () => {
+  for (const spec of [
+    "file:../core",
+    "link:../core",
+    "workspace:*",
+    "../core",
+    "/tmp/core",
+  ]) {
+    assert.equal(isLocalDependencyReference(spec), true, spec);
+  }
+  for (const spec of ["0.1.0", "^1.2.3", "git+https://github.com/example/repo.git"]) {
+    assert.equal(isLocalDependencyReference(spec), false, spec);
+  }
+});

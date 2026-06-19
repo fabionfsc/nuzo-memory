@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -46,16 +46,51 @@ export function assertReleaseVersion(version) {
   if (typeof version !== "string" || version.length === 0) {
     fail("missing release version");
   }
+  if (version.length > 128) {
+    fail("release version is too long");
+  }
   if (version.startsWith("v")) {
     fail("release version must not include the v tag prefix");
   }
   if (
-    !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(
-      version,
-    )
+    !isValidReleaseVersion(version)
   ) {
     fail(`invalid SemVer version: ${version}`);
   }
+}
+
+export function isValidReleaseVersion(version) {
+  return /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/.test(
+    version,
+  );
+}
+
+export function isLocalDependencyReference(spec) {
+  return (
+    typeof spec !== "string" ||
+    /^(?:file|link|workspace):/i.test(spec) ||
+    spec.startsWith(".") ||
+    spec.startsWith("/")
+  );
+}
+
+export function isSensitiveRehearsalPath(relativePath) {
+  const segments = relativePath.split(/[\\/]/);
+  const name = basename(relativePath);
+  if (
+    name === "AGENTS.local.md" ||
+    name === ".npmrc" ||
+    name === ".env" ||
+    (name.startsWith(".env.") && name !== ".env.example") ||
+    name.startsWith("npm-debug.log") ||
+    name.endsWith(".sqlite") ||
+    name.includes(".sqlite-") ||
+    name.endsWith(".memory.export.json") ||
+    name.endsWith(".memory.export.md")
+  ) {
+    return true;
+  }
+  return segments[0] === ".nuzo" && segments[1] === "memory";
 }
 
 export function updateNuzoDependencyVersions(pkg, version) {

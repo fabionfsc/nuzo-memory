@@ -12,6 +12,17 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
   destructive-action reasons, and import size.
 - SQLite busy timeout and Unicode-aware recall tokenization.
 - Secret scanning for npm access tokens.
+- Installed npm artifact validation now performs an MCP stdio handshake, checks
+  the exact tool set, and calls `memory.doctor`.
+- Release rehearsal now excludes local credentials and memory artifacts,
+  requires an explicit unreleased target in CI, and rejects existing releases.
+- Manual release input is passed through a quoted environment variable, and
+  release tooling now enforces strict SemVer identifiers.
+- Release contract tests now cover invalid versions, workflow input handling,
+  and local npm credential ignores.
+- Documented sequential execution for gates that share generated `dist`
+  directories.
+- npm staging now rejects local dependency references.
 
 ### Documentation
 
@@ -29,6 +40,7 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Recall usage recording is now opt-in so normal recall does not persist query
   text or update `last_used_at`.
 - Updated `better-sqlite3` and Vitest within their compatible release lines.
+- Updated MkDocs Material to the current compatible release.
 
 ### Fixed
 

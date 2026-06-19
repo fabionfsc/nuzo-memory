@@ -139,6 +139,10 @@ temporary copy, installs from the lockfile, prepares/checks the target version,
 and validates plugin plus npm artifacts. It always removes the temporary copy
 and leaves source packages at the current released version.
 
+The target must not already have a changelog release section. Local
+credentials, memory stores, exports, environment files, dependency caches, and
+operator notes are excluded from the rehearsal copy.
+
 The prepare script updates:
 
 - root and workspace package versions;

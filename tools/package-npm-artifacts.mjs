@@ -10,6 +10,7 @@ import {
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import { isLocalDependencyReference } from "./release-shared.mjs";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const outputRoot = join(repositoryRoot, "build", "npm");
@@ -96,8 +97,23 @@ function createPublishPackage(sourcePackage) {
   if (publishPackage.dependencies?.["@nuzo/memory-core"]) {
     publishPackage.dependencies["@nuzo/memory-core"] = sourcePackage.version;
   }
+  rejectLocalDependencyReferences(publishPackage);
 
   return publishPackage;
+}
+
+function rejectLocalDependencyReferences(pkg) {
+  for (const section of [
+    "dependencies",
+    "optionalDependencies",
+    "peerDependencies",
+  ]) {
+    for (const [name, spec] of Object.entries(pkg[section] ?? {})) {
+      if (isLocalDependencyReference(spec)) {
+        fail(`${pkg.name} contains non-publishable ${section} reference ${name}@${spec}`);
+      }
+    }
+  }
 }
 
 function sourceDirectoryFor(name) {

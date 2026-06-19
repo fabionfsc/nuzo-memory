@@ -88,6 +88,8 @@ The staging process:
 - removes `private` only from generated package metadata;
 - removes development scripts and dependencies;
 - pins the CLI and MCP server to the exact core version;
+- rejects local `file:`, `link:`, `workspace:`, relative, or absolute
+  dependency references;
 - copies runtime output, README, and Apache-2.0 license;
 - rejects tests, source files, databases, exports, secrets, and environment files.
 
@@ -107,7 +109,9 @@ The validation:
 4. confirms package versions match;
 5. runs the installed `nuzo` binary through init, remember, recall, and doctor;
 6. verifies installed CLI operational, usage, and internal exit-code contracts;
-7. starts the installed `nuzo-mcp-server` binary against a temporary store.
+7. connects an SDK client to the installed `nuzo-mcp-server` binary over stdio;
+8. verifies the exact public tool set and calls `memory.doctor` against a
+   temporary store.
 
 The command does not publish anything.
 

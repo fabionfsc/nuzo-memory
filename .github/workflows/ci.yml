@@ -9,8 +9,7 @@ on:
     inputs:
       release_rehearsal_version:
         description: Release version to rehearse.
-        required: false
-        default: 0.1.0
+        required: true
 
 permissions:
   contents: read
@@ -107,4 +106,6 @@ jobs:
         run: npm ci
 
       - name: Rehearse release
-        run: npm run release:rehearse -- ${{ inputs.release_rehearsal_version || '0.1.0' }}
+        env:
+          RELEASE_REHEARSAL_VERSION: ${{ inputs.release_rehearsal_version }}
+        run: npm run release:rehearse -- "$RELEASE_REHEARSAL_VERSION"

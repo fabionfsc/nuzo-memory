@@ -3,7 +3,26 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { spawn, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import {
+  getDefaultEnvironment,
+  StdioClientTransport,
+} from "@modelcontextprotocol/sdk/client/stdio.js";
+
+const expectedMcpTools = [
+  "memory.doctor",
+  "memory.export",
+  "memory.forget",
+  "memory.forget_many",
+  "memory.history",
+  "memory.import",
+  "memory.list",
+  "memory.recall",
+  "memory.recall_hook",
+  "memory.remember",
+  "memory.update",
+];
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const tarballsRoot = join(repositoryRoot, "build", "npm", "tarballs");
@@ -49,7 +68,7 @@ try {
   }
 
   assertCliWorkflow(testRoot, storePath);
-  await assertMcpStarts(testRoot, storePath);
+  await assertMcpProtocol(testRoot, storePath);
   console.log(`npm artifact validation passed: ${installedMcp.version}`);
 } finally {
   rmSync(testRoot, { recursive: true, force: true });
@@ -113,7 +132,7 @@ function assertCliWorkflow(cwd, memoryStore) {
   );
   assertCliExit(
     executable,
-    ["memory", "recall", "test", "--limit", "0"],
+    ["memory", "recall", "test", "--limit", "8items"],
     cwd,
     2,
     "Expected a positive integer.",
@@ -147,54 +166,47 @@ function assertCliExit(executable, args, cwd, expectedStatus, expectedError) {
   }
 }
 
-function assertMcpStarts(cwd, memoryStore) {
-  return new Promise((resolvePromise, reject) => {
-    const child = spawn(
-      join(cwd, "node_modules", ".bin", executableName()),
-      [],
-      {
-        cwd,
-        env: {
-          ...process.env,
-          NUZO_MEMORY_STORE: memoryStore,
-        },
-        stdio: ["pipe", "pipe", "pipe"],
-      },
-    );
-    let stderr = "";
-    let settled = false;
-
-    child.stderr.on("data", (chunk) => {
-      stderr += chunk.toString();
-    });
-    child.once("error", (error) => finish(error));
-    child.once("exit", (code, signal) => {
-      if (!settled) {
-        finish(new Error(`MCP server exited early (${code ?? signal}): ${stderr}`));
-      }
-    });
-
-    const timer = setTimeout(() => {
-      child.kill("SIGTERM");
-      finish();
-    }, 750);
-
-    function finish(error) {
-      if (settled) {
-        return;
-      }
-      settled = true;
-      clearTimeout(timer);
-      if (!child.killed) {
-        child.kill("SIGTERM");
-      }
-      if (error) {
-        reject(error);
-      } else {
-        resolvePromise();
-      }
-    }
+async function assertMcpProtocol(cwd, memoryStore) {
+  const client = new Client({
+    name: "nuzo-installed-artifact-test",
+    version: "0.0.0",
   });
+  const transport = new StdioClientTransport({
+    command: join(cwd, "node_modules", ".bin", executableName()),
+    cwd,
+    env: {
+      ...getDefaultEnvironment(),
+      NUZO_MEMORY_STORE: memoryStore,
+    },
+    stderr: "pipe",
+  });
+  let stderr = "";
+  transport.stderr?.on("data", (chunk) => {
+    stderr += chunk.toString();
+  });
+
+  try {
+    await client.connect(transport);
+    const tools = await client.listTools();
+    const names = tools.tools.map((tool) => tool.name).sort();
+    if (JSON.stringify(names) !== JSON.stringify(expectedMcpTools)) {
+      fail(`installed MCP tool set mismatch: ${JSON.stringify(names)}`);
+    }
+
+    const doctor = parseToolJson(await client.callTool({
+      name: "memory.doctor",
+      arguments: {},
+    }));
+    if (doctor.ok !== true || doctor.store?.readable !== true) {
+      fail(`installed MCP doctor failed: ${JSON.stringify(doctor)}`);
+    }
+  } catch (error) {
+    throw new Error(
+      `installed MCP protocol validation failed: ${error instanceof Error ? error.message : String(error)}; stderr=${JSON.stringify(stderr)}`,
+    );
+  } finally {
+    await client.close();
+  }
 }
 
 function cliExecutableName() {
@@ -203,6 +215,14 @@ function cliExecutableName() {
 
 function executableName() {
   return process.platform === "win32" ? "nuzo-mcp-server.cmd" : "nuzo-mcp-server";
+}
+
+function parseToolJson(result) {
+  const text = result.content?.find((item) => item.type === "text");
+  if (text === undefined || typeof text.text !== "string") {
+    fail("installed MCP tool result did not contain text JSON");
+  }
+  return JSON.parse(text.text);
 }
 
 function tarballName(pkg) {

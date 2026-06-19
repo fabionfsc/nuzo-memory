@@ -8,6 +8,8 @@ memories.sqlite-*
 node_modules/
 .npm/
 .npm-cache/
+.npmrc
+npm-debug.log*
 dist/
 build/
 site/

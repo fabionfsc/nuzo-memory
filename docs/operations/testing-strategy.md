@@ -2,6 +2,10 @@
 
 Testing should protect the project contracts before implementation details.
 
+Local gates that build, clean, package, or execute `packages/*/dist/` must run
+sequentially. They intentionally share generated output, so parallel execution
+can create false failures even when each command passes in isolation.
+
 ## Test Pyramid
 
 1. Core unit tests.
@@ -33,6 +37,10 @@ Testing should protect the project contracts before implementation details.
   caller explicitly opts in;
 - doctor reports tracked memory files.
 - MCP doctor reports aggregate store health without exposing memory content.
+- staged npm artifacts complete a real stdio MCP handshake, expose the exact
+  public tool set, and return a healthy `memory.doctor` response.
+- release-tool tests reject invalid SemVer and direct workflow input
+  interpolation, and verify local npm credentials remain ignored.
 
 ## Test Data
 

@@ -203,6 +203,11 @@ npm run smoke:cli
 .venv-docs/bin/mkdocs build --strict
 ```
 
+Run build-mutating gates sequentially. `npm run check`, `npm test`,
+`npm run build`, `npm run package:plugins`, `npm run validate:npm`, and
+`npm run smoke:cli` share or recreate `packages/*/dist/`; running them in
+parallel can invalidate another command's subprocess fixtures.
+
 Check:
 
 - README links still work.

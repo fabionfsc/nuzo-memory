@@ -8,11 +8,12 @@ import {
 } from "node:fs";
 import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
-import { basename, join, relative } from "node:path";
+import { join, relative } from "node:path";
 import { spawnSync } from "node:child_process";
 import {
   assertReleaseVersion,
   fail,
+  isSensitiveRehearsalPath,
   packagePaths,
   pluginManifestPaths,
   repositoryRoot,
@@ -66,7 +67,9 @@ function shouldCopy(source) {
 
   const path = relative(repositoryRoot, source);
   const segments = path.split(/[\\/]/);
-  const name = basename(source);
+  if (isSensitiveRehearsalPath(path)) {
+    return false;
+  }
   if (
     segments.includes(".git") ||
     segments.includes("node_modules") ||
@@ -77,7 +80,7 @@ function shouldCopy(source) {
   ) {
     return false;
   }
-  return name !== "AGENTS.local.md";
+  return true;
 }
 
 function addSyntheticChangelogSection(root, targetVersion) {
@@ -87,6 +90,9 @@ function addSyntheticChangelogSection(root, targetVersion) {
   const markerIndex = changelog.indexOf(marker);
   if (markerIndex === -1) {
     throw new Error("CHANGELOG.md must contain an [Unreleased] section");
+  }
+  if (changelog.includes(`## [${targetVersion}] - `)) {
+    throw new Error(`CHANGELOG.md already contains release ${targetVersion}`);
   }
 
   const nextSection = changelog.indexOf("\n## [", markerIndex + marker.length);

@@ -23,7 +23,8 @@
     "release:prepare": "node tools/prepare-release.mjs",
     "release:rehearse": "node tools/rehearse-release.mjs",
     "smoke:cli": "npm run build && npm run nuzo -- memory --store /tmp/nuzo-cli-smoke/memories.sqlite init && NUZO_DOCTOR_SKIP_GIT=1 npm run nuzo -- memory --store /tmp/nuzo-cli-smoke/memories.sqlite doctor",
-    "test": "npm run test --workspaces --if-present",
+    "test": "npm run test:tools && npm run test --workspaces --if-present",
+    "test:tools": "node --test tools/*.test.mjs",
     "validate:npm": "npm run package:npm && node tools/validate-npm-artifacts.mjs",
     "docs:build": "mkdocs build --strict"
   },
