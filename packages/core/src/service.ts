@@ -174,6 +174,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
     },
 
     async list(input = {}) {
+      await policy.assertCanList(input);
       return store.list(input);
     },
 
@@ -240,6 +241,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
 
     async exportMemories(input) {
       assertActor(input.actor);
+      await policy.assertCanList(input);
 
       const memories = await store.list(input);
       const now = clock.now();
@@ -379,6 +381,10 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
         );
       }
       assertActor(input.actor);
+      await policy.assertCanList({
+        ...(input.scope === undefined ? {} : { scope: input.scope }),
+        ...(input.tags === undefined ? {} : { tags: input.tags }),
+      });
 
       const mode = input.mode ?? "archive";
       const dryRun = input.dryRun !== false;

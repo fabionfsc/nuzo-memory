@@ -1,7 +1,13 @@
 import { invariant } from "./errors.js";
 import type { PolicyEngine, SecretScanner } from "./ports.js";
 import { memoryKinds, type MemoryScope } from "./types.js";
-import type { MemoryRecord, RecallMemoriesInput, RememberMemoryInput, UpdateMemoryInput } from "./types.js";
+import type {
+  ListMemoriesInput,
+  MemoryRecord,
+  RecallMemoriesInput,
+  RememberMemoryInput,
+  UpdateMemoryInput,
+} from "./types.js";
 
 const scopePattern = /^(user|project|agent|team):[A-Za-z0-9._~:/-]+$/;
 const tagPattern = /^[a-z0-9][a-z0-9._-]{0,63}$/;
@@ -43,9 +49,7 @@ export class DefaultPolicyEngine implements PolicyEngine {
     );
 
     for (const tag of input.tags ?? []) {
-      invariant(tagPattern.test(tag), "MEMORY_TAG_INVALID", "Memory tag is invalid.", {
-        tag,
-      });
+      assertTag(tag);
     }
 
     const secretScan = await this.secretScanner.scan(input.content);
@@ -75,10 +79,25 @@ export class DefaultPolicyEngine implements PolicyEngine {
       limit,
     });
   }
+
+  async assertCanList(input: ListMemoriesInput): Promise<void> {
+    if (input.scope !== undefined) {
+      assertScope(input.scope);
+    }
+    for (const tag of input.tags ?? []) {
+      assertTag(tag);
+    }
+  }
 }
 
 function assertScope(scope: MemoryScope): void {
   invariant(scopePattern.test(scope), "MEMORY_SCOPE_INVALID", "Memory scope is invalid.", {
     scope,
+  });
+}
+
+function assertTag(tag: string): void {
+  invariant(tagPattern.test(tag), "MEMORY_TAG_INVALID", "Memory tag is invalid.", {
+    tag,
   });
 }

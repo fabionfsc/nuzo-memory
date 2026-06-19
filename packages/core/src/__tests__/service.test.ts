@@ -274,6 +274,34 @@ describe("memory service", () => {
     });
   });
 
+  it("rejects invalid list, export, and bulk-forget filters", async () => {
+    const { service } = createTestService();
+
+    await expect(
+      service.list({
+        scope: "invalid" as never,
+      }),
+    ).rejects.toMatchObject({
+      code: "MEMORY_SCOPE_INVALID",
+    });
+    await expect(
+      service.exportMemories({
+        actor: "test",
+        tags: ["Invalid Tag"],
+      }),
+    ).rejects.toMatchObject({
+      code: "MEMORY_TAG_INVALID",
+    });
+    await expect(
+      service.forgetMany({
+        tags: ["invalid/tag"],
+        actor: "test",
+      }),
+    ).rejects.toMatchObject({
+      code: "MEMORY_TAG_INVALID",
+    });
+  });
+
   it("exports and imports memories", async () => {
     const source = createTestService();
     await source.service.remember({

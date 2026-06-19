@@ -63,3 +63,4 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - SQLite migration failures for newer schemas now use a structured error, with coverage for schema creation and idempotency.
 - All audited core operations now reject empty actor identities consistently.
 - SQLite mutations now roll back memory, FTS, and audit writes atomically, including complete multi-item imports.
+- List, export, and bulk-forget filters now reject invalid scopes and tags consistently.
