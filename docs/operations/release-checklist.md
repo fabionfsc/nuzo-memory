@@ -144,6 +144,7 @@ docs/operations/versioning.md
 
 Before tagging:
 
+- rehearse the target with `npm run release:rehearse -- X.Y.Z`;
 - move relevant `CHANGELOG.md` entries from `[Unreleased]` into the target version section;
 - keep a fresh empty `[Unreleased]` section above the release section;
 - prepare the release version with `npm run release:prepare -- X.Y.Z`;
@@ -152,6 +153,9 @@ Before tagging:
 - commit the version bump as a release commit.
 
 Do not bump versions for ordinary development commits.
+
+The synthetic changelog section used during rehearsal is not release notes and
+does not replace the real changelog edit required for the release commit.
 
 ## GitHub Pages
 

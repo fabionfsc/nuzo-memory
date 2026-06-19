@@ -3,6 +3,7 @@ import {
   assertReleaseVersion,
   fail,
   packagePaths,
+  pluginManifestPaths,
   readJson,
   readText,
   updateNuzoDependencyVersions,
@@ -27,6 +28,12 @@ for (const packagePath of packagePaths) {
   pkg.version = version;
   updateNuzoDependencyVersions(pkg, version);
   writeJson(packagePath, pkg);
+}
+
+for (const manifestPath of pluginManifestPaths) {
+  const manifest = readJson(manifestPath);
+  manifest.version = version;
+  writeJson(manifestPath, manifest);
 }
 
 const lockfile = readJson("package-lock.json");

@@ -13,6 +13,11 @@ export const packagePaths = [
   "packages/mcp-server/package.json",
 ];
 
+export const pluginManifestPaths = [
+  "packages/claude-code-plugin/.claude-plugin/plugin.json",
+  "packages/codex-plugin/.codex-plugin/plugin.json",
+];
+
 export const nuzoWorkspaceDependencies = new Set([
   "@nuzo/memory-core",
   "@nuzo/memory-cli",

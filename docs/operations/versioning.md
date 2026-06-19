@@ -130,12 +130,25 @@ npm run release:prepare -- 0.1.0
 npm run release:check -- 0.1.0
 ```
 
+Before changing the source worktree, rehearse the target release in an isolated
+temporary copy:
+
+```bash
+npm run release:rehearse -- 0.1.0
+```
+
+The rehearsal creates a synthetic dated changelog section only in the
+temporary copy, installs from the lockfile, prepares/checks the target version,
+and validates plugin plus npm artifacts. It always removes the temporary copy
+and leaves source packages at `0.0.0`.
+
 The prepare script updates:
 
 - root and workspace package versions;
 - Nuzo workspace dependency pins;
 - `package-lock.json` workspace versions;
 - CLI and MCP server runtime version strings.
+- Codex and Claude Code plugin manifest versions.
 
 It refuses `0.0.0`, because that version is reserved for unreleased
 development.

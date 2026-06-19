@@ -3,6 +3,7 @@ import {
   assertReleaseVersion,
   fail,
   packagePaths,
+  pluginManifestPaths,
   readJson,
   readText,
   nuzoWorkspaceDependencies,
@@ -18,6 +19,13 @@ for (const packagePath of packagePaths) {
     fail(`${packagePath} has version ${pkg.version}, expected ${version}`);
   }
   assertNuzoDependencies(packagePath, pkg, version);
+}
+
+for (const manifestPath of pluginManifestPaths) {
+  const manifest = readJson(manifestPath);
+  if (manifest.version !== version) {
+    fail(`${manifestPath} has version ${manifest.version}, expected ${version}`);
+  }
 }
 
 const lockfile = readJson("package-lock.json");

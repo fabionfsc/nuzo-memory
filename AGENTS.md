@@ -243,6 +243,8 @@ Before committing or handing work back, sanitize the workspace:
 - Follow `docs/operations/versioning.md`.
 - Do not bump package versions for every commit.
 - Keep packages at `0.0.0` until the first public MVP release is ready.
+- Rehearse an explicit target with `npm run release:rehearse -- X.Y.Z`
+  before preparing the release commit.
 - Use `npm run release:prepare -- X.Y.Z` only for explicit release commits,
   after the matching changelog section exists.
 - Run `npm run release:check` after release-oriented edits.
