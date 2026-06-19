@@ -52,6 +52,10 @@ MCP protocol coverage connects an SDK `Client` and the Nuzo server through
 defaults, representative JSON responses, and invalid-input rejection without
 network access or a stdio subprocess.
 
+CLI process coverage runs the built `dist/index.js` entrypoint in subprocesses
+and asserts stable success, operational, usage, and internal exit codes plus
+stack-trace-free stderr.
+
 ## Migration Tests
 
 Each migration should be tested from:

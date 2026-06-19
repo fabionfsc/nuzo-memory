@@ -92,6 +92,17 @@ The CLI must call `packages/core` use cases.
 
 Do not add memory business logic, storage rules, import/export rules, or policy checks directly in the CLI.
 
+## Exit Codes
+
+The `nuzo` process uses stable exit codes:
+
+| Code | Meaning |
+| --- | --- |
+| `0` | Command completed successfully. Doctor warnings are reported in output but remain a successful diagnostic run. |
+| `1` | Nuzo operational or policy error, with a structured code such as `MEMORY_SECRET_DETECTED`. |
+| `2` | Invalid command, option, or argument usage. |
+| `70` | Unexpected internal CLI failure. Output stays concise and does not print a stack trace. |
+
 ## Git Safety
 
 Runtime memory and exports must stay out of Git:

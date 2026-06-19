@@ -93,7 +93,8 @@ The validation:
 3. installs all tarballs into a temporary project;
 4. confirms package versions match;
 5. runs the installed `nuzo` binary through init, remember, recall, and doctor;
-6. starts the installed `nuzo-mcp-server` binary against a temporary store.
+6. verifies installed CLI operational, usage, and internal exit-code contracts;
+7. starts the installed `nuzo-mcp-server` binary against a temporary store.
 
 The command does not publish anything.
 

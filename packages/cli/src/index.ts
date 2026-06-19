@@ -5,7 +5,7 @@ import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { Command } from "commander";
+import { Command, CommanderError, InvalidArgumentError } from "commander";
 import {
   createMemoryService,
   DefaultPolicyEngine,
@@ -75,8 +75,20 @@ type GitTrackingReport =
 
 type ExportFormat = "json" | "markdown";
 
+export const cliExitCodes = {
+  success: 0,
+  operationalError: 1,
+  usageError: 2,
+  internalError: 70,
+} as const;
+
 export function createProgram(io: CliIO = defaultIO): Command {
-  const program = new Command();
+  const program = new Command()
+    .configureOutput({
+      writeOut: (message) => io.stdout(message.trimEnd()),
+      writeErr: (message) => io.stderr(message.trimEnd()),
+    })
+    .exitOverride();
 
   program
     .name("nuzo")
@@ -463,7 +475,35 @@ export function createProgram(io: CliIO = defaultIO): Command {
 }
 
 if (isMain()) {
-  await createProgram().parseAsync();
+  process.exitCode = await runCliProcess(process.argv);
+}
+
+export async function runCliProcess(
+  argv: string[],
+  io: CliIO = defaultIO,
+): Promise<number> {
+  process.exitCode = cliExitCodes.success;
+  const program = createProgram(io);
+
+  try {
+    await program.parseAsync(argv, { from: "node" });
+    return process.exitCode === cliExitCodes.operationalError
+      ? cliExitCodes.operationalError
+      : cliExitCodes.success;
+  } catch (error) {
+    if (error instanceof CommanderError) {
+      if (
+        error.code === "commander.helpDisplayed" ||
+        error.code === "commander.version"
+      ) {
+        return cliExitCodes.success;
+      }
+      return cliExitCodes.usageError;
+    }
+
+    io.stderr("NUZO_INTERNAL_ERROR: Unexpected CLI failure.");
+    return cliExitCodes.internalError;
+  }
 }
 
 function withErrorHandling<Args extends unknown[]>(io: CliIO, action: (...args: Args) => Promise<void>) {
@@ -473,7 +513,7 @@ function withErrorHandling<Args extends unknown[]>(io: CliIO, action: (...args: 
     } catch (error) {
       if (error instanceof NuzoMemoryError) {
         io.stderr(`${error.code}: ${error.message}`);
-        process.exitCode = 1;
+        process.exitCode = cliExitCodes.operationalError;
         return;
       }
 
@@ -802,13 +842,13 @@ function parseExportFormat(value: string): ExportFormat {
     return value;
   }
 
-  throw new Error("Expected export format to be json or markdown.");
+  throw new InvalidArgumentError("Expected export format to be json or markdown.");
 }
 
 function parsePositiveInteger(value: string): number {
   const parsed = Number.parseInt(value, 10);
   if (!Number.isInteger(parsed) || parsed <= 0) {
-    throw new Error("Expected a positive integer.");
+    throw new InvalidArgumentError("Expected a positive integer.");
   }
   return parsed;
 }
@@ -816,7 +856,7 @@ function parsePositiveInteger(value: string): number {
 function parseConfidence(value: string): number {
   const parsed = Number.parseFloat(value);
   if (!Number.isFinite(parsed) || parsed < 0 || parsed > 1) {
-    throw new Error("Expected a number between 0 and 1.");
+    throw new InvalidArgumentError("Expected a number between 0 and 1.");
   }
   return parsed;
 }

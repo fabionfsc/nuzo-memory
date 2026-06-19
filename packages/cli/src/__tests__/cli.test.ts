@@ -32,7 +32,9 @@ async function runCli(
 
   const program = createProgram(io);
   const previousEnv = new Map(Object.keys(env).map((key) => [key, process.env[key]]));
+  const previousExitCode = process.exitCode;
   try {
+    process.exitCode = 0;
     for (const [key, value] of Object.entries(env)) {
       if (value === undefined) {
         delete process.env[key];
@@ -42,6 +44,7 @@ async function runCli(
     }
     await program.parseAsync(["node", "nuzo", ...args], { from: "node" });
   } finally {
+    process.exitCode = previousExitCode;
     for (const [key, value] of previousEnv) {
       if (value === undefined) {
         delete process.env[key];

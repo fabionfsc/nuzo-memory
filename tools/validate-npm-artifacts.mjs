@@ -95,6 +95,56 @@ function assertCliWorkflow(cwd, memoryStore) {
   if (!doctor.stdout.includes("Status: ok")) {
     fail("installed nuzo binary doctor did not report a healthy temporary store");
   }
+
+  assertCliExit(
+    executable,
+    [
+      "memory",
+      "--store",
+      memoryStore,
+      "remember",
+      "Authorization: Bearer abcdefghijklmnopqrstuvwxyz123456",
+      "--kind",
+      "note",
+    ],
+    cwd,
+    1,
+    "MEMORY_SECRET_DETECTED",
+  );
+  assertCliExit(
+    executable,
+    ["memory", "recall", "test", "--limit", "0"],
+    cwd,
+    2,
+    "Expected a positive integer.",
+  );
+  assertCliExit(
+    executable,
+    ["memory", "--store", cwd, "init"],
+    cwd,
+    70,
+    "NUZO_INTERNAL_ERROR",
+  );
+}
+
+function assertCliExit(executable, args, cwd, expectedStatus, expectedError) {
+  const result = spawnSync(executable, args, {
+    cwd,
+    encoding: "utf8",
+  });
+  if (result.error) {
+    throw result.error;
+  }
+  if (result.status !== expectedStatus) {
+    fail(
+      `installed nuzo binary exit mismatch: expected ${expectedStatus}, got ${result.status}; stderr=${JSON.stringify(result.stderr)}`,
+    );
+  }
+  if (!result.stderr.includes(expectedError) || result.stderr.includes("\n    at ")) {
+    fail(
+      `installed nuzo binary stderr contract failed: ${JSON.stringify(result.stderr)}`,
+    );
+  }
 }
 
 function assertMcpStarts(cwd, memoryStore) {
