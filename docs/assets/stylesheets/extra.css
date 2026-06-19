@@ -3,6 +3,12 @@
   --md-accent-fg-color: #00d1da;
   --nuzo-border: rgba(13, 17, 23, 0.12);
   --nuzo-muted: #5f6b7a;
+  --nuzo-panel: rgba(255, 255, 255, 0.78);
+  --nuzo-surface: #f8fafc;
+  --nuzo-ink: #0d1117;
+  --nuzo-teal: #00a7b5;
+  --nuzo-blue: #0b75d1;
+  --nuzo-green: #0f8b6f;
 }
 
 .md-header,
@@ -38,14 +44,37 @@
 }
 
 .nuzo-hero {
-  margin: 1.25rem 0 2.5rem;
-  max-width: 760px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 14rem;
+  gap: 1.25rem;
+  align-items: stretch;
+  margin: 1rem 0 2.5rem;
+  padding: 1.35rem;
+  border: 1px solid var(--nuzo-border);
+  border-radius: 8px;
+  border-top: 3px solid var(--nuzo-teal);
+  background: var(--nuzo-surface);
+}
+
+.nuzo-hero__copy {
+  align-self: center;
 }
 
 .nuzo-hero__logo {
-  width: 72px;
-  height: 72px;
-  margin-bottom: 1rem;
+  display: block;
+  width: 82px;
+  height: 82px;
+  margin: 0 auto 1rem;
+}
+
+.nuzo-hero__panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 1rem;
+  border: 1px solid var(--nuzo-border);
+  border-radius: 8px;
+  background: var(--nuzo-panel);
 }
 
 .nuzo-eyebrow {
@@ -71,6 +100,49 @@
   color: var(--nuzo-muted);
   font-size: 1.05rem;
   line-height: 1.65;
+}
+
+.nuzo-progress {
+  width: 100%;
+  height: 0.5rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(13, 17, 23, 0.1);
+}
+
+.nuzo-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--nuzo-teal), var(--nuzo-green));
+}
+
+.nuzo-progress__label {
+  margin: 0.65rem 0 1rem;
+  color: var(--nuzo-muted);
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+.nuzo-stats {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.45rem;
+}
+
+.nuzo-stats span {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--nuzo-border);
+  border-radius: 6px;
+  color: var(--nuzo-muted);
+  font-size: 0.78rem;
+}
+
+.nuzo-stats strong {
+  color: var(--nuzo-ink);
 }
 
 .nuzo-actions {
@@ -136,6 +208,9 @@
 [data-md-color-scheme="slate"] {
   --nuzo-border: rgba(255, 255, 255, 0.14);
   --nuzo-muted: #aeb8c5;
+  --nuzo-panel: rgba(255, 255, 255, 0.045);
+  --nuzo-surface: rgba(255, 255, 255, 0.025);
+  --nuzo-ink: #ffffff;
 }
 
 [data-md-color-scheme="slate"] .md-typeset .nuzo-hero h1,
@@ -156,6 +231,11 @@
 }
 
 @media screen and (max-width: 640px) {
+  .nuzo-hero {
+    grid-template-columns: 1fr;
+    padding: 1rem;
+  }
+
   .md-typeset .nuzo-hero h1 {
     font-size: 2.35rem;
   }

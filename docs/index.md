@@ -1,18 +1,28 @@
 <section class="nuzo-hero">
-  <img src="assets/logo.svg" alt="Nuzo" class="nuzo-hero__logo">
+  <div class="nuzo-hero__copy" markdown>
   <p class="nuzo-eyebrow">Local-first memory for AI agents</p>
   <h1>Nuzo</h1>
-  <p class="nuzo-lead">
-    Inspectable, portable memory for Codex, Claude Code, and MCP-compatible agents.
-    Built for developer workflows where useful context should not become hidden state.
-  </p>
+  <p class="nuzo-lead">Inspectable, portable memory for Codex, Claude Code, and MCP-compatible agents. Built for developer workflows where useful context should not become hidden state.</p>
   <p class="nuzo-actions">
     <a href="getting-started/" class="nuzo-button">Get started</a>
     <a href="spec/tools/" class="nuzo-button nuzo-button--secondary">Tool contract</a>
   </p>
+  </div>
+  <div class="nuzo-hero__panel" markdown>
+  <img src="assets/logo.svg" alt="Nuzo" class="nuzo-hero__logo">
+  <div class="nuzo-progress" aria-label="Estimated MVP progress 72 percent">
+    <span style="width: 72%"></span>
+  </div>
+  <p class="nuzo-progress__label"><strong>72%</strong> estimated MVP progress</p>
+  <div class="nuzo-stats" markdown>
+  <span><strong>9</strong> MCP tools</span>
+  <span><strong>0</strong> telemetry</span>
+  <span><strong>2</strong> priority hosts</span>
+  </div>
+  </div>
 </section>
 
-## Why It Exists
+## Why
 
 Agents can write code, inspect repositories, run tools, and help make project decisions. But most sessions still start from zero. Nuzo preserves useful context locally so users can inspect, edit, export, and delete what agents remember.
 
@@ -44,7 +54,7 @@ The integration boundary is a stable MCP tool contract.
 
 ## Current Focus
 
-Nuzo is in early MVP development. The repository now includes a TypeScript core package, a local CLI backed by SQLite, an MCP server, and initial host plugin metadata.
+Nuzo is in early MVP development. The repository now includes a TypeScript core package, a local CLI backed by SQLite, an MCP server, host plugin metadata, release artifact checks, and npm package staging validation.
 
 | Area | State |
 | --- | --- |
@@ -52,8 +62,8 @@ Nuzo is in early MVP development. The repository now includes a TypeScript core 
 | CLI | `init`, `remember`, `recall`, `list`, `update`, `forget`, `export`, `import`, `doctor`. |
 | MCP | Stdio server with remember, recall, read-only recall hook, list, update, forget, export, import, and doctor tools. |
 | Host Plugins | Codex and Claude Code wrapper metadata exists; both remain thin MCP packaging layers. |
-| Docs | Product, architecture, specs, operations, and ADRs. |
-| Next | Stable plugin packaging and release artifacts for Codex and Claude Code. |
+| Release | CI, Pages, plugin packaging, npm artifact staging, release-state checks. |
+| Next | Published MCP runtime, fresh host plugin installs, and the first public `0.1.0` release. |
 
 ## Runtime Storage
 
