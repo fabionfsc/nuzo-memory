@@ -28,6 +28,7 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 - Recall usage recording is now opt-in so normal recall does not persist query
   text or update `last_used_at`.
+- Updated `better-sqlite3` and Vitest within their compatible release lines.
 
 ### Fixed
 
