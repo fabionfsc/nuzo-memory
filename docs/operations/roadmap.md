@@ -80,6 +80,7 @@ Deliverables:
 - MCP handlers calling core use cases.
 - contract tests.
 - setup docs.
+- read-only doctor diagnostics for host agents.
 
 Exit criteria:
 

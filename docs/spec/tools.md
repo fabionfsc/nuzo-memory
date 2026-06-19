@@ -194,17 +194,41 @@ Input:
 
 Run safety and environment checks.
 
-Current CLI checks:
+CLI checks:
 
 - memory path exists;
 - Git is not tracking local memory files;
 - network access is disabled.
 
+MCP doctor returns a read-only diagnostic summary for host agents:
+
+```json
+{
+  "ok": true,
+  "network": "disabled",
+  "store": {
+    "path": "~/.nuzo/memory/memories.sqlite",
+    "readable": true,
+    "writable_check": "not_performed"
+  },
+  "counts": {
+    "active_memories": 4,
+    "archived_memories": 1,
+    "total_memories": 5
+  },
+  "tools": ["memory.remember", "memory.recall", "memory.doctor"],
+  "warnings": []
+}
+```
+
+The MCP response must not include memory content, tags, sources, or export
+documents. Counts are aggregate diagnostics only.
+
 Planned checks:
 
 - schema is current;
 - exports do not contain obvious secrets;
-- MCP server can read and write the selected store.
+- optional write checks that do not create durable user memory.
 
 ## CLI Commands
 

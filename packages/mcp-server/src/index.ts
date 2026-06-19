@@ -43,7 +43,8 @@ export function createNuzoMcpServer(options: NuzoMcpServerOptions = {}): McpServ
 }
 
 export function createNuzoMcpServerRuntime(options: NuzoMcpServerOptions = {}): NuzoMcpServerRuntime {
-  const database = openDatabase(options.storePath ?? defaultStorePath);
+  const storePath = options.storePath ?? defaultStorePath;
+  const database = openDatabase(storePath);
   const service = createService(database);
   let closed = false;
   const server = new McpServer({
@@ -51,7 +52,7 @@ export function createNuzoMcpServerRuntime(options: NuzoMcpServerOptions = {}): 
     version: "0.0.0",
   });
 
-  registerMemoryTools(server, service);
+  registerMemoryTools(server, service, { storePath });
   return {
     server,
     close: () => {
@@ -63,8 +64,13 @@ export function createNuzoMcpServerRuntime(options: NuzoMcpServerOptions = {}): 
   };
 }
 
-export function registerMemoryTools(server: McpServer, service: MemoryService): void {
-  const handlers = createMemoryToolHandlers(service);
+export function registerMemoryTools(
+  server: McpServer,
+  service: MemoryService,
+  options: NuzoMcpServerOptions = {},
+): void {
+  const handlerOptions = options.storePath === undefined ? {} : { storePath: options.storePath };
+  const handlers = createMemoryToolHandlers(service, handlerOptions);
 
   server.registerTool(
     "memory.remember",

@@ -23,6 +23,7 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Host plugin artifact generator with release-path validation for Codex and Claude Code.
 - Reproducible npm package staging and clean-install validation for core and MCP runtime artifacts.
 - Release-state tooling for coordinated version preparation and changelog validation.
+- MCP `memory.doctor` now reports read-only store health, aggregate counts, tool names, and warnings.
 
 ### Changed
 

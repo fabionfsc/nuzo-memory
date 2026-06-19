@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { MemoryRecord, MemoryService } from "@nuzo/memory-core";
 import { createMemoryToolHandlers } from "../handlers.js";
 
-function createTestHandlers() {
+function createTestHandlers(options: { failList?: boolean } = {}) {
   let memory: MemoryRecord | null = null;
   const calls = {
     remember: 0,
@@ -51,6 +51,9 @@ function createTestHandlers() {
         : [];
     },
     async list(input = {}) {
+      if (options.failList === true) {
+        throw new Error("simulated store failure");
+      }
       if (input.includeArchived !== true && memory?.archivedAt) {
         return [];
       }
@@ -129,7 +132,10 @@ function createTestHandlers() {
       : [];
   };
 
-  return { calls, handlers: createMemoryToolHandlers(service) };
+  return {
+    calls,
+    handlers: createMemoryToolHandlers(service, { storePath: "/tmp/nuzo-test.sqlite" }),
+  };
 }
 
 describe("memory MCP handlers", () => {
@@ -227,9 +233,44 @@ describe("memory MCP handlers", () => {
     expect(visible.memories).toEqual([]);
 
     const doctor = await handlers.doctor();
+    expect(doctor.ok).toBe(true);
+    expect(doctor.store).toEqual({
+      path: "/tmp/nuzo-test.sqlite",
+      readable: true,
+      writable_check: "not_performed",
+    });
+    expect(doctor.counts).toEqual({
+      active_memories: 0,
+      archived_memories: 1,
+      total_memories: 1,
+    });
     expect(doctor.tools).toContain("memory.import");
     expect(doctor.tools).toContain("memory.recall_hook");
     expect(doctor.network).toBe("disabled");
+    expect(JSON.stringify(doctor)).not.toContain("complete MCP contracts");
+    expect(doctor.warnings).toEqual([]);
+  });
+
+  it("reports MCP doctor warnings without exposing memory content", async () => {
+    const { handlers } = createTestHandlers({ failList: true });
+
+    const doctor = await handlers.doctor();
+
+    expect(doctor.ok).toBe(false);
+    expect(doctor.network).toBe("disabled");
+    expect(doctor.store).toEqual({
+      path: "/tmp/nuzo-test.sqlite",
+      readable: false,
+      writable_check: "not_performed",
+    });
+    expect(doctor.counts).toEqual({
+      active_memories: null,
+      archived_memories: null,
+      total_memories: null,
+    });
+    expect(doctor.warnings).toEqual([
+      "memory store read check failed: simulated store failure",
+    ]);
   });
 
   it("runs recall hook as a limited read-only recall entrypoint", async () => {

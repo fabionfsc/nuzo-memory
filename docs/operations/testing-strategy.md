@@ -24,6 +24,7 @@ Testing should protect the project contracts before implementation details.
 - export produces valid versioned format;
 - import dry-run reports planned changes;
 - doctor reports tracked memory files.
+- MCP doctor reports aggregate store health without exposing memory content.
 
 ## Test Data
 
@@ -66,6 +67,10 @@ nuzo memory doctor
 Smoke tests may set `NUZO_DOCTOR_SKIP_GIT=1` so restricted environments do not
 warn only because Git tracking inspection is unavailable. Tests should still
 cover normal warning behavior for missing stores and tracked memory files.
+
+MCP doctor tests should cover both ok and warning states. They must assert that
+diagnostics include aggregate counts and store readability, but not memory
+content.
 
 ## Continuous Integration
 

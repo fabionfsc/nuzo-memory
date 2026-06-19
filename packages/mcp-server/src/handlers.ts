@@ -68,6 +68,10 @@ export interface ImportToolInput {
   dry_run: boolean;
 }
 
+export interface MemoryToolHandlerOptions {
+  storePath?: string;
+}
+
 export interface MemoryToolHandlers {
   remember(input: RememberToolInput): Promise<{
     id: string;
@@ -121,9 +125,20 @@ export interface MemoryToolHandlers {
     dry_run: boolean;
   }>;
   doctor(): Promise<{
-    ok: true;
+    ok: boolean;
     network: "disabled";
+    store: {
+      path: string | null;
+      readable: boolean;
+      writable_check: "not_performed";
+    };
+    counts: {
+      active_memories: number | null;
+      archived_memories: number | null;
+      total_memories: number | null;
+    };
     tools: string[];
+    warnings: string[];
   }>;
 }
 
@@ -141,7 +156,10 @@ export type MemoryToolRecord = {
   archived_at: string | null;
 };
 
-export function createMemoryToolHandlers(service: MemoryService): MemoryToolHandlers {
+export function createMemoryToolHandlers(
+  service: MemoryService,
+  options: MemoryToolHandlerOptions = {},
+): MemoryToolHandlers {
   return {
     async remember(input) {
       const rememberInput: RememberMemoryInput = {
@@ -298,9 +316,38 @@ export function createMemoryToolHandlers(service: MemoryService): MemoryToolHand
     },
 
     async doctor() {
+      const warnings: string[] = [];
+      let activeMemories: number | null = null;
+      let archivedMemories: number | null = null;
+      let totalMemories: number | null = null;
+      let readable = false;
+
+      try {
+        const [active, all] = await Promise.all([
+          service.list({ includeArchived: false }),
+          service.list({ includeArchived: true }),
+        ]);
+        activeMemories = active.length;
+        totalMemories = all.length;
+        archivedMemories = Math.max(totalMemories - activeMemories, 0);
+        readable = true;
+      } catch (error) {
+        warnings.push(`memory store read check failed: ${formatDoctorError(error)}`);
+      }
+
       return {
-        ok: true,
+        ok: warnings.length === 0,
         network: "disabled",
+        store: {
+          path: options.storePath ?? null,
+          readable,
+          writable_check: "not_performed",
+        },
+        counts: {
+          active_memories: activeMemories,
+          archived_memories: archivedMemories,
+          total_memories: totalMemories,
+        },
         tools: [
           "memory.remember",
           "memory.recall",
@@ -312,9 +359,17 @@ export function createMemoryToolHandlers(service: MemoryService): MemoryToolHand
           "memory.import",
           "memory.doctor",
         ],
+        warnings,
       };
     },
   };
+}
+
+function formatDoctorError(error: unknown): string {
+  if (error instanceof Error && error.message.length > 0) {
+    return error.message;
+  }
+  return "unknown error";
 }
 
 function buildRecallHookQuery(taskContext: string): string {
