@@ -28,6 +28,7 @@ Examples:
 
 ```bash
 npm run nuzo -- memory init
+npm run nuzo -- memory init --project
 npm run nuzo -- memory remember "The project uses SQLite for local storage." --kind project_decision --tag storage
 npm run nuzo -- memory recall "local storage"
 npm run nuzo -- memory export --path ./memories.memory.export.json
@@ -35,6 +36,10 @@ npm run nuzo -- memory history mem_01HZY
 npm run nuzo -- memory forget-many --tag obsolete
 npm run nuzo -- memory forget-many --scope project:auto --apply
 ```
+
+Project init creates `.nuzo/config.json`, a project-local SQLite store, and
+missing Git ignore rules. Later CLI commands run from that project root resolve
+the project store and hashed project scope automatically.
 
 ## Smoke Test
 

@@ -75,6 +75,12 @@ npm run build
 npm run nuzo -- memory init
 ```
 
+Initialize project-local memory with:
+
+```bash
+npm run nuzo -- memory init --project
+```
+
 The first user-facing command is:
 
 ```bash

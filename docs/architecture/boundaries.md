@@ -65,7 +65,9 @@ Recommended use cases:
 - `recallMemories`
 - `listMemories`
 - `updateMemory`
+- `history`
 - `forgetMemory`
+- `forgetMany`
 - `exportMemories`
 - `importMemories`
 - `runDoctor`

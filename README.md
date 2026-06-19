@@ -119,6 +119,12 @@ npm run nuzo -- memory recall "local-first tools"
 npm run nuzo -- memory doctor
 ```
 
+For project-local memory, initialize from the project root with:
+
+```bash
+npm run nuzo -- memory init --project
+```
+
 Run the MCP server after building:
 
 ```bash

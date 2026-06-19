@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -60,6 +60,10 @@ describe("nuzo memory cli", () => {
 
     const init = await runCli(["memory", "--store", store, "init"]);
     expect(init.stdout.join("\n")).toContain("Nuzo initialized");
+    expect(existsSync(store)).toBe(true);
+    expect(existsSync(join(store, "..", "config.json"))).toBe(true);
+    expect(existsSync(join(store, "..", "exports"))).toBe(true);
+    expect(existsSync(join(store, "..", "logs"))).toBe(true);
 
     const remembered = await runCli([
       "memory",
@@ -114,6 +118,66 @@ describe("nuzo memory cli", () => {
 
     const visible = await runCli(["memory", "--store", store, "list"]);
     expect(visible.stdout).toEqual([]);
+  });
+
+  it("initializes project memory idempotently and protects it from Git", async () => {
+    const projectRoot = mkdtempSync(join(tmpdir(), "nuzo-project-"));
+    tempDirectories.push(projectRoot);
+    writeFileSync(join(projectRoot, ".gitignore"), "node_modules/\n", "utf8");
+    const previousCwd = process.cwd();
+    process.chdir(projectRoot);
+    try {
+      const first = await runCli(["memory", "init", "--project"]);
+      const configPath = join(projectRoot, ".nuzo", "config.json");
+      const storePath = join(projectRoot, ".nuzo", "memory", "memories.sqlite");
+      expect(first.stdout.join("\n")).toContain(`Store: ${storePath}`);
+      expect(first.stdout.join("\n")).toMatch(/Scope: project:[a-f0-9]{16}/);
+      expect(existsSync(configPath)).toBe(true);
+      expect(existsSync(storePath)).toBe(true);
+      expect(JSON.parse(readFileSync(configPath, "utf8"))).toMatchObject({
+        storage: {
+          path: ".nuzo/memory/memories.sqlite",
+        },
+      });
+
+      const remembered = await runCli([
+        "memory",
+        "remember",
+        "The project config resolves local memory automatically.",
+        "--kind",
+        "project_decision",
+      ]);
+      const id = remembered.stdout[0] ?? "";
+      expect(id).toMatch(/^mem_/);
+      const listed = await runCli(["memory", "list"]);
+      expect(listed.stdout.join("\n")).toContain(id);
+
+      const originalConfig = readFileSync(configPath, "utf8");
+      const second = await runCli(["memory", "init", "--project"]);
+      expect(second.stderr).toEqual([]);
+      expect(readFileSync(configPath, "utf8")).toBe(originalConfig);
+      expect(readFileSync(join(projectRoot, ".gitignore"), "utf8")).toBe(
+        [
+          "node_modules/",
+          ".nuzo/memory/",
+          ".nuzo/**/*.sqlite",
+          ".nuzo/**/*.sqlite-*",
+          "",
+        ].join("\n"),
+      );
+    } finally {
+      process.chdir(previousCwd);
+    }
+  });
+
+  it("rejects project init with a custom store", async () => {
+    const store = createStorePath();
+
+    const output = await runCli(["memory", "--store", store, "init", "--project"]);
+
+    expect(output.stderr).toEqual([
+      "MEMORY_INIT_STORE_CONFLICT: Project init cannot be combined with a custom --store path.",
+    ]);
   });
 
   it("rejects conflicting forget modes", async () => {

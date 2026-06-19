@@ -1,7 +1,8 @@
 #!/usr/bin/env node
+import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { Command } from "commander";
@@ -42,6 +43,19 @@ interface GlobalOptions {
   scope?: MemoryScope;
 }
 
+interface InitCommandOptions {
+  project: boolean;
+}
+
+interface NuzoConfig {
+  version: 1;
+  default_scope: MemoryScope;
+  storage: {
+    driver: "sqlite";
+    path: string;
+  };
+}
+
 interface DoctorReport {
   storePath: string;
   storeExists: boolean;
@@ -72,23 +86,37 @@ export function createProgram(io: CliIO = defaultIO): Command {
   const memory = program.command("memory").description("Manage local Nuzo stores.");
 
   memory
-    .option("--store <path>", "Path to the SQLite memory store.", defaultStorePath)
-    .option("--scope <scope>", "Memory scope.", "user:default");
+    .option("--store <path>", "Path to the SQLite memory store.")
+    .option("--scope <scope>", "Memory scope.");
 
   memory
     .command("init")
     .description("Initialize the local memory store.")
-    .action(() => {
+    .option("--project", "Initialize project-local memory in .nuzo/memory.", false)
+    .action(withErrorHandling(io, async (commandOptions: InitCommandOptions) => {
       const options = memory.opts<GlobalOptions>();
-      const storePath = resolveStorePath(options);
-      ensureStoreDirectory(storePath);
-      const database = new SQLiteMemoryDatabase({ path: storePath });
+      const init = resolveInitContext(options, commandOptions);
+      ensureStoreDirectory(init.storePath);
+      if (!init.project) {
+        mkdirSync(join(dirname(init.storePath), "exports"), { recursive: true });
+        mkdirSync(join(dirname(init.storePath), "logs"), { recursive: true });
+      }
+      writeConfigIfMissing(
+        init.configPath,
+        init.configStorePath,
+        init.scope,
+      );
+      if (init.projectRoot !== null) {
+        ensureProjectGitIgnore(init.projectRoot);
+      }
+
+      const database = new SQLiteMemoryDatabase({ path: init.storePath });
       database.close();
       io.stdout("Nuzo initialized");
-      io.stdout(`Store: ${storePath}`);
-      io.stdout(`Scope: ${options.scope ?? "user:default"}`);
+      io.stdout(`Store: ${init.storePath}`);
+      io.stdout(`Scope: ${init.scope}`);
       io.stdout("Network: disabled");
-    });
+    }));
 
   memory
     .command("remember")
@@ -105,7 +133,7 @@ export function createProgram(io: CliIO = defaultIO): Command {
         const saved = await service.remember({
           content,
           kind: commandOptions.kind,
-          scope: options.scope ?? "user:default",
+          scope: resolveScope(options),
           tags: commandOptions.tag ?? [],
           source: commandOptions.source,
         });
@@ -128,7 +156,7 @@ export function createProgram(io: CliIO = defaultIO): Command {
         const service = createService(database);
         const results = await service.recall({
           query,
-          scope: options.scope ?? "user:default",
+          scope: resolveScope(options),
           limit: commandOptions.limit,
           includeGlobal: commandOptions.includeGlobal,
         });
@@ -153,10 +181,8 @@ export function createProgram(io: CliIO = defaultIO): Command {
         const service = createService(database);
         const listInput: ListMemoriesInput = {
           includeArchived: commandOptions.includeArchived,
+          scope: resolveScope(options),
         };
-        if (options.scope) {
-          listInput.scope = options.scope;
-        }
         if (commandOptions.tag) {
           listInput.tags = commandOptions.tag;
         }
@@ -355,7 +381,7 @@ export function createProgram(io: CliIO = defaultIO): Command {
         const service = createService(database);
         const exportInput: ExportMemoriesInput = {
           actor: "nuzo:cli",
-          scope: options.scope ?? "user:default",
+          scope: resolveScope(options),
           includeArchived: commandOptions.includeArchived,
         };
         if (commandOptions.tag !== undefined) {
@@ -412,7 +438,7 @@ export function createProgram(io: CliIO = defaultIO): Command {
   memory
     .command("doctor")
     .description("Check the local memory environment.")
-    .action(() => {
+    .action(withErrorHandling(io, async () => {
       const options = memory.opts<GlobalOptions>();
       const report = createDoctorReport(options);
       io.stdout(`Store: ${report.storePath}`);
@@ -431,7 +457,7 @@ export function createProgram(io: CliIO = defaultIO): Command {
         io.stdout(`Warning: ${warning}`);
       }
       io.stdout(`Status: ${report.warnings.length === 0 ? "ok" : "warning"}`);
-    });
+    }));
 
   return program;
 }
@@ -474,11 +500,164 @@ function createService(database: SQLiteMemoryDatabase) {
 }
 
 function resolveStorePath(options: GlobalOptions): string {
-  return resolve(options.store ?? defaultStorePath);
+  if (options.store !== undefined) {
+    return resolve(options.store);
+  }
+  return readProjectConfig()?.storage.path ?? defaultStorePath;
+}
+
+function resolveScope(options: GlobalOptions): MemoryScope {
+  if (options.scope !== undefined) {
+    return options.scope;
+  }
+  return readProjectConfig()?.default_scope ?? "user:default";
+}
+
+function readProjectConfig(): NuzoConfig | null {
+  const projectRoot = realpathSync(process.cwd());
+  const configPath = join(projectRoot, ".nuzo", "config.json");
+  if (!pathExists(configPath)) {
+    return null;
+  }
+
+  let value: unknown;
+  try {
+    value = JSON.parse(readFileSync(configPath, "utf8"));
+  } catch {
+    throw new NuzoMemoryError(
+      "MEMORY_CONFIG_INVALID",
+      "Project Nuzo config is not valid JSON.",
+      { path: configPath },
+    );
+  }
+
+  if (
+    !isRecord(value) ||
+    value.version !== 1 ||
+    typeof value.default_scope !== "string" ||
+    !isRecord(value.storage) ||
+    value.storage.driver !== "sqlite" ||
+    typeof value.storage.path !== "string"
+  ) {
+    throw new NuzoMemoryError(
+      "MEMORY_CONFIG_INVALID",
+      "Project Nuzo config has an unsupported shape.",
+      { path: configPath },
+    );
+  }
+
+  return {
+    version: 1,
+    default_scope: value.default_scope as MemoryScope,
+    storage: {
+      driver: "sqlite",
+      path: resolve(projectRoot, value.storage.path),
+    },
+  };
+}
+
+function resolveInitContext(
+  options: GlobalOptions,
+  commandOptions: InitCommandOptions,
+): {
+  configPath: string;
+  configStorePath: string;
+  project: boolean;
+  projectRoot: string | null;
+  scope: MemoryScope;
+  storePath: string;
+} {
+  if (commandOptions.project) {
+    if (options.store !== undefined) {
+      throw new NuzoMemoryError(
+        "MEMORY_INIT_STORE_CONFLICT",
+        "Project init cannot be combined with a custom --store path.",
+      );
+    }
+
+    const projectRoot = realpathSync(process.cwd());
+    const nuzoRoot = join(projectRoot, ".nuzo");
+    return {
+      configPath: join(nuzoRoot, "config.json"),
+      configStorePath: ".nuzo/memory/memories.sqlite",
+      project: true,
+      projectRoot,
+      scope: projectScope(projectRoot),
+      storePath: join(nuzoRoot, "memory", "memories.sqlite"),
+    };
+  }
+
+  const storePath = resolve(options.store ?? defaultStorePath);
+  const configRoot = storePath === defaultStorePath
+    ? dirname(dirname(storePath))
+    : dirname(storePath);
+  return {
+    configPath: join(configRoot, "config.json"),
+    configStorePath: storePath,
+    project: false,
+    projectRoot: null,
+    scope: options.scope ?? "user:default",
+    storePath,
+  };
+}
+
+function projectScope(projectRoot: string): MemoryScope {
+  const digest = createHash("sha256").update(projectRoot).digest("hex").slice(0, 16);
+  return `project:${digest}`;
 }
 
 function ensureStoreDirectory(storePath: string): void {
   mkdirSync(dirname(storePath), { recursive: true });
+}
+
+function writeConfigIfMissing(
+  configPath: string,
+  configStorePath: string,
+  scope: MemoryScope,
+): void {
+  if (pathExists(configPath)) {
+    return;
+  }
+
+  mkdirSync(dirname(configPath), { recursive: true });
+  writeFileSync(
+    configPath,
+    `${JSON.stringify({
+      version: 1,
+      default_scope: scope,
+      storage: {
+        driver: "sqlite",
+        path: configStorePath,
+      },
+      recall: {
+        limit: 8,
+        include_global: true,
+      },
+      privacy: {
+        allow_network: false,
+        record_recall_events: false,
+      },
+    }, null, 2)}\n`,
+    "utf8",
+  );
+}
+
+function ensureProjectGitIgnore(projectRoot: string): void {
+  const path = join(projectRoot, ".gitignore");
+  const rules = [
+    ".nuzo/memory/",
+    ".nuzo/**/*.sqlite",
+    ".nuzo/**/*.sqlite-*",
+  ];
+  const existing = pathExists(path) ? readFileSync(path, "utf8") : "";
+  const lines = new Set(existing.split(/\r?\n/));
+  const missing = rules.filter((rule) => !lines.has(rule));
+  if (missing.length === 0) {
+    return;
+  }
+
+  const separator = existing.length > 0 && !existing.endsWith("\n") ? "\n" : "";
+  writeFileSync(path, `${existing}${separator}${missing.join("\n")}\n`, "utf8");
 }
 
 function pathExists(path: string): boolean {
@@ -488,6 +667,10 @@ function pathExists(path: string): boolean {
   } catch {
     return false;
   }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function createDoctorReport(options: GlobalOptions): DoctorReport {
@@ -514,7 +697,7 @@ function createDoctorReport(options: GlobalOptions): DoctorReport {
     storeExists: pathExists(storePath),
     storeDirectory,
     storeDirectoryExists: pathExists(storeDirectory),
-    scope: options.scope ?? "user:default",
+    scope: resolveScope(options),
     network: "disabled",
     gitTracking,
     warnings,
