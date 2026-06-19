@@ -13,6 +13,8 @@ import {
   RegexSecretScanner,
   SQLiteMemoryDatabase,
   SystemClock,
+  memoryScopePattern,
+  memoryTagPattern,
   schemaVersion,
   type MemoryService,
   type MemoryExportDocument,
@@ -32,6 +34,8 @@ import type {
 } from "./handlers.js";
 
 const defaultStorePath = resolve(homedir(), ".nuzo", "memory", "memories.sqlite");
+const scopeSchema = z.string().regex(memoryScopePattern);
+const tagSchema = z.string().regex(memoryTagPattern);
 
 export interface NuzoMcpServerOptions {
   storePath?: string;
@@ -98,9 +102,9 @@ export function registerMemoryTools(
       inputSchema: {
         content: z.string().min(1),
         kind: z.enum(["preference", "project_decision", "fact", "instruction", "note"]),
-        scope: z.string().default("user:default"),
-        tags: z.array(z.string()).default([]),
-        source: z.string().default("nuzo:mcp"),
+        scope: scopeSchema.default("user:default"),
+        tags: z.array(tagSchema).default([]),
+        source: z.string().min(1).default("nuzo:mcp"),
         confidence: z.number().min(0).max(1).optional(),
       },
     },
@@ -126,7 +130,7 @@ export function registerMemoryTools(
       description: "Recall relevant local Nuzo memories.",
       inputSchema: {
         query: z.string().min(1),
-        scope: z.string().default("user:default"),
+        scope: scopeSchema.default("user:default"),
         limit: z.number().int().min(1).max(50).default(8),
         include_global: z.boolean().default(false),
       },
@@ -142,7 +146,7 @@ export function registerMemoryTools(
       description: "Prototype read-only recall entrypoint for host lifecycle hooks. It never captures or creates memories.",
       inputSchema: {
         task_context: z.string().min(1),
-        project_scope: z.string().optional(),
+        project_scope: scopeSchema.optional(),
         limit: z.number().int().min(1).max(8).default(5),
       },
     },
@@ -164,8 +168,8 @@ export function registerMemoryTools(
     {
       description: "List local Nuzo memories.",
       inputSchema: {
-        scope: z.string().optional(),
-        tags: z.array(z.string()).default([]),
+        scope: scopeSchema.optional(),
+        tags: z.array(tagSchema).default([]),
         include_archived: z.boolean().default(false),
       },
     },
@@ -190,8 +194,8 @@ export function registerMemoryTools(
         id: z.string().min(1),
         content: z.string().optional(),
         kind: z.enum(["preference", "project_decision", "fact", "instruction", "note"]).optional(),
-        scope: z.string().optional(),
-        tags: z.array(z.string()).optional(),
+        scope: scopeSchema.optional(),
+        tags: z.array(tagSchema).optional(),
         confidence: z.number().min(0).max(1).optional(),
       },
     },
@@ -265,8 +269,8 @@ export function registerMemoryTools(
     {
       description: "Preview or apply a filtered bulk archive/delete operation.",
       inputSchema: {
-        scope: z.string().optional(),
-        tags: z.array(z.string()).default([]),
+        scope: scopeSchema.optional(),
+        tags: z.array(tagSchema).default([]),
         all: z.boolean().default(false),
         mode: z.enum(["archive", "delete"]).default("archive"),
         confirm: z.boolean().default(false),
@@ -298,8 +302,8 @@ export function registerMemoryTools(
     {
       description: "Export local Nuzo memories as a versioned JSON document.",
       inputSchema: {
-        scope: z.string().optional(),
-        tags: z.array(z.string()).default([]),
+        scope: scopeSchema.optional(),
+        tags: z.array(tagSchema).default([]),
         include_archived: z.boolean().default(false),
       },
     },
@@ -327,11 +331,11 @@ export function registerMemoryTools(
           exported_at: z.string(),
           memories: z.array(
             z.object({
-              scope: z.string(),
+              scope: scopeSchema,
               kind: z.enum(["preference", "project_decision", "fact", "instruction", "note"]),
               content: z.string(),
-              tags: z.array(z.string()),
-              source: z.string(),
+              tags: z.array(tagSchema),
+              source: z.string().min(1),
               confidence: z.number().min(0).max(1),
               created_at: z.string(),
               updated_at: z.string(),
@@ -340,7 +344,7 @@ export function registerMemoryTools(
             }),
           ),
         }),
-        scope: z.string().optional(),
+        scope: scopeSchema.optional(),
         dry_run: z.boolean().default(false),
       },
     },

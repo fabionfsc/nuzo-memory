@@ -4,6 +4,16 @@ Nuzo should expose the same core operations through MCP and CLI.
 
 ## MCP Tools
 
+### Common Input Rules
+
+MCP schemas reject malformed memory selectors before handlers run:
+
+- `scope` must match `<kind>:<id>`.
+- Supported scope kinds are `user`, `project`, `agent`, and `team`.
+- Scope IDs may contain letters, numbers, `.`, `_`, `~`, `:`, `/`, and `-`.
+- `tags` must be lowercase labels starting with a letter or number.
+- Tags may contain lowercase letters, numbers, `.`, `_`, and `-`, up to 64 characters.
+
 ### `memory.remember`
 
 Store a memory.

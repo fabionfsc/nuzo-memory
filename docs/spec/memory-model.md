@@ -35,9 +35,16 @@ A memory is a durable record the user expects the agent to use in future session
 - `agent:<name>`: memory specific to one agent.
 - `team:<name>`: future team-level memory.
 
+Valid scopes use the shape `<kind>:<id>`, where `kind` is `user`, `project`,
+`agent`, or `team`. Scope IDs may contain letters, numbers, `.`, `_`, `~`, `:`,
+`/`, and `-`.
+
 ## Tags
 
 Tags are lightweight labels used for filtering and retrieval.
+
+Tags must be lowercase labels that start with a letter or number. They may
+contain lowercase letters, numbers, `.`, `_`, and `-`, up to 64 characters.
 
 Recommended initial tags:
 

@@ -9,8 +9,8 @@ import type {
   UpdateMemoryInput,
 } from "./types.js";
 
-const scopePattern = /^(user|project|agent|team):[A-Za-z0-9._~:/-]+$/;
-const tagPattern = /^[a-z0-9][a-z0-9._-]{0,63}$/;
+export const memoryScopePattern = /^(user|project|agent|team):[A-Za-z0-9._~:/-]+$/;
+export const memoryTagPattern = /^[a-z0-9][a-z0-9._-]{0,63}$/;
 
 export class DefaultPolicyEngine implements PolicyEngine {
   constructor(private readonly secretScanner: SecretScanner) {}
@@ -91,13 +91,13 @@ export class DefaultPolicyEngine implements PolicyEngine {
 }
 
 function assertScope(scope: MemoryScope): void {
-  invariant(scopePattern.test(scope), "MEMORY_SCOPE_INVALID", "Memory scope is invalid.", {
+  invariant(memoryScopePattern.test(scope), "MEMORY_SCOPE_INVALID", "Memory scope is invalid.", {
     scope,
   });
 }
 
 function assertTag(tag: string): void {
-  invariant(tagPattern.test(tag), "MEMORY_TAG_INVALID", "Memory tag is invalid.", {
+  invariant(memoryTagPattern.test(tag), "MEMORY_TAG_INVALID", "Memory tag is invalid.", {
     tag,
   });
 }

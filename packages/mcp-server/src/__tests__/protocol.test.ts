@@ -54,6 +54,12 @@ describe("MCP protocol contract", () => {
         .toMatchObject({
           type: "object",
           required: ["content", "kind"],
+          properties: {
+            scope: {
+              default: "user:default",
+              type: "string",
+            },
+          },
         });
       expect(tools.tools.find((tool) => tool.name === "memory.forget_many")?.inputSchema)
         .toMatchObject({
@@ -196,7 +202,79 @@ describe("MCP protocol contract", () => {
       runtime.close();
     }
   });
+
+  it("rejects invalid scope and tag shapes through the registered MCP schema", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "nuzo-mcp-protocol-"));
+    tempDirectories.push(directory);
+    const runtime = createNuzoMcpServerRuntime({
+      storePath: join(directory, "memories.sqlite"),
+    });
+    const client = new Client({
+      name: "nuzo-contract-test",
+      version: "0.0.0",
+    });
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+
+    try {
+      await Promise.all([
+        runtime.server.connect(serverTransport),
+        client.connect(clientTransport),
+      ]);
+
+      await expectToolError(client.callTool({
+        name: "memory.list",
+        arguments: {
+          scope: "invalid",
+        },
+      }));
+      await expectToolError(client.callTool({
+        name: "memory.remember",
+        arguments: {
+          content: "Invalid tag should be rejected by the MCP schema.",
+          kind: "note",
+          tags: ["Invalid Tag"],
+        },
+      }));
+      await expectToolError(client.callTool({
+        name: "memory.import",
+        arguments: {
+          document: {
+            format: "nuzo-memory-export",
+            version: 1,
+            exported_at: "2026-06-19T00:00:00.000Z",
+            memories: [
+              {
+                scope: "project:nuzo",
+                kind: "note",
+                content: "Invalid imported tag should be rejected before handlers run.",
+                tags: ["invalid/tag"],
+                source: "test:mcp-client",
+                confidence: 1,
+                created_at: "2026-06-19T00:00:00.000Z",
+                updated_at: "2026-06-19T00:00:00.000Z",
+                last_used_at: null,
+                archived_at: null,
+              },
+            ],
+          },
+        },
+      }));
+    } finally {
+      await client.close();
+      runtime.close();
+    }
+  });
 });
+
+async function expectToolError(resultPromise: Promise<Awaited<ReturnType<Client["callTool"]>>>): Promise<void> {
+  const result = await resultPromise;
+  expect(result.isError).toBe(true);
+  expect(result.content).toEqual([
+    expect.objectContaining({
+      type: "text",
+    }),
+  ]);
+}
 
 function parseToolJson(result: Awaited<ReturnType<Client["callTool"]>>): unknown {
   const text = result.content.find(
