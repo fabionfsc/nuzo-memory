@@ -1,4 +1,5 @@
 import type Database from "better-sqlite3";
+import { NuzoMemoryError } from "../errors.js";
 
 export const schemaVersion = 1;
 
@@ -8,7 +9,14 @@ export function migrate(database: Database.Database): void {
 
   const currentVersion = database.pragma("user_version", { simple: true }) as number;
   if (currentVersion > schemaVersion) {
-    throw new Error(`Unsupported SQLite schema version: ${currentVersion}`);
+    throw new NuzoMemoryError(
+      "MEMORY_SCHEMA_UNSUPPORTED",
+      "SQLite memory schema is newer than this Nuzo version supports.",
+      {
+        currentVersion,
+        supportedVersion: schemaVersion,
+      },
+    );
   }
 
   if (currentVersion < 1) {

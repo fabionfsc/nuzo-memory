@@ -38,6 +38,10 @@ The response must include which scope produced each result.
 
 ## SQLite Tables
 
+The current schema version is `1`. Nuzo stores it in SQLite `user_version` and
+rejects databases created by newer unsupported Nuzo versions with the
+structured `MEMORY_SCHEMA_UNSUPPORTED` error.
+
 Initial schema:
 
 ```sql

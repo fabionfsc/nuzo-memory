@@ -48,11 +48,20 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog 
 
   constructor(options: SQLiteMemoryDatabaseOptions) {
     this.database = new Database(options.path);
-    migrate(this.database);
+    try {
+      migrate(this.database);
+    } catch (error) {
+      this.database.close();
+      throw error;
+    }
   }
 
   close(): void {
     this.database.close();
+  }
+
+  getSchemaVersion(): number {
+    return this.database.pragma("user_version", { simple: true }) as number;
   }
 
   async create(memory: MemoryRecord): Promise<void> {
