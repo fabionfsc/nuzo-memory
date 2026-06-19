@@ -22,6 +22,10 @@ const definitions = [
     output: "memory-core",
   },
   {
+    source: "packages/cli",
+    output: "memory-cli",
+  },
+  {
     source: "packages/mcp-server",
     output: "mcp-server",
   },
@@ -100,6 +104,9 @@ function sourceDirectoryFor(name) {
   if (name === "@nuzo/memory-core") {
     return "packages/core";
   }
+  if (name === "@nuzo/memory-cli") {
+    return "packages/cli";
+  }
   if (name === "@nuzo/mcp-server") {
     return "packages/mcp-server";
   }
@@ -119,6 +126,14 @@ function validateStagedPackage(root, pkg) {
     }
     if (pkg.bin?.["nuzo-mcp-server"] !== "dist/index.js") {
       fail("@nuzo/mcp-server must expose the nuzo-mcp-server binary");
+    }
+  }
+  if (pkg.name === "@nuzo/memory-cli") {
+    if (pkg.dependencies?.["@nuzo/memory-core"] !== pkg.version) {
+      fail("@nuzo/memory-cli must pin @nuzo/memory-core to the same version");
+    }
+    if (pkg.bin?.nuzo !== "dist/index.js") {
+      fail("@nuzo/memory-cli must expose the nuzo binary");
     }
   }
 

@@ -22,6 +22,7 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Runtime support policy for Node.js 22/24 LTS, npm 10+, and native SQLite build troubleshooting.
 - Host plugin artifact generator with release-path validation for Codex and Claude Code.
 - Reproducible npm package staging and clean-install validation for core and MCP runtime artifacts.
+- Reproducible npm package staging and installed-binary validation for the Nuzo CLI.
 - Release-state tooling for coordinated version preparation and changelog validation.
 - MCP `memory.doctor` now reports read-only store health, aggregate counts, tool names, and warnings.
 
@@ -40,6 +41,7 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 ### Fixed
 
 - The installed MCP binary now starts correctly when invoked through the npm-generated `node_modules/.bin` symlink.
+- The installed CLI now runs correctly through the npm-generated `node_modules/.bin/nuzo` symlink.
 - `nuzo memory doctor` can now report a clean status in restricted environments when only the Git tracking check is intentionally skipped.
 
 - CLI `memory forget` now accepts the documented `--archive` flag and rejects conflicting `--archive --delete` usage.

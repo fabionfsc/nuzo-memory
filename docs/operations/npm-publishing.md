@@ -12,7 +12,13 @@ The MCP package depends on:
 @nuzo/memory-core
 ```
 
-Both packages use the same version and must be released together.
+The CLI package also depends on:
+
+```text
+@nuzo/memory-core
+```
+
+Core, CLI, and MCP packages use the same version and must be released together.
 
 ## Scope Ownership
 
@@ -44,7 +50,8 @@ The source workspace packages remain:
 }
 ```
 
-Do not run `npm publish` from `packages/core` or `packages/mcp-server`.
+Do not run `npm publish` from `packages/core`, `packages/cli`, or
+`packages/mcp-server`.
 
 Generate publish candidates instead:
 
@@ -58,6 +65,7 @@ This creates ignored staging directories and tarballs under:
 build/npm/
 ├── packages/
 │   ├── memory-core/
+│   ├── memory-cli/
 │   └── mcp-server/
 └── tarballs/
 ```
@@ -66,7 +74,7 @@ The staging process:
 
 - removes `private` only from generated package metadata;
 - removes development scripts and dependencies;
-- pins the MCP server to the exact core version;
+- pins the CLI and MCP server to the exact core version;
 - copies runtime output, README, and Apache-2.0 license;
 - rejects tests, source files, databases, exports, secrets, and environment files.
 
@@ -81,10 +89,11 @@ npm run validate:npm
 The validation:
 
 1. rebuilds from clean `dist` directories;
-2. creates both tarballs with `npm pack`;
-3. installs both tarballs into a temporary project;
+2. creates all three tarballs with `npm pack`;
+3. installs all tarballs into a temporary project;
 4. confirms package versions match;
-5. starts the installed `nuzo-mcp-server` binary against a temporary store.
+5. runs the installed `nuzo` binary through init, remember, recall, and doctor;
+6. starts the installed `nuzo-mcp-server` binary against a temporary store.
 
 The command does not publish anything.
 
@@ -99,6 +108,9 @@ Publish in dependency order:
 cd build/npm/packages/memory-core
 npm publish --access public
 
+cd ../memory-cli
+npm publish --access public
+
 cd ../mcp-server
 npm publish --access public
 ```
@@ -107,12 +119,14 @@ Verify before distributing host plugins:
 
 ```bash
 npm view @nuzo/memory-core@<version> version
+npm view @nuzo/memory-cli@<version> version
 npm view @nuzo/mcp-server@<version> version
+npx --yes @nuzo/memory-cli@<version> memory doctor
 npx --yes @nuzo/mcp-server@<version>
 ```
 
 The first publication should be performed by an authenticated maintainer with
-2FA. After both packages exist, configure npm trusted publishing for the
+2FA. After all packages exist, configure npm trusted publishing for the
 release workflow so routine releases use GitHub Actions OIDC instead of a
 long-lived token.
 

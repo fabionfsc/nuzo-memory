@@ -73,8 +73,9 @@ rg -n '\.\./mcp-server|packages/mcp-server' build/plugins
 
 The command should return no matches.
 
-Confirm the matching `@nuzo/mcp-server` version is published before shipping
-the plugin artifacts.
+Confirm the matching `@nuzo/memory-core`, `@nuzo/memory-cli`, and
+`@nuzo/mcp-server` versions are published. The MCP package must exist before
+shipping the plugin artifacts.
 
 Follow `docs/operations/npm-publishing.md`. Confirm the `@nuzo` organization
 scope and maintainer access before changing source package privacy or running

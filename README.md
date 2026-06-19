@@ -76,7 +76,7 @@ wrappers, CI, Pages, and npm artifact validation.
 
 The remaining MVP work is mainly:
 
-- publish the first versioned npm runtime packages;
+- publish the first versioned core, CLI, and MCP npm packages;
 - validate fresh Codex and Claude Code plugin installs against the published MCP runtime;
 - close the remaining release-blocking docs and setup gaps;
 - cut the first public `0.1.0` release.
@@ -94,7 +94,7 @@ Agent / CLI
 | Package | Role |
 | --- | --- |
 | `@nuzo/memory-core` | Memory lifecycle, policy, search, storage, import/export. |
-| `@nuzo/memory-cli` | User-facing local memory commands. |
+| `@nuzo/memory-cli` | User-facing `nuzo` command for local memory control. |
 | `@nuzo/mcp-server` | MCP stdio server exposing memory tools. |
 | Codex plugin | Thin host wrapper around the MCP runtime. |
 | Claude Code plugin | Thin host wrapper around the MCP runtime. |

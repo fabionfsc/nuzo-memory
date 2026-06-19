@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -562,5 +562,14 @@ function parseConfidence(value: string): number {
 }
 
 function isMain(): boolean {
-  return process.argv[1] ? fileURLToPath(import.meta.url) === resolve(process.argv[1]) : false;
+  const entrypoint = process.argv[1];
+  if (entrypoint === undefined) {
+    return false;
+  }
+
+  try {
+    return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(entrypoint);
+  } catch {
+    return false;
+  }
 }
