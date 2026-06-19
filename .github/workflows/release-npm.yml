@@ -1,0 +1,80 @@
+name: Release npm
+
+on:
+  workflow_dispatch:
+    inputs:
+      package_version:
+        description: Exact SemVer package version to publish.
+        required: true
+      publish:
+        description: Publish to npm. Leave false for a dry run.
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: release-npm-${{ inputs.package_version }}
+  cancel-in-progress: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  npm:
+    name: npm trusted publishing
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: npm-publish
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          registry-url: https://registry.npmjs.org/
+          cache: npm
+
+      - name: Install npm with trusted publishing support
+        run: npm install --global "npm@^11.5.1"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate source release state
+        env:
+          PACKAGE_VERSION: ${{ inputs.package_version }}
+        run: npm run release:check -- "$PACKAGE_VERSION"
+
+      - name: Run validation gates
+        run: |
+          npm run check
+          npm test
+          npm run package:npm
+
+      - name: Verify npm publish targets
+        env:
+          PACKAGE_VERSION: ${{ inputs.package_version }}
+        run: node tools/check-npm-publish-targets.mjs "$PACKAGE_VERSION"
+
+      - name: Dry-run npm publish
+        if: ${{ !inputs.publish }}
+        working-directory: build/npm/packages
+        run: |
+          npm publish ./memory-core --access public --dry-run
+          npm publish ./memory-cli --access public --dry-run
+          npm publish ./mcp-server --access public --dry-run
+
+      - name: Publish packages with provenance
+        if: ${{ inputs.publish }}
+        working-directory: build/npm/packages
+        run: |
+          npm publish ./memory-core --access public --provenance
+          npm publish ./memory-cli --access public --provenance
+          npm publish ./mcp-server --access public --provenance

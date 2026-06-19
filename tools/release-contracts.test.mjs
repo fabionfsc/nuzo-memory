@@ -54,6 +54,23 @@ test("manual release input is quoted through an environment variable", () => {
   );
 });
 
+test("npm release workflow uses manual OIDC publishing without tokens", () => {
+  const workflow = readFileSync(
+    join(repositoryRoot, ".github", "workflows", "release-npm.yml"),
+    "utf8",
+  );
+
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.match(workflow, /id-token: write/);
+  assert.match(workflow, /environment: npm-publish/);
+  assert.match(workflow, /npm install --global "npm@\^11\.5\.1"/);
+  assert.match(workflow, /PACKAGE_VERSION: \$\{\{ inputs\.package_version \}\}/);
+  assert.match(workflow, /npm run release:check -- "\$PACKAGE_VERSION"/);
+  assert.match(workflow, /npm publish \.\/memory-core --access public --provenance/);
+  assert.doesNotMatch(workflow, /NODE_AUTH_TOKEN|NPM_TOKEN/);
+  assert.doesNotMatch(workflow, /pull_request:/);
+});
+
 test("local npm credentials and debug logs are ignored", () => {
   const gitignore = readFileSync(join(repositoryRoot, ".gitignore"), "utf8");
 

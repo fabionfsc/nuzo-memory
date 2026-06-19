@@ -30,8 +30,8 @@ Version `0.1.0` is public:
 @nuzo/mcp-server@0.1.0
 ```
 
-The first publication used maintainer authentication. Trusted publishing and
-OIDC provenance remain release-hardening work for the next version.
+The first publication used maintainer authentication. Subsequent routine
+releases should use npm trusted publishing through GitHub Actions OIDC.
 
 ## Scope Ownership
 
@@ -115,6 +115,60 @@ The validation:
 
 The command does not publish anything.
 
+## Trusted Publishing
+
+Nuzo publishes through:
+
+```text
+.github/workflows/release-npm.yml
+```
+
+The workflow is manual-only, runs from `main`, uses the GitHub environment
+`npm-publish`, and requests `id-token: write` for npm trusted publishing. It
+does not use `NODE_AUTH_TOKEN`.
+
+Configure a trusted publisher for each package on npmjs.com:
+
+```text
+@nuzo/memory-core
+@nuzo/memory-cli
+@nuzo/mcp-server
+```
+
+Use these settings for every package:
+
+```text
+Publisher: GitHub Actions
+Organization or user: fabionfsc
+Repository: nuzo-memory
+Workflow filename: release-npm.yml
+Environment name: npm-publish
+Allowed action: npm publish
+```
+
+The workflow installs npm `11.5.1` or newer because trusted publishing requires
+OIDC-capable npm. It validates the source release state for one explicit
+SemVer input, builds the publish staging packages, rejects already-published
+versions, and publishes in dependency order:
+
+```text
+@nuzo/memory-core -> @nuzo/memory-cli -> @nuzo/mcp-server
+```
+
+Run it first with `publish` set to `false`. That dry run proves the workflow
+selects the intended version and package set without publishing.
+
+When `publish` is `true`, the workflow runs:
+
+```bash
+npm publish --access public --provenance
+```
+
+Trusted publishing should attach npm provenance to the release and remove the
+normal need for a long-lived npm token. Keep any maintainer token only as an
+emergency fallback, with expiration and local storage controls documented in
+machine-local notes.
+
 ## First Publication
 
 Do not publish version `0.0.0`. Follow the release checklist and move all Nuzo
@@ -143,9 +197,8 @@ npm exec --yes --package @nuzo/memory-cli@<version> -- nuzo memory doctor
 npm exec --yes --package @nuzo/mcp-server@<version> -- nuzo-mcp-server
 ```
 
-The first publication was performed by an authenticated maintainer. For future
-versions, configure npm trusted publishing for the release workflow so routine
-releases use GitHub Actions OIDC instead of a long-lived token.
+The first publication was performed by an authenticated maintainer. Future
+routine versions should use the trusted publishing workflow above.
 
 ## Credentials
 
@@ -164,8 +217,8 @@ If a token is used temporarily:
 3. revoke it immediately if exposed or no longer required;
 4. remove local credential files after use.
 
-Prefer trusted publishing once the initial packages and publisher relationship
-exist.
+Prefer trusted publishing now that the initial packages and publisher
+relationship exist.
 
 ## Recovery
 
@@ -174,9 +227,11 @@ If publication fails:
 1. Stop before retrying with broader credentials.
 2. Check `npm whoami` and organization membership.
 3. Confirm the target version does not already exist.
-4. Re-run `npm run validate:npm`.
-5. Inspect the generated staging package, not the source workspace package.
-6. If credentials may have leaked, revoke them before further work.
+4. Confirm the trusted publisher settings exactly match `fabionfsc`,
+   `nuzo-memory`, `release-npm.yml`, and the `npm-publish` environment.
+5. Re-run `npm run validate:npm`.
+6. Inspect the generated staging package, not the source workspace package.
+7. If credentials may have leaked, revoke them before further work.
 
 Never delete or rewrite a published version to repair a failed release. Fix the
 problem and publish a new SemVer version.

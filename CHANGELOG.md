@@ -30,6 +30,7 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
   update, archive, and delete operations.
 - Optional restricted scope authorization in core policy and MCP runtime
   configuration.
+- Manual npm trusted-publishing workflow for future releases.
 
 ### Documentation
 
@@ -45,6 +46,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
   checklist, issue-hunting workflow, and security policy.
 - Documented that memory selectors are not authorization and described
   restricted scope behavior for MCP and host sessions.
+- Documented npm trusted publisher setup, release dry-run, provenance, and
+  recovery checks.
 
 ### Changed
 
