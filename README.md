@@ -21,7 +21,7 @@
     <img alt="Docs" src="https://img.shields.io/badge/docs-nuzo.com.br-111827">
   </a>
   <a href="#mvp-status">
-    <img alt="MVP" src="https://img.shields.io/badge/MVP-72%25-00a7b5">
+    <img alt="MVP" src="https://img.shields.io/badge/MVP-85%25-00a7b5">
   </a>
   <a href="#license">
     <img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-64748b">
@@ -64,21 +64,17 @@ Nuzo makes persistent memory practical without turning it into hidden state:
 
 ## MVP Status
 
-**Estimated MVP progress: ~72%.**
-
-```text
-[#######---] 72%
-```
+**Estimated MVP progress: ~85%.**
 
 This is a roadmap estimate, not a release promise. The current build already has
 core memory behavior, SQLite/FTS recall, the local CLI, MCP tools, host plugin
 wrappers, CI, Pages, and npm artifact validation.
 
-The remaining MVP work is mainly:
+The remaining MVP work is:
 
-- publish the first versioned core, CLI, and MCP npm packages;
+- confirm `@nuzo` npm scope ownership and publish access;
+- publish the first versioned core, CLI, and MCP packages;
 - validate fresh Codex and Claude Code plugin installs against the published MCP runtime;
-- close the remaining release-blocking docs and setup gaps;
 - cut the first public `0.1.0` release.
 
 ## Shape

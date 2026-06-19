@@ -10,12 +10,12 @@
   </div>
   <div class="nuzo-hero__panel" markdown>
   <img src="assets/logo.svg" alt="Nuzo" class="nuzo-hero__logo">
-  <div class="nuzo-progress" aria-label="Estimated MVP progress 72 percent">
-    <span style="width: 72%"></span>
+  <div class="nuzo-progress" aria-label="Estimated MVP progress 85 percent">
+    <span style="width: 85%"></span>
   </div>
-  <p class="nuzo-progress__label"><strong>72%</strong> estimated MVP progress</p>
+  <p class="nuzo-progress__label"><strong>85%</strong> estimated MVP progress</p>
   <div class="nuzo-stats" markdown>
-  <span><strong>9</strong> MCP tools</span>
+  <span><strong>11</strong> MCP tools</span>
   <span><strong>0</strong> telemetry</span>
   <span><strong>2</strong> priority hosts</span>
   </div>
@@ -59,11 +59,11 @@ Nuzo is in early MVP development. The repository now includes a TypeScript core 
 | Area | State |
 | --- | --- |
 | Core | Memory lifecycle, policy checks, SQLite storage, FTS search, tests. |
-| CLI | `init`, `remember`, `recall`, `list`, `update`, `forget`, `export`, `import`, `doctor`. |
-| MCP | Stdio server with remember, recall, read-only recall hook, list, update, forget, export, import, and doctor tools. |
+| CLI | User/project init, lifecycle commands, audit history, dry-run bulk forget, portability, and diagnostics. |
+| MCP | 11 stdio tools covering recall, lifecycle, audit history, bulk safety, portability, and diagnostics. |
 | Host Plugins | Codex and Claude Code wrapper metadata exists; both remain thin MCP packaging layers. |
 | Release | CI, Pages, plugin packaging, npm artifact staging, release-state checks. |
-| Next | Published MCP runtime, fresh host plugin installs, and the first public `0.1.0` release. |
+| Next | Published core/CLI/MCP packages, fresh host plugin installs, and the first public `0.1.0` release. |
 
 ## Runtime Storage
 
