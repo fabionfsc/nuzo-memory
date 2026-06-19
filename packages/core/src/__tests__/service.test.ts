@@ -34,6 +34,28 @@ function createTestService() {
   return { auditLog, service, store };
 }
 
+function createRestrictedTestService(scopes: Array<"user:default" | "project:nuzo">) {
+  const store = new InMemoryStore();
+  const searchIndex = new InMemorySearchIndex();
+  const auditLog = new InMemoryAuditLog();
+  const clock = new FixedClock();
+  const ids = new SequentialIdGenerator();
+  const policy = new DefaultPolicyEngine(new RegexSecretScanner(), {
+    allowedScopes: scopes,
+  });
+
+  const service = createMemoryService({
+    store,
+    searchIndex,
+    auditLog,
+    clock,
+    ids,
+    policy,
+  });
+
+  return { auditLog, service, store };
+}
+
 describe("memory service", () => {
   it("remembers and recalls without recording usage by default", async () => {
     const { auditLog, service } = createTestService();
@@ -120,6 +142,76 @@ describe("memory service", () => {
     ).rejects.toMatchObject({
       code: "MEMORY_SECRET_DETECTED",
     });
+  });
+
+  it("enforces restricted scope authorization", async () => {
+    const { service } = createRestrictedTestService(["project:nuzo"]);
+    const memory = await service.remember({
+      content: "Only project scoped memory is allowed here.",
+      kind: "instruction",
+      scope: "project:nuzo",
+      source: "test",
+    });
+
+    await expect(
+      service.remember({
+        content: "User global memory is not authorized.",
+        kind: "note",
+        scope: "user:default",
+        source: "test",
+      }),
+    ).rejects.toMatchObject({
+      code: "MEMORY_SCOPE_FORBIDDEN",
+    });
+    await expect(
+      service.recall({
+        query: "project scoped",
+        scope: "project:nuzo",
+        includeGlobal: true,
+      }),
+    ).rejects.toMatchObject({
+      code: "MEMORY_SCOPE_FORBIDDEN",
+      details: { scope: "user:default" },
+    });
+    await expect(service.list()).rejects.toMatchObject({
+      code: "MEMORY_SCOPE_REQUIRED",
+    });
+    await expect(
+      service.update({
+        id: memory.id,
+        scope: "user:default",
+        actor: "test",
+      }),
+    ).rejects.toMatchObject({
+      code: "MEMORY_SCOPE_FORBIDDEN",
+    });
+    await expect(
+      service.forgetMany({
+        all: true,
+        actor: "test",
+        dryRun: false,
+      }),
+    ).rejects.toMatchObject({
+      code: "MEMORY_SCOPE_REQUIRED",
+    });
+  });
+
+  it("allows global recall only when user:default is authorized", async () => {
+    const { service } = createRestrictedTestService(["project:nuzo", "user:default"]);
+    await service.remember({
+      content: "Project scope can include global recall when explicitly allowed.",
+      kind: "instruction",
+      scope: "project:nuzo",
+      source: "test",
+    });
+
+    await expect(
+      service.recall({
+        query: "global recall",
+        scope: "project:nuzo",
+        includeGlobal: true,
+      }),
+    ).resolves.toHaveLength(1);
   });
 
   it("rejects oversized recall, tag, source, import, and reason inputs", async () => {

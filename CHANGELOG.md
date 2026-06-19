@@ -28,6 +28,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - CodeQL analysis workflow for JavaScript and TypeScript security checks.
 - Optimistic memory revisions with structured conflict handling for stale
   update, archive, and delete operations.
+- Optional restricted scope authorization in core policy and MCP runtime
+  configuration.
 
 ### Documentation
 
@@ -41,6 +43,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
   post-MVP work.
 - Documented repository security automation expectations in the release
   checklist, issue-hunting workflow, and security policy.
+- Documented that memory selectors are not authorization and described
+  restricted scope behavior for MCP and host sessions.
 
 ### Changed
 

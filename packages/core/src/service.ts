@@ -67,6 +67,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       throw new NuzoMemoryError("MEMORY_NOT_FOUND", "Memory was not found.", { id: input.id });
     }
     assertExpectedRevision(input.expectedRevision, memory);
+    await policy.assertCanForget(input, memory);
 
     const mode = input.mode ?? "archive";
     const now = clock.now();

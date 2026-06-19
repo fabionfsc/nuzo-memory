@@ -58,6 +58,7 @@ export interface SecretFinding {
 export interface PolicyEngine {
   assertCanRemember(input: RememberMemoryInput): Promise<void>;
   assertCanUpdate(input: UpdateMemoryInput, current: MemoryRecord): Promise<void>;
+  assertCanForget(input: { id: string }, current: MemoryRecord): Promise<void>;
   assertCanRecall(input: RecallMemoriesInput): Promise<void>;
   assertCanList(input: ListMemoriesInput): Promise<void>;
 }

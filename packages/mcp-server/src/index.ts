@@ -19,6 +19,7 @@ import {
   schemaVersion,
   type MemoryService,
   type MemoryExportDocument,
+  type MemoryScope,
 } from "@nuzo/memory-core";
 import { createMemoryToolHandlers } from "./handlers.js";
 import type {
@@ -42,6 +43,7 @@ const exportDateSchema = z.string().max(memoryLimits.dateLength);
 
 export interface NuzoMcpServerOptions {
   storePath?: string;
+  authorizedScopes?: readonly MemoryScope[];
   doctorDiagnostics?: MemoryDoctorDiagnostics;
 }
 
@@ -57,7 +59,11 @@ export function createNuzoMcpServer(options: NuzoMcpServerOptions = {}): McpServ
 export function createNuzoMcpServerRuntime(options: NuzoMcpServerOptions = {}): NuzoMcpServerRuntime {
   const storePath = options.storePath ?? defaultStorePath;
   const database = openDatabase(storePath);
-  const service = createService(database);
+  const serviceOptions: Pick<NuzoMcpServerOptions, "authorizedScopes"> = {};
+  if (options.authorizedScopes !== undefined) {
+    serviceOptions.authorizedScopes = options.authorizedScopes;
+  }
+  const service = createService(database, serviceOptions);
   let closed = false;
   const server = new McpServer({
     name: "nuzo",
@@ -434,16 +440,31 @@ function isStoreWritable(storePath: string): boolean {
   }
 }
 
-function createService(database: SQLiteMemoryDatabase): MemoryService {
+function createService(
+  database: SQLiteMemoryDatabase,
+  options: Pick<NuzoMcpServerOptions, "authorizedScopes"> = {},
+): MemoryService {
   return createMemoryService({
     store: database,
     searchIndex: database,
     auditLog: database,
     clock: new SystemClock(),
     ids: new RandomIdGenerator(),
-    policy: new DefaultPolicyEngine(new RegexSecretScanner()),
+    policy: new DefaultPolicyEngine(new RegexSecretScanner(), toPolicyOptions(options)),
     transactions: database,
   });
+}
+
+function toPolicyOptions(
+  options: Pick<NuzoMcpServerOptions, "authorizedScopes">,
+) {
+  const policyOptions: {
+    allowedScopes?: readonly MemoryScope[];
+  } = {};
+  if (options.authorizedScopes !== undefined) {
+    policyOptions.allowedScopes = options.authorizedScopes;
+  }
+  return policyOptions;
 }
 
 function jsonToolResult(value: unknown) {

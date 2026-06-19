@@ -17,6 +17,12 @@ Nuzo core
 
 Host packages may differ, but they must call the same MCP tools and core use cases.
 
+When a host can identify a project, workspace, or profile boundary, its Nuzo
+MCP configuration should prefer an explicit authorized scope set. A shared
+administrator store remains possible for local CLI workflows, but
+repository-controlled agents should not receive unscoped access to unrelated
+memory by default.
+
 ## Compatibility Principle
 
 MCP is the stable center.

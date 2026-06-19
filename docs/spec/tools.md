@@ -19,6 +19,27 @@ MCP schemas reject malformed memory selectors before handlers run:
 - Scope and memory identifiers are limited to 256 characters.
 - Import documents are limited to 1,000 memories.
 
+Selectors are not authorization. A syntactically valid scope only says which
+records a caller is asking for. Core policy must still decide whether that
+caller may access the scope.
+
+Restricted MCP or host-plugin sessions can be configured with an explicit
+scope allowlist. In restricted mode:
+
+- writes are allowed only for allowlisted scopes;
+- list, export, and bulk forget require an explicit allowlisted scope;
+- `include_global` requires `user:default` to be explicitly allowlisted;
+- update, archive, and delete require authorization for the memory's current
+  scope, and updates that move a memory require authorization for the target
+  scope as well.
+
+Denied scope access returns `MEMORY_SCOPE_FORBIDDEN`. Restricted unscoped list,
+export, or bulk destructive operations return `MEMORY_SCOPE_REQUIRED`.
+
+The local CLI defaults to administrator mode for the selected local store.
+Use separate stores or a restricted MCP runtime when a repository-controlled
+agent should not enumerate unrelated memory.
+
 ### `memory.remember`
 
 Store a memory.

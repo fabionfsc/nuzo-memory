@@ -65,9 +65,19 @@ Early policies:
 
 - do not store secrets;
 - do not store credentials;
+- enforce optional scope allowlists for restricted MCP and host sessions;
 - prefer explicit user approval for personal facts;
 - block memory writes in disabled scopes;
 - warn before destructive deletes.
+
+Scope selectors are not an access-control boundary by themselves. Authorization
+belongs in core policy so CLI, MCP, and host plugins share the same behavior.
+Interfaces may provide defaults, such as an MCP session allowlist, but they must
+not duplicate scope authorization rules.
+
+An unrestricted policy represents a local administrator workflow over one
+store. A restricted policy requires explicit scopes and rejects cross-scope
+reads, writes, exports, and destructive operations.
 
 ### MCP Server
 

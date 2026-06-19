@@ -164,6 +164,63 @@ describe("MCP protocol contract", () => {
     }
   });
 
+  it("enforces authorized scopes through the MCP runtime", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "nuzo-mcp-protocol-"));
+    tempDirectories.push(directory);
+    const runtime = createNuzoMcpServerRuntime({
+      storePath: join(directory, "memories.sqlite"),
+      authorizedScopes: ["project:nuzo"],
+    });
+    const client = new Client({
+      name: "nuzo-contract-test",
+      version: "0.0.0",
+    });
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+
+    try {
+      await Promise.all([
+        runtime.server.connect(serverTransport),
+        client.connect(clientTransport),
+      ]);
+
+      const remembered = parseToolJson(await client.callTool({
+        name: "memory.remember",
+        arguments: {
+          content: "Restricted MCP runtime can write its authorized project scope.",
+          kind: "instruction",
+          scope: "project:nuzo",
+          source: "test:mcp-client",
+        },
+      })) as { created: boolean; id: string };
+      expect(remembered.created).toBe(true);
+
+      await expectToolError(client.callTool({
+        name: "memory.remember",
+        arguments: {
+          content: "Restricted MCP runtime cannot write global memory.",
+          kind: "note",
+          scope: "user:default",
+          source: "test:mcp-client",
+        },
+      }));
+      await expectToolError(client.callTool({
+        name: "memory.list",
+        arguments: {},
+      }));
+      await expectToolError(client.callTool({
+        name: "memory.recall",
+        arguments: {
+          query: "authorized project scope",
+          scope: "project:nuzo",
+          include_global: true,
+        },
+      }));
+    } finally {
+      await client.close();
+      runtime.close();
+    }
+  });
+
   it("rejects invalid arguments through the registered MCP schema", async () => {
     const directory = mkdtempSync(join(tmpdir(), "nuzo-mcp-protocol-"));
     tempDirectories.push(directory);

@@ -1,4 +1,4 @@
-import { invariant } from "./errors.js";
+import { invariant, NuzoMemoryError } from "./errors.js";
 import type { PolicyEngine, SecretScanner } from "./ports.js";
 import { memoryKinds, type MemoryScope } from "./types.js";
 import type {
@@ -24,8 +24,21 @@ export const memoryLimits = {
   tags: 32,
 } as const;
 
+export interface DefaultPolicyEngineOptions {
+  allowedScopes?: readonly MemoryScope[];
+}
+
 export class DefaultPolicyEngine implements PolicyEngine {
-  constructor(private readonly secretScanner: SecretScanner) {}
+  private readonly allowedScopes: Set<MemoryScope> | null;
+
+  constructor(
+    private readonly secretScanner: SecretScanner,
+    options: DefaultPolicyEngineOptions = {},
+  ) {
+    this.allowedScopes = options.allowedScopes === undefined
+      ? null
+      : new Set(options.allowedScopes);
+  }
 
   async assertCanRemember(input: RememberMemoryInput): Promise<void> {
     invariant(
@@ -46,6 +59,7 @@ export class DefaultPolicyEngine implements PolicyEngine {
       { kind: input.kind },
     );
     assertScope(input.scope);
+    this.assertScopeAllowed(input.scope);
     invariant(
       input.source.trim().length > 0,
       "MEMORY_SOURCE_EMPTY",
@@ -84,6 +98,7 @@ export class DefaultPolicyEngine implements PolicyEngine {
   }
 
   async assertCanUpdate(input: UpdateMemoryInput, current: MemoryRecord): Promise<void> {
+    this.assertScopeAllowed(current.scope);
     await this.assertCanRemember({
       content: input.content ?? current.content,
       kind: input.kind ?? current.kind,
@@ -95,6 +110,10 @@ export class DefaultPolicyEngine implements PolicyEngine {
     invariant(input.actor.trim().length > 0, "MEMORY_ACTOR_EMPTY", "Memory actor cannot be empty.");
   }
 
+  async assertCanForget(_input: { id: string }, current: MemoryRecord): Promise<void> {
+    this.assertScopeAllowed(current.scope);
+  }
+
   async assertCanRecall(input: RecallMemoriesInput): Promise<void> {
     invariant(input.query.trim().length > 0, "RECALL_QUERY_EMPTY", "Recall query cannot be empty.");
     invariant(
@@ -104,6 +123,10 @@ export class DefaultPolicyEngine implements PolicyEngine {
       { maxLength: memoryLimits.queryLength },
     );
     assertScope(input.scope);
+    this.assertScopeAllowed(input.scope);
+    if (input.includeGlobal === true) {
+      this.assertScopeAllowed("user:default");
+    }
 
     const limit = input.limit ?? 8;
     invariant(limit > 0 && limit <= 50, "RECALL_LIMIT_INVALID", "Recall limit must be 1-50.", {
@@ -114,6 +137,12 @@ export class DefaultPolicyEngine implements PolicyEngine {
   async assertCanList(input: ListMemoriesInput): Promise<void> {
     if (input.scope !== undefined) {
       assertScope(input.scope);
+      this.assertScopeAllowed(input.scope);
+    } else if (this.allowedScopes !== null) {
+      throw new NuzoMemoryError(
+        "MEMORY_SCOPE_REQUIRED",
+        "A scope is required for this restricted memory session.",
+      );
     }
     const tags = input.tags ?? [];
     invariant(
@@ -124,6 +153,17 @@ export class DefaultPolicyEngine implements PolicyEngine {
     );
     for (const tag of tags) {
       assertTag(tag);
+    }
+  }
+
+  private assertScopeAllowed(scope: MemoryScope): void {
+    if (this.allowedScopes === null) {
+      return;
+    }
+    if (!this.allowedScopes.has(scope)) {
+      throw new NuzoMemoryError("MEMORY_SCOPE_FORBIDDEN", "Memory scope is not authorized.", {
+        scope,
+      });
     }
   }
 }
