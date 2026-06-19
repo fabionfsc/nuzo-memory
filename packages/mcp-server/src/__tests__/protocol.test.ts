@@ -127,6 +127,14 @@ describe("MCP protocol contract", () => {
       })) as {
         counts: { active_memories: number; total_memories: number };
         ok: boolean;
+        schema: {
+          current_version: number;
+          status: string;
+          supported_version: number;
+        };
+        store: {
+          writable_check: string;
+        };
         tools: string[];
       };
       expect(doctor).toMatchObject({
@@ -135,6 +143,14 @@ describe("MCP protocol contract", () => {
           total_memories: 1,
         },
         ok: true,
+        schema: {
+          current_version: 1,
+          status: "current",
+          supported_version: 1,
+        },
+        store: {
+          writable_check: "writable",
+        },
       });
       expect([...doctor.tools].sort()).toEqual(expectedTools);
     } finally {

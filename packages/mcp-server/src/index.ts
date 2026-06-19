@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { mkdirSync, realpathSync } from "node:fs";
+import { accessSync, constants, mkdirSync, realpathSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -13,6 +13,7 @@ import {
   RegexSecretScanner,
   SQLiteMemoryDatabase,
   SystemClock,
+  schemaVersion,
   type MemoryService,
   type MemoryExportDocument,
 } from "@nuzo/memory-core";
@@ -27,12 +28,14 @@ import type {
   RecallHookToolInput,
   RememberToolInput,
   UpdateToolInput,
+  MemoryDoctorDiagnostics,
 } from "./handlers.js";
 
 const defaultStorePath = resolve(homedir(), ".nuzo", "memory", "memories.sqlite");
 
 export interface NuzoMcpServerOptions {
   storePath?: string;
+  doctorDiagnostics?: MemoryDoctorDiagnostics;
 }
 
 export interface NuzoMcpServerRuntime {
@@ -54,7 +57,16 @@ export function createNuzoMcpServerRuntime(options: NuzoMcpServerOptions = {}): 
     version: "0.0.0",
   });
 
-  registerMemoryTools(server, service, { storePath });
+  registerMemoryTools(server, service, {
+    storePath,
+    doctorDiagnostics: options.doctorDiagnostics ?? {
+      schema: {
+        currentVersion: database.getSchemaVersion(),
+        supportedVersion: schemaVersion,
+      },
+      writable: isStoreWritable(storePath),
+    },
+  });
   return {
     server,
     close: () => {
@@ -71,7 +83,12 @@ export function registerMemoryTools(
   service: MemoryService,
   options: NuzoMcpServerOptions = {},
 ): void {
-  const handlerOptions = options.storePath === undefined ? {} : { storePath: options.storePath };
+  const handlerOptions = {
+    ...(options.storePath === undefined ? {} : { storePath: options.storePath }),
+    ...(options.doctorDiagnostics === undefined
+      ? {}
+      : { doctorDiagnostics: options.doctorDiagnostics }),
+  };
   const handlers = createMemoryToolHandlers(service, handlerOptions);
 
   server.registerTool(
@@ -390,6 +407,16 @@ function isMainModule(): boolean {
 function openDatabase(storePath: string): SQLiteMemoryDatabase {
   mkdirSync(dirname(storePath), { recursive: true });
   return new SQLiteMemoryDatabase({ path: storePath });
+}
+
+function isStoreWritable(storePath: string): boolean {
+  try {
+    accessSync(dirname(storePath), constants.W_OK);
+    accessSync(storePath, constants.W_OK);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function createService(database: SQLiteMemoryDatabase): MemoryService {

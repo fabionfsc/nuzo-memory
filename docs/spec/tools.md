@@ -285,7 +285,12 @@ MCP doctor returns a read-only diagnostic summary for host agents:
   "store": {
     "path": "~/.nuzo/memory/memories.sqlite",
     "readable": true,
-    "writable_check": "not_performed"
+    "writable_check": "writable"
+  },
+  "schema": {
+    "current_version": 1,
+    "supported_version": 1,
+    "status": "current"
   },
   "counts": {
     "active_memories": 4,
@@ -300,11 +305,15 @@ MCP doctor returns a read-only diagnostic summary for host agents:
 The MCP response must not include memory content, tags, sources, or export
 documents. Counts are aggregate diagnostics only.
 
-Planned checks:
+Runtime checks:
 
 - schema is current;
-- exports do not contain obvious secrets;
-- optional write checks that do not create durable user memory.
+- store path is readable;
+- store path and parent directory are writable without creating durable memory.
+
+Handler-only integrations that do not provide runtime diagnostics return
+`not_performed` explicitly. Future checks may inspect exports for obvious
+secrets.
 
 ## CLI Commands
 

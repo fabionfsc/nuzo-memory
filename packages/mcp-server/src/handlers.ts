@@ -85,6 +85,15 @@ export interface ImportToolInput {
 
 export interface MemoryToolHandlerOptions {
   storePath?: string;
+  doctorDiagnostics?: MemoryDoctorDiagnostics;
+}
+
+export interface MemoryDoctorDiagnostics {
+  schema?: {
+    currentVersion: number;
+    supportedVersion: number;
+  };
+  writable?: boolean;
 }
 
 export interface MemoryToolHandlers {
@@ -155,7 +164,12 @@ export interface MemoryToolHandlers {
     store: {
       path: string | null;
       readable: boolean;
-      writable_check: "not_performed";
+      writable_check: "writable" | "not_writable" | "not_performed";
+    };
+    schema: {
+      current_version: number | null;
+      supported_version: number | null;
+      status: "current" | "outdated" | "newer" | "not_performed";
     };
     counts: {
       active_memories: number | null;
@@ -409,14 +423,32 @@ export function createMemoryToolHandlers(
         warnings.push(`memory store read check failed: ${formatDoctorError(error)}`);
       }
 
+      const writableCheck = options.doctorDiagnostics?.writable === undefined
+        ? "not_performed"
+        : options.doctorDiagnostics.writable
+          ? "writable"
+          : "not_writable";
+      if (writableCheck === "not_writable") {
+        warnings.push("memory store writability check failed");
+      }
+
+      const schema = formatSchemaDiagnostics(options.doctorDiagnostics?.schema);
+      if (schema.status === "outdated") {
+        warnings.push("memory store schema is older than the supported version");
+      }
+      if (schema.status === "newer") {
+        warnings.push("memory store schema is newer than the supported version");
+      }
+
       return {
         ok: warnings.length === 0,
         network: "disabled",
         store: {
           path: options.storePath ?? null,
           readable,
-          writable_check: "not_performed",
+          writable_check: writableCheck,
         },
+        schema,
         counts: {
           active_memories: activeMemories,
           archived_memories: archivedMemories,
@@ -438,6 +470,32 @@ export function createMemoryToolHandlers(
         warnings,
       };
     },
+  };
+}
+
+function formatSchemaDiagnostics(
+  schema: MemoryDoctorDiagnostics["schema"],
+): {
+  current_version: number | null;
+  supported_version: number | null;
+  status: "current" | "outdated" | "newer" | "not_performed";
+} {
+  if (schema === undefined) {
+    return {
+      current_version: null,
+      supported_version: null,
+      status: "not_performed",
+    };
+  }
+
+  return {
+    current_version: schema.currentVersion,
+    supported_version: schema.supportedVersion,
+    status: schema.currentVersion === schema.supportedVersion
+      ? "current"
+      : schema.currentVersion < schema.supportedVersion
+        ? "outdated"
+        : "newer",
   };
 }
 

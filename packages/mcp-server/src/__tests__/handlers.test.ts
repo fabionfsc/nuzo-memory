@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { MemoryRecord, MemoryService } from "@nuzo/memory-core";
-import { createMemoryToolHandlers } from "../handlers.js";
+import {
+  createMemoryToolHandlers,
+  type MemoryDoctorDiagnostics,
+} from "../handlers.js";
 
-function createTestHandlers(options: { failList?: boolean } = {}) {
+function createTestHandlers(options: {
+  failList?: boolean;
+  doctorDiagnostics?: MemoryDoctorDiagnostics;
+} = {}) {
   let memory: MemoryRecord | null = null;
   const calls = {
     remember: 0,
@@ -185,7 +191,12 @@ function createTestHandlers(options: { failList?: boolean } = {}) {
 
   return {
     calls,
-    handlers: createMemoryToolHandlers(service, { storePath: "/tmp/nuzo-test.sqlite" }),
+    handlers: createMemoryToolHandlers(service, {
+      storePath: "/tmp/nuzo-test.sqlite",
+      ...(options.doctorDiagnostics === undefined
+        ? {}
+        : { doctorDiagnostics: options.doctorDiagnostics }),
+    }),
   };
 }
 
@@ -311,12 +322,43 @@ describe("memory MCP handlers", () => {
       archived_memories: 1,
       total_memories: 1,
     });
+    expect(doctor.schema).toEqual({
+      current_version: null,
+      supported_version: null,
+      status: "not_performed",
+    });
     expect(doctor.tools).toContain("memory.import");
     expect(doctor.tools).toContain("memory.history");
     expect(doctor.tools).toContain("memory.recall_hook");
     expect(doctor.network).toBe("disabled");
     expect(JSON.stringify(doctor)).not.toContain("complete MCP contracts");
     expect(doctor.warnings).toEqual([]);
+  });
+
+  it("reports schema and writability warnings from runtime diagnostics", async () => {
+    const { handlers } = createTestHandlers({
+      doctorDiagnostics: {
+        schema: {
+          currentVersion: 1,
+          supportedVersion: 2,
+        },
+        writable: false,
+      },
+    });
+
+    const doctor = await handlers.doctor();
+
+    expect(doctor.ok).toBe(false);
+    expect(doctor.store.writable_check).toBe("not_writable");
+    expect(doctor.schema).toEqual({
+      current_version: 1,
+      supported_version: 2,
+      status: "outdated",
+    });
+    expect(doctor.warnings).toEqual([
+      "memory store writability check failed",
+      "memory store schema is older than the supported version",
+    ]);
   });
 
   it("previews and applies filtered bulk forget operations", async () => {

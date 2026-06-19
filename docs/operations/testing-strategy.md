@@ -86,8 +86,8 @@ warn only because Git tracking inspection is unavailable. Tests should still
 cover normal warning behavior for missing stores and tracked memory files.
 
 MCP doctor tests should cover both ok and warning states. They must assert that
-diagnostics include aggregate counts and store readability, but not memory
-content.
+diagnostics include aggregate counts, store readability/writability, and schema
+status, but not memory content.
 
 ## Continuous Integration
 

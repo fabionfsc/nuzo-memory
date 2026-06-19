@@ -32,6 +32,7 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Protocol-level MCP contract tests using the official SDK client and in-memory transport.
 - Expanded local secret detection for common provider keys, AWS keys, JWTs, bearer tokens, credential URLs, and session values.
 - Stable CLI process exit codes for success, operational errors, usage errors, and unexpected failures.
+- MCP doctor schema-version and non-destructive store writability diagnostics.
 
 ### Changed
 
