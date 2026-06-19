@@ -235,6 +235,45 @@ describe("memory service", () => {
     });
   });
 
+  it("rejects empty actors across audited operations", async () => {
+    const { service } = createTestService();
+    const memory = await service.remember({
+      content: "Every audit event must identify its actor.",
+      kind: "instruction",
+      scope: "user:default",
+      source: "test",
+    });
+    const document = await service.exportMemories({
+      actor: "test",
+      scope: "user:default",
+    });
+
+    await expect(
+      service.forget({
+        id: memory.id,
+        actor: " ",
+      }),
+    ).rejects.toMatchObject({
+      code: "MEMORY_ACTOR_EMPTY",
+    });
+    await expect(
+      service.exportMemories({
+        actor: "",
+        scope: "user:default",
+      }),
+    ).rejects.toMatchObject({
+      code: "MEMORY_ACTOR_EMPTY",
+    });
+    await expect(
+      service.importMemories({
+        document,
+        actor: "\t",
+      }),
+    ).rejects.toMatchObject({
+      code: "MEMORY_ACTOR_EMPTY",
+    });
+  });
+
   it("exports and imports memories", async () => {
     const source = createTestService();
     await source.service.remember({

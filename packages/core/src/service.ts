@@ -45,6 +45,8 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
   const { auditLog, clock, ids, policy, searchIndex, store } = dependencies;
 
   async function forgetMemory(input: ForgetMemoryInput): Promise<void> {
+    assertActor(input.actor);
+
     const memory = await store.findById(input.id);
     if (!memory) {
       throw new NuzoMemoryError("MEMORY_NOT_FOUND", "Memory was not found.", { id: input.id });
@@ -215,6 +217,8 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
     },
 
     async exportMemories(input) {
+      assertActor(input.actor);
+
       const memories = await store.list(input);
       const now = clock.now();
       await auditLog.append({
@@ -240,6 +244,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
     },
 
     async importMemories(input) {
+      assertActor(input.actor);
       assertExportDocument(input.document);
 
       const planned: Array<{
@@ -349,9 +354,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
           "Bulk forget all cannot be combined with scope or tags.",
         );
       }
-      if (input.actor.trim().length === 0) {
-        throw new NuzoMemoryError("MEMORY_ACTOR_EMPTY", "Memory actor cannot be empty.");
-      }
+      assertActor(input.actor);
 
       const mode = input.mode ?? "archive";
       const dryRun = input.dryRun !== false;
@@ -398,6 +401,12 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       };
     },
   };
+}
+
+function assertActor(actor: string): void {
+  if (actor.trim().length === 0) {
+    throw new NuzoMemoryError("MEMORY_ACTOR_EMPTY", "Memory actor cannot be empty.");
+  }
 }
 
 function toExportItem(memory: MemoryRecord): MemoryExportItem {
