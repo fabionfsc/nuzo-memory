@@ -1,8 +1,9 @@
 # Agent Instructions
 
-This repository is the early design and documentation home for Nuzo.
+This repository is the design, implementation, and documentation home for Nuzo.
 
-Nuzo is a local-first, auditable memory layer for Codex, Claude Code, and MCP-compatible AI agents. The project is in early MVP development: architecture, storage, tool contracts, privacy rules, roadmap, GitHub Pages, core memory behavior, and the local CLI are already present.
+Nuzo is a local-first, auditable memory layer for Codex, Claude Code, and
+MCP-compatible AI agents. Version `0.1.0` is the first public MVP release.
 
 ## Current State
 
@@ -242,7 +243,7 @@ Before committing or handing work back, sanitize the workspace:
 
 - Follow `docs/operations/versioning.md`.
 - Do not bump package versions for every commit.
-- Keep packages at `0.0.0` until the first public MVP release is ready.
+- Keep packages at the current released version during ordinary development.
 - Rehearse an explicit target with `npm run release:rehearse -- X.Y.Z`
   before preparing the release commit.
 - Use `npm run release:prepare -- X.Y.Z` only for explicit release commits,

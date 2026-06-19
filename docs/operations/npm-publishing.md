@@ -20,6 +20,19 @@ The CLI package also depends on:
 
 Core, CLI, and MCP packages use the same version and must be released together.
 
+## Current Release
+
+Version `0.1.0` is public:
+
+```text
+@nuzo/memory-core@0.1.0
+@nuzo/memory-cli@0.1.0
+@nuzo/mcp-server@0.1.0
+```
+
+The first publication used maintainer authentication. Trusted publishing and
+OIDC provenance remain release-hardening work for the next version.
+
 ## Scope Ownership
 
 The preferred public scope is `@nuzo`.
@@ -122,14 +135,13 @@ Verify before distributing host plugins:
 npm view @nuzo/memory-core@<version> version
 npm view @nuzo/memory-cli@<version> version
 npm view @nuzo/mcp-server@<version> version
-npx --yes @nuzo/memory-cli@<version> memory doctor
-npx --yes @nuzo/mcp-server@<version>
+npm exec --yes --package @nuzo/memory-cli@<version> -- nuzo memory doctor
+npm exec --yes --package @nuzo/mcp-server@<version> -- nuzo-mcp-server
 ```
 
-The first publication should be performed by an authenticated maintainer with
-2FA. After all packages exist, configure npm trusted publishing for the
-release workflow so routine releases use GitHub Actions OIDC instead of a
-long-lived token.
+The first publication was performed by an authenticated maintainer. For future
+versions, configure npm trusted publishing for the release workflow so routine
+releases use GitHub Actions OIDC instead of a long-lived token.
 
 ## Credentials
 

@@ -1,8 +1,9 @@
 # Getting Started
 
-Nuzo is in early MVP development.
+Nuzo `0.1.0` is the first public MVP release.
 
-This page explains how to work with the repository today and how to run the local CLI from the monorepo.
+This page explains how to use the released CLI and how to work with the
+repository.
 
 ## Read The Project
 
@@ -68,7 +69,15 @@ npm test
 
 ## Local Runtime Flow
 
-The workspace CLI is available after a build:
+Install the released CLI:
+
+```bash
+npm install --global @nuzo/memory-cli@0.1.0
+nuzo memory init
+nuzo memory doctor
+```
+
+The workspace CLI is also available after a build:
 
 ```bash
 npm run build
@@ -108,7 +117,7 @@ nuzo memory list
 nuzo memory forget mem_01HZY
 ```
 
-Until release packaging is finalized, use the workspace wrapper:
+When developing from the repository, use the workspace wrapper:
 
 ```bash
 npm run nuzo -- memory remember "The user prefers concise implementation notes." --kind preference

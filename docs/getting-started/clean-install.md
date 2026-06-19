@@ -2,7 +2,7 @@
 
 This walkthrough starts from a clean checkout and uses fake memory data only.
 
-It verifies the current monorepo workflow before public package installation is finalized.
+It verifies both the public CLI package and the monorepo workflow.
 
 ## Prerequisites
 
@@ -23,6 +23,16 @@ Other Node.js major versions are not claimed as supported until they are part
 of the CI matrix. See the [runtime support policy](../operations/runtime-support.md).
 
 ## Clone And Install
+
+Verify the released CLI without cloning:
+
+```bash
+npm exec --yes --package @nuzo/memory-cli@0.1.0 -- nuzo memory --store /tmp/nuzo-published.sqlite init
+NUZO_DOCTOR_SKIP_GIT=1 npm exec --yes --package @nuzo/memory-cli@0.1.0 -- nuzo memory --store /tmp/nuzo-published.sqlite doctor
+rm -f /tmp/nuzo-published.sqlite /tmp/nuzo-published.sqlite-*
+```
+
+Then clone the source workspace:
 
 ```bash
 git clone https://github.com/fabionfsc/nuzo-memory.git

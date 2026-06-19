@@ -21,7 +21,10 @@
     <img alt="Docs" src="https://img.shields.io/badge/docs-nuzo.com.br-111827">
   </a>
   <a href="#mvp-status">
-    <img alt="MVP" src="https://img.shields.io/badge/MVP-90%25-00a7b5">
+    <img alt="MVP" src="https://img.shields.io/badge/MVP-100%25-00a7b5">
+  </a>
+  <a href="https://github.com/fabionfsc/nuzo-memory/releases/tag/v0.1.0">
+    <img alt="Release" src="https://img.shields.io/badge/release-v0.1.0-22c55e">
   </a>
   <a href="#license">
     <img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-64748b">
@@ -64,18 +67,21 @@ Nuzo makes persistent memory practical without turning it into hidden state:
 
 ## MVP Status
 
-**Estimated MVP progress: ~90%.**
+**MVP `0.1.0` is released.**
 
-This is a roadmap estimate, not a release promise. The current build already has
-core memory behavior, SQLite/FTS recall, the local CLI, MCP tools, host plugin
-wrappers, CI, Pages, and npm artifact validation.
+The first public release includes core memory behavior, SQLite/FTS recall, the
+local CLI, 11 MCP tools, Codex and Claude Code plugin wrappers, CI, Pages, and
+versioned npm runtime packages.
 
-The remaining MVP work is:
+Release validation covers:
 
-- confirm `@nuzo` npm scope ownership and publish access;
-- publish the first versioned core, CLI, and MCP packages;
-- validate fresh Codex and Claude Code plugin installs against the published MCP runtime;
-- cut the first public `0.1.0` release.
+- clean CLI installation from npm;
+- the Node.js 22 and 24 release validation matrix;
+- official marketplace installation paths for Codex and Claude Code;
+- live `memory.doctor` calls through both host plugin configurations.
+
+Post-MVP work focuses on public marketplace distribution, trusted npm
+publishing, lifecycle integrations, and feedback from real workflows.
 
 ## Shape
 
@@ -98,6 +104,16 @@ Agent / CLI
 ## Try Locally
 
 Use Node.js 22 LTS or 24 LTS with npm 10+.
+
+Install the released CLI:
+
+```bash
+npm install --global @nuzo/memory-cli@0.1.0
+nuzo memory init
+nuzo memory doctor
+```
+
+Or work from the repository:
 
 ```bash
 npm install

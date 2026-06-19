@@ -10,10 +10,10 @@
   </div>
   <div class="nuzo-hero__panel" markdown>
   <img src="assets/logo.svg" alt="Nuzo" class="nuzo-hero__logo">
-  <div class="nuzo-progress" aria-label="Estimated MVP progress 90 percent">
-    <span style="width: 90%"></span>
+  <div class="nuzo-progress" aria-label="MVP progress 100 percent">
+    <span style="width: 100%"></span>
   </div>
-  <p class="nuzo-progress__label"><strong>90%</strong> estimated MVP progress</p>
+  <p class="nuzo-progress__label"><strong>100%</strong> MVP 0.1.0 released</p>
   <div class="nuzo-stats" markdown>
   <span><strong>11</strong> MCP tools</span>
   <span><strong>0</strong> telemetry</span>
@@ -54,16 +54,16 @@ The integration boundary is a stable MCP tool contract.
 
 ## Current Focus
 
-Nuzo is in early MVP development. The repository now includes a TypeScript core package, a local CLI backed by SQLite, an MCP server, host plugin metadata, release artifact checks, and npm package staging validation.
+Nuzo `0.1.0` is the first public MVP release. It includes a TypeScript core package, a local CLI backed by SQLite, an MCP server, host plugin artifacts, and published npm runtime packages.
 
 | Area | State |
 | --- | --- |
 | Core | Memory lifecycle, policy checks, SQLite storage, FTS search, tests. |
 | CLI | User/project init, lifecycle commands, audit history, dry-run bulk forget, portability, and diagnostics. |
 | MCP | 11 stdio tools covering recall, lifecycle, audit history, bulk safety, portability, and diagnostics. |
-| Host Plugins | Codex and Claude Code wrapper metadata exists; both remain thin MCP packaging layers. |
-| Release | CI, Pages, plugin packaging, npm artifact staging, release-state checks. |
-| Next | Published core/CLI/MCP packages, fresh host plugin installs, and the first public `0.1.0` release. |
+| Host Plugins | Codex and Claude Code artifacts install through isolated official marketplace flows and connect to the published MCP runtime. |
+| Release | `0.1.0` packages, tag, CI, Pages, plugin packaging, and release-state checks. |
+| Next | Public marketplace distribution, trusted npm publishing, lifecycle integrations, and field feedback. |
 
 ## Runtime Storage
 

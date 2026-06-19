@@ -97,7 +97,10 @@ Exit criteria:
 Goal: package the MCP server for agent hosts through supported plugin workflows.
 
 Status: release layouts, host guidance, and host-specific validation are
-implemented. Fresh installs still depend on publishing the shared npm runtime.
+implemented. Isolated official marketplace installs for Codex and Claude Code
+resolve the published `@nuzo/mcp-server@0.1.0` runtime. Claude Code reports the
+server connected, and Codex successfully calls `memory.doctor` through the
+installed plugin.
 
 The release layout is generated under `build/plugins/`. It keeps host wrappers
 thin and resolves a version-pinned `@nuzo/mcp-server` package instead of a
@@ -129,9 +132,8 @@ Exit criteria:
 Goal: publish the project.
 
 Status: repository, license, contribution/security files, CI, Pages, custom
-domain HTTPS, npm staging, and a successful isolated `0.1.0` rehearsal are
-complete. npm scope ownership, first publication, fresh plugin installs, and
-the release tag remain.
+domain HTTPS, npm packages, clean host-plugin validation, and the `v0.1.0`
+release tag are complete.
 
 Deliverables:
 
@@ -145,3 +147,19 @@ Exit criteria:
 
 - No private memory files tracked.
 - Install docs work from a clean environment.
+
+## Stage 6: Post-MVP Distribution
+
+Goal: make routine releases and host installation easier without weakening the
+local-first product boundary.
+
+Status: planned.
+
+Deliverables:
+
+- npm trusted publishing through GitHub Actions OIDC;
+- public Codex and Claude Code marketplace distribution;
+- release provenance for subsequent npm versions;
+- installation feedback from real Codex and Claude Code workflows;
+- lifecycle integrations that preserve confirmed capture and read-only recall
+  defaults.

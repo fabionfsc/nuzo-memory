@@ -147,9 +147,9 @@ codex
 
 7. Install or enable `Nuzo`, then start a new thread before relying on the plugin.
 
-The generated config becomes runnable only after its matching
-`@nuzo/mcp-server` version exists in npm. Until the first package publication,
-this validates layout and host metadata rather than a public end-user install.
+The generated `0.1.0` config resolves the matching public
+`@nuzo/mcp-server@0.1.0` package. It has been installed through an isolated
+Codex marketplace and used to call `memory.doctor` successfully.
 
 ## Direct MCP Fallback
 
@@ -222,7 +222,8 @@ npm run package:plugins
 
 ## Current Limits
 
-- Public installation waits for publication of the matching MCP package.
+- Public marketplace listing is not yet available; repository marketplace
+  installation remains the distribution path.
 - Runtime memory remains local and should not be committed to Git.
 - Automatic recall or capture hooks must follow `docs/operations/lifecycle-hooks.md` before implementation.
 - Capture suggestions must follow `docs/spec/capture-suggestions.md` and call `memory.remember` only after confirmation.

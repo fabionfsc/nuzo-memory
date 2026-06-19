@@ -6,25 +6,20 @@ Do not bump package versions for every commit. Commits describe development hist
 
 ## Current Phase
 
-Nuzo is pre-release software.
+Nuzo is pre-`1.0` software with a public MVP release.
 
 Packages currently use:
-
-```text
-0.0.0
-```
-
-Keep this until the first public MVP release is ready.
-
-The first public release should become:
 
 ```text
 0.1.0
 ```
 
+Development commits keep the last released version until an explicit release
+commit prepares the next version.
+
 ## Version Scheme
 
-After the first public release, use Semantic Versioning:
+Use Semantic Versioning:
 
 ```text
 MAJOR.MINOR.PATCH
@@ -87,11 +82,9 @@ feat(mcp)!: rename memory.remember input field
 BREAKING CHANGE: memory.remember now expects text instead of content.
 ```
 
-Conventional Commits are recommended but are not enforced in CI yet. Nuzo is
-still pre-release, and early commits should stay readable without adding a
-commit-lint dependency before the release workflow stabilizes. Revisit CI
-enforcement after the first public MVP release if commit history starts to
-drift.
+Conventional Commits are recommended but are not enforced in CI yet. Revisit
+CI enforcement if commit history starts to drift; do not add a commit-lint
+dependency without evidence that it improves the workflow.
 
 ## Changelog
 
@@ -144,7 +137,7 @@ npm run release:rehearse -- 0.1.0
 The rehearsal creates a synthetic dated changelog section only in the
 temporary copy, installs from the lockfile, prepares/checks the target version,
 and validates plugin plus npm artifacts. It always removes the temporary copy
-and leaves source packages at `0.0.0`.
+and leaves source packages at the current released version.
 
 The prepare script updates:
 

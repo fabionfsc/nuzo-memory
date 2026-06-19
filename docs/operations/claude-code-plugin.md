@@ -158,8 +158,10 @@ npm run package:plugins
 claude plugin validate build/plugins/claude-code/nuzo --strict
 ```
 
-The generated config becomes runnable only after its matching
-`@nuzo/mcp-server` version is published.
+The generated `0.1.0` config resolves the matching public
+`@nuzo/mcp-server@0.1.0` package. It has been installed through an isolated
+Claude Code marketplace, and `claude mcp list` reports the Nuzo server as
+connected.
 
 ## Marketplace Install Direction
 
@@ -175,8 +177,8 @@ Scopes should be selected intentionally:
 - project scope for team-shared repository setup;
 - local scope for machine-specific testing.
 
-Nuzo should not add repository-level marketplace settings until the matching
-MCP package publication and update behavior are validated.
+Repository-level marketplace metadata can now be prepared as a separate
+distribution step. It should remain reproducible and version-pinned.
 
 ## Direct MCP Fallback
 

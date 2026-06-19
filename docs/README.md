@@ -1,6 +1,7 @@
 # Nuzo Documentation
 
-This directory is the source of truth for the project until implementation starts.
+This directory is the source of truth for Nuzo product, architecture, public
+contracts, and operations documentation.
 
 ## Start Here
 

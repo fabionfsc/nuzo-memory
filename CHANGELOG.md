@@ -10,6 +10,11 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ### Documentation
 
+- Marked the public `0.1.0` MVP, npm packages, and clean Codex/Claude Code host
+  validation as released.
+- Moved trusted npm publishing and public marketplace distribution into
+  post-MVP work.
+
 ### Changed
 
 ### Fixed

@@ -2,7 +2,8 @@
 
 Use this checklist before tagging a Nuzo release.
 
-Nuzo is currently pre-release. The first public MVP release should be `0.1.0` when the MVP milestone is complete and install/use docs are accurate from a clean environment.
+Nuzo has a public `0.1.0` MVP release. Use this checklist for every subsequent
+versioned release.
 
 ## Scope
 
