@@ -31,6 +31,9 @@ Goal: implement local memory lifecycle.
 
 Detailed implementation plan: `docs/implementation/stage-1-core.md`.
 
+Status: implemented for the MVP, including audit history, safe bulk forgetting,
+import preflight, migration coverage, and expanded secret detection.
+
 Deliverables:
 
 - `packages/core`.
@@ -51,7 +54,8 @@ Exit criteria:
 
 Goal: give users direct control.
 
-Initial scaffold exists in `packages/cli` and currently exercises the core against SQLite.
+Status: implemented in `packages/cli`, with user/project initialization, the
+full memory lifecycle, stable exit codes, and installed-package smoke coverage.
 
 The monorepo exposes the local CLI through `npm run nuzo --`.
 
@@ -72,7 +76,8 @@ Exit criteria:
 
 Goal: make memory available to agents.
 
-Initial scaffold exists in `packages/mcp-server` and exposes the main memory tool contract over stdio.
+Status: implemented in `packages/mcp-server` with 11 tools, protocol-level SDK
+tests, read-only lifecycle recall, and runtime doctor diagnostics.
 
 Deliverables:
 
@@ -90,7 +95,8 @@ Exit criteria:
 
 Goal: package the MCP server for agent hosts through supported plugin workflows.
 
-Initial scaffold exists in `packages/codex-plugin` and `packages/claude-code-plugin` with plugin metadata, MCP defaults, host-specific validation, and official-path setup docs.
+Status: release layouts, host guidance, and host-specific validation are
+implemented. Fresh installs still depend on publishing the shared npm runtime.
 
 The release layout is generated under `build/plugins/`. It keeps host wrappers
 thin and resolves a version-pinned `@nuzo/mcp-server` package instead of a
@@ -120,6 +126,11 @@ Exit criteria:
 ## Stage 5: Public Release
 
 Goal: publish the project.
+
+Status: repository, license, contribution/security files, CI, Pages, custom
+domain HTTPS, npm staging, and a successful isolated `0.1.0` rehearsal are
+complete. npm scope ownership, first publication, fresh plugin installs, and
+the release tag remain.
 
 Deliverables:
 

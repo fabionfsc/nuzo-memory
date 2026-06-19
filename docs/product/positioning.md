@@ -10,7 +10,7 @@ It is not meant to compete with every built-in memory feature in AI assistants. 
 | --- | --- | --- |
 | Scope | Usually tied to one assistant or product. | Designed for Codex, Claude Code, MCP-compatible agents, and local tooling. |
 | Storage | Implementation details may be hidden or product-specific. | Local SQLite store with documented schema and export formats. |
-| Control | User controls depend on the product surface. | CLI and future MCP tools expose list, update, forget, export, import, and doctor. |
+| Control | User controls depend on the product surface. | CLI and MCP tools expose lifecycle control, audit history, bulk previews, portability, and diagnostics. |
 | Auditability | Often optimized for convenience. | Every memory should be inspectable with metadata and audit events. |
 | Portability | May not move cleanly between agents. | Built around documented contracts and open package boundaries. |
 | Defaults | May depend on account, rollout, or product settings. | No telemetry, sync, embeddings, or network calls by default. |

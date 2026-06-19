@@ -116,9 +116,10 @@ Release-state validation confirms that root/workspace versions, Nuzo internal
 dependency pins, lockfile workspace entries, CLI version output, MCP server
 version metadata, and changelog structure stay aligned.
 
-The npm artifact validation installs generated core and MCP tarballs into a
-temporary project and confirms the installed MCP binary starts. It does not
-publish packages or require npm credentials.
+The npm artifact validation installs generated core, CLI, and MCP tarballs into
+a temporary project. It exercises the installed CLI workflow and exit codes,
+then confirms the installed MCP binary starts. It does not publish packages or
+require npm credentials.
 
 Documentation validation installs `requirements-docs.txt` and runs:
 

@@ -10,10 +10,10 @@
   </div>
   <div class="nuzo-hero__panel" markdown>
   <img src="assets/logo.svg" alt="Nuzo" class="nuzo-hero__logo">
-  <div class="nuzo-progress" aria-label="Estimated MVP progress 85 percent">
-    <span style="width: 85%"></span>
+  <div class="nuzo-progress" aria-label="Estimated MVP progress 90 percent">
+    <span style="width: 90%"></span>
   </div>
-  <p class="nuzo-progress__label"><strong>85%</strong> estimated MVP progress</p>
+  <p class="nuzo-progress__label"><strong>90%</strong> estimated MVP progress</p>
   <div class="nuzo-stats" markdown>
   <span><strong>11</strong> MCP tools</span>
   <span><strong>0</strong> telemetry</span>

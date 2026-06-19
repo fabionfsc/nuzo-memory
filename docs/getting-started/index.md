@@ -68,7 +68,7 @@ npm test
 
 ## Local Runtime Flow
 
-The initial CLI is available after a build:
+The workspace CLI is available after a build:
 
 ```bash
 npm run build

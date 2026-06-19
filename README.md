@@ -21,7 +21,7 @@
     <img alt="Docs" src="https://img.shields.io/badge/docs-nuzo.com.br-111827">
   </a>
   <a href="#mvp-status">
-    <img alt="MVP" src="https://img.shields.io/badge/MVP-85%25-00a7b5">
+    <img alt="MVP" src="https://img.shields.io/badge/MVP-90%25-00a7b5">
   </a>
   <a href="#license">
     <img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-64748b">
@@ -64,7 +64,7 @@ Nuzo makes persistent memory practical without turning it into hidden state:
 
 ## MVP Status
 
-**Estimated MVP progress: ~85%.**
+**Estimated MVP progress: ~90%.**
 
 This is a roadmap estimate, not a release promise. The current build already has
 core memory behavior, SQLite/FTS recall, the local CLI, MCP tools, host plugin

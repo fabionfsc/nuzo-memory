@@ -35,6 +35,10 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - MCP doctor schema-version and non-destructive store writability diagnostics.
 - Isolated target-version release rehearsal with host plugin manifest version checks.
 
+### Documentation
+
+- Public MVP status and roadmap wording now reflect implemented core, CLI, MCP, plugin packaging, and release rehearsal work.
+
 ### Changed
 
 - Public docs now treat Nuzo as host-neutral across Codex, Claude Code, and MCP-compatible agents.
