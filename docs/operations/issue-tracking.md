@@ -60,6 +60,10 @@ Good issues include:
 
 Avoid issues that only say "improve docs" or "make plugin better". Convert them into a specific deliverable before starting work.
 
+Use the Architecture Proposal form for substantial, cross-boundary, or
+hard-to-reverse changes. Follow `spec-driven-workflow.md` to separate the
+proposal, public contract, durable decisions, and executable task status.
+
 ## Periodic Issue Hunting
 
 Run issue hunting after meaningful changes and before larger next-step work.

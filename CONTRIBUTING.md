@@ -13,6 +13,7 @@ Read:
 3. `docs/architecture/boundaries.md`
 4. `docs/spec/tools.md`
 5. `docs/operations/roadmap.md`
+6. `docs/operations/spec-driven-workflow.md`
 
 ## Contribution Rules
 
@@ -22,6 +23,8 @@ Read:
 - Update documentation before or alongside public behavior changes.
 - Keep MCP tool contracts stable and versioned.
 - Prefer small, focused changes.
+- Specify substantial, cross-boundary, or hard-to-reverse changes before
+  implementation using the Architecture Proposal Issue form.
 
 ## Docs Validation
 

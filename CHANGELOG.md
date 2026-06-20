@@ -34,6 +34,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ### Documentation
 
+- Added a lightweight specification-driven workflow and architecture proposal
+  template for substantial or cross-boundary changes.
 - Documented local file permissions, project-config path containment, input
   limits, and the current scope-isolation boundary.
 - Corrected the published MCP package invocation and recorded post-MVP

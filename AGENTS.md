@@ -37,6 +37,7 @@ Start with:
 16. `docs/operations/runtime-support.md`
 17. `docs/operations/npm-publishing.md`
 18. `docs/operations/release-checklist.md`
+19. `docs/operations/spec-driven-workflow.md`
 
 ## Local Operator Notes
 
@@ -243,6 +244,13 @@ Before committing or handing work back, sanitize the workspace:
 - Do not put secrets, real memory exports, or private user data in issues.
 - Do periodic issue hunting after meaningful changes: scan docs, code, tests, workflows, and public GitHub state for drift, bugs, missing validation, and stale roadmap claims.
 - When issue hunting finds a small safe fix, implement it directly and mention it in the related issue or final summary; when it finds larger or uncertain work, create a focused GitHub Issue with labels, milestone, and acceptance criteria.
+
+## Specification-Driven Work
+
+- Follow `docs/operations/spec-driven-workflow.md` for substantial, cross-boundary, or hard-to-reverse changes.
+- Keep `docs/spec/` authoritative for public contracts, ADRs authoritative for durable architecture decisions, and GitHub Issues authoritative for execution status.
+- Use the Architecture Proposal Issue form before implementing changes with unresolved product, privacy, compatibility, migration, or package-boundary questions.
+- Do not require GitHub Spec Kit, generated scaffolds, or agent-specific commands for normal contribution.
 
 ## Versioning
 

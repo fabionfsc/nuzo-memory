@@ -1,0 +1,88 @@
+name: Architecture Proposal
+description: Specify a substantial or cross-boundary Nuzo change before implementation.
+title: "[Architecture]: "
+labels:
+  - type:architecture
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use fake data only. Do not include credentials, private memories, or local operator notes.
+        See `docs/operations/spec-driven-workflow.md` for the artifact boundaries and workflow.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What problem exists, for whom, and why does it need a design step?
+    validations:
+      required: true
+  - type: textarea
+    id: outcomes
+    attributes:
+      label: Outcomes And Non-Goals
+      description: Describe observable outcomes and explicitly excluded behavior.
+      value: |
+        ## Outcomes
+
+        - Describe the intended outcome.
+
+        ## Non-Goals
+
+        - Describe behavior that is intentionally excluded.
+    validations:
+      required: true
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Constraints
+      description: Cover privacy, local-first behavior, compatibility, safety, and migration constraints.
+    validations:
+      required: true
+  - type: textarea
+    id: contract
+    attributes:
+      label: Public Contract Impact
+      description: Identify affected CLI, MCP, config, storage, export, plugin, or documentation contracts.
+    validations:
+      required: true
+  - type: textarea
+    id: design
+    attributes:
+      label: Architecture And Alternatives
+      description: Map ownership boundaries, alternatives considered, and durable decisions that may need an ADR.
+    validations:
+      required: true
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks And Recovery
+      description: Describe failure modes, rollback or recovery, and unresolved questions.
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation Plan
+      description: State the evidence that will prove the proposal is implemented correctly.
+      value: |
+        - [ ] Contract tests cover public behavior.
+        - [ ] Compatibility and migration paths are validated when relevant.
+        - [ ] Documentation matches runtime behavior.
+        - [ ] Required repository gates pass.
+    validations:
+      required: true
+  - type: textarea
+    id: tasks
+    attributes:
+      label: Tasks And Acceptance Criteria
+      description: Keep GitHub Issues authoritative for execution status.
+      value: |
+        ## Tasks
+
+        - [ ] Add a concrete implementation task.
+
+        ## Acceptance Criteria
+
+        - [ ] Add an observable completion criterion.
+    validations:
+      required: true

@@ -27,7 +27,8 @@ contracts, and operations documentation.
 20. `operations/runtime-support.md`
 21. `operations/npm-publishing.md`
 22. `operations/release-checklist.md`
-23. `operations/roadmap.md`
+23. `operations/spec-driven-workflow.md`
+24. `operations/roadmap.md`
 
 ## Sections
 
@@ -48,6 +49,10 @@ Defines public contracts: memory model, MCP tools, CLI behavior, init behavior, 
 Defines privacy, security, host plugin setup, coding standards, testing strategy, release plan, and roadmap.
 
 GitHub Pages setup lives in `operations/github-pages.md`.
+
+Substantial or cross-boundary changes follow
+`operations/spec-driven-workflow.md`. Public contracts still belong in
+`spec/`, durable decisions in `adr/`, and execution status in GitHub Issues.
 
 ### Implementation
 
