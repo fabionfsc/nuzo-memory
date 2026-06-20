@@ -117,8 +117,10 @@ Confirm repository security automation is active:
 - Dependabot config covers npm, GitHub Actions, and Python docs dependencies.
 - CodeQL runs on pushes, pull requests, and the weekly scheduled scan.
 - Secret scanning and push protection remain enabled.
-- The `main` branch protection or repository rules are intentional and include
-  the required release checks for non-maintainer changes.
+- Branch protection applies to administrators and requires pull requests for
+  routine changes.
+- Required Node.js 22, Node.js 24, documentation, and CodeQL checks use strict
+  current-branch validation.
 
 ## Clean Install
 

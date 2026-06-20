@@ -39,6 +39,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Updated post-MVP status claims to distinguish completed authorization,
   concurrency, configuration, and security work from remaining distribution
   and lifecycle work.
+- Documented pull-request-only changes, administrator branch protection, and
+  the emergency recovery policy.
 - Documented local file permissions, project-config path containment, input
   limits, and the current scope-isolation boundary.
 - Corrected the published MCP package invocation and recorded post-MVP
