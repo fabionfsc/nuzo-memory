@@ -142,8 +142,12 @@ The CLI should include a diagnostic command that reports whether any memory data
 
 ## Scope Boundary
 
-Scopes organize recall and lifecycle operations; they are not authorization
-boundaries in `0.1.x`. A process with access to one Nuzo store can potentially
-request other scopes or unscoped list/export operations. Use separate stores
-when host or project isolation is required until a scoped authorization policy
-is implemented.
+Scopes organize recall and lifecycle operations, but selectors alone are not
+authorization boundaries. Nuzo can run a restricted core or MCP session with
+an explicit scope allowlist; cross-scope reads, writes, exports, and
+destructive operations are then rejected.
+
+An unrestricted local CLI or core session remains an administrator workflow
+over the store and can access every scope. Use restricted sessions for
+repository-controlled hosts, and use separate stores when process-level or
+machine-level isolation is required.

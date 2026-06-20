@@ -80,9 +80,11 @@ Release validation covers:
 - official marketplace installation paths for Codex and Claude Code;
 - live `memory.doctor` calls through both host plugin configurations.
 
-Post-MVP work focuses on public marketplace distribution, trusted npm
-publishing, scoped authorization, multi-process concurrency, effective runtime
-configuration, security automation, and feedback from real workflows.
+Post-MVP work now focuses on public marketplace distribution, completing npm
+trusted-publisher setup, confirmed automatic capture suggestions, and feedback
+from real Codex and Claude Code workflows. Scoped authorization, optimistic
+concurrency, effective runtime configuration, and repository security
+automation are already implemented.
 
 ## Shape
 

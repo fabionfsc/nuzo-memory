@@ -36,6 +36,9 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 - Added a lightweight specification-driven workflow and architecture proposal
   template for substantial or cross-boundary changes.
+- Updated post-MVP status claims to distinguish completed authorization,
+  concurrency, configuration, and security work from remaining distribution
+  and lifecycle work.
 - Documented local file permissions, project-config path containment, input
   limits, and the current scope-isolation boundary.
 - Corrected the published MCP package invocation and recorded post-MVP

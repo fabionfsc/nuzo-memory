@@ -63,7 +63,7 @@ Nuzo `0.1.0` is the first public MVP release. It includes a TypeScript core pack
 | MCP | 11 stdio tools covering recall, lifecycle, audit history, bulk safety, portability, and diagnostics. |
 | Host Plugins | Codex and Claude Code artifacts install through isolated official marketplace flows and connect to the published MCP runtime. |
 | Release | `0.1.0` packages, tag, CI, Pages, plugin packaging, and release-state checks. |
-| Next | Public marketplace distribution, trusted publishing, scoped authorization, concurrency control, and field feedback. |
+| Next | Public marketplace distribution, npm trusted-publisher setup, confirmed automatic capture suggestions, and field feedback. |
 
 ## Runtime Storage
 

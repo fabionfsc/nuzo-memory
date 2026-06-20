@@ -153,17 +153,26 @@ Exit criteria:
 Goal: make routine releases and host installation easier without weakening the
 local-first product boundary.
 
-Status: planned.
+Status: in progress. Scope authorization, optimistic concurrency, effective
+runtime configuration, Dependabot, CodeQL, branch protection, and the
+repository side of npm trusted publishing are implemented.
 
-Deliverables:
+Completed:
 
-- npm trusted publishing through GitHub Actions OIDC;
-- public Codex and Claude Code marketplace distribution;
-- release provenance for subsequent npm versions;
-- installation feedback from real Codex and Claude Code workflows;
-- scoped authorization for stores shared across host or project trust
-  boundaries;
+- optional restricted scope authorization for shared host or project stores;
 - optimistic concurrency control for independent local processes;
-- Dependabot, CodeQL, and protected-branch enforcement;
-- lifecycle integrations that preserve confirmed capture and read-only recall
-  defaults.
+- effective user and project runtime configuration;
+- Dependabot, CodeQL, secret scanning, push protection, and required checks on
+  `main`;
+- a manual GitHub Actions OIDC workflow for npm dry runs and publishing.
+
+Remaining:
+
+- register each npm package as a trusted-publishing target and verify
+  provenance on the next release;
+- publish Codex and Claude Code marketplace listings;
+- gather installation feedback from real Codex and Claude Code workflows;
+- implement lifecycle integrations that preserve confirmed capture and
+  read-only recall defaults;
+- decide whether branch protection should apply to administrators so required
+  checks become preventive for every change.
