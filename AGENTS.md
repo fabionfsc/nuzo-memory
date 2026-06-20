@@ -225,6 +225,16 @@ GitHub runs the same core validation gates from:
 
 Keep CI validation separate from GitHub Pages deployment.
 
+## Git And Pull Requests
+
+- Do not push routine changes directly to `main`.
+- Create a focused branch, commit validated changes, push the branch, and open a pull request.
+- Wait for the required Node 22, Node 24, documentation, and CodeQL checks before merging.
+- Keep pull requests current with `main`; branch protection uses strict status checks.
+- Prefer squash merge with an intentional Conventional Commit subject, then delete the merged branch.
+- No approving review is required while Nuzo has one primary maintainer, but every change still requires a pull request and passing checks.
+- Emergency administrator bypass requires a concrete repository-recovery reason. Record the reason in an Issue, restore protection immediately, and run the full validation suite on the resulting `main`.
+
 ## Cleanup And Sanitization
 
 Before committing or handing work back, sanitize the workspace:

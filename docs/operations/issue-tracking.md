@@ -95,3 +95,17 @@ Issues must not include:
 - private user data.
 
 Use fake data for examples and reproduction steps.
+
+## Pull Request Governance
+
+Routine changes must use a branch and pull request. Branch protection applies
+to administrators and requires the Node.js 22, Node.js 24, documentation, and
+CodeQL checks to pass against the current `main`.
+
+Nuzo does not require approving reviews while the repository has one primary
+maintainer. The pull request still provides a reviewable diff, check history,
+discussion surface, and atomic squash-merge boundary.
+
+If branch protection must be relaxed for repository recovery, open or update a
+focused Issue with the reason, restore protection immediately after recovery,
+and attach validation evidence for the resulting `main`.

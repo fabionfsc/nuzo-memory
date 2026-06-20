@@ -59,6 +59,9 @@ npm run build
 
 ## Pull Request Expectations
 
+Routine changes must reach `main` through a pull request. Direct pushes are
+blocked for maintainers and administrators.
+
 Each PR should explain:
 
 - what changed;
@@ -67,3 +70,12 @@ Each PR should explain:
 - how it was validated.
 
 If a change affects storage, MCP tools, CLI commands, privacy defaults, or package boundaries, update the relevant document in `docs/`.
+
+Nuzo currently requires passing Node.js 22, Node.js 24, documentation, and
+CodeQL checks. A human approval is not required while the project has one
+primary maintainer. Pull requests should use squash merge with an intentional
+Conventional Commit subject.
+
+Administrator protection may be disabled only for concrete repository
+recovery. The maintainer must record the reason in a GitHub Issue, restore the
+rule immediately, and validate the resulting `main`.
