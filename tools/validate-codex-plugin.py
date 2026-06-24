@@ -125,7 +125,7 @@ def validate_nuzo_skill(path: pathlib.Path) -> None:
         "Explicit Save Requests",
         "memory.suggest_capture` with content, kind, scope, tags, source",
         "If the user rejects the draft, do not write memory",
-        "coloca isso na memoria do Nuzo",
+        "store this decision in Nuzo",
         "Do not silently save inferred memories.",
         "Never store secrets",
         "Codex built-in generated memories",

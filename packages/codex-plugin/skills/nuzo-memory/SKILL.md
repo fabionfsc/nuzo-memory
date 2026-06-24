@@ -31,9 +31,9 @@ Trigger this flow when the user asks to persist context in Nuzo, for example:
 - "save this in Nuzo memory";
 - "remember this for this project";
 - "remember that I prefer concise status updates";
-- "coloca isso na memoria do Nuzo";
-- "guarda isso para as proximas sessoes";
-- "salva essa decisao no Nuzo";
+- "store this decision in Nuzo";
+- "keep this for future sessions";
+- "save this preference in Nuzo";
 
 For every explicit save request:
 
