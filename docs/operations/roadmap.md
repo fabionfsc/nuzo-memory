@@ -261,33 +261,214 @@ Non-goals for this stage:
 - replacing `CONTRIBUTING.md` with agent-specific instructions;
 - adding local installer scripts before official host install paths are clear.
 
-## Stage 9: Capture Lifecycle UX
+## Stage 9: Agent Memory Lifecycle
 
-Goal: make the memory lifecycle feel complete in agent workflows while keeping
-inferred writes explicit and auditable.
+Goal: make Nuzo feel integrated and intelligent in CLI agent workflows while
+keeping memory local, inspectable, and user-controlled.
 
-Status: planned after the `0.1.3` product polish pass.
+Status: planned as the `0.2.0` product milestone after the `0.1.3` polish pass.
+
+This stage is the bridge from "Nuzo exposes memory tools" to "Nuzo gives agent
+sessions a real memory loop." The user experience should feel familiar to
+modern assistant memory: an agent recalls useful context at the start of a new
+session, notices durable preferences or project decisions during work, proposes
+what should persist, and carries confirmed memories into later sessions.
+
+The implementation boundary stays conservative:
+
+```text
+new agent session
+  -> memory.recall_hook
+  -> read-only context
+conversation
+  -> candidate detection by host or agent guidance
+  -> memory.suggest_capture
+  -> editable user confirmation
+  -> memory.remember or memory.update
+later session
+  -> recalled confirmed memory
+```
+
+There is no silent inferred write path by default.
 
 Deliverables:
 
-- task-start read-only recall flow;
-- capture suggestion candidate rules and examples;
-- editable capture confirmation flow;
-- exact duplicate handling before prompts;
-- confirmed writes through `memory.remember`;
-- update/conflict handling for memories that change over time;
+- Codex-first task-start read-only recall flow that calls `memory.recall_hook`
+  before work that depends on prior context;
+- host guidance for explicit user commands such as "save this in Nuzo memory"
+  or "remember this for this project";
+- lightweight intelligent capture rules for durable preferences, project
+  decisions, recurring instructions, stable facts, and workflow notes;
+- editable capture confirmation flow where the user can confirm, edit, or
+  reject each suggested memory;
+- exact duplicate handling before prompts, with existing memories shown instead
+  of creating redundant records;
+- update/conflict handling for changed memories, preferring `memory.update`
+  with expected revisions over duplicate `memory.remember` writes;
+- confirmed writes through `memory.remember` and confirmed edits through
+  `memory.update`;
 - forget/archive guidance in host workflows;
 - audit trail documentation for created, updated, archived, deleted, imported,
   exported, and optional recall events;
+- user-facing docs showing the real loop: one session confirms a memory, a later
+  Codex or Claude Code session recalls it;
+- dogfooding examples for Nuzo development that are safe to publish and do not
+  include private operator notes;
 - a small local benchmark for recall, duplicates, conflicts, forget, export,
   import, and latency on small and medium stores.
 
+Host order:
+
+1. Codex plugin and skill behavior.
+2. Claude Code plugin and skill behavior through the same MCP contract.
+3. Generic MCP-host guidance for future CLI agents.
+
 Exit criteria:
 
-- a user can see what an agent wants to remember before anything is written;
-- rejected drafts leave no stored memory;
+- a fresh Codex session can recall a confirmed memory saved in an earlier
+  session without manual CLI commands;
+- a direct user instruction to remember something creates an inspectable draft
+  before writing;
+- a likely durable preference or project decision can be suggested without
+  writing until the user confirms;
+- rejected drafts leave no stored memory, audit event, or hidden note;
 - confirmed drafts remain normalized, policy-checked, auditable, and portable;
+- duplicate candidates do not create duplicate active memories by default;
+- changed memories use update/conflict behavior instead of unbounded new rows;
+- the same Nuzo store can serve Codex, Claude Code, and direct CLI audit flows;
 - benchmark results are reproducible locally without telemetry or network calls.
+
+Non-goals for this stage:
+
+- hidden automatic memory writes;
+- cloud sync;
+- remote embeddings or remote LLM calls by default;
+- graph memory as the default storage model;
+- dashboard UI;
+- multi-user or team sync;
+- importing private native memory from a host without an official export path;
+- automatic LLM compression without explicit user confirmation.
+
+### Proposed Release Sequence
+
+This sequence is planning guidance, not a hard promise. Patch versions can move
+scope forward or backward based on host limitations, user feedback, and release
+risk.
+
+#### `0.2.0`: Codex Agent Memory Loop
+
+Focus: prove the main Nuzo experience in Codex.
+
+Deliverables:
+
+- Codex plugin guidance that calls `memory.recall_hook` at task start when prior
+  context is useful;
+- explicit-memory command handling for user phrases such as "save this in Nuzo"
+  or "remember this for this project";
+- capture draft flow through `memory.suggest_capture`;
+- confirmation prompt language for confirm, edit, and reject;
+- confirmed writes through `memory.remember`;
+- duplicate detection shown before prompting to save;
+- docs and examples showing "save in one Codex session, recall in another."
+
+Exit criteria:
+
+- a user can install Nuzo for Codex, save a confirmed memory, open a fresh
+  session, and see that memory inform future work;
+- no inferred memory is written without confirmation.
+
+#### `0.2.1`: Capture Refinement And Updates
+
+Focus: make capture less noisy and better at changing existing memory.
+
+Deliverables:
+
+- sharper candidate rules for preferences, project decisions, instructions,
+  facts, and workflow notes;
+- update suggestions when a new statement changes an existing memory;
+- conflict handling with expected revisions in host-facing flows;
+- better rejection and blocked-content messages;
+- tests for allowed, duplicate, update, conflict, blocked, and rejected capture
+  paths.
+
+Exit criteria:
+
+- Nuzo prefers updating relevant existing memory over creating low-value
+  duplicates;
+- users can understand why a suggestion was shown or blocked.
+
+#### `0.2.2`: Claude Code And Generic MCP Parity
+
+Focus: make the same lifecycle work outside Codex.
+
+Deliverables:
+
+- Claude Code plugin guidance for task-start recall and confirmed capture;
+- generic MCP-host integration guide for agents that expose Nuzo tools but do
+  not support full plugin UX yet;
+- host compatibility matrix for recall, suggested capture, confirmation, and
+  update behavior;
+- smoke coverage or manual validation notes for the supported host paths.
+
+Exit criteria:
+
+- Codex and Claude Code use the same Nuzo memory store and MCP contract without
+  host-specific memory formats;
+- docs make clear which lifecycle behaviors each host currently supports.
+
+#### `0.2.3`: Audit, Review, And Trust UX
+
+Focus: make users comfortable with what agents remember.
+
+Deliverables:
+
+- improved review docs for list, history, update, forget, archive, export, and
+  import;
+- clearer audit trail examples for created, updated, archived, deleted,
+  imported, exported, and recalled memories;
+- recommended periodic review workflow;
+- safer examples for dogfooding Nuzo on the Nuzo repository;
+- issue-hunting checklist for memory lifecycle regressions.
+
+Exit criteria:
+
+- a user can inspect what Nuzo remembered, why it was saved, which host saved
+  it, and how to change or remove it.
+
+#### `0.2.4`: Quality Benchmark And Recall Tuning
+
+Focus: measure and tune the local-first lifecycle before adding semantic layers.
+
+Deliverables:
+
+- local benchmark fixtures for recall, Unicode/PT-BR queries, duplicates,
+  updates, conflicts, forget, export/import, and latency;
+- documented small-store and medium-store benchmark runs;
+- recall query guidance for task-start hooks;
+- conservative FTS tuning if benchmark results justify it.
+
+Exit criteria:
+
+- lifecycle quality can be evaluated locally and repeatedly without telemetry,
+  network calls, remote embeddings, or private data.
+
+#### `0.3.0`: Optional Semantics Exploration
+
+Focus: evaluate better recall quality without changing Nuzo's default product
+boundary.
+
+Possible deliverables:
+
+- optional local embedding provider interface;
+- optional semantic search index behind explicit configuration;
+- comparison between SQLite FTS and optional semantic recall;
+- import/export compatibility review for any new index metadata;
+- clear docs that semantics are opt-in and not required for normal Nuzo use.
+
+Exit criteria:
+
+- semantic recall is either proven useful as an optional layer or deferred with
+  benchmark evidence.
 
 ## Stage 10: Optional Semantics And Advanced Integrations
 
