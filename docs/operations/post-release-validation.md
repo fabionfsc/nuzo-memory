@@ -116,6 +116,18 @@ published version-pinned MCP runtime through that config, and validates the
 same read-only recall, capture suggestion, confirmed write, duplicate, and
 doctor flow through separate stdio sessions.
 
+The generated Claude Code plugin artifact smoke is:
+
+```bash
+npm run smoke:claude-code-plugin
+```
+
+It regenerates the release-layout Claude Code plugin, verifies the plugin
+metadata loads as `Nuzo`, resolves `${CLAUDE_PLUGIN_ROOT}` to an isolated
+temporary plugin install path, reads the bundled `nuzo` MCP server config, and
+validates the same read-only recall, capture suggestion, confirmed write,
+duplicate, and doctor flow through separate stdio sessions.
+
 ## Capture Suggestion Boundary
 
 Automatic memory should remain suggestion-first.

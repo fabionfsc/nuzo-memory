@@ -137,6 +137,7 @@ npm run build
 npm run package:plugins
 npm run validate:npm
 npm run smoke:cli
+npm run smoke:claude-code-plugin
 npm run smoke:codex-plugin
 npm run smoke:published:cli
 npm run smoke:published:mcp
@@ -174,6 +175,10 @@ The Codex plugin artifact smoke regenerates the release-layout plugin, verifies
 the host-facing metadata loads as `Nuzo`, reads its bundled MCP config, and
 validates continuity through the published version-pinned MCP command that the
 plugin artifact exposes.
+
+The Claude Code plugin artifact smoke performs the same release-layout
+continuity validation while also resolving the `${CLAUDE_PLUGIN_ROOT}` cwd
+placeholder against an isolated temporary plugin install path.
 
 Documentation validation installs `requirements-docs.txt` and runs:
 

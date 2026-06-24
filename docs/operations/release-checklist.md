@@ -65,6 +65,7 @@ npm run build
 npm run package:plugins
 npm run validate:npm
 npm run smoke:cli
+npm run smoke:claude-code-plugin
 npm run smoke:codex-plugin
 npm run smoke:published:cli
 npm run smoke:published:mcp

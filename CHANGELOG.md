@@ -16,6 +16,9 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
   and doctor output through the package host plugins resolve.
 - Generated Codex plugin artifact smoke for validating `Nuzo` metadata and the
   version-pinned published MCP runtime exposed by the release-layout plugin.
+- Generated Claude Code plugin artifact smoke for validating `Nuzo` metadata,
+  `${CLAUDE_PLUGIN_ROOT}` cwd resolution, and the same published MCP runtime
+  continuity flow.
 
 ### Documentation
 
