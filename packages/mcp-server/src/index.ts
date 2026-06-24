@@ -31,6 +31,7 @@ import type {
   ListToolInput,
   RecallHookToolInput,
   RememberToolInput,
+  SuggestCaptureToolInput,
   UpdateToolInput,
   MemoryDoctorDiagnostics,
 } from "./handlers.js";
@@ -169,6 +170,37 @@ export function registerMemoryTools(
       }
 
       return jsonToolResult(await handlers.recallHook(recallHookInput));
+    },
+  );
+
+  server.registerTool(
+    "memory.suggest_capture",
+    {
+      description: "Validate a proposed capture draft without creating memory. Confirmed writes still use memory.remember.",
+      inputSchema: {
+        content: z.string().min(1).max(memoryLimits.contentLength),
+        kind: z.enum(["preference", "project_decision", "fact", "instruction", "note"]),
+        scope: scopeSchema.default("user:default"),
+        tags: z.array(tagSchema).max(memoryLimits.tags).default([]),
+        source: z.string().min(1).max(memoryLimits.sourceLength).default("nuzo:capture-suggestion"),
+        confidence: z.number().min(0).max(1).optional(),
+        reason: z.string().min(1).max(memoryLimits.reasonLength),
+      },
+    },
+    async (input) => {
+      const suggestInput: SuggestCaptureToolInput = {
+        content: input.content,
+        kind: input.kind,
+        scope: input.scope,
+        tags: input.tags,
+        source: input.source,
+        reason: input.reason,
+      };
+      if (input.confidence !== undefined) {
+        suggestInput.confidence = input.confidence;
+      }
+
+      return jsonToolResult(await handlers.suggestCapture(suggestInput));
     },
   );
 

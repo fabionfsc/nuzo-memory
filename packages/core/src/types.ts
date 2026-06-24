@@ -59,6 +59,28 @@ export interface RememberMemoryInput {
   confidence?: number;
 }
 
+export interface SuggestCaptureInput extends RememberMemoryInput {
+  reason: string;
+}
+
+export interface CaptureSuggestionDraft {
+  content: string;
+  kind: MemoryKind;
+  scope: MemoryScope;
+  tags: string[];
+  source: string;
+  confidence: number;
+  reason: string;
+}
+
+export interface CaptureSuggestionResult {
+  status: "ready" | "duplicate";
+  memoryWrites: false;
+  requiresConfirmation: true;
+  draft: CaptureSuggestionDraft;
+  duplicate: MemoryRecord | null;
+}
+
 export interface RecallMemoriesInput {
   query: string;
   scope: MemoryScope;

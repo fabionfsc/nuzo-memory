@@ -13,12 +13,19 @@ In the MVP, a host integration may detect a memory-worthy statement and prepare 
 ```text
 conversation context
   -> candidate detection
-  -> memory draft
+  -> memory.suggest_capture
+  -> validated memory draft
   -> user confirm / edit / reject
   -> memory.remember
 ```
 
 There is no silent write path.
+
+Candidate detection is outside Nuzo core. The host or agent may decide that a
+message looks durable, but the Nuzo MCP server provides `memory.suggest_capture`
+as the read-only validation boundary before any confirmation prompt is shown.
+The tool validates the draft, normalizes fields, runs secret and scope policy,
+and reports exact active duplicates without writing storage or audit state.
 
 ## Candidate Criteria
 
@@ -74,6 +81,9 @@ Draft fields:
 
 The draft is not a stored memory. It has no memory ID until `memory.remember` succeeds.
 
+Drafts returned by `memory.suggest_capture` always include
+`requires_confirmation: true` and `memory_writes: false` in the tool response.
+
 ## User Flow
 
 Capture suggestions must offer three outcomes:
@@ -99,6 +109,24 @@ Confirm, edit, or reject?
 ```
 
 Agents may batch multiple suggestions, but each suggested memory must remain inspectable and individually rejectable.
+
+## Duplicate Handling
+
+`memory.suggest_capture` checks active memories in the same scope before a host
+asks the user to save a draft.
+
+For the MVP, duplicate detection is exact and conservative:
+
+- trim leading and trailing whitespace;
+- collapse repeated whitespace to one space;
+- compare content case-insensitively;
+- ignore archived memories;
+- ignore tags, kind, source, and confidence.
+
+When a duplicate exists, the response status is `duplicate`, `memory_writes` is
+still `false`, and the existing memory is returned for display. Hosts should
+normally show the existing memory and skip the save prompt unless the user
+explicitly asks to create a separate memory.
 
 ## Scope Rules
 
@@ -147,7 +175,8 @@ Host plugins may provide prompts, skills, or hooks that create capture drafts.
 
 They must not contain:
 
-- secret detection logic beyond calling core policy checks;
+- secret detection logic beyond calling `memory.suggest_capture` or confirmed
+  core policy checks;
 - separate memory schemas;
 - storage behavior;
 - host-specific import/export formats;
@@ -157,7 +186,15 @@ All confirmed writes must call `memory.remember`.
 
 ## Core Responsibilities
 
-Core must still validate confirmed writes.
+Core must validate both capture suggestions and confirmed writes.
+
+`memory.suggest_capture` is responsible for:
+
+- applying the same content, kind, scope, tag, source, confidence, secret, and
+  authorization policy as `memory.remember`;
+- returning a normalized draft;
+- detecting exact active duplicates in the same scope;
+- staying read-only.
 
 Confirmation is not a bypass for:
 
@@ -176,6 +213,7 @@ If core rejects a confirmed draft, the host should show the structured error and
 2. Add test fixtures for allowed and blocked examples.
 3. Add host prompt/skill guidance for suggesting drafts.
 4. Add optional read-only recall hook.
-5. Add confirmed capture flow that calls `memory.remember`.
+5. Add `memory.suggest_capture` as a read-only validation and duplicate check.
+6. Add confirmed capture flow that calls `memory.remember`.
 
 Do not add a capture hook that writes directly to storage.

@@ -6,7 +6,11 @@ Hooks must stay conservative. They should improve recall and suggestion quality,
 
 ## Current Status
 
-Nuzo includes a first MCP-level read-only recall hook prototype through `memory.recall_hook`.
+Nuzo includes MCP-level read-only lifecycle primitives:
+
+- `memory.recall_hook` for task-start recall;
+- `memory.suggest_capture` for validating inferred memory drafts before
+  confirmation.
 
 Automatic host hooks are not enabled yet.
 
@@ -67,8 +71,10 @@ The capture suggestion contract is defined in `docs/spec/capture-suggestions.md`
 Allowed behavior:
 
 - propose a memory draft;
+- validate the draft through `memory.suggest_capture`;
 - classify the draft as `preference`, `project_decision`, `fact`, `instruction`, or `note`;
 - suggest tags and scope;
+- show exact duplicates instead of proposing redundant writes;
 - ask the user to confirm, edit, or reject;
 - call `memory.remember` only after confirmation.
 
@@ -144,9 +150,10 @@ All hook writes and reads must go through the Nuzo MCP tools.
 1. Manual recall through MCP tools.
 2. Capture suggestion specification and examples.
 3. MCP-level read-only recall hook prototype.
-4. Capture suggestion prompt with no persistence.
-5. Confirmed capture calling `memory.remember`.
-6. Optional update suggestions calling `memory.update`.
+4. MCP-level read-only capture suggestion validation.
+5. Capture suggestion prompt with no persistence.
+6. Confirmed capture calling `memory.remember`.
+7. Optional update suggestions calling `memory.update`.
 
 Do not implement hard-delete hooks.
 
@@ -158,5 +165,6 @@ Before shipping a host hook:
 - users can disable it;
 - writes require confirmation;
 - policy checks run in core;
+- inferred drafts pass through `memory.suggest_capture`;
 - tests cover allowed and blocked capture examples;
 - README and roadmap mention the behavior accurately.

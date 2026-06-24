@@ -15,7 +15,7 @@
   </div>
   <p class="nuzo-progress__label"><strong>100%</strong> MVP 0.1.0 released</p>
   <div class="nuzo-stats" markdown>
-  <span><strong>11</strong> MCP tools</span>
+  <span><strong>12</strong> MCP tools</span>
   <span><strong>0</strong> telemetry</span>
   <span><strong>2</strong> priority hosts</span>
   </div>
@@ -60,10 +60,10 @@ Nuzo `0.1.0` is the first public MVP release. It includes a TypeScript core pack
 | --- | --- |
 | Core | Memory lifecycle, policy checks, SQLite storage, FTS search, tests. |
 | CLI | User/project init, lifecycle commands, audit history, dry-run bulk forget, portability, and diagnostics. |
-| MCP | 11 stdio tools covering recall, lifecycle, audit history, bulk safety, portability, and diagnostics. |
+| MCP | 12 stdio tools covering recall, lifecycle, capture suggestion validation, audit history, bulk safety, portability, and diagnostics. |
 | Host Plugins | Codex and Claude Code artifacts install through isolated official marketplace flows and connect to the published MCP runtime. |
 | Release | `0.1.0` packages, tag, CI, Pages, plugin packaging, and release-state checks. |
-| Next | Public marketplace distribution, npm trusted-publisher setup, confirmed automatic capture suggestions, and field feedback. |
+| Next | Public marketplace distribution, npm trusted-publisher setup, host-side confirmed capture flows, and field feedback. |
 
 ## Runtime Storage
 

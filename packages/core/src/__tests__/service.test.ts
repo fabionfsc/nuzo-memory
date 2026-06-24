@@ -144,6 +144,101 @@ describe("memory service", () => {
     });
   });
 
+  it("validates capture suggestions without writing memory or audit events", async () => {
+    const { auditLog, service } = createTestService();
+
+    const suggestion = await service.suggestCapture({
+      content: "  The user prefers concise final answers.  ",
+      kind: "preference",
+      scope: "user:default",
+      tags: ["workflow", "workflow"],
+      source: "codex:capture-suggestion",
+      confidence: 0.72,
+      reason: "The user stated a durable response style preference.",
+    });
+
+    expect(suggestion).toEqual({
+      status: "ready",
+      memoryWrites: false,
+      requiresConfirmation: true,
+      draft: {
+        content: "The user prefers concise final answers.",
+        kind: "preference",
+        scope: "user:default",
+        tags: ["workflow"],
+        source: "codex:capture-suggestion",
+        confidence: 0.72,
+        reason: "The user stated a durable response style preference.",
+      },
+      duplicate: null,
+    });
+    await expect(service.list({ scope: "user:default" })).resolves.toEqual([]);
+    await expect(auditLog.list("mem_000001")).resolves.toEqual([]);
+  });
+
+  it("reports exact active duplicate capture suggestions in the same scope", async () => {
+    const { service } = createTestService();
+    const memory = await service.remember({
+      content: "The user prefers concise final answers.",
+      kind: "preference",
+      scope: "user:default",
+      tags: ["workflow"],
+      source: "test",
+    });
+
+    const suggestion = await service.suggestCapture({
+      content: " the USER prefers   concise final answers. ",
+      kind: "note",
+      scope: "user:default",
+      tags: ["style"],
+      source: "codex:capture-suggestion",
+      reason: "Equivalent content was inferred from the conversation.",
+    });
+
+    expect(suggestion.status).toBe("duplicate");
+    expect(suggestion.memoryWrites).toBe(false);
+    expect(suggestion.duplicate?.id).toBe(memory.id);
+    await expect(service.list({ scope: "user:default" })).resolves.toHaveLength(1);
+  });
+
+  it("applies remember policy to capture suggestions", async () => {
+    const { service } = createRestrictedTestService(["project:nuzo"]);
+
+    await expect(
+      service.suggestCapture({
+        content: "The user prefers concise final answers.",
+        kind: "preference",
+        scope: "project:nuzo",
+        source: "codex:capture-suggestion",
+        reason: "   ",
+      }),
+    ).rejects.toMatchObject({
+      code: "MEMORY_REASON_EMPTY",
+    });
+    await expect(
+      service.suggestCapture({
+        content: "github token is ghp_123456789012345678901234567890123456",
+        kind: "note",
+        scope: "project:nuzo",
+        source: "codex:capture-suggestion",
+        reason: "A sensitive value was inferred.",
+      }),
+    ).rejects.toMatchObject({
+      code: "MEMORY_SECRET_DETECTED",
+    });
+    await expect(
+      service.suggestCapture({
+        content: "The user prefers concise final answers.",
+        kind: "preference",
+        scope: "user:default",
+        source: "codex:capture-suggestion",
+        reason: "The user stated a durable response style preference.",
+      }),
+    ).rejects.toMatchObject({
+      code: "MEMORY_SCOPE_FORBIDDEN",
+    });
+  });
+
   it("enforces restricted scope authorization", async () => {
     const { service } = createRestrictedTestService(["project:nuzo"]);
     const memory = await service.remember({

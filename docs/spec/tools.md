@@ -146,6 +146,103 @@ Output:
 }
 ```
 
+### `memory.suggest_capture`
+
+Validate and normalize an inferred memory draft before asking the user whether
+to save it.
+
+This tool is read-only. It must not create memory records, append audit events,
+update usage metadata, or persist rejected drafts. Candidate detection stays in
+the host or agent; Nuzo validates the proposed draft and reports whether an
+equivalent active memory already exists in the same scope.
+
+Input:
+
+```json
+{
+  "content": "The user prefers concise final answers.",
+  "kind": "preference",
+  "scope": "user:default",
+  "tags": ["workflow"],
+  "source": "codex:capture-suggestion",
+  "confidence": 0.72,
+  "reason": "The user stated a recurring response style preference."
+}
+```
+
+Behavior:
+
+- applies the same core validation, scope authorization, tag rules, confidence
+  rules, and secret scanning as `memory.remember`;
+- trims content and de-duplicates tags in the returned draft;
+- checks active memories in the same scope for exact normalized content
+  duplicates;
+- returns `requires_confirmation: true` for every successful response;
+- returns `memory_writes: false` and does not persist the draft.
+
+Duplicate matching is intentionally narrow: case-insensitive, whitespace-collapsed
+content equality within the same active scope. Tags, kind, source, and confidence
+do not make identical content a new suggestion. Broader semantic duplicate
+detection is a future ranking feature, not part of this MVP contract.
+
+Output when ready to ask the user:
+
+```json
+{
+  "status": "ready",
+  "memory_writes": false,
+  "requires_confirmation": true,
+  "draft": {
+    "content": "The user prefers concise final answers.",
+    "kind": "preference",
+    "scope": "user:default",
+    "tags": ["workflow"],
+    "source": "codex:capture-suggestion",
+    "confidence": 0.72,
+    "reason": "The user stated a recurring response style preference."
+  },
+  "duplicate": null
+}
+```
+
+Output when an exact active duplicate exists:
+
+```json
+{
+  "status": "duplicate",
+  "memory_writes": false,
+  "requires_confirmation": true,
+  "draft": {
+    "content": "The user prefers concise final answers.",
+    "kind": "preference",
+    "scope": "user:default",
+    "tags": ["workflow"],
+    "source": "codex:capture-suggestion",
+    "confidence": 0.72,
+    "reason": "The user stated a recurring response style preference."
+  },
+  "duplicate": {
+    "id": "mem_01HZY...",
+    "revision": 1,
+    "content": "The user prefers concise final answers.",
+    "kind": "preference",
+    "scope": "user:default",
+    "tags": ["workflow"],
+    "source": "codex:mcp",
+    "confidence": 1,
+    "created_at": "2026-06-19T00:00:00.000Z",
+    "updated_at": "2026-06-19T00:00:00.000Z",
+    "last_used_at": null,
+    "archived_at": null
+  }
+}
+```
+
+If the user confirms or edits a ready draft, the host must call
+`memory.remember` with the final user-approved fields. A duplicate response is
+advisory; hosts should normally show the existing memory and avoid asking for a
+new write unless the user explicitly wants a separate memory.
+
 ### `memory.list`
 
 List memories by filters.
@@ -350,6 +447,7 @@ MCP doctor returns a read-only diagnostic summary for host agents:
     "memory.remember",
     "memory.recall",
     "memory.recall_hook",
+    "memory.suggest_capture",
     "memory.list",
     "memory.update",
     "memory.history",

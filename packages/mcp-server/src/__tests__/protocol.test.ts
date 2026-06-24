@@ -5,20 +5,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { afterEach, describe, expect, it } from "vitest";
 import { createNuzoMcpServerRuntime } from "../index.js";
-
-const expectedTools = [
-  "memory.doctor",
-  "memory.export",
-  "memory.forget",
-  "memory.forget_many",
-  "memory.history",
-  "memory.import",
-  "memory.list",
-  "memory.recall",
-  "memory.recall_hook",
-  "memory.remember",
-  "memory.update",
-];
+import { sortedMemoryToolNames } from "../tool-contract.js";
 
 let tempDirectories: string[] = [];
 
@@ -49,7 +36,7 @@ describe("MCP protocol contract", () => {
       ]);
 
       const tools = await client.listTools();
-      expect(tools.tools.map((tool) => tool.name).sort()).toEqual(expectedTools);
+      expect(tools.tools.map((tool) => tool.name).sort()).toEqual(sortedMemoryToolNames);
       expect(tools.tools.find((tool) => tool.name === "memory.remember")?.inputSchema)
         .toMatchObject({
           type: "object",
@@ -71,6 +58,46 @@ describe("MCP protocol contract", () => {
             },
           },
         });
+      expect(tools.tools.find((tool) => tool.name === "memory.suggest_capture")?.inputSchema)
+        .toMatchObject({
+          type: "object",
+          required: ["content", "kind", "reason"],
+          properties: {
+            source: {
+              default: "nuzo:capture-suggestion",
+              type: "string",
+            },
+          },
+        });
+
+      const readySuggestion = parseToolJson(await client.callTool({
+        name: "memory.suggest_capture",
+        arguments: {
+          content: "The protocol test uses local auditable memory.",
+          kind: "project_decision",
+          scope: "project:nuzo",
+          tags: ["protocol"],
+          source: "test:capture-suggestion",
+          confidence: 0.8,
+          reason: "The test proposed a durable project decision.",
+        },
+      })) as {
+        status: string;
+        memory_writes: boolean;
+        requires_confirmation: boolean;
+        duplicate: unknown;
+        draft: { content: string; confidence: number };
+      };
+      expect(readySuggestion).toMatchObject({
+        status: "ready",
+        memory_writes: false,
+        requires_confirmation: true,
+        duplicate: null,
+        draft: {
+          content: "The protocol test uses local auditable memory.",
+          confidence: 0.8,
+        },
+      });
 
       const remembered = parseToolJson(await client.callTool({
         name: "memory.remember",
@@ -86,6 +113,29 @@ describe("MCP protocol contract", () => {
         created: true,
       });
       expect(remembered.id).toMatch(/^mem_/);
+
+      const duplicateSuggestion = parseToolJson(await client.callTool({
+        name: "memory.suggest_capture",
+        arguments: {
+          content: "  the protocol test uses local   auditable memory. ",
+          kind: "note",
+          scope: "project:nuzo",
+          tags: ["protocol"],
+          reason: "Equivalent content was inferred after the write.",
+        },
+      })) as {
+        status: string;
+        memory_writes: boolean;
+        duplicate: { id: string; content: string } | null;
+      };
+      expect(duplicateSuggestion).toMatchObject({
+        status: "duplicate",
+        memory_writes: false,
+        duplicate: {
+          id: remembered.id,
+          content: "The protocol test uses local auditable memory.",
+        },
+      });
 
       const recalled = parseToolJson(await client.callTool({
         name: "memory.recall",
@@ -157,7 +207,7 @@ describe("MCP protocol contract", () => {
           writable_check: "writable",
         },
       });
-      expect([...doctor.tools].sort()).toEqual(expectedTools);
+      expect([...doctor.tools].sort()).toEqual(sortedMemoryToolNames);
     } finally {
       await client.close();
       runtime.close();

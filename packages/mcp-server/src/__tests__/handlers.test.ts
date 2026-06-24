@@ -17,7 +17,9 @@ function createTestHandlers(options: {
       scope: string;
       limit?: number;
       includeGlobal?: boolean;
+      recordUsage?: boolean;
     }>,
+    suggestCapture: 0,
     update: 0,
     history: 0,
     forget: 0,
@@ -26,6 +28,28 @@ function createTestHandlers(options: {
     importMemories: 0,
   };
   const service: MemoryService = {
+    async suggestCapture(input) {
+      calls.suggestCapture += 1;
+      return {
+        status: memory?.content.trim().toLowerCase() === input.content.trim().toLowerCase()
+          ? "duplicate"
+          : "ready",
+        memoryWrites: false,
+        requiresConfirmation: true,
+        draft: {
+          content: input.content.trim(),
+          kind: input.kind,
+          scope: input.scope,
+          tags: [...new Set(input.tags ?? [])],
+          source: input.source,
+          confidence: input.confidence ?? 1,
+          reason: input.reason.trim(),
+        },
+        duplicate: memory?.content.trim().toLowerCase() === input.content.trim().toLowerCase()
+          ? memory
+          : null,
+      };
+    },
     async remember(input) {
       calls.remember += 1;
       memory = {
@@ -471,5 +495,65 @@ describe("memory MCP handlers", () => {
     expect(calls.forgetMany).toBe(0);
     expect(calls.exportMemories).toBe(0);
     expect(calls.importMemories).toBe(0);
+  });
+
+  it("validates capture suggestions without calling remember", async () => {
+    const { calls, handlers } = createTestHandlers();
+
+    const suggestion = await handlers.suggestCapture({
+      content: "  The user prefers concise final answers.  ",
+      kind: "preference",
+      scope: "user:default",
+      tags: ["workflow", "workflow"],
+      source: "codex:capture-suggestion",
+      confidence: 0.72,
+      reason: "The user stated a durable response style preference.",
+    });
+
+    expect(suggestion).toEqual({
+      status: "ready",
+      memory_writes: false,
+      requires_confirmation: true,
+      draft: {
+        content: "The user prefers concise final answers.",
+        kind: "preference",
+        scope: "user:default",
+        tags: ["workflow"],
+        source: "codex:capture-suggestion",
+        confidence: 0.72,
+        reason: "The user stated a durable response style preference.",
+      },
+      duplicate: null,
+    });
+    expect(calls.suggestCapture).toBe(1);
+    expect(calls.remember).toBe(0);
+  });
+
+  it("returns duplicate capture suggestions with the existing memory", async () => {
+    const { handlers } = createTestHandlers();
+    const remembered = await handlers.remember({
+      content: "The user prefers concise final answers.",
+      kind: "preference",
+      scope: "user:default",
+      tags: ["workflow"],
+      source: "nuzo:mcp",
+    });
+
+    const suggestion = await handlers.suggestCapture({
+      content: "The user prefers concise final answers.",
+      kind: "note",
+      scope: "user:default",
+      tags: ["style"],
+      source: "codex:capture-suggestion",
+      reason: "Equivalent content was inferred from the conversation.",
+    });
+
+    expect(suggestion.status).toBe("duplicate");
+    expect(suggestion.memory_writes).toBe(false);
+    expect(suggestion.duplicate).toMatchObject({
+      id: remembered.id,
+      content: "The user prefers concise final answers.",
+      scope: "user:default",
+    });
   });
 });

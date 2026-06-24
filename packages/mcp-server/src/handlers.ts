@@ -1,4 +1,5 @@
 import type {
+  CaptureSuggestionDraft,
   ForgetMemoryInput,
   ForgetMemoriesInput,
   ImportMemoriesInput,
@@ -10,8 +11,10 @@ import type {
   MemoryService,
   RecallMemoryResult,
   RememberMemoryInput,
+  SuggestCaptureInput,
   UpdateMemoryInput,
 } from "@nuzo/memory-core";
+import { memoryToolNames } from "./tool-contract.js";
 
 export interface RememberToolInput {
   content: string;
@@ -33,6 +36,16 @@ export interface RecallHookToolInput {
   task_context: string;
   project_scope?: string;
   limit?: number;
+}
+
+export interface SuggestCaptureToolInput {
+  content: string;
+  kind: MemoryKind;
+  scope: string;
+  tags: string[];
+  source: string;
+  confidence?: number;
+  reason: string;
 }
 
 export interface ListToolInput {
@@ -135,6 +148,13 @@ export interface MemoryToolHandlers {
       reason: string;
     }>;
   }>;
+  suggestCapture(input: SuggestCaptureToolInput): Promise<{
+    status: "ready" | "duplicate";
+    memory_writes: false;
+    requires_confirmation: true;
+    draft: CaptureSuggestionToolDraft;
+    duplicate: MemoryToolRecord | null;
+  }>;
   list(input: ListToolInput): Promise<{
     memories: MemoryToolRecord[];
   }>;
@@ -209,6 +229,16 @@ export type MemoryToolEvent = {
   created_at: string;
 };
 
+export type CaptureSuggestionToolDraft = {
+  content: string;
+  kind: MemoryKind;
+  scope: MemoryScope;
+  tags: string[];
+  source: string;
+  confidence: number;
+  reason: string;
+};
+
 export function createMemoryToolHandlers(
   service: MemoryService,
   options: MemoryToolHandlerOptions = {},
@@ -269,6 +299,30 @@ export function createMemoryToolHandlers(
         include_global: true,
         limit,
         results: results.map(toRecallOutput),
+      };
+    },
+
+    async suggestCapture(input) {
+      const suggestInput: SuggestCaptureInput = {
+        content: input.content,
+        kind: input.kind,
+        scope: input.scope as MemoryScope,
+        tags: input.tags,
+        source: input.source,
+        reason: input.reason,
+      };
+      if (input.confidence !== undefined) {
+        suggestInput.confidence = input.confidence;
+      }
+
+      const result = await service.suggestCapture(suggestInput);
+
+      return {
+        status: result.status,
+        memory_writes: false,
+        requires_confirmation: true,
+        draft: toSuggestionDraftOutput(result.draft),
+        duplicate: result.duplicate ? toToolRecord(result.duplicate) : null,
       };
     },
 
@@ -465,19 +519,7 @@ export function createMemoryToolHandlers(
           archived_memories: archivedMemories,
           total_memories: totalMemories,
         },
-        tools: [
-          "memory.remember",
-          "memory.recall",
-          "memory.recall_hook",
-          "memory.list",
-          "memory.update",
-          "memory.history",
-          "memory.forget",
-          "memory.forget_many",
-          "memory.export",
-          "memory.import",
-          "memory.doctor",
-        ],
+        tools: [...memoryToolNames],
         warnings,
       };
     },
@@ -538,6 +580,18 @@ function toRecallOutput(result: RecallMemoryResult) {
     tags: result.memory.tags,
     score: result.score,
     reason: result.reason,
+  };
+}
+
+function toSuggestionDraftOutput(draft: CaptureSuggestionDraft): CaptureSuggestionToolDraft {
+  return {
+    content: draft.content,
+    kind: draft.kind,
+    scope: draft.scope,
+    tags: draft.tags,
+    source: draft.source,
+    confidence: draft.confidence,
+    reason: draft.reason,
   };
 }
 

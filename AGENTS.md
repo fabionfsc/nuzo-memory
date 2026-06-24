@@ -209,6 +209,10 @@ Run build-mutating gates sequentially. `npm run check`, `npm test`,
 `npm run smoke:cli` share or recreate `packages/*/dist/`; running them in
 parallel can invalidate another command's subprocess fixtures.
 
+Automate repeated project checks instead of copying manual lists or commands.
+When a contract is consumed by runtime code, tests, and release validation,
+prefer one exported source of truth plus tests that prove validators reuse it.
+
 Check:
 
 - README links still work.

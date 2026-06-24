@@ -10,21 +10,10 @@ import {
   StdioClientTransport,
 } from "@modelcontextprotocol/sdk/client/stdio.js";
 
-const expectedMcpTools = [
-  "memory.doctor",
-  "memory.export",
-  "memory.forget",
-  "memory.forget_many",
-  "memory.history",
-  "memory.import",
-  "memory.list",
-  "memory.recall",
-  "memory.recall_hook",
-  "memory.remember",
-  "memory.update",
-];
-
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const { sortedMemoryToolNames: expectedMcpTools } = await import(
+  join(repositoryRoot, "packages", "mcp-server", "dist", "tool-contract.js")
+);
 const tarballsRoot = join(repositoryRoot, "build", "npm", "tarballs");
 const corePackage = readJson(join(repositoryRoot, "packages", "core", "package.json"));
 const cliPackage = readJson(join(repositoryRoot, "packages", "cli", "package.json"));

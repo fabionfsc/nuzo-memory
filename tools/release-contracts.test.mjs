@@ -109,3 +109,13 @@ test("npm staging rejects local dependency references", () => {
     assert.equal(isLocalDependencyReference(spec), false, spec);
   }
 });
+
+test("npm artifact validation reuses the MCP tool contract", () => {
+  const script = readFileSync(
+    join(repositoryRoot, "tools", "validate-npm-artifacts.mjs"),
+    "utf8",
+  );
+
+  assert.match(script, /tool-contract\.js/);
+  assert.doesNotMatch(script, /const expectedMcpTools = \[/);
+});

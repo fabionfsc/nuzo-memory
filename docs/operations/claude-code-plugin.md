@@ -244,7 +244,9 @@ Before adding host-specific hooks, document:
 - how secrets and transient logs are filtered;
 - how users disable the behavior.
 
-The current safe prototype is the MCP tool `memory.recall_hook`. It gives Claude Code a read-only recall entrypoint without enabling automatic capture.
+The current safe prototypes are the MCP tools `memory.recall_hook` and
+`memory.suggest_capture`. They give Claude Code read-only recall and capture
+draft validation without enabling automatic writes.
 
 ## Portability
 

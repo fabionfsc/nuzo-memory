@@ -31,6 +31,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Optional restricted scope authorization in core policy and MCP runtime
   configuration.
 - Manual npm trusted-publishing workflow for future releases.
+- MCP `memory.suggest_capture` for read-only capture draft validation,
+  normalization, and exact active duplicate detection before confirmed writes.
 
 ### Documentation
 
@@ -41,6 +43,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
   and lifecycle work.
 - Documented pull-request-only changes, administrator branch protection, and
   the emergency recovery policy.
+- Documented the capture suggestion tool contract and updated host guidance to
+  validate inferred drafts before calling `memory.remember`.
 - Documented local file permissions, project-config path containment, input
   limits, and the current scope-isolation boundary.
 - Corrected the published MCP package invocation and recorded post-MVP
