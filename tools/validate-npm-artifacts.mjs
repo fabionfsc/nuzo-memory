@@ -9,6 +9,7 @@ import {
   getDefaultEnvironment,
   StdioClientTransport,
 } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { assertCliSessionContinuity } from "./cli-session-continuity.mjs";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const { sortedMemoryToolNames: expectedMcpTools } = await import(
@@ -66,121 +67,12 @@ try {
 
 function assertCliWorkflow(cwd, memoryStore) {
   const executable = join(cwd, "node_modules", ".bin", cliExecutableName());
-  run(executable, ["memory", "--store", memoryStore, "init"], cwd);
-  run(
-    executable,
-    [
-      "memory",
-      "--store",
-      memoryStore,
-      "remember",
-      "The artifact test uses local SQLite memory.",
-      "--kind",
-      "project_decision",
-      "--tag",
-      "artifact-test",
-    ],
+  assertCliSessionContinuity({
     cwd,
-  );
-  const recall = run(
     executable,
-    ["memory", "--store", memoryStore, "recall", "local SQLite"],
-    cwd,
-  );
-  if (!recall.stdout.includes("artifact test uses local SQLite memory")) {
-    fail(
-      `installed nuzo binary could not recall the staged test memory: ${JSON.stringify({
-        stdout: recall.stdout,
-        stderr: recall.stderr,
-      })}`,
-    );
-  }
-
-  const readySuggestion = run(
-    executable,
-    [
-      "memory",
-      "--store",
-      memoryStore,
-      "suggest-capture",
-      "The artifact test prefers installed capture validation.",
-      "--kind",
-      "preference",
-      "--tag",
-      "artifact-test",
-      "--reason",
-      "Validates installed capture suggestion behavior.",
-      "--json",
-    ],
-    cwd,
-  );
-  const readySuggestionJson = JSON.parse(readySuggestion.stdout);
-  if (
-    readySuggestionJson.status !== "ready" ||
-    readySuggestionJson.memory_writes !== false ||
-    readySuggestionJson.requires_confirmation !== true ||
-    readySuggestionJson.duplicate !== null
-  ) {
-    fail(`installed nuzo binary capture suggestion failed: ${readySuggestion.stdout}`);
-  }
-  const afterSuggestionList = run(
-    executable,
-    ["memory", "--store", memoryStore, "list", "--tag", "artifact-test"],
-    cwd,
-  );
-  if (afterSuggestionList.stdout.includes("installed capture validation")) {
-    fail("installed nuzo binary suggest-capture wrote a memory before confirmation");
-  }
-
-  run(
-    executable,
-    [
-      "memory",
-      "--store",
-      memoryStore,
-      "remember",
-      "The artifact test prefers installed capture validation.",
-      "--kind",
-      "preference",
-      "--tag",
-      "artifact-test",
-    ],
-    cwd,
-  );
-  const duplicateSuggestion = run(
-    executable,
-    [
-      "memory",
-      "--store",
-      memoryStore,
-      "suggest-capture",
-      " the artifact test prefers installed   capture validation. ",
-      "--kind",
-      "note",
-      "--reason",
-      "Validates installed duplicate detection.",
-      "--json",
-    ],
-    cwd,
-  );
-  const duplicateSuggestionJson = JSON.parse(duplicateSuggestion.stdout);
-  if (
-    duplicateSuggestionJson.status !== "duplicate" ||
-    !duplicateSuggestionJson.duplicate?.id ||
-    duplicateSuggestionJson.duplicate.content !== "The artifact test prefers installed capture validation."
-  ) {
-    fail(`installed nuzo binary duplicate suggestion failed: ${duplicateSuggestion.stdout}`);
-  }
-
-  const doctor = run(
-    executable,
-    ["memory", "--store", memoryStore, "doctor"],
-    cwd,
-    { NUZO_DOCTOR_SKIP_GIT: "1" },
-  );
-  if (!doctor.stdout.includes("Status: ok")) {
-    fail("installed nuzo binary doctor did not report a healthy temporary store");
-  }
+    memoryStore,
+    label: "installed nuzo binary",
+  });
 
   assertCliExit(
     executable,

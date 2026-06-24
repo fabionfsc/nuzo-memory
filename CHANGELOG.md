@@ -6,11 +6,21 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+### Added
+
+- Published CLI session-continuity smoke for validating memory recall,
+  read-only capture suggestions, duplicate detection, and doctor output through
+  the package users install.
+
 ### Documentation
 
 - Corrected published-package verification commands to use a temporary npm
   install prefix instead of `npm exec --package`, which does not expose the
   scoped CLI binary reliably.
+- Documented the `0.1.2`, `0.2.0`, and post-`0.2.0` roadmap split around real
+  workflow hardening, capture lifecycle UX, and optional semantics.
+- Clarified that SQLite/local-first storage is a product boundary rather than a
+  placeholder for cloud infrastructure.
 
 ## [0.1.1] - 2026-06-24
 

@@ -208,3 +208,56 @@ Exit criteria:
 - `memory.suggest_capture` never persists inferred drafts before confirmation;
 - host plugins remain thin wrappers around the published MCP runtime;
 - docs describe only install and verification paths that were tested.
+
+## Stage 8: Capture Lifecycle UX
+
+Goal: make the memory lifecycle feel complete in agent workflows while keeping
+inferred writes explicit and auditable.
+
+Status: planned for `0.2.0` after installed CLI/MCP and host release-artifact
+smokes are in place.
+
+Deliverables:
+
+- task-start read-only recall flow;
+- capture suggestion candidate rules and examples;
+- editable capture confirmation flow;
+- exact duplicate handling before prompts;
+- confirmed writes through `memory.remember`;
+- update/conflict handling for memories that change over time;
+- forget/archive guidance in host workflows;
+- audit trail documentation for created, updated, archived, deleted, imported,
+  exported, and optional recall events;
+- a small local benchmark for recall, duplicates, conflicts, forget, export,
+  import, and latency on small and medium stores.
+
+Exit criteria:
+
+- a user can see what an agent wants to remember before anything is written;
+- rejected drafts leave no stored memory;
+- confirmed drafts remain normalized, policy-checked, auditable, and portable;
+- benchmark results are reproducible locally without telemetry or network calls.
+
+## Stage 9: Optional Semantics And Advanced Integrations
+
+Goal: improve recall quality for users who opt in, without changing Nuzo's
+local-first default.
+
+Status: post-`0.2.0` exploration.
+
+Possible deliverables:
+
+- optional local embedding provider interface;
+- optional semantic search index;
+- optional memory compaction pipeline;
+- comparative evaluation against local FTS;
+- import/export compatibility for additional review formats;
+- marketplace distribution improvements after host install flows stabilize.
+
+Non-goals for this stage:
+
+- required cloud sync;
+- required remote embeddings;
+- multi-tenant SaaS runtime;
+- graph memory as the default storage model;
+- automatic LLM compression without explicit user confirmation.

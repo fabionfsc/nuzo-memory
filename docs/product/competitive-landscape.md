@@ -51,6 +51,11 @@ Nuzo should prioritize:
 - Git-safe runtime defaults;
 - one MCP contract across Codex, Claude Code, and future hosts.
 
+SQLite and local FTS are not accidental limitations. They are the default
+implementation of the product promise: memory stays local, inspectable,
+portable, and usable without an account, network call, telemetry stream, or
+embedding provider.
+
 ## Strategic Position
 
 Nuzo is not a replacement for native assistant memory or cloud memory platforms.
@@ -86,6 +91,19 @@ Nuzo should ship a tight local workflow first:
 5. Keep everything inspectable and Git-safe.
 
 Only add semantic search, graph memory, sync, or lifecycle automation when they preserve this rule.
+
+## Do Not Do Yet
+
+Avoid attractive features that would dilute the current wedge before Nuzo is
+easy to install and prove in real agent workflows:
+
+- cloud sync;
+- multi-tenant SaaS hosting;
+- heavyweight graph memory;
+- remote embeddings by default;
+- LLM-based automatic compression without confirmation;
+- silent capture of inferred memories;
+- host-specific memory formats that bypass MCP/core.
 
 ## References
 

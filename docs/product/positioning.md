@@ -30,6 +30,11 @@ Nuzo should not claim to know or replace private product internals. If an AI ass
 
 Portability means Nuzo-managed memory can move between hosts that run Nuzo, such as Codex and Claude Code. It does not mean Nuzo can automatically read or convert a vendor's private native memory store.
 
+SQLite is an intentional part of the product boundary, not a temporary
+placeholder for a future cloud database. Nuzo targets reliable, inspectable,
+user-owned memory for local developer workflows. Larger distributed memory
+systems solve a different problem.
+
 The practical message is:
 
 ```text
