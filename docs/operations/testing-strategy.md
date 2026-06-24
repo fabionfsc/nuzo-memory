@@ -182,6 +182,12 @@ a first MCP session writes a fake confirmed memory, a later session calls
 `memory_writes: false` plus `capture_suggestions: false` without adding recall
 audit events.
 
+The same smoke covers the inferred capture confirmation contract: a ready
+`memory.suggest_capture` draft is not visible to recall before confirmation, a
+rejected draft is never persisted, a confirmed draft is written only through
+`memory.remember`, and a later equivalent suggestion is reported as a
+duplicate.
+
 The Claude Code plugin artifact smoke performs the same release-layout
 continuity validation while also resolving the `${CLAUDE_PLUGIN_ROOT}` cwd
 placeholder against an isolated temporary plugin install path.

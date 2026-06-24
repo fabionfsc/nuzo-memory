@@ -6,6 +6,7 @@ import {
 
 const rememberedMemory = "MCP session continuity smoke stores fake memory across stdio sessions.";
 const suggestedMemory = "MCP session continuity smoke prefers confirmed capture drafts.";
+const rejectedMemory = "MCP session continuity smoke rejects inferred capture drafts.";
 const testScope = "project:mcp-session-continuity";
 const testTag = "session-continuity";
 
@@ -110,6 +111,38 @@ export async function assertMcpSessionContinuity({
     }
     if (beforeConfirm.results.some((result) => result.content === suggestedMemory)) {
       fail(`${label} suggest_capture wrote memory before confirmation: ${JSON.stringify(beforeConfirm)}`);
+    }
+
+    const rejectedSuggestion = parseToolJson(await client.callTool({
+      name: "memory.suggest_capture",
+      arguments: {
+        content: rejectedMemory,
+        kind: "note",
+        scope: testScope,
+        tags: [testTag],
+        source: "test:mcp-session-rejected-suggestion",
+        confidence: 0.7,
+        reason: "Validates rejected inferred capture drafts do not persist.",
+      },
+    }));
+    if (
+      rejectedSuggestion.status !== "ready" ||
+      rejectedSuggestion.memory_writes !== false ||
+      rejectedSuggestion.requires_confirmation !== true ||
+      rejectedSuggestion.duplicate !== null
+    ) {
+      fail(`${label} rejected draft suggestion failed: ${JSON.stringify(rejectedSuggestion)}`);
+    }
+    const afterReject = parseToolJson(await client.callTool({
+      name: "memory.recall_hook",
+      arguments: {
+        task_context: "rejected inferred capture drafts",
+        project_scope: testScope,
+        limit: 5,
+      },
+    }));
+    if (afterReject.results.some((result) => result.content === rejectedMemory)) {
+      fail(`${label} rejected capture draft was persisted: ${JSON.stringify(afterReject)}`);
     }
 
     await client.callTool({
