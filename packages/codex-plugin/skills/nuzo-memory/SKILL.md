@@ -23,16 +23,30 @@ generated memories.
 
 ### Explicit Save Requests
 
-When the user directly asks to save something in Nuzo, for example:
+Treat an explicit save request as a request to start the confirmed Nuzo capture
+flow. Do not treat it as permission for an invisible write.
+
+Trigger this flow when the user asks to persist context in Nuzo, for example:
 
 - "save this in Nuzo memory";
 - "remember this for this project";
+- "remember that I prefer concise status updates";
 - "coloca isso na memoria do Nuzo";
 - "guarda isso para as proximas sessoes";
+- "salva essa decisao no Nuzo";
 
-prepare a concise draft and call `memory.suggest_capture` first. Show the
-validated draft or duplicate result, then call `memory.remember` only after the
-user confirms or edits the draft.
+For every explicit save request:
+
+1. Rewrite the requested content into a short affirmative memory without adding
+   facts the user did not state.
+2. Choose the narrowest useful scope.
+3. Call `memory.suggest_capture` with content, kind, scope, tags, source,
+   confidence, and reason.
+4. Show the validated draft or duplicate result to the user.
+5. If the user confirms or edits the draft, call `memory.remember` with the
+   final user-approved fields.
+6. If the user rejects the draft, do not write memory, audit events, or hidden
+   notes.
 
 ### Inferred Capture
 

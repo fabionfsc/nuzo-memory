@@ -122,6 +122,10 @@ def validate_nuzo_skill(path: pathlib.Path) -> None:
 
     required_guidance = [
         "only after the user confirms or",
+        "Explicit Save Requests",
+        "memory.suggest_capture` with content, kind, scope, tags, source",
+        "If the user rejects the draft, do not write memory",
+        "coloca isso na memoria do Nuzo",
         "Do not silently save inferred memories.",
         "Never store secrets",
         "Codex built-in generated memories",

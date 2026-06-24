@@ -15,12 +15,17 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
   Codex operation docs, and issue-tracking milestone guidance.
 - Documented and tightened the Codex plugin smoke coverage for read-only
   task-start recall across MCP sessions.
+- Documented the Codex explicit save request flow for commands such as
+  "coloca isso na memoria do Nuzo".
 
 ### Changed
 
 - Strengthened MCP session-continuity smoke validation so task-start
   `memory.recall_hook` must remain read-only, avoid capture suggestions, and
   avoid adding recall audit events.
+- Strengthened Codex plugin validation so the Nuzo skill must keep explicit
+  save requests on the `memory.suggest_capture` to confirmed `memory.remember`
+  path.
 
 ### Fixed
 
