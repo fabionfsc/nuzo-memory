@@ -22,12 +22,12 @@ Core, CLI, and MCP packages use the same version and must be released together.
 
 ## Current Release
 
-Version `0.1.2` is the current release:
+Version `0.1.3` is the current release:
 
 ```text
-@nuzo/memory-core@0.1.2
-@nuzo/memory-cli@0.1.2
-@nuzo/mcp-server@0.1.2
+@nuzo/memory-core@0.1.3
+@nuzo/memory-cli@0.1.3
+@nuzo/mcp-server@0.1.3
 ```
 
 The packages are published together from the same source version. Routine

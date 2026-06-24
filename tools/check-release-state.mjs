@@ -5,6 +5,7 @@ import {
   fail,
   packagePaths,
   pluginManifestPaths,
+  publicReleaseReferencePaths,
   readJson,
   readText,
   nuzoWorkspaceDependencies,
@@ -48,6 +49,7 @@ for (const packagePath of ["", ...packagePaths.filter((path) => path !== "packag
 assertSourceVersion("packages/cli/src/index.ts", /\.version\("([^"]+)"\)/, version);
 assertSourceVersion("packages/mcp-server/src/index.ts", /version: "([^"]+)"/, version);
 assertChangelog(version);
+assertPublicReleaseReferences(version);
 
 console.log(`release state is consistent for ${version}`);
 
@@ -86,5 +88,14 @@ function assertChangelog(expectedVersion) {
   }
   if (!changelog.includes(`## [${expectedVersion}] - `)) {
     fail(`CHANGELOG.md must contain a dated ## [${expectedVersion}] - YYYY-MM-DD section`);
+  }
+}
+
+function assertPublicReleaseReferences(expectedVersion) {
+  for (const relativePath of publicReleaseReferencePaths) {
+    const content = readText(relativePath);
+    if (!content.includes(expectedVersion)) {
+      fail(`${relativePath} does not contain current public release version ${expectedVersion}`);
+    }
   }
 }

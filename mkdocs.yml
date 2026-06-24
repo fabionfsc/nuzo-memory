@@ -102,6 +102,7 @@ nav:
       - Issue Tracking: operations/issue-tracking.md
       - Specification-Driven Workflow: operations/spec-driven-workflow.md
       - Versioning: operations/versioning.md
+      - Release Version Map: operations/release-version-map.md
       - Runtime Support: operations/runtime-support.md
       - npm Publishing: operations/npm-publishing.md
       - Release Checklist: operations/release-checklist.md
