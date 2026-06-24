@@ -479,6 +479,7 @@ secrets.
 ```bash
 nuzo memory init
 nuzo memory remember "The user prefers concise output." --kind preference --tag codex
+nuzo memory suggest-capture "The user prefers concise output." --kind preference --reason "Durable response style preference."
 nuzo memory recall "output style"
 nuzo memory list --tag codex
 nuzo memory update mem_01HZY --expected-revision 1 --content "The user prefers concise final answers."

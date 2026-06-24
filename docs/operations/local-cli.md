@@ -30,6 +30,7 @@ Examples:
 npm run nuzo -- memory init
 npm run nuzo -- memory init --project
 npm run nuzo -- memory remember "The project uses SQLite for local storage." --kind project_decision --tag storage
+npm run nuzo -- memory suggest-capture "The user prefers concise final answers." --kind preference --reason "Durable response style preference."
 npm run nuzo -- memory recall "local storage"
 npm run nuzo -- memory export --path ./memories.memory.export.json
 npm run nuzo -- memory history mem_01HZY
@@ -45,6 +46,12 @@ Runtime precedence is explicit flags, project config, user config, then
 built-in defaults. Recall reads config defaults for result limit, global-scope
 inclusion, and optional recall-event recording. Use `--no-include-global` to
 override a config that enables global recall for one command.
+
+`nuzo memory suggest-capture` validates an inferred memory draft without writing
+storage, audit history, or usage metadata. Use it before asking the user to
+confirm a memory inferred from conversation context. Pass `--json` when a host,
+script, or agent needs a machine-readable result close to the MCP
+`memory.suggest_capture` shape.
 
 ## Smoke Test
 

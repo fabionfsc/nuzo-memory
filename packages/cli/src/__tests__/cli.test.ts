@@ -232,6 +232,132 @@ describe("nuzo memory cli", () => {
     expect(visible.stdout).toEqual([]);
   });
 
+  it("validates capture suggestions without writing memory", async () => {
+    const store = createStorePath();
+    await runCli(["memory", "--store", store, "init"]);
+
+    const suggestion = await runCli([
+      "memory",
+      "--store",
+      store,
+      "suggest-capture",
+      "  The user prefers concise final answers.  ",
+      "--kind",
+      "preference",
+      "--tag",
+      "workflow",
+      "workflow",
+      "--source",
+      "codex:capture-suggestion",
+      "--confidence",
+      "0.72",
+      "--reason",
+      "The user stated a durable response style preference.",
+    ]);
+
+    expect(suggestion.stderr).toEqual([]);
+    expect(suggestion.stdout).toEqual([
+      [
+        "Status: ready",
+        "Memory writes: no",
+        "Requires confirmation: yes",
+        "Content: The user prefers concise final answers.",
+        "Kind: preference",
+        "Scope: user:default",
+        "Tags: workflow",
+        "Source: codex:capture-suggestion",
+        "Confidence: 0.72",
+        "Reason: The user stated a durable response style preference.",
+      ].join("\n"),
+    ]);
+    await expect(runCli(["memory", "--store", store, "list"])).resolves.toEqual({
+      stderr: [],
+      stdout: [],
+    });
+  });
+
+  it("prints duplicate capture suggestions as JSON", async () => {
+    const store = createStorePath();
+    await runCli([
+      "memory",
+      "--store",
+      store,
+      "remember",
+      "The user prefers concise final answers.",
+      "--kind",
+      "preference",
+      "--tag",
+      "workflow",
+    ]);
+
+    const suggestion = await runCli([
+      "memory",
+      "--store",
+      store,
+      "suggest-capture",
+      " the USER prefers   concise final answers. ",
+      "--kind",
+      "note",
+      "--tag",
+      "style",
+      "--reason",
+      "Equivalent content was inferred from the conversation.",
+      "--json",
+    ]);
+    const output = JSON.parse(suggestion.stdout[0] ?? "{}") as {
+      status: string;
+      memory_writes: boolean;
+      requires_confirmation: boolean;
+      draft: { content: string; scope: string; tags: string[] };
+      duplicate: { id: string; content: string } | null;
+    };
+
+    expect(output).toMatchObject({
+      status: "duplicate",
+      memory_writes: false,
+      requires_confirmation: true,
+      draft: {
+        content: "the USER prefers   concise final answers.",
+        scope: "user:default",
+        tags: ["style"],
+      },
+      duplicate: {
+        content: "The user prefers concise final answers.",
+      },
+    });
+    expect(output.duplicate?.id).toMatch(/^mem_/);
+  });
+
+  it("rejects unsafe or malformed capture suggestions", async () => {
+    const store = createStorePath();
+
+    const secret = await runCli([
+      "memory",
+      "--store",
+      store,
+      "suggest-capture",
+      "github token is ghp_123456789012345678901234567890123456",
+      "--kind",
+      "note",
+      "--reason",
+      "A sensitive value was inferred.",
+    ]);
+    expect(secret.stderr).toEqual(["MEMORY_SECRET_DETECTED: Memory content looks sensitive."]);
+
+    const emptyReason = await runCli([
+      "memory",
+      "--store",
+      store,
+      "suggest-capture",
+      "The user prefers concise final answers.",
+      "--kind",
+      "preference",
+      "--reason",
+      "   ",
+    ]);
+    expect(emptyReason.stderr).toEqual(["MEMORY_REASON_EMPTY: Memory reason cannot be empty."]);
+  });
+
   it("initializes project memory idempotently and protects it from Git", async () => {
     const projectRoot = mkdtempSync(join(tmpdir(), "nuzo-project-"));
     tempDirectories.push(projectRoot);

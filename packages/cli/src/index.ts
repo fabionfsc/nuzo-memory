@@ -26,6 +26,8 @@ import {
   memoryScopePattern,
   type MemoryKind,
   type ListMemoriesInput,
+  type CaptureSuggestionResult,
+  type MemoryRecord,
   type MemoryScope,
   type ForgetMemoryInput,
   type ForgetMemoriesInput,
@@ -52,6 +54,15 @@ interface GlobalOptions {
 
 interface InitCommandOptions {
   project: boolean;
+}
+
+interface SuggestCaptureCommandOptions {
+  kind: MemoryKind;
+  tag?: string[];
+  source: string;
+  confidence?: number;
+  reason: string;
+  json: boolean;
 }
 
 interface NuzoConfig {
@@ -165,6 +176,40 @@ export function createProgram(io: CliIO = defaultIO): Command {
           source: commandOptions.source,
         });
         io.stdout(saved.id);
+      } finally {
+        database.close();
+      }
+    }));
+
+  memory
+    .command("suggest-capture")
+    .description("Validate a capture draft without storing memory.")
+    .argument("<content>", "Proposed memory content.")
+    .requiredOption("--kind <kind>", "Memory kind.")
+    .requiredOption("--reason <reason>", "Reason the draft may be worth remembering.")
+    .option("--tag <tag...>", "Memory tag. Can be used multiple times.")
+    .option("--source <source>", "Capture suggestion source.", "nuzo:cli:capture-suggestion")
+    .option("--confidence <number>", "Capture confidence between 0 and 1.", parseConfidence)
+    .option("--json", "Print JSON output for scripting.", false)
+    .action(withErrorHandling(io, async (
+      content: string,
+      commandOptions: SuggestCaptureCommandOptions,
+    ) => {
+      const options = memory.opts<GlobalOptions>();
+      const database = openDatabase(options);
+      try {
+        const service = createService(database);
+        const suggestionInput = {
+          content,
+          kind: commandOptions.kind,
+          scope: resolveScope(options),
+          tags: commandOptions.tag ?? [],
+          source: commandOptions.source,
+          reason: commandOptions.reason,
+          ...(commandOptions.confidence === undefined ? {} : { confidence: commandOptions.confidence }),
+        };
+        const suggestion = await service.suggestCapture(suggestionInput);
+        io.stdout(formatCaptureSuggestion(suggestion, commandOptions.json));
       } finally {
         database.close();
       }
@@ -1013,6 +1058,69 @@ function formatExportDocument(document: MemoryExportDocument, format: ExportForm
   }
 
   return `${JSON.stringify(document, null, 2)}\n`;
+}
+
+function formatCaptureSuggestion(
+  suggestion: CaptureSuggestionResult,
+  json: boolean,
+): string {
+  const output = toCaptureSuggestionOutput(suggestion);
+  if (json) {
+    return JSON.stringify(output, null, 2);
+  }
+
+  const lines = [
+    `Status: ${output.status}`,
+    "Memory writes: no",
+    "Requires confirmation: yes",
+    `Content: ${output.draft.content}`,
+    `Kind: ${output.draft.kind}`,
+    `Scope: ${output.draft.scope}`,
+    `Tags: ${output.draft.tags.length > 0 ? output.draft.tags.join(", ") : "none"}`,
+    `Source: ${output.draft.source}`,
+    `Confidence: ${output.draft.confidence}`,
+    `Reason: ${output.draft.reason}`,
+  ];
+  if (output.duplicate !== null) {
+    lines.push(`Duplicate: ${output.duplicate.id}`);
+  }
+
+  return lines.join("\n");
+}
+
+function toCaptureSuggestionOutput(suggestion: CaptureSuggestionResult) {
+  return {
+    status: suggestion.status,
+    memory_writes: false,
+    requires_confirmation: true,
+    draft: {
+      content: suggestion.draft.content,
+      kind: suggestion.draft.kind,
+      scope: suggestion.draft.scope,
+      tags: suggestion.draft.tags,
+      source: suggestion.draft.source,
+      confidence: suggestion.draft.confidence,
+      reason: suggestion.draft.reason,
+    },
+    duplicate: suggestion.duplicate ? toCliMemoryRecord(suggestion.duplicate) : null,
+  };
+}
+
+function toCliMemoryRecord(memory: MemoryRecord) {
+  return {
+    id: memory.id,
+    revision: memory.revision,
+    content: memory.content,
+    kind: memory.kind,
+    scope: memory.scope,
+    tags: memory.tags,
+    source: memory.source,
+    confidence: memory.confidence,
+    created_at: memory.createdAt.toISOString(),
+    updated_at: memory.updatedAt.toISOString(),
+    last_used_at: memory.lastUsedAt?.toISOString() ?? null,
+    archived_at: memory.archivedAt?.toISOString() ?? null,
+  };
 }
 
 function inferExportFormat(path?: string): ExportFormat {
