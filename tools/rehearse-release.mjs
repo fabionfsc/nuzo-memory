@@ -16,6 +16,7 @@ import {
   isSensitiveRehearsalPath,
   packagePaths,
   pluginManifestPaths,
+  publicReleaseReferencePaths,
   repositoryRoot,
 } from "./release-shared.mjs";
 
@@ -30,6 +31,7 @@ const rehearsalRoot = join(rehearsalParent, "repository");
 const protectedFiles = [
   ...packagePaths,
   ...pluginManifestPaths,
+  ...publicReleaseReferencePaths,
   "package-lock.json",
   "packages/cli/src/index.ts",
   "packages/mcp-server/src/index.ts",

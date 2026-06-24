@@ -18,6 +18,19 @@ export const pluginManifestPaths = [
   "packages/codex-plugin/.codex-plugin/plugin.json",
 ];
 
+export const publicReleaseReferencePaths = [
+  "AGENTS.md",
+  "README.md",
+  "docs/getting-started/clean-install.md",
+  "docs/getting-started/index.md",
+  "docs/index.md",
+  "docs/operations/claude-code-plugin.md",
+  "docs/operations/codex-plugin.md",
+  "docs/operations/npm-publishing.md",
+  "docs/operations/versioning.md",
+  "packages/mcp-server/README.md",
+];
+
 export const nuzoWorkspaceDependencies = new Set([
   "@nuzo/memory-core",
   "@nuzo/memory-cli",

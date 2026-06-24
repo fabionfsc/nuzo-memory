@@ -24,12 +24,13 @@ contracts, and operations documentation.
 17. `operations/lifecycle-hooks.md`
 18. `operations/issue-tracking.md`
 19. `operations/versioning.md`
-20. `operations/runtime-support.md`
-21. `operations/npm-publishing.md`
-22. `operations/release-checklist.md`
-23. `operations/post-release-validation.md`
-24. `operations/spec-driven-workflow.md`
-25. `operations/roadmap.md`
+20. `operations/release-version-map.md`
+21. `operations/runtime-support.md`
+22. `operations/npm-publishing.md`
+23. `operations/release-checklist.md`
+24. `operations/post-release-validation.md`
+25. `operations/spec-driven-workflow.md`
+26. `operations/roadmap.md`
 
 ## Sections
 

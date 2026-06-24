@@ -7,6 +7,7 @@ import {
   isLocalDependencyReference,
   isSensitiveRehearsalPath,
   isValidReleaseVersion,
+  publicReleaseReferencePaths,
 } from "./release-shared.mjs";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -118,4 +119,18 @@ test("npm artifact validation reuses the MCP tool contract", () => {
 
   assert.match(script, /tool-contract\.js/);
   assert.doesNotMatch(script, /const expectedMcpTools = \[/);
+});
+
+test("release tooling covers public release version references", () => {
+  for (const path of publicReleaseReferencePaths) {
+    assert.doesNotThrow(() => readFileSync(join(repositoryRoot, path), "utf8"), path);
+  }
+
+  const prepare = readFileSync(join(repositoryRoot, "tools", "prepare-release.mjs"), "utf8");
+  const check = readFileSync(join(repositoryRoot, "tools", "check-release-state.mjs"), "utf8");
+  const rehearse = readFileSync(join(repositoryRoot, "tools", "rehearse-release.mjs"), "utf8");
+
+  assert.match(prepare, /publicReleaseReferencePaths/);
+  assert.match(check, /publicReleaseReferencePaths/);
+  assert.match(rehearse, /publicReleaseReferencePaths/);
 });

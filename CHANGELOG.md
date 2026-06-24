@@ -6,6 +6,12 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+### Fixed
+
+- Added a release-version map and automated release validation for public docs
+  so README, getting-started pages, npm publishing docs, and host plugin docs
+  do not keep stale current-release versions after a release.
+
 ## [0.1.3] - 2026-06-24
 
 ### Documentation

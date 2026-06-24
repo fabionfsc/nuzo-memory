@@ -180,6 +180,7 @@ Follow:
 
 ```text
 docs/operations/versioning.md
+docs/operations/release-version-map.md
 ```
 
 Before tagging:
@@ -194,6 +195,8 @@ Before tagging:
 - keep a fresh empty `[Unreleased]` section above the release section;
 - prepare the release version with `npm run release:prepare -- X.Y.Z`;
 - confirm `npm run release:check -- X.Y.Z` passes;
+- confirm public release references in `docs/operations/release-version-map.md`
+  are still complete;
 - review `package.json`, workspace package versions, host plugin manifests, source version strings, and `package-lock.json`;
 - commit the version bump as a release commit.
 

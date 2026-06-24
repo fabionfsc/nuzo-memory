@@ -69,13 +69,13 @@ the published MCP package to the same version as the plugin:
   "mcpServers": {
     "nuzo": {
       "command": "npm",
-      "args": ["exec", "--yes", "--package=@nuzo/mcp-server@0.1.2", "--", "nuzo-mcp-server"]
+      "args": ["exec", "--yes", "--package=@nuzo/mcp-server@0.1.3", "--", "nuzo-mcp-server"]
     }
   }
 }
 ```
 
-`0.1.2` matches the current release. Future packaging uses the actual shared
+`0.1.3` matches the current release. Future packaging uses the actual shared
 package version and rejects version drift.
 
 The first launch may need npm registry access. Nuzo does not use `latest` and
@@ -147,8 +147,8 @@ codex
 
 7. Install or enable `Nuzo`, then start a new thread before relying on the plugin.
 
-The generated `0.1.2` config resolves the matching public
-`@nuzo/mcp-server@0.1.2` package. It has been installed through an isolated
+The generated `0.1.3` config resolves the matching public
+`@nuzo/mcp-server@0.1.3` package. It has been installed through an isolated
 Codex marketplace and used to call `memory.doctor` successfully.
 
 ## Direct MCP Fallback

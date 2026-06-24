@@ -4,6 +4,7 @@ import {
   fail,
   packagePaths,
   pluginManifestPaths,
+  publicReleaseReferencePaths,
   readJson,
   readText,
   updateNuzoDependencyVersions,
@@ -13,6 +14,7 @@ import {
 
 const version = process.argv[2];
 assertReleaseVersion(version);
+const currentVersion = readJson("package.json").version;
 
 if (version === "0.0.0") {
   fail("0.0.0 is reserved for unreleased development state");
@@ -52,6 +54,9 @@ replaceLiteralVersion(
   /version: "([^"]+)"/,
   `version: "${version}"`,
 );
+for (const relativePath of publicReleaseReferencePaths) {
+  replacePublicReleaseReference(relativePath, currentVersion, version);
+}
 
 console.log(`prepared Nuzo release version ${version}`);
 
@@ -61,4 +66,15 @@ function replaceLiteralVersion(relativePath, pattern, replacement) {
     fail(`${relativePath} does not contain the expected version literal`);
   }
   writeText(relativePath, content.replace(pattern, replacement));
+}
+
+function replacePublicReleaseReference(relativePath, fromVersion, toVersion) {
+  const content = readText(relativePath);
+  const next = content
+    .replaceAll(fromVersion, toVersion)
+    .replaceAll(`v${fromVersion}`, `v${toVersion}`)
+    .replaceAll(`release-v${fromVersion}`, `release-v${toVersion}`);
+  if (next !== content) {
+    writeText(relativePath, next);
+  }
 }
