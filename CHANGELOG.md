@@ -47,6 +47,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
   validate inferred drafts before calling `memory.remember`.
 - Documented local file permissions, project-config path containment, input
   limits, and the current scope-isolation boundary.
+- Documented the test organization decision for package-local tests, shared
+  runtime contracts, and future `test-support/` extraction.
 - Corrected the published MCP package invocation and recorded post-MVP
   authorization, concurrency, config, and repository-security work.
 - Marked the public `0.1.0` MVP, npm packages, and clean Codex/Claude Code host

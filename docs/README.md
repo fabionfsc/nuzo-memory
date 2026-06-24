@@ -44,6 +44,9 @@ Defines system shape, storage design, package boundaries, agent host compatibili
 
 Defines public contracts: memory model, MCP tools, CLI behavior, init behavior, and versioning.
 
+Architecture decisions live under `adr/`, including package boundaries, host
+plugin runtime distribution, and test organization.
+
 ### Operations
 
 Defines privacy, security, host plugin setup, coding standards, testing strategy, release plan, and roadmap.

@@ -6,6 +6,11 @@ Local gates that build, clean, package, or execute `packages/*/dist/` must run
 sequentially. They intentionally share generated output, so parallel execution
 can create false failures even when each command passes in isolation.
 
+Test organization follows [ADR 0007](../adr/0007-test-organization.md):
+package behavior tests stay near their packages, public contracts live with
+their owning package, and test-only shared helpers are extracted only after
+there are at least two real consumers.
+
 Repeated validation work should become a script, shared fixture, or contract
 helper once it appears in more than one place. Keep exact public contracts such
 as the MCP tool set in one source of truth and import that source from tests,
