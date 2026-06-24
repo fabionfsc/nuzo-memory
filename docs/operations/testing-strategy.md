@@ -146,7 +146,7 @@ executes:
 npm run release:rehearse -- X.Y.Z
 ```
 
-The default dispatch input is `0.1.0`.
+Manual dispatch requires an explicit rehearsal version.
 
 Release-state validation confirms that root/workspace versions, Nuzo internal
 dependency pins, lockfile workspace entries, CLI version output, MCP server

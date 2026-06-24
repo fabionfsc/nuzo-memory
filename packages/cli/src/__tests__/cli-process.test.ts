@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,6 +8,9 @@ import { cliExitCodes } from "../index.js";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const entrypoint = join(packageRoot, "dist", "index.js");
+const cliPackage = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8")) as {
+  version: string;
+};
 let tempDirectories: string[] = [];
 
 afterEach(() => {
@@ -22,7 +25,7 @@ describe("nuzo CLI process contract", () => {
     const result = runProcess(["--version"]);
 
     expect(result.status).toBe(cliExitCodes.success);
-    expect(result.stdout.trim()).toBe("0.1.0");
+    expect(result.stdout.trim()).toBe(cliPackage.version);
     expect(result.stderr).toBe("");
   });
 

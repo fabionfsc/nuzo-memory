@@ -1,6 +1,6 @@
 # Getting Started
 
-Nuzo `0.1.0` is the first public MVP release.
+Nuzo `0.1.1` is the current public release.
 
 This page explains how to use the released CLI and how to work with the
 repository.
@@ -72,7 +72,7 @@ npm test
 Install the released CLI:
 
 ```bash
-npm install --global @nuzo/memory-cli@0.1.0
+npm install --global @nuzo/memory-cli@0.1.1
 nuzo memory init
 nuzo memory doctor
 ```
