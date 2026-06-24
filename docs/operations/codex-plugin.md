@@ -210,6 +210,32 @@ this project", or "coloca isso na memoria do Nuzo" still pass through
 `memory.suggest_capture` so the user can inspect the normalized memory before a
 write occurs.
 
+### Explicit Save Request Flow
+
+When the user says something like:
+
+```text
+Coloca isso na memoria do Nuzo: eu prefiro status curtos enquanto voce trabalha.
+```
+
+Codex should treat that as a request to start a confirmed capture flow:
+
+1. Build a concise draft:
+
+```text
+The user prefers short status updates while work is running.
+```
+
+2. Call `memory.suggest_capture` with the draft, kind, scope, tags, source,
+   confidence, and reason.
+3. Show the validated draft or duplicate result.
+4. If the user confirms or edits it, call `memory.remember` with the final
+   fields.
+5. If the user rejects it, write nothing.
+
+Explicit intent lowers ambiguity, but it does not bypass core policy checks,
+secret scanning, duplicate detection, or the visible draft step.
+
 ## Validation
 
 Validate the plugin manifest with:
