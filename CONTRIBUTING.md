@@ -9,7 +9,7 @@ agents.
 Read:
 
 1. `README.md`
-2. `AGENTS.md`
+2. `docs/getting-started/index.md`
 3. `docs/architecture/boundaries.md`
 4. `docs/spec/tools.md`
 5. `docs/operations/roadmap.md`

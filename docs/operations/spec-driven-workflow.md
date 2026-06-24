@@ -102,8 +102,8 @@ the code silently become the only description of behavior.
 
 ### 6. Verify And Close
 
-Run the validation gates required by `AGENTS.md` and attach relevant evidence
-to the Issue or pull request. Before closing:
+Run the relevant validation gates from `CONTRIBUTING.md` and the affected docs,
+then attach evidence to the Issue or pull request. Before closing:
 
 - acceptance criteria are demonstrably satisfied;
 - contract docs and examples match runtime behavior;
