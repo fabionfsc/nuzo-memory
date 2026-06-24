@@ -12,8 +12,9 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
   destructive-action reasons, and import size.
 - SQLite busy timeout and Unicode-aware recall tokenization.
 - Secret scanning for npm access tokens.
-- Installed npm artifact validation now performs an MCP stdio handshake, checks
-  the exact tool set, and calls `memory.doctor`.
+- Installed npm artifact validation now performs CLI and MCP lifecycle checks
+  for read-only capture suggestions, confirmed writes, recall hooks, exact tool
+  discovery, and `memory.doctor`.
 - Release rehearsal now excludes local credentials and memory artifacts,
   requires an explicit unreleased target in CI, and rejects existing releases.
 - Manual release input is passed through a quoted environment variable, and
