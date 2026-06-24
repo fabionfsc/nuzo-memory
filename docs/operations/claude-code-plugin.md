@@ -94,8 +94,8 @@ The generated release artifact instead uses:
 {
   "mcpServers": {
     "nuzo": {
-      "command": "npx",
-      "args": ["--yes", "@nuzo/mcp-server@0.1.1"],
+      "command": "npm",
+      "args": ["exec", "--yes", "--package=@nuzo/mcp-server@0.1.1", "--", "nuzo-mcp-server"],
       "cwd": "${CLAUDE_PLUGIN_ROOT}"
     }
   }
@@ -211,8 +211,9 @@ The validator checks:
 
 Release validation additionally checks:
 
-- the MCP server runs through `npx`;
-- `@nuzo/mcp-server` is pinned to the plugin version;
+- the MCP server runs through `npm exec`;
+- `@nuzo/mcp-server` is pinned to the plugin version and runs the explicit
+  `nuzo-mcp-server` binary;
 - `cwd` resolves through `${CLAUDE_PLUGIN_ROOT}`;
 - no sibling monorepo path remains.
 

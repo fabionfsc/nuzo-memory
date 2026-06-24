@@ -38,7 +38,7 @@ npm run package:plugins
 ```
 
 The release artifact is written to `build/plugins/codex/nuzo` and pins the
-matching `@nuzo/mcp-server` version through `npx`.
+matching `@nuzo/mcp-server` version through `npm exec`.
 
 The default memory store is:
 

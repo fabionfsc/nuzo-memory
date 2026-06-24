@@ -137,6 +137,7 @@ npm run build
 npm run package:plugins
 npm run validate:npm
 npm run smoke:cli
+npm run smoke:codex-plugin
 npm run smoke:published:cli
 npm run smoke:published:mcp
 ```
@@ -168,6 +169,11 @@ replacement for staged artifact validation before publication.
 The published MCP smoke installs `@nuzo/mcp-server` into a temporary npm prefix
 and validates session continuity through separate stdio server processes. It is
 the package-level confidence check for the runtime host plugins resolve.
+
+The Codex plugin artifact smoke regenerates the release-layout plugin, verifies
+the host-facing metadata loads as `Nuzo`, reads its bundled MCP config, and
+validates continuity through the published version-pinned MCP command that the
+plugin artifact exposes.
 
 Documentation validation installs `requirements-docs.txt` and runs:
 

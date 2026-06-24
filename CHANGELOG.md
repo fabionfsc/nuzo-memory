@@ -14,6 +14,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Published MCP session-continuity smoke for validating recall across separate
   stdio server sessions, read-only capture suggestions, duplicate detection,
   and doctor output through the package host plugins resolve.
+- Generated Codex plugin artifact smoke for validating `Nuzo` metadata and the
+  version-pinned published MCP runtime exposed by the release-layout plugin.
 
 ### Documentation
 

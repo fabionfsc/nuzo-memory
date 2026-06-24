@@ -68,8 +68,8 @@ the published MCP package to the same version as the plugin:
 {
   "mcpServers": {
     "nuzo": {
-      "command": "npx",
-      "args": ["--yes", "@nuzo/mcp-server@0.1.1"]
+      "command": "npm",
+      "args": ["exec", "--yes", "--package=@nuzo/mcp-server@0.1.1", "--", "nuzo-mcp-server"]
     }
   }
 }
@@ -205,8 +205,9 @@ The validator checks:
 
 Release validation additionally checks:
 
-- the MCP server runs through `npx`;
-- `@nuzo/mcp-server` is pinned to the plugin version;
+- the MCP server runs through `npm exec`;
+- `@nuzo/mcp-server` is pinned to the plugin version and runs the explicit
+  `nuzo-mcp-server` binary;
 - no sibling monorepo path remains in the artifact.
 
 The repository check also validates the plugin metadata:

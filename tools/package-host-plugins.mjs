@@ -24,8 +24,8 @@ const artifacts = [
     mcp: {
       mcpServers: {
         nuzo: {
-          command: "npx",
-          args: ["--yes", packageSpec],
+          command: "npm",
+          args: ["exec", "--yes", `--package=${packageSpec}`, "--", "nuzo-mcp-server"],
         },
       },
     },
@@ -39,8 +39,8 @@ const artifacts = [
     mcp: {
       mcpServers: {
         nuzo: {
-          command: "npx",
-          args: ["--yes", packageSpec],
+          command: "npm",
+          args: ["exec", "--yes", `--package=${packageSpec}`, "--", "nuzo-mcp-server"],
           cwd: "${CLAUDE_PLUGIN_ROOT}",
         },
       },

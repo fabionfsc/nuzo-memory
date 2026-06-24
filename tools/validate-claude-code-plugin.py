@@ -100,10 +100,10 @@ def validate_nuzo_server(server: dict, version: str, release: bool) -> None:
         fail("nuzo MCP server must define args")
 
     if release:
-        if server.get("command") != "npx":
-            fail("release nuzo MCP server command must be npx")
-        if args != ["--yes", f"@nuzo/mcp-server@{version}"]:
-            fail("release nuzo MCP server must pin @nuzo/mcp-server to the plugin version")
+        if server.get("command") != "npm":
+            fail("release nuzo MCP server command must be npm")
+        if args != ["exec", "--yes", f"--package=@nuzo/mcp-server@{version}", "--", "nuzo-mcp-server"]:
+            fail("release nuzo MCP server must pin @nuzo/mcp-server to the plugin version and explicit binary")
         if server.get("cwd") != "${CLAUDE_PLUGIN_ROOT}":
             fail("release nuzo MCP server cwd must resolve through ${CLAUDE_PLUGIN_ROOT}")
         if any(".." in arg or "/mcp-server/" in arg for arg in args):
