@@ -11,6 +11,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Expanded the roadmap for the `0.2.0` agent memory lifecycle milestone and
   proposed follow-up `0.2.x` releases for capture refinement, Claude Code/MCP
   parity, audit UX, and local quality benchmarks.
+- Documented the Codex-first `0.2.0` agent memory loop in the plugin skill,
+  Codex operation docs, and issue-tracking milestone guidance.
 
 ### Fixed
 
