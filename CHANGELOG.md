@@ -10,6 +10,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 - Documented the `0.1.3` focus on product polish, installation
   simplification, README/docs pruning, and public/private agent guidance.
+- Polished the README and getting-started docs around a 60-second
+  `@nuzo/memory-cli` install path and clearer CLI/MCP/core package roles.
 
 ## [0.1.2] - 2026-06-24
 

@@ -1,8 +1,10 @@
 # Clean Install Walkthrough
 
-This walkthrough starts from a clean checkout and uses fake memory data only.
+This walkthrough starts from a clean installation path and uses fake memory data
+only.
 
-It verifies both the public CLI package and the monorepo workflow.
+It verifies the public CLI package first. The source checkout section is only
+for contributors.
 
 ## Prerequisites
 
@@ -22,21 +24,34 @@ python3 --version
 Other Node.js major versions are not claimed as supported until they are part
 of the CI matrix. See the [runtime support policy](../operations/runtime-support.md).
 
-## Clone And Install
+## Install Without Cloning
+
+Most users install only:
+
+```text
+@nuzo/memory-cli
+```
+
+The CLI brings the runtime it needs for local memory control. Use
+`@nuzo/mcp-server` when an MCP host needs the stdio server, and
+`@nuzo/memory-core` only for library-level integrations or Nuzo development.
 
 Verify the released CLI without cloning:
 
 ```bash
 NUZO_PUBLISHED_DIR=/tmp/nuzo-published-cli
 rm -rf "$NUZO_PUBLISHED_DIR"
-npm install --prefix "$NUZO_PUBLISHED_DIR" @nuzo/memory-cli@0.1.1
+npm install --prefix "$NUZO_PUBLISHED_DIR" @nuzo/memory-cli@0.1.2
 "$NUZO_PUBLISHED_DIR/node_modules/.bin/nuzo" memory --store /tmp/nuzo-published.sqlite init
 NUZO_DOCTOR_SKIP_GIT=1 "$NUZO_PUBLISHED_DIR/node_modules/.bin/nuzo" memory --store /tmp/nuzo-published.sqlite doctor
 rm -rf "$NUZO_PUBLISHED_DIR"
 rm -f /tmp/nuzo-published.sqlite /tmp/nuzo-published.sqlite-*
 ```
 
-Then clone the source workspace:
+## Clone And Install The Source Workspace
+
+Clone the repository only when you want to contribute to Nuzo or run the full
+source validation suite:
 
 ```bash
 git clone https://github.com/fabionfsc/nuzo-memory.git

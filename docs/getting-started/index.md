@@ -1,20 +1,72 @@
 # Getting Started
 
-Nuzo `0.1.1` is the current public release.
+Nuzo `0.1.2` is the current public release.
 
-This page explains how to use the released CLI and how to work with the
-repository.
+Most users should start with the released CLI. Repository setup is only needed
+when you want to contribute to Nuzo itself.
+
+## Install The CLI
+
+Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
+
+```bash
+npm install --global @nuzo/memory-cli@0.1.2
+nuzo memory init
+nuzo memory doctor
+```
+
+Store and recall a fake memory:
+
+```bash
+nuzo memory remember "The demo project uses SQLite for local storage." --kind project_decision
+nuzo memory recall "local storage"
+```
+
+The first user-facing command is:
+
+```bash
+nuzo memory init
+```
+
+It creates:
+
+```text
+~/.nuzo/
+├── config.json
+└── memory/
+    ├── memories.sqlite
+    ├── exports/
+    └── logs/
+```
+
+Initialize project-local memory from a project root with:
+
+```bash
+nuzo memory init --project
+```
+
+## Choose A Package
+
+You do not need to install every Nuzo package.
+
+| Package | Use it when you need... |
+| --- | --- |
+| `@nuzo/memory-cli` | the `nuzo` command for local memory control. |
+| `@nuzo/mcp-server` | an MCP stdio server for Codex, Claude Code, or another host. |
+| `@nuzo/memory-core` | library-level integration or Nuzo package development. |
+
+The CLI is the default starting point for humans. Host plugins and MCP clients
+resolve the MCP server runtime when they need it.
 
 ## Read The Project
 
-Start with:
+If you are evaluating or contributing to Nuzo, start with:
 
 1. `README.md`
-2. `AGENTS.md`
-3. `docs/architecture/overview.md`
-4. `docs/architecture/boundaries.md`
-5. `docs/spec/tools.md`
-6. `docs/operations/roadmap.md`
+2. `CONTRIBUTING.md`
+3. `docs/spec/tools.md`
+4. `docs/operations/roadmap.md`
+5. `docs/architecture/overview.md`
 
 ## Work On Documentation
 
@@ -69,42 +121,11 @@ npm test
 
 ## Local Runtime Flow
 
-Install the released CLI:
-
-```bash
-npm install --global @nuzo/memory-cli@0.1.1
-nuzo memory init
-nuzo memory doctor
-```
-
 The workspace CLI is also available after a build:
 
 ```bash
 npm run build
 npm run nuzo -- memory init
-```
-
-Initialize project-local memory with:
-
-```bash
-npm run nuzo -- memory init --project
-```
-
-The first user-facing command is:
-
-```bash
-nuzo memory init
-```
-
-It should create:
-
-```text
-~/.nuzo/
-├── config.json
-└── memory/
-    ├── memories.sqlite
-    ├── exports/
-    └── logs/
 ```
 
 After that, the expected flow is:
