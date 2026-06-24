@@ -17,6 +17,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
   reading path.
 - Documented Markdown naming conventions and refreshed the repository layout
   docs to match the current monorepo and package names.
+- Reorganized the docs navigation around install, CLI, MCP, host plugins, and
+  privacy before deeper product, architecture, and release-operation pages.
 
 ## [0.1.2] - 2026-06-24
 

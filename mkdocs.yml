@@ -71,9 +71,15 @@ extra_css:
 
 nav:
   - Home: index.md
-  - Getting Started:
+  - Install And Use:
       - Overview: getting-started/index.md
       - Clean Install Walkthrough: getting-started/clean-install.md
+      - Local CLI: operations/local-cli.md
+      - MCP Tools: spec/tools.md
+      - Codex Plugin: operations/codex-plugin.md
+      - Claude Code Plugin: operations/claude-code-plugin.md
+      - Lifecycle Hooks: operations/lifecycle-hooks.md
+      - Privacy And Security: operations/privacy-and-security.md
   - Product:
       - Vision: product/vision.md
       - Positioning: product/positioning.md
@@ -88,16 +94,10 @@ nav:
   - Specification:
       - Memory Model: spec/memory-model.md
       - Capture Suggestions: spec/capture-suggestions.md
-      - Tools: spec/tools.md
       - Init: spec/init.md
       - API Versioning: spec/api-versioning.md
   - Operations:
       - Roadmap: operations/roadmap.md
-      - Privacy And Security: operations/privacy-and-security.md
-      - Local CLI: operations/local-cli.md
-      - Codex Plugin: operations/codex-plugin.md
-      - Claude Code Plugin: operations/claude-code-plugin.md
-      - Lifecycle Hooks: operations/lifecycle-hooks.md
       - GitHub Pages: operations/github-pages.md
       - Issue Tracking: operations/issue-tracking.md
       - Specification-Driven Workflow: operations/spec-driven-workflow.md
