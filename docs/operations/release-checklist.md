@@ -65,6 +65,7 @@ npm run build
 npm run package:plugins
 npm run validate:npm
 npm run smoke:cli
+npm run smoke:published:cli
 ```
 
 Confirm the generated host artifacts contain no monorepo runtime paths:

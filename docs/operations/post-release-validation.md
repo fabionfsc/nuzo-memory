@@ -22,6 +22,11 @@ Defer features that do not strengthen this flow, including sync, embeddings,
 UI, background capture, local installer scripts, and host-specific memory
 formats.
 
+The `0.2.0` phase should focus on the complete capture lifecycle and agent UX.
+Post-`0.2.0` work may explore optional semantic search, local embeddings, or
+provider plugins, but those must remain opt-in and must not introduce network
+calls, telemetry, or inferred writes by default.
+
 ## Real Flow To Prove
 
 The canonical post-release smoke is:
@@ -75,6 +80,17 @@ Add automation in this order:
 
 Prefer extending `npm run validate:npm` or adding a focused release smoke script
 over copying manual command lists into multiple docs.
+
+The focused CLI smoke is:
+
+```bash
+npm run smoke:published:cli
+```
+
+It installs the current released CLI package into a temporary npm prefix, uses a
+temporary SQLite store, runs separate CLI processes for session-style writes and
+recall, validates read-only capture suggestions, checks duplicate detection,
+and confirms `doctor` does not expose memory content.
 
 ## Capture Suggestion Boundary
 
