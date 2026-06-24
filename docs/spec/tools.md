@@ -278,6 +278,23 @@ Input:
 
 Output includes the updated memory and its next revision.
 
+Revision conflicts are returned as structured tool errors:
+
+```json
+{
+  "code": "MEMORY_REVISION_CONFLICT",
+  "message": "Memory changed before this operation could commit.",
+  "details": {
+    "id": "mem_01HZY...",
+    "expectedRevision": 1,
+    "currentRevision": 2
+  }
+}
+```
+
+Hosts should re-read the memory and ask the user to confirm the updated draft
+again instead of retrying silently.
+
 ### `memory.history`
 
 List the audit history for one memory ID.

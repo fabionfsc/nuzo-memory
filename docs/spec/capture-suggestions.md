@@ -148,6 +148,31 @@ still `false`, and the existing memory is returned for display. Hosts should
 normally show the existing memory and skip the save prompt unless the user
 explicitly asks to create a separate memory.
 
+## Update Handling
+
+Some capture candidates are not exact duplicates, but they clearly change an
+existing memory. Hosts should treat these as update candidates instead of
+creating unbounded new memories.
+
+Use this decision table:
+
+| Candidate relationship | Host behavior |
+| --- | --- |
+| Same normalized content in the same scope | Show the duplicate returned by `memory.suggest_capture`; do not write a new memory by default. |
+| Same durable preference, fact, instruction, or project decision with changed content | Show the existing memory and the proposed replacement; call `memory.update` only after the user confirms or edits the change. |
+| Related but independently useful memory | Ask whether to save a separate memory, then use `memory.remember` only after confirmation. |
+| Unclear relationship | Ask a clarifying question before saving or updating. |
+
+Update prompts should include the current memory content, proposed content,
+kind, scope, tags, and reason. The host should pass `expected_revision` from the
+memory it displayed to the user. If `memory.update` returns
+`MEMORY_REVISION_CONFLICT`, the host must re-read the current memory and ask the
+user again; it must not retry silently.
+
+Confirmed updates remain subject to the same policy checks as new memories:
+secret scanning, scope validation, tag normalization, authorization, and audit
+history.
+
 ## Scope Rules
 
 Choose the narrowest useful scope.

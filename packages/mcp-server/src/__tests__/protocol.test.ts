@@ -271,6 +271,67 @@ describe("MCP protocol contract", () => {
     }
   });
 
+  it("returns structured update revision conflicts through the SDK", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "nuzo-mcp-protocol-"));
+    tempDirectories.push(directory);
+    const runtime = createNuzoMcpServerRuntime({
+      storePath: join(directory, "memories.sqlite"),
+    });
+    const client = new Client({
+      name: "nuzo-contract-test",
+      version: "0.0.0",
+    });
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+
+    try {
+      await Promise.all([
+        runtime.server.connect(serverTransport),
+        client.connect(clientTransport),
+      ]);
+
+      const remembered = parseToolJson(await client.callTool({
+        name: "memory.remember",
+        arguments: {
+          content: "MCP update conflicts should stay structured.",
+          kind: "instruction",
+          scope: "project:nuzo",
+          source: "test:mcp-client",
+        },
+      })) as { id: string };
+
+      await client.callTool({
+        name: "memory.update",
+        arguments: {
+          id: remembered.id,
+          expected_revision: 1,
+          content: "The first MCP update wins.",
+        },
+      });
+
+      const conflict = await client.callTool({
+        name: "memory.update",
+        arguments: {
+          id: remembered.id,
+          expected_revision: 1,
+          content: "This stale MCP update must not commit.",
+        },
+      });
+      expect(conflict.isError).toBe(true);
+      expect(parseToolJson(conflict)).toMatchObject({
+        code: "MEMORY_REVISION_CONFLICT",
+        message: "Memory changed before this operation could commit.",
+        details: {
+          id: remembered.id,
+          expectedRevision: 1,
+          currentRevision: 2,
+        },
+      });
+    } finally {
+      await client.close();
+      runtime.close();
+    }
+  });
+
   it("rejects invalid arguments through the registered MCP schema", async () => {
     const directory = mkdtempSync(join(tmpdir(), "nuzo-mcp-protocol-"));
     tempDirectories.push(directory);

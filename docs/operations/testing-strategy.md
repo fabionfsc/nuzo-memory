@@ -188,6 +188,10 @@ rejected draft is never persisted, a confirmed draft is written only through
 `memory.remember`, and a later equivalent suggestion is reported as a
 duplicate.
 
+For update safety, the smoke also updates a confirmed capture with
+`memory.update` and `expected_revision`, then verifies a stale update returns
+`MEMORY_REVISION_CONFLICT` instead of overwriting the newer memory.
+
 The Claude Code plugin artifact smoke performs the same release-layout
 continuity validation while also resolving the `${CLAUDE_PLUGIN_ROOT}` cwd
 placeholder against an isolated temporary plugin install path.

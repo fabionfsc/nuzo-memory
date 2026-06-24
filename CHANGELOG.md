@@ -19,6 +19,9 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
   "save this in Nuzo memory".
 - Documented smoke coverage for rejected inferred capture drafts in the
   Codex/MCP session-continuity flow.
+- Documented duplicate, update, and separate-memory decision rules for capture
+  suggestions.
+- Documented structured MCP `memory.update` revision conflict errors.
 
 ### Changed
 
@@ -30,6 +33,10 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
   path.
 - Strengthened MCP session-continuity smoke validation so rejected inferred
   capture drafts must remain absent from later recall results.
+- Strengthened MCP session-continuity smoke validation for confirmed capture
+  updates and stale `expected_revision` conflicts.
+- MCP `memory.update` now returns structured Nuzo memory errors for stale
+  revision conflicts.
 
 ### Fixed
 
