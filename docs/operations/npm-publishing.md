@@ -22,15 +22,15 @@ Core, CLI, and MCP packages use the same version and must be released together.
 
 ## Current Release
 
-Version `0.1.1` is the current release target:
+Version `0.1.2` is the current release:
 
 ```text
-@nuzo/memory-core@0.1.1
-@nuzo/memory-cli@0.1.1
-@nuzo/mcp-server@0.1.1
+@nuzo/memory-core@0.1.2
+@nuzo/memory-cli@0.1.2
+@nuzo/mcp-server@0.1.2
 ```
 
-The first publication used maintainer authentication. Subsequent routine
+The packages are published together from the same source version. Routine
 releases should use npm trusted publishing through GitHub Actions OIDC.
 
 ## Scope Ownership

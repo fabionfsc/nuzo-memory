@@ -100,7 +100,7 @@ Goal: package the MCP server for agent hosts through supported plugin workflows.
 
 Status: release layouts, host guidance, and host-specific validation are
 implemented. Isolated official marketplace installs for Codex and Claude Code
-resolve the published `@nuzo/mcp-server@0.1.1` runtime. Claude Code reports the
+resolve the published `@nuzo/mcp-server@0.1.2` runtime. Claude Code reports the
 server connected, and Codex successfully calls `memory.doctor` through the
 installed plugin.
 
@@ -158,7 +158,7 @@ local-first product boundary.
 
 Status: mostly complete for release infrastructure. Scope authorization,
 optimistic concurrency, effective runtime configuration, Dependabot, CodeQL,
-branch protection, npm trusted publishing, provenance, and the `0.1.1` release
+branch protection, npm trusted publishing, provenance, and the `0.1.2` release
 are implemented.
 
 Completed:

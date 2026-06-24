@@ -1,19 +1,24 @@
 # Post-Release Validation
 
-This page defines the next product-hardening loop after the `0.1.1` release.
+This page defines the product-hardening loop after each public release.
 
-The goal for `0.1.2` is not to add many new features. It is to prove that Nuzo
-works naturally in real agent workflows: a user can store useful memory, start a
-fresh session, recall that memory through the supported runtime path, and audit
-or reject inferred writes.
+The `0.1.2` release proved session continuity through published CLI, MCP,
+Codex plugin, and Claude Code plugin runtime paths. The next loop should keep
+that validation intact while making the product easier to install, explain, and
+use.
 
 ## Current Focus
 
-For `0.1.2`, prioritize:
+For `0.1.3`, prioritize:
 
-- real installed-package validation over source-tree-only validation;
-- memory continuity across separate sessions and processes;
-- Codex and Claude Code host behavior through official plugin paths;
+- simple installation guidance that starts with `@nuzo/memory-cli`;
+- clear package-role guidance for CLI, MCP server, and core library users;
+- README and docs entry points that avoid internal release mechanics on first
+  read;
+- public contribution guidance through `CONTRIBUTING.md`;
+- local operator and agent notes outside committed public docs;
+- continued installed-package validation over source-tree-only validation;
+- continued Codex and Claude Code host behavior through official plugin paths;
 - read-only recall before work starts;
 - capture suggestions that require explicit confirmation;
 - documentation that matches commands tested against published packages.
@@ -142,13 +147,20 @@ until the user confirms them. The validation loop must prove:
 - duplicate suggestions do not create new active memories;
 - secrets and unsafe content are blocked by core policy.
 
-## Acceptance Criteria For 0.1.2
+## Acceptance Criteria For 0.1.3
 
-`0.1.2` should be considered ready when:
+`0.1.3` should be considered ready when:
 
-- published CLI and MCP packages pass session-continuity smoke tests;
-- Codex and Claude Code release artifacts are validated against the published
-  MCP runtime;
+- the README gives a credible 60-second install and first-use path;
+- docs explain that most users install only `@nuzo/memory-cli`;
+- MCP and host setup docs explain when `@nuzo/mcp-server` is needed;
+- core package docs make clear that `@nuzo/memory-core` is for library or
+  Nuzo development use;
+- public docs no longer route external contributors through `AGENTS.md`;
+- local-only operator notes are ignored and untracked;
+- published CLI and MCP packages continue to pass session-continuity smoke tests;
+- Codex and Claude Code release artifacts continue to validate against the
+  published MCP runtime;
 - docs describe only install and verification paths that were tested;
 - issue hunting finds no release-blocking doc drift, stale version references,
   or untracked runtime artifacts;
@@ -159,10 +171,11 @@ until the user confirms them. The validation loop must prove:
 
 Create or update GitHub Issues for:
 
-- installed CLI memory continuity across separate process sessions;
-- installed MCP memory continuity through stdio;
-- Codex plugin release-artifact recall and capture suggestion smoke;
-- Claude Code plugin release-artifact recall and capture suggestion smoke;
+- README 60-second onboarding polish;
+- package role and installation simplification;
+- public AGENTS guidance versus local operator notes;
+- Markdown inventory and naming convention cleanup;
+- docs navigation around install and usage first;
 - capture suggestion candidate criteria and rejection examples;
 - docs drift checks for published package commands.
 
