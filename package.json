@@ -23,6 +23,7 @@
     "release:prepare": "node tools/prepare-release.mjs",
     "release:rehearse": "node tools/rehearse-release.mjs",
     "smoke:cli": "npm run build && npm run nuzo -- memory --store /tmp/nuzo-cli-smoke/memories.sqlite init && NUZO_DOCTOR_SKIP_GIT=1 npm run nuzo -- memory --store /tmp/nuzo-cli-smoke/memories.sqlite doctor",
+    "smoke:claude-code-plugin": "node tools/smoke-claude-code-plugin-artifact.mjs",
     "smoke:codex-plugin": "node tools/smoke-codex-plugin-artifact.mjs",
     "smoke:published:cli": "node tools/smoke-published-cli.mjs",
     "smoke:published:mcp": "node tools/smoke-published-mcp.mjs",
