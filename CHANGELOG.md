@@ -16,7 +16,7 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Documented and tightened the Codex plugin smoke coverage for read-only
   task-start recall across MCP sessions.
 - Documented the Codex explicit save request flow for commands such as
-  "coloca isso na memoria do Nuzo".
+  "save this in Nuzo memory".
 - Documented smoke coverage for rejected inferred capture drafts in the
   Codex/MCP session-continuity flow.
 

@@ -206,7 +206,7 @@ The plugin should not implement storage, ranking, policy checks, or direct
 import/export behavior. Those remain MCP/core responsibilities.
 
 Explicit user commands such as "save this in Nuzo memory", "remember this for
-this project", or "coloca isso na memoria do Nuzo" still pass through
+this project", or "store this decision in Nuzo" still pass through
 `memory.suggest_capture` so the user can inspect the normalized memory before a
 write occurs.
 
@@ -215,7 +215,7 @@ write occurs.
 When the user says something like:
 
 ```text
-Coloca isso na memoria do Nuzo: eu prefiro status curtos enquanto voce trabalha.
+Save this in Nuzo memory: I prefer short status updates while you work.
 ```
 
 Codex should treat that as a request to start a confirmed capture flow:
