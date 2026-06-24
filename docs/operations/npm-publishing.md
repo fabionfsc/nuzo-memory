@@ -107,11 +107,13 @@ The validation:
 2. creates all three tarballs with `npm pack`;
 3. installs all tarballs into a temporary project;
 4. confirms package versions match;
-5. runs the installed `nuzo` binary through init, remember, recall, and doctor;
+5. runs the installed `nuzo` binary through init, remember, suggest-capture,
+   recall, list, duplicate detection, and doctor;
 6. verifies installed CLI operational, usage, and internal exit-code contracts;
 7. connects an SDK client to the installed `nuzo-mcp-server` binary over stdio;
-8. verifies the exact public tool set and calls `memory.doctor` against a
-   temporary store.
+8. verifies the exact public tool set, calls `memory.doctor`, and exercises
+   `memory.suggest_capture`, confirmed `memory.remember`, and
+   `memory.recall_hook` against a temporary store.
 
 The command does not publish anything.
 

@@ -47,8 +47,9 @@ packaging validation, and runtime diagnostics instead of copying lists by hand.
   caller explicitly opts in;
 - doctor reports tracked memory files.
 - MCP doctor reports aggregate store health without exposing memory content.
-- staged npm artifacts complete a real stdio MCP handshake, expose the exact
-  public tool set, and return a healthy `memory.doctor` response.
+- staged npm artifacts complete real installed CLI and stdio MCP lifecycle
+  flows for capture suggestion, confirmed writes, recall hooks, the exact
+  public tool set, and healthy `memory.doctor` responses.
 - release-tool tests reject invalid SemVer and direct workflow input
   interpolation, and verify local npm credentials remain ignored.
 
@@ -152,9 +153,10 @@ dependency pins, lockfile workspace entries, CLI version output, MCP server
 version metadata, and changelog structure stay aligned.
 
 The npm artifact validation installs generated core, CLI, and MCP tarballs into
-a temporary project. It exercises the installed CLI workflow and exit codes,
-then confirms the installed MCP binary starts. It does not publish packages or
-require npm credentials.
+a temporary project. It exercises the installed CLI workflow, read-only capture
+suggestions, confirmed writes, recall, and exit codes, then confirms the
+installed MCP binary starts and supports the same suggestion-to-recall lifecycle
+over stdio. It does not publish packages or require npm credentials.
 
 Documentation validation installs `requirements-docs.txt` and runs:
 

@@ -22,7 +22,8 @@ const coreTarball = join(tarballsRoot, tarballName(corePackage));
 const cliTarball = join(tarballsRoot, tarballName(cliPackage));
 const mcpTarball = join(tarballsRoot, tarballName(mcpPackage));
 const testRoot = mkdtempSync(join(tmpdir(), "nuzo-npm-artifacts-"));
-const storePath = join(testRoot, "memory", "memories.sqlite");
+const cliStorePath = join(testRoot, "memory", "cli.sqlite");
+const mcpStorePath = join(testRoot, "memory", "mcp.sqlite");
 
 try {
   run("npm", ["init", "--yes"], testRoot);
@@ -56,8 +57,8 @@ try {
     fail("installed core, CLI, and MCP package versions differ");
   }
 
-  assertCliWorkflow(testRoot, storePath);
-  await assertMcpProtocol(testRoot, storePath);
+  assertCliWorkflow(testRoot, cliStorePath);
+  await assertMcpProtocol(testRoot, mcpStorePath);
   console.log(`npm artifact validation passed: ${installedMcp.version}`);
 } finally {
   rmSync(testRoot, { recursive: true, force: true });
@@ -94,6 +95,83 @@ function assertCliWorkflow(cwd, memoryStore) {
       })}`,
     );
   }
+
+  const readySuggestion = run(
+    executable,
+    [
+      "memory",
+      "--store",
+      memoryStore,
+      "suggest-capture",
+      "The artifact test prefers installed capture validation.",
+      "--kind",
+      "preference",
+      "--tag",
+      "artifact-test",
+      "--reason",
+      "Validates installed capture suggestion behavior.",
+      "--json",
+    ],
+    cwd,
+  );
+  const readySuggestionJson = JSON.parse(readySuggestion.stdout);
+  if (
+    readySuggestionJson.status !== "ready" ||
+    readySuggestionJson.memory_writes !== false ||
+    readySuggestionJson.requires_confirmation !== true ||
+    readySuggestionJson.duplicate !== null
+  ) {
+    fail(`installed nuzo binary capture suggestion failed: ${readySuggestion.stdout}`);
+  }
+  const afterSuggestionList = run(
+    executable,
+    ["memory", "--store", memoryStore, "list", "--tag", "artifact-test"],
+    cwd,
+  );
+  if (afterSuggestionList.stdout.includes("installed capture validation")) {
+    fail("installed nuzo binary suggest-capture wrote a memory before confirmation");
+  }
+
+  run(
+    executable,
+    [
+      "memory",
+      "--store",
+      memoryStore,
+      "remember",
+      "The artifact test prefers installed capture validation.",
+      "--kind",
+      "preference",
+      "--tag",
+      "artifact-test",
+    ],
+    cwd,
+  );
+  const duplicateSuggestion = run(
+    executable,
+    [
+      "memory",
+      "--store",
+      memoryStore,
+      "suggest-capture",
+      " the artifact test prefers installed   capture validation. ",
+      "--kind",
+      "note",
+      "--reason",
+      "Validates installed duplicate detection.",
+      "--json",
+    ],
+    cwd,
+  );
+  const duplicateSuggestionJson = JSON.parse(duplicateSuggestion.stdout);
+  if (
+    duplicateSuggestionJson.status !== "duplicate" ||
+    !duplicateSuggestionJson.duplicate?.id ||
+    duplicateSuggestionJson.duplicate.content !== "The artifact test prefers installed capture validation."
+  ) {
+    fail(`installed nuzo binary duplicate suggestion failed: ${duplicateSuggestion.stdout}`);
+  }
+
   const doctor = run(
     executable,
     ["memory", "--store", memoryStore, "doctor"],
@@ -188,6 +266,67 @@ async function assertMcpProtocol(cwd, memoryStore) {
     }));
     if (doctor.ok !== true || doctor.store?.readable !== true) {
       fail(`installed MCP doctor failed: ${JSON.stringify(doctor)}`);
+    }
+
+    const suggestion = parseToolJson(await client.callTool({
+      name: "memory.suggest_capture",
+      arguments: {
+        content: "Installed MCP lifecycle memory survives into recall hooks.",
+        kind: "instruction",
+        scope: "project:installed-artifact",
+        tags: ["artifact-test"],
+        source: "test:installed-mcp",
+        confidence: 0.8,
+        reason: "Validates installed MCP capture suggestion before confirmed write.",
+      },
+    }));
+    if (
+      suggestion.status !== "ready" ||
+      suggestion.memory_writes !== false ||
+      suggestion.requires_confirmation !== true ||
+      suggestion.duplicate !== null
+    ) {
+      fail(`installed MCP suggest_capture failed: ${JSON.stringify(suggestion)}`);
+    }
+
+    const beforeRemember = parseToolJson(await client.callTool({
+      name: "memory.recall_hook",
+      arguments: {
+        task_context: "installed MCP lifecycle memory",
+        project_scope: "project:installed-artifact",
+      },
+    }));
+    if (beforeRemember.results.length !== 0) {
+      fail(`installed MCP suggest_capture wrote before confirmation: ${JSON.stringify(beforeRemember)}`);
+    }
+
+    await client.callTool({
+      name: "memory.remember",
+      arguments: {
+        content: suggestion.draft.content,
+        kind: suggestion.draft.kind,
+        scope: suggestion.draft.scope,
+        tags: suggestion.draft.tags,
+        source: "test:confirmed-installed-mcp",
+        confidence: suggestion.draft.confidence,
+      },
+    });
+
+    const recalled = parseToolJson(await client.callTool({
+      name: "memory.recall_hook",
+      arguments: {
+        task_context: "installed MCP lifecycle recall hooks",
+        project_scope: "project:installed-artifact",
+        limit: 5,
+      },
+    }));
+    if (
+      recalled.mode !== "read_only" ||
+      recalled.memory_writes !== false ||
+      recalled.results.length !== 1 ||
+      recalled.results[0]?.content !== "Installed MCP lifecycle memory survives into recall hooks."
+    ) {
+      fail(`installed MCP recall_hook lifecycle failed: ${JSON.stringify(recalled)}`);
     }
   } catch (error) {
     throw new Error(
