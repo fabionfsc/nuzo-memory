@@ -13,6 +13,14 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
   parity, audit UX, and local quality benchmarks.
 - Documented the Codex-first `0.2.0` agent memory loop in the plugin skill,
   Codex operation docs, and issue-tracking milestone guidance.
+- Documented and tightened the Codex plugin smoke coverage for read-only
+  task-start recall across MCP sessions.
+
+### Changed
+
+- Strengthened MCP session-continuity smoke validation so task-start
+  `memory.recall_hook` must remain read-only, avoid capture suggestions, and
+  avoid adding recall audit events.
 
 ### Fixed
 

@@ -176,6 +176,12 @@ the host-facing metadata loads as `Nuzo`, reads its bundled MCP config, and
 validates continuity through the published version-pinned MCP command that the
 plugin artifact exposes.
 
+The continuity assertion covers the `0.2.0` Codex task-start recall contract:
+a first MCP session writes a fake confirmed memory, a later session calls
+`memory.recall_hook`, the remembered content is returned, and the hook reports
+`memory_writes: false` plus `capture_suggestions: false` without adding recall
+audit events.
+
 The Claude Code plugin artifact smoke performs the same release-layout
 continuity validation while also resolving the `${CLAUDE_PLUGIN_ROOT}` cwd
 placeholder against an isolated temporary plugin install path.
