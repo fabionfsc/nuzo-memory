@@ -1,49 +1,35 @@
 # Repository Layout
 
-This repository starts documentation-first and should grow into a small monorepo.
+This repository is a small TypeScript monorepo with documentation, runtime
+packages, host plugin source, release tooling, and examples.
 
 ## Current Layout
 
 ```text
+.
+├── AGENTS.md
+├── CHANGELOG.md
+├── CONTRIBUTING.md
+├── README.md
+├── SECURITY.md
 docs/
-├── product/
+├── adr/
 ├── architecture/
-├── spec/
+├── assets/
+├── getting-started/
+├── implementation/
 ├── operations/
-└── adr/
+├── product/
+└── spec/
 examples/
-README.md
-```
-
-## Current Implementation Scaffold
-
-```text
 packages/
-└── core/
-    ├── src/
-    │   └── index.ts
-    ├── package.json
-    └── tsconfig.json
-```
-
-## Future Layout
-
-```text
-packages/
-├── core/
-│   ├── src/
-│   └── tests/
 ├── cli/
-│   ├── src/
-│   └── tests/
-├── mcp-server/
-│   ├── src/
-│   └── tests/
+├── claude-code-plugin/
 └── codex-plugin/
-    ├── .codex-plugin/
-    ├── skills/
-    ├── scripts/
-    └── README.md
+├── core/
+└── mcp-server/
+scripts/
+test-support/
 ```
 
 ## Documentation Rules
@@ -53,11 +39,34 @@ packages/
 - Tool contracts and file formats live in `docs/spec/`.
 - Release and operational practices live in `docs/operations/`.
 - Durable decisions live in `docs/adr/`.
+- Root Markdown files are short entry points for humans, contributors, agents,
+  security, and release history.
+- Package `README.md` files describe package-specific usage only.
+- Generated docs output belongs in `site/` and must stay untracked.
+
+## Markdown Naming
+
+Use these conventions:
+
+- root entry files use uppercase conventional names, such as `README.md`,
+  `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md`, and `AGENTS.md`;
+- docs pages under `docs/` use lowercase kebab-case names;
+- ADRs use numeric lowercase names under `docs/adr/`;
+- package entry docs use `README.md`;
+- host-agent skills use host-required `SKILL.md`;
+- local-only agent/operator notes use ignored `AGENTS.local.md`;
+- runtime memory exports use ignored `*.memory.export.md` or
+  `*.memory.export.json`.
+
+Do not add a new Markdown file when an existing page can own the content
+cleanly. Prefer merging small operational notes into the relevant docs page.
 
 ## Naming
 
-- Repository name: `nuzo` or `nuzo-memory`.
+- Repository name: `nuzo-memory`.
 - CLI command: `nuzo memory`.
-- MCP server package: `nuzo-memory-mcp`.
-- Codex plugin name: `nuzo`.
+- CLI package: `@nuzo/memory-cli`.
+- MCP server package: `@nuzo/mcp-server`.
+- Core package: `@nuzo/memory-core`.
+- Host plugin display name: `Nuzo`.
 - Default config directory: `~/.nuzo/`.
