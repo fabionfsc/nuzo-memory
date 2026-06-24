@@ -41,12 +41,17 @@ Use `status:blocked` only when an issue has a concrete external blocker.
 
 Current milestones:
 
+- `0.2.0 Agent Memory Lifecycle`
 - `MVP`
 - `Host Plugins`
 - `Lifecycle Hooks`
 - `Public Release`
 
 Milestones should stay small enough to guide execution. Do not use them as permanent categories.
+
+Use `0.2.0 Agent Memory Lifecycle` for Codex-first recall, explicit save
+requests, confirmed capture, update flow, dogfooding, and validation work that
+turns the existing MCP tools into a real cross-session agent memory loop.
 
 ## Issue Quality
 

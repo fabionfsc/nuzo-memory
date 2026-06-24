@@ -377,6 +377,19 @@ Exit criteria:
   session, and see that memory inform future work;
 - no inferred memory is written without confirmation.
 
+Execution tracker:
+
+- [#81](https://github.com/fabionfsc/nuzo-memory/issues/81):
+  Codex task-start recall flow.
+- [#82](https://github.com/fabionfsc/nuzo-memory/issues/82):
+  Codex explicit save request flow.
+- [#83](https://github.com/fabionfsc/nuzo-memory/issues/83):
+  Codex inferred capture confirmation flow.
+- [#84](https://github.com/fabionfsc/nuzo-memory/issues/84):
+  memory update and duplicate handling for agent capture.
+- [#85](https://github.com/fabionfsc/nuzo-memory/issues/85):
+  session-continuity dogfooding and docs.
+
 #### `0.2.1`: Capture Refinement And Updates
 
 Focus: make capture less noisy and better at changing existing memory.

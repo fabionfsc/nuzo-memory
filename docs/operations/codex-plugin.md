@@ -186,6 +186,30 @@ memories, and propose inferred memory drafts before calling
 The skill is host guidance only. Secret scanning, validation, storage, search,
 audit, and import/export behavior remain in core and MCP.
 
+For the `0.2.0` agent memory lifecycle, the Codex skill is the first
+host-facing behavior surface. It should make the following loop natural in a
+fresh Codex session:
+
+```text
+start task
+  -> memory.recall_hook
+  -> use recalled context
+user asks to remember or states durable context
+  -> memory.suggest_capture
+  -> user confirms, edits, or rejects
+  -> memory.remember or memory.update after confirmation
+next Codex session
+  -> memory.recall_hook returns the confirmed memory
+```
+
+The plugin should not implement storage, ranking, policy checks, or direct
+import/export behavior. Those remain MCP/core responsibilities.
+
+Explicit user commands such as "save this in Nuzo memory", "remember this for
+this project", or "coloca isso na memoria do Nuzo" still pass through
+`memory.suggest_capture` so the user can inspect the normalized memory before a
+write occurs.
+
 ## Validation
 
 Validate the plugin manifest with:
@@ -227,7 +251,8 @@ npm run package:plugins
 - Public marketplace listing is not yet available; repository marketplace
   installation remains the distribution path.
 - Runtime memory remains local and should not be committed to Git.
-- Automatic recall or capture hooks must follow `docs/operations/lifecycle-hooks.md` before implementation.
+- Automatic recall or capture hooks must follow `docs/operations/lifecycle-hooks.md`
+  before implementation.
 - Capture suggestions must follow `docs/spec/capture-suggestions.md`, validate inferred drafts with `memory.suggest_capture`, and call `memory.remember` only after confirmation.
 
 ## Source References
