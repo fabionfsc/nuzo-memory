@@ -12,6 +12,9 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
   simplification, README/docs pruning, and public/private agent guidance.
 - Polished the README and getting-started docs around a 60-second
   `@nuzo/memory-cli` install path and clearer CLI/MCP/core package roles.
+- Shortened public agent guidance, kept local operator notes in ignored
+  `AGENTS.local.md`, and removed `AGENTS.md` from the public contribution
+  reading path.
 
 ## [0.1.2] - 2026-06-24
 
