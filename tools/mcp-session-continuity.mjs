@@ -17,6 +17,8 @@ export async function assertMcpSessionContinuity({
   label = "Nuzo MCP",
   expectedToolNames,
 }) {
+  let rememberedMemoryId;
+
   await withMcpSession({ cwd, command, args, memoryStore, label }, async (client) => {
     if (expectedToolNames !== undefined) {
       const tools = await client.listTools();
@@ -26,7 +28,7 @@ export async function assertMcpSessionContinuity({
       }
     }
 
-    await client.callTool({
+    const remembered = parseToolJson(await client.callTool({
       name: "memory.remember",
       arguments: {
         content: rememberedMemory,
@@ -35,7 +37,11 @@ export async function assertMcpSessionContinuity({
         tags: [testTag],
         source: "test:mcp-session-a",
       },
-    });
+    }));
+    if (typeof remembered.id !== "string" || !remembered.id.startsWith("mem_")) {
+      fail(`${label} session A did not create a memory id: ${JSON.stringify(remembered)}`);
+    }
+    rememberedMemoryId = remembered.id;
   });
 
   await withMcpSession({ cwd, command, args, memoryStore, label }, async (client) => {
@@ -50,9 +56,20 @@ export async function assertMcpSessionContinuity({
     if (
       recalled.mode !== "read_only" ||
       recalled.memory_writes !== false ||
+      recalled.capture_suggestions !== false ||
       !recalled.results.some((result) => result.content === rememberedMemory)
     ) {
       fail(`${label} session B could not recall memory from session A: ${JSON.stringify(recalled)}`);
+    }
+    const rememberedHistory = parseToolJson(await client.callTool({
+      name: "memory.history",
+      arguments: {
+        id: rememberedMemoryId,
+      },
+    }));
+    const eventTypes = rememberedHistory.events?.map((event) => event.event_type) ?? [];
+    if (JSON.stringify(eventTypes) !== JSON.stringify(["memory.created"])) {
+      fail(`${label} recall_hook wrote audit events: ${JSON.stringify(rememberedHistory)}`);
     }
 
     const suggestion = parseToolJson(await client.callTool({
@@ -84,6 +101,13 @@ export async function assertMcpSessionContinuity({
         limit: 5,
       },
     }));
+    if (
+      beforeConfirm.mode !== "read_only" ||
+      beforeConfirm.memory_writes !== false ||
+      beforeConfirm.capture_suggestions !== false
+    ) {
+      fail(`${label} recall_hook before confirmation was not read-only: ${JSON.stringify(beforeConfirm)}`);
+    }
     if (beforeConfirm.results.some((result) => result.content === suggestedMemory)) {
       fail(`${label} suggest_capture wrote memory before confirmation: ${JSON.stringify(beforeConfirm)}`);
     }
