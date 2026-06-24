@@ -54,7 +54,7 @@ MCP-compatible hosts where useful context should stay user-owned.
 Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
 
 ```bash
-npm install --global @nuzo/memory-cli@0.1.2
+npm install --global @nuzo/memory-cli
 nuzo memory init
 nuzo memory doctor
 ```
