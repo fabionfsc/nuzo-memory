@@ -176,6 +176,83 @@ describe("memory service", () => {
     await expect(auditLog.list("mem_000001")).resolves.toEqual([]);
   });
 
+  it("accepts representative allowed capture suggestion candidates without persisting drafts", async () => {
+    const { service } = createTestService();
+    const examples = [
+      {
+        content: "For Nuzo, always use GitHub Issues for executable work.",
+        kind: "instruction" as const,
+        scope: "project:nuzo" as const,
+        tags: ["workflow"],
+      },
+      {
+        content: "I prefer concise status updates while work is running.",
+        kind: "preference" as const,
+        scope: "user:default" as const,
+        tags: ["communication"],
+      },
+      {
+        content: "This repo uses /tmp/nuzo-git as the git dir workaround.",
+        kind: "fact" as const,
+        scope: "project:nuzo" as const,
+        tags: ["git"],
+      },
+      {
+        content: "When changing MCP tools, update docs/spec/tools.md first.",
+        kind: "instruction" as const,
+        scope: "project:nuzo" as const,
+        tags: ["mcp", "docs"],
+      },
+    ];
+
+    for (const example of examples) {
+      const suggestion = await service.suggestCapture({
+        ...example,
+        source: "test:capture-candidate",
+        confidence: 0.8,
+        reason: "Representative durable memory candidate from the capture suggestion spec.",
+      });
+
+      expect(suggestion).toMatchObject({
+        status: "ready",
+        memoryWrites: false,
+        requiresConfirmation: true,
+        draft: example,
+        duplicate: null,
+      });
+    }
+
+    await expect(service.list({})).resolves.toEqual([]);
+  });
+
+  it("persists a confirmed capture draft only through remember", async () => {
+    const { auditLog, service } = createTestService();
+
+    const suggestion = await service.suggestCapture({
+      content: "Nuzo should keep MCP tool schemas in docs/spec/tools.md.",
+      kind: "project_decision",
+      scope: "project:nuzo",
+      tags: ["mcp", "docs"],
+      source: "test:capture-candidate",
+      confidence: 0.8,
+      reason: "The statement is a durable project rule for future MCP changes.",
+    });
+
+    await expect(service.list({ scope: "project:nuzo" })).resolves.toEqual([]);
+
+    const memory = await service.remember({
+      content: suggestion.draft.content,
+      kind: suggestion.draft.kind,
+      scope: suggestion.draft.scope,
+      tags: suggestion.draft.tags,
+      source: "test:capture-confirmed",
+      confidence: suggestion.draft.confidence,
+    });
+
+    await expect(service.list({ scope: "project:nuzo" })).resolves.toHaveLength(1);
+    await expect(auditLog.list(memory.id)).resolves.toHaveLength(1);
+  });
+
   it("reports exact active duplicate capture suggestions in the same scope", async () => {
     const { service } = createTestService();
     const memory = await service.remember({
@@ -237,6 +314,25 @@ describe("memory service", () => {
     ).rejects.toMatchObject({
       code: "MEMORY_SCOPE_FORBIDDEN",
     });
+  });
+
+  it("blocks unsafe capture suggestions without persisting partial drafts", async () => {
+    const { auditLog, service } = createTestService();
+
+    await expect(
+      service.suggestCapture({
+        content: "My token is ghp_123456789012345678901234567890123456.",
+        kind: "note",
+        scope: "project:nuzo",
+        source: "test:capture-candidate",
+        reason: "Unsafe token example from the capture suggestion spec.",
+      }),
+    ).rejects.toMatchObject({
+      code: "MEMORY_SECRET_DETECTED",
+    });
+
+    await expect(service.list({ scope: "project:nuzo" })).resolves.toEqual([]);
+    await expect(auditLog.list("mem_000001")).resolves.toEqual([]);
   });
 
   it("enforces restricted scope authorization", async () => {
