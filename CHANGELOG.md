@@ -21,6 +21,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
   privacy before deeper product, architecture, and release-operation pages.
 - Changed the user-facing install command to use the current CLI package
   instead of pinning a patch release in first-read docs.
+- Polished the npm package READMEs for the CLI, MCP server, and core package
+  so npm users see the same install and package-role guidance as the main docs.
 
 ## [0.1.2] - 2026-06-24
 
