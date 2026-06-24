@@ -17,6 +17,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
   task-start recall across MCP sessions.
 - Documented the Codex explicit save request flow for commands such as
   "coloca isso na memoria do Nuzo".
+- Documented smoke coverage for rejected inferred capture drafts in the
+  Codex/MCP session-continuity flow.
 
 ### Changed
 
@@ -26,6 +28,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Strengthened Codex plugin validation so the Nuzo skill must keep explicit
   save requests on the `memory.suggest_capture` to confirmed `memory.remember`
   path.
+- Strengthened MCP session-continuity smoke validation so rejected inferred
+  capture drafts must remain absent from later recall results.
 
 ### Fixed
 
