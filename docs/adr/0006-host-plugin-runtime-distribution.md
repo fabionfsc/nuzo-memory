@@ -22,10 +22,10 @@ could let the plugin and MCP server versions drift.
 ## Decision
 
 Release plugin artifacts remain thin and resolve a version-pinned
-`@nuzo/mcp-server` package through `npx`:
+`@nuzo/mcp-server` package through `npm exec`:
 
 ```text
-npx --yes @nuzo/mcp-server@<plugin-version>
+npm exec --yes --package=@nuzo/mcp-server@<plugin-version> -- nuzo-mcp-server
 ```
 
 The plugin and MCP server versions must match.

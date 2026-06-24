@@ -12,11 +12,12 @@ const testTag = "session-continuity";
 export async function assertMcpSessionContinuity({
   cwd,
   command,
+  args = [],
   memoryStore,
   label = "Nuzo MCP",
   expectedToolNames,
 }) {
-  await withMcpSession({ cwd, command, memoryStore, label }, async (client) => {
+  await withMcpSession({ cwd, command, args, memoryStore, label }, async (client) => {
     if (expectedToolNames !== undefined) {
       const tools = await client.listTools();
       const names = tools.tools.map((tool) => tool.name).sort();
@@ -37,7 +38,7 @@ export async function assertMcpSessionContinuity({
     });
   });
 
-  await withMcpSession({ cwd, command, memoryStore, label }, async (client) => {
+  await withMcpSession({ cwd, command, args, memoryStore, label }, async (client) => {
     const recalled = parseToolJson(await client.callTool({
       name: "memory.recall_hook",
       arguments: {
@@ -134,13 +135,14 @@ export async function assertMcpSessionContinuity({
   });
 }
 
-async function withMcpSession({ cwd, command, memoryStore, label }, callback) {
+async function withMcpSession({ cwd, command, args, memoryStore, label }, callback) {
   const client = new Client({
     name: "nuzo-mcp-session-continuity",
     version: "0.0.0",
   });
   const transport = new StdioClientTransport({
     command,
+    args,
     cwd,
     env: {
       ...getDefaultEnvironment(),

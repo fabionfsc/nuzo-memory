@@ -59,7 +59,7 @@ claude plugin validate build/plugins/claude-code/nuzo --strict
 ```
 
 The release artifact pins the matching `@nuzo/mcp-server` version through
-`npx` and does not reference a monorepo sibling.
+`npm exec` and does not reference a monorepo sibling.
 
 ## Boundary
 

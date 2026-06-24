@@ -203,6 +203,7 @@ npm run build
 npm run package:plugins
 npm run validate:npm
 npm run smoke:cli
+npm run smoke:codex-plugin
 .venv-docs/bin/mkdocs build --strict
 ```
 

@@ -158,7 +158,7 @@ Development plugin configs may resolve the built MCP server from the monorepo.
 Release artifacts must not.
 
 For the MVP, generated Codex and Claude Code artifacts run a version-pinned
-`@nuzo/mcp-server` through `npx`. This avoids global installation and avoids
+`@nuzo/mcp-server` through `npm exec`. This avoids global installation and avoids
 shipping a platform-specific copy of the native SQLite dependency.
 
 The authoritative decision is

@@ -104,6 +104,18 @@ processes for session-style writes and recall, validates read-only capture
 suggestions, checks duplicate detection, and confirms `memory.doctor` does not
 expose memory content.
 
+The generated Codex plugin artifact smoke is:
+
+```bash
+npm run smoke:codex-plugin
+```
+
+It regenerates the release-layout Codex plugin, verifies the plugin metadata
+loads as `Nuzo`, reads the bundled `nuzo` MCP server config, resolves the
+published version-pinned MCP runtime through that config, and validates the
+same read-only recall, capture suggestion, confirmed write, duplicate, and
+doctor flow through separate stdio sessions.
+
 ## Capture Suggestion Boundary
 
 Automatic memory should remain suggestion-first.
