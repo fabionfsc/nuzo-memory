@@ -22,6 +22,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Documented duplicate, update, and separate-memory decision rules for capture
   suggestions.
 - Documented structured MCP `memory.update` revision conflict errors.
+- Added an agent memory loop walkthrough covering confirmed writes, later
+  recall, review commands, safe dogfooding examples, and validation smokes.
 
 ### Changed
 
