@@ -27,8 +27,12 @@ of the CI matrix. See the [runtime support policy](../operations/runtime-support
 Verify the released CLI without cloning:
 
 ```bash
-npm exec --yes --package @nuzo/memory-cli@0.1.1 -- nuzo memory --store /tmp/nuzo-published.sqlite init
-NUZO_DOCTOR_SKIP_GIT=1 npm exec --yes --package @nuzo/memory-cli@0.1.1 -- nuzo memory --store /tmp/nuzo-published.sqlite doctor
+NUZO_PUBLISHED_DIR=/tmp/nuzo-published-cli
+rm -rf "$NUZO_PUBLISHED_DIR"
+npm install --prefix "$NUZO_PUBLISHED_DIR" @nuzo/memory-cli@0.1.1
+"$NUZO_PUBLISHED_DIR/node_modules/.bin/nuzo" memory --store /tmp/nuzo-published.sqlite init
+NUZO_DOCTOR_SKIP_GIT=1 "$NUZO_PUBLISHED_DIR/node_modules/.bin/nuzo" memory --store /tmp/nuzo-published.sqlite doctor
+rm -rf "$NUZO_PUBLISHED_DIR"
 rm -f /tmp/nuzo-published.sqlite /tmp/nuzo-published.sqlite-*
 ```
 

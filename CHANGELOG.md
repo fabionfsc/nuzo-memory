@@ -6,6 +6,12 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+### Documentation
+
+- Corrected published-package verification commands to use a temporary npm
+  install prefix instead of `npm exec --package`, which does not expose the
+  scoped CLI binary reliably.
+
 ## [0.1.1] - 2026-06-24
 
 ### Added

@@ -195,8 +195,12 @@ Verify before distributing host plugins:
 npm view @nuzo/memory-core@<version> version
 npm view @nuzo/memory-cli@<version> version
 npm view @nuzo/mcp-server@<version> version
-npm exec --yes --package @nuzo/memory-cli@<version> -- nuzo memory doctor
-npm exec --yes --package @nuzo/mcp-server@<version> -- nuzo-mcp-server
+NUZO_VERIFY_DIR=/tmp/nuzo-published-verify
+rm -rf "$NUZO_VERIFY_DIR"
+npm install --prefix "$NUZO_VERIFY_DIR" @nuzo/memory-cli@<version> @nuzo/mcp-server@<version>
+NUZO_DOCTOR_SKIP_GIT=1 "$NUZO_VERIFY_DIR/node_modules/.bin/nuzo" memory doctor
+test -x "$NUZO_VERIFY_DIR/node_modules/.bin/nuzo-mcp-server"
+rm -rf "$NUZO_VERIFY_DIR"
 ```
 
 The first publication was performed by an authenticated maintainer. Future
