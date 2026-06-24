@@ -33,6 +33,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Manual npm trusted-publishing workflow for future releases.
 - MCP `memory.suggest_capture` for read-only capture draft validation,
   normalization, and exact active duplicate detection before confirmed writes.
+- CLI `nuzo memory suggest-capture` for read-only capture draft validation from
+  local scripts and manual workflows.
 
 ### Documentation
 

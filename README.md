@@ -60,7 +60,7 @@ decisions, and lose project context unless the user keeps restating it.
 Nuzo makes persistent memory practical without turning it into hidden state:
 
 - local SQLite storage by default;
-- CLI control for remember, recall, list, update, history, single/bulk forget, export, import, and doctor;
+- CLI control for remember, capture suggestion validation, recall, list, update, history, single/bulk forget, export, import, and doctor;
 - MCP tools for Codex, Claude Code, and MCP-compatible hosts;
 - documented JSON/Markdown export formats;
 - no telemetry, sync, embeddings, or network calls by default.
@@ -130,6 +130,7 @@ Run the current workspace CLI:
 ```bash
 npm run nuzo -- memory init
 npm run nuzo -- memory remember "The user prefers local-first tools." --kind preference
+npm run nuzo -- memory suggest-capture "The user prefers concise final answers." --kind preference --reason "Durable response style preference."
 npm run nuzo -- memory recall "local-first tools"
 npm run nuzo -- memory doctor
 ```
