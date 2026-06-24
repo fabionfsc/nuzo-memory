@@ -9,6 +9,7 @@ import type {
   TransactionManager,
 } from "./ports.js";
 import type {
+  CaptureSuggestionResult,
   ExportMemoriesInput,
   ForgetMemoryInput,
   ForgetMemoriesInput,
@@ -24,6 +25,7 @@ import type {
   RecallMemoriesInput,
   RecallMemoryResult,
   RememberMemoryInput,
+  SuggestCaptureInput,
   UpdateMemoryInput,
 } from "./types.js";
 import { memoryLimits } from "./policy.js";
@@ -40,6 +42,7 @@ export interface MemoryServiceDependencies {
 }
 
 export interface MemoryService {
+  suggestCapture(input: SuggestCaptureInput): Promise<CaptureSuggestionResult>;
   remember(input: RememberMemoryInput): Promise<MemoryRecord>;
   recall(input: RecallMemoriesInput): Promise<RecallMemoryResult[]>;
   list(input?: ListMemoriesInput): Promise<MemoryRecord[]>;
@@ -113,6 +116,35 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
   }
 
   return {
+    async suggestCapture(input) {
+      assertCaptureReason(input.reason);
+      await policy.assertCanRemember(input);
+
+      const draft = {
+        content: input.content.trim(),
+        kind: input.kind,
+        scope: input.scope,
+        tags: [...new Set(input.tags ?? [])],
+        source: input.source,
+        confidence: input.confidence ?? 1,
+        reason: input.reason.trim(),
+      };
+      const duplicateKey = toCaptureDuplicateKey(draft.content);
+      const memories = await store.list({ scope: draft.scope });
+      const duplicate = memories.find((memory) => (
+        memory.archivedAt === null &&
+        toCaptureDuplicateKey(memory.content) === duplicateKey
+      )) ?? null;
+
+      return {
+        status: duplicate ? "duplicate" : "ready",
+        memoryWrites: false,
+        requiresConfirmation: true,
+        draft,
+        duplicate,
+      };
+    },
+
     async remember(input) {
       await policy.assertCanRemember(input);
 
@@ -532,6 +564,13 @@ function assertReason(reason: string | undefined): void {
   }
 }
 
+function assertCaptureReason(reason: string): void {
+  if (reason.trim().length === 0) {
+    throw new NuzoMemoryError("MEMORY_REASON_EMPTY", "Memory reason cannot be empty.");
+  }
+  assertReason(reason);
+}
+
 function toExportItem(memory: MemoryRecord): MemoryExportItem {
   return {
     scope: memory.scope,
@@ -703,6 +742,10 @@ function toImportDuplicateKey(
 
 function normalizeContent(content: string): string {
   return content.trim().replace(/\s+/g, " ");
+}
+
+function toCaptureDuplicateKey(content: string): string {
+  return normalizeContent(content).toLowerCase();
 }
 
 function normalizeTags(tags: string[]): string[] {

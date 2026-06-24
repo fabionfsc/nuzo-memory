@@ -166,6 +166,7 @@ Use this only to isolate MCP behavior. Plugin validation should still go through
 - `memory.remember`
 - `memory.recall`
 - `memory.recall_hook`
+- `memory.suggest_capture`
 - `memory.list`
 - `memory.update`
 - `memory.history`
@@ -226,7 +227,7 @@ npm run package:plugins
   installation remains the distribution path.
 - Runtime memory remains local and should not be committed to Git.
 - Automatic recall or capture hooks must follow `docs/operations/lifecycle-hooks.md` before implementation.
-- Capture suggestions must follow `docs/spec/capture-suggestions.md` and call `memory.remember` only after confirmation.
+- Capture suggestions must follow `docs/spec/capture-suggestions.md`, validate inferred drafts with `memory.suggest_capture`, and call `memory.remember` only after confirmation.
 
 ## Source References
 

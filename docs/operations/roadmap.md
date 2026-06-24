@@ -77,8 +77,9 @@ Exit criteria:
 
 Goal: make memory available to agents.
 
-Status: implemented in `packages/mcp-server` with 11 tools, protocol-level SDK
-tests, read-only lifecycle recall, and runtime doctor diagnostics.
+Status: implemented in `packages/mcp-server` with 12 tools, protocol-level SDK
+tests, read-only lifecycle recall, read-only capture suggestion validation, and
+runtime doctor diagnostics.
 
 Deliverables:
 
@@ -87,6 +88,7 @@ Deliverables:
 - contract tests.
 - setup docs.
 - read-only doctor diagnostics for host agents.
+- read-only capture suggestion validation before confirmed writes.
 
 Exit criteria:
 
@@ -116,6 +118,7 @@ Deliverables:
 - lifecycle hook policy for recall/capture in hosts that support hooks.
 - capture suggestion contract for inferred memories with no silent writes.
 - MCP-level read-only recall hook prototype.
+- MCP-level read-only capture suggestion validation.
 - Marketplace or official distribution metadata when the supported workflow is stable.
 - matching MCP package publication before public plugin installation.
 - reproducible npm pack validation and clean tarball installation.

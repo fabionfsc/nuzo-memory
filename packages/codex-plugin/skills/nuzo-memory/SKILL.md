@@ -14,8 +14,9 @@ Codex API or export.
 1. Use `memory.recall_hook` for read-only task-start recall when prior context
    may matter.
 2. Save direct user requests to remember only after core policy checks pass.
-3. For inferred memories, propose a concise draft with content, kind, scope,
-   tags, and reason. Call `memory.remember` only after the user confirms or
+3. For inferred memories, call `memory.suggest_capture` with a concise draft
+   containing content, kind, scope, tags, and reason. Show the validated draft
+   or duplicate result, then call `memory.remember` only after the user confirms or
    edits it.
 4. Keep project decisions in the active project scope and cross-project
    preferences in `user:default`.
@@ -35,6 +36,7 @@ Codex API or export.
 - `memory.remember`
 - `memory.recall`
 - `memory.recall_hook`
+- `memory.suggest_capture`
 - `memory.list`
 - `memory.update`
 - `memory.history`

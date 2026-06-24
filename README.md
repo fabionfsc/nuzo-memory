@@ -70,7 +70,7 @@ Nuzo makes persistent memory practical without turning it into hidden state:
 **MVP `0.1.0` is released.**
 
 The first public release includes core memory behavior, SQLite/FTS recall, the
-local CLI, 11 MCP tools, Codex and Claude Code plugin wrappers, CI, Pages, and
+local CLI, 12 MCP tools, Codex and Claude Code plugin wrappers, CI, Pages, and
 versioned npm runtime packages.
 
 Release validation covers:
@@ -81,10 +81,10 @@ Release validation covers:
 - live `memory.doctor` calls through both host plugin configurations.
 
 Post-MVP work now focuses on public marketplace distribution, completing npm
-trusted-publisher setup, confirmed automatic capture suggestions, and feedback
-from real Codex and Claude Code workflows. Scoped authorization, optimistic
-concurrency, effective runtime configuration, and repository security
-automation are already implemented.
+trusted-publisher setup, host-side confirmed capture flows, and feedback from
+real Codex and Claude Code workflows. Scoped authorization, optimistic
+concurrency, effective runtime configuration, repository security automation,
+and read-only capture suggestion validation are already implemented.
 
 ## Shape
 
@@ -157,6 +157,7 @@ Current MCP tools:
 memory.remember
 memory.recall
 memory.recall_hook
+memory.suggest_capture
 memory.list
 memory.update
 memory.history

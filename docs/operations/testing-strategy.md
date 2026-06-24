@@ -6,6 +6,11 @@ Local gates that build, clean, package, or execute `packages/*/dist/` must run
 sequentially. They intentionally share generated output, so parallel execution
 can create false failures even when each command passes in isolation.
 
+Repeated validation work should become a script, shared fixture, or contract
+helper once it appears in more than one place. Keep exact public contracts such
+as the MCP tool set in one source of truth and import that source from tests,
+packaging validation, and runtime diagnostics instead of copying lists by hand.
+
 ## Test Pyramid
 
 1. Core unit tests.
@@ -63,6 +68,9 @@ MCP protocol coverage connects an SDK `Client` and the Nuzo server through
 `InMemoryTransport`. It asserts exact tool discovery, registered schema
 defaults, representative JSON responses, and invalid-input rejection without
 network access or a stdio subprocess.
+
+Artifact validation reuses the MCP server's exported tool contract so new tools
+do not require repeated manual updates across test files and release scripts.
 
 CLI process coverage runs the built `dist/index.js` entrypoint in subprocesses
 and asserts stable success, operational, usage, and internal exit codes plus
