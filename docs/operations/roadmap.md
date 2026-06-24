@@ -186,9 +186,9 @@ Remaining:
 Goal: prove that Nuzo feels useful in real agent work, not only in source-tree
 tests.
 
-Status: next focus for `0.1.2`. The published packages and plugin artifacts are
-available; the remaining work is to validate memory continuity across fresh
-sessions and host integrations.
+Status: complete in `0.1.2`. The published CLI and MCP packages, generated
+Codex plugin artifact, generated Claude Code plugin artifact, and capture
+suggestion rules now have automated continuity and safety validation.
 
 Detailed validation plan: `docs/operations/post-release-validation.md`.
 
@@ -209,13 +209,64 @@ Exit criteria:
 - host plugins remain thin wrappers around the published MCP runtime;
 - docs describe only install and verification paths that were tested.
 
-## Stage 8: Capture Lifecycle UX
+## Stage 8: Product Polish And Install Simplification
+
+Goal: make Nuzo easier to understand, install, and use before adding another
+large capability layer.
+
+Status: next focus for `0.1.3`.
+
+This stage should reduce public complexity, not add more surface area. The
+technical package boundaries can stay clean while the public onboarding presents
+one obvious path for normal users.
+
+Deliverables:
+
+- trim `README.md` into a fast product entry point with a 60-second install and
+  first-use path;
+- explain the package split as user-facing roles: CLI for humans,
+  MCP server for agent hosts, core for library/integrator use;
+- make `@nuzo/memory-cli` the default package users see first;
+- add or improve clean install docs for CLI, MCP host, Codex, and Claude Code
+  without requiring a source checkout;
+- reduce `AGENTS.md` to safe public guidance and move local/operator-only
+  preferences to ignored `AGENTS.local.md`;
+- keep `CONTRIBUTING.md` as the public contribution entry point for humans and
+  external bots;
+- audit root and docs Markdown naming conventions, keeping conventional
+  uppercase root files and lowercase kebab-case docs paths;
+- classify docs as user docs, maintainer docs, architecture/spec docs, or
+  temporary/internal notes;
+- remove, merge, or move docs that do not help users, contributors,
+  maintainers, or durable architecture decisions;
+- update site navigation so the first path is installation/use, not the
+  project construction history;
+- keep release, security, versioning, and public contract docs discoverable but
+  out of the first-time user path.
+
+Exit criteria:
+
+- a new user can identify the right install path without understanding all npm
+  packages;
+- the README links out to details instead of duplicating them;
+- no tracked public file contains local operator notes, tokens, private
+  workflow preferences, or instructions that should only apply to this machine;
+- Markdown file naming has a documented pattern and obvious exceptions;
+- remaining docs have a clear audience and owner.
+
+Non-goals for this stage:
+
+- merging the published npm packages only to reduce their count;
+- adding cloud sync, embeddings, or automatic write hooks;
+- replacing `CONTRIBUTING.md` with agent-specific instructions;
+- adding local installer scripts before official host install paths are clear.
+
+## Stage 9: Capture Lifecycle UX
 
 Goal: make the memory lifecycle feel complete in agent workflows while keeping
 inferred writes explicit and auditable.
 
-Status: planned for `0.2.0` after installed CLI/MCP and host release-artifact
-smokes are in place.
+Status: planned after the `0.1.3` product polish pass.
 
 Deliverables:
 
@@ -238,7 +289,7 @@ Exit criteria:
 - confirmed drafts remain normalized, policy-checked, auditable, and portable;
 - benchmark results are reproducible locally without telemetry or network calls.
 
-## Stage 9: Optional Semantics And Advanced Integrations
+## Stage 10: Optional Semantics And Advanced Integrations
 
 Goal: improve recall quality for users who opt in, without changing Nuzo's
 local-first default.

@@ -6,6 +6,11 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+### Documentation
+
+- Documented the `0.1.3` focus on product polish, installation
+  simplification, README/docs pruning, and public/private agent guidance.
+
 ## [0.1.2] - 2026-06-24
 
 ### Added
