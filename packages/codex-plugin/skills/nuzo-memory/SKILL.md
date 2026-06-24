@@ -71,7 +71,9 @@ in `user:default`.
 
 If a new statement changes an existing memory, prefer showing the existing
 memory and asking whether to update it instead of creating a duplicate. Use
-`memory.update` only after the user confirms or edits the update draft.
+`memory.update` with the displayed memory's expected revision only after the user confirms or edits the update draft.
+If the update reports a revision conflict, re-read the memory and ask again; do
+not retry silently.
 
 Use `memory.history` when the user needs an audit trail. Preview
 `memory.forget_many` before applying bulk archive or deletion.

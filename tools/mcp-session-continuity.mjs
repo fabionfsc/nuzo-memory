@@ -7,6 +7,7 @@ import {
 const rememberedMemory = "MCP session continuity smoke stores fake memory across stdio sessions.";
 const suggestedMemory = "MCP session continuity smoke prefers confirmed capture drafts.";
 const rejectedMemory = "MCP session continuity smoke rejects inferred capture drafts.";
+const updatedMemory = "MCP session continuity smoke prefers reviewed capture draft updates.";
 const testScope = "project:mcp-session-continuity";
 const testTag = "session-continuity";
 
@@ -145,7 +146,7 @@ export async function assertMcpSessionContinuity({
       fail(`${label} rejected capture draft was persisted: ${JSON.stringify(afterReject)}`);
     }
 
-    await client.callTool({
+    const confirmed = parseToolJson(await client.callTool({
       name: "memory.remember",
       arguments: {
         content: suggestion.draft.content,
@@ -155,12 +156,56 @@ export async function assertMcpSessionContinuity({
         source: "test:mcp-session-confirmed",
         confidence: suggestion.draft.confidence,
       },
-    });
+    }));
+    if (typeof confirmed.id !== "string" || !confirmed.id.startsWith("mem_")) {
+      fail(`${label} confirmed capture did not create a memory id: ${JSON.stringify(confirmed)}`);
+    }
+
+    const afterConfirm = parseToolJson(await client.callTool({
+      name: "memory.recall_hook",
+      arguments: {
+        task_context: "confirmed capture drafts",
+        project_scope: testScope,
+        limit: 5,
+      },
+    }));
+    const confirmedResult = afterConfirm.results.find((result) => result.content === suggestedMemory);
+    if (confirmedResult?.id !== confirmed.id || confirmedResult.revision !== 1) {
+      fail(`${label} confirmed capture was not recalled with revision 1: ${JSON.stringify(afterConfirm)}`);
+    }
+
+    const updated = parseToolJson(await client.callTool({
+      name: "memory.update",
+      arguments: {
+        id: confirmed.id,
+        expected_revision: confirmedResult.revision,
+        content: updatedMemory,
+        kind: "preference",
+        tags: [testTag, "updated"],
+        confidence: 0.9,
+      },
+    }));
+    if (
+      updated.memory?.id !== confirmed.id ||
+      updated.memory?.content !== updatedMemory ||
+      updated.memory?.revision !== 2
+    ) {
+      fail(`${label} confirmed capture update failed: ${JSON.stringify(updated)}`);
+    }
+
+    await expectToolError(client.callTool({
+      name: "memory.update",
+      arguments: {
+        id: confirmed.id,
+        expected_revision: confirmedResult.revision,
+        content: "This stale update must not commit.",
+      },
+    }), ["MEMORY_REVISION_CONFLICT", "Memory changed before this operation could commit."], label);
 
     const duplicate = parseToolJson(await client.callTool({
       name: "memory.suggest_capture",
       arguments: {
-        content: " mcp session continuity smoke prefers confirmed   capture drafts. ",
+        content: " mcp session continuity smoke prefers reviewed   capture draft updates. ",
         kind: "note",
         scope: testScope,
         tags: [testTag],
@@ -171,7 +216,7 @@ export async function assertMcpSessionContinuity({
     if (
       duplicate.status !== "duplicate" ||
       !duplicate.duplicate?.id ||
-      duplicate.duplicate.content !== suggestedMemory
+      duplicate.duplicate.content !== updatedMemory
     ) {
       fail(`${label} duplicate suggestion failed: ${JSON.stringify(duplicate)}`);
     }
@@ -230,6 +275,21 @@ export function parseToolJson(result) {
     fail("MCP tool result did not contain text JSON");
   }
   return JSON.parse(text.text);
+}
+
+async function expectToolError(resultPromise, expectedTexts, label) {
+  const result = await resultPromise;
+  if (result.isError !== true) {
+    fail(`${label} expected tool error, got success: ${JSON.stringify(result)}`);
+  }
+  const text = result.content?.find((item) => item.type === "text");
+  if (
+    text === undefined ||
+    typeof text.text !== "string" ||
+    !expectedTexts.some((expectedText) => text.text.includes(expectedText))
+  ) {
+    fail(`${label} expected one of ${JSON.stringify(expectedTexts)} tool errors, got: ${JSON.stringify(result)}`);
+  }
 }
 
 function fail(message) {

@@ -13,6 +13,7 @@ import {
   RegexSecretScanner,
   SQLiteMemoryDatabase,
   SystemClock,
+  NuzoMemoryError,
   memoryLimits,
   memoryScopePattern,
   memoryTagPattern,
@@ -264,7 +265,11 @@ export function registerMemoryTools(
         updateInput.confidence = input.confidence;
       }
 
-      return jsonToolResult(await handlers.update(updateInput));
+      try {
+        return jsonToolResult(await handlers.update(updateInput));
+      } catch (error) {
+        return jsonErrorToolResult(error);
+      }
     },
   );
 
@@ -508,4 +513,23 @@ function jsonToolResult(value: unknown) {
       },
     ],
   };
+}
+
+function jsonErrorToolResult(error: unknown) {
+  if (error instanceof NuzoMemoryError) {
+    return {
+      isError: true,
+      content: [
+        {
+          type: "text" as const,
+          text: JSON.stringify({
+            code: error.code,
+            message: error.message,
+            details: error.details,
+          }, null, 2),
+        },
+      ],
+    };
+  }
+  throw error;
 }
