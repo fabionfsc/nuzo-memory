@@ -6,6 +6,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-06-24
+
 ### Added
 
 - Bounded core and MCP inputs for memory content, tags, sources, recall queries,

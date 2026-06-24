@@ -1,6 +1,6 @@
 {
   "name": "@nuzo/memory-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Command line interface for Nuzo.",
   "license": "Apache-2.0",
@@ -23,7 +23,7 @@
     "test": "npm run build -w @nuzo/memory-core && npm run build && vitest run src"
   },
   "dependencies": {
-    "@nuzo/memory-core": "0.1.0",
+    "@nuzo/memory-core": "0.1.1",
     "commander": "^15.0.0"
   },
   "devDependencies": {

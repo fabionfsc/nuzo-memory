@@ -1,6 +1,6 @@
 {
   "name": "nuzo",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Local-first, auditable memory for Codex through Nuzo MCP tools.",
   "author": {
     "name": "fabionfsc",
