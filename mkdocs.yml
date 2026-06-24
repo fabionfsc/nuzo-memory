@@ -74,6 +74,7 @@ nav:
   - Install And Use:
       - Overview: getting-started/index.md
       - Clean Install Walkthrough: getting-started/clean-install.md
+      - Agent Memory Loop: getting-started/agent-memory-loop.md
       - Local CLI: operations/local-cli.md
       - MCP Tools: spec/tools.md
       - Codex Plugin: operations/codex-plugin.md

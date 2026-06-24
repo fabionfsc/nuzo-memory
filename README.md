@@ -159,6 +159,7 @@ The goal is reliable, inspectable, user-owned memory for local agent workflows.
 - Primary site: https://nuzo.com.br
 - Getting started: [docs/getting-started/index.md](docs/getting-started/index.md)
 - Clean install: [docs/getting-started/clean-install.md](docs/getting-started/clean-install.md)
+- Agent memory loop: [docs/getting-started/agent-memory-loop.md](docs/getting-started/agent-memory-loop.md)
 - Tool contract: [docs/spec/tools.md](docs/spec/tools.md)
 - Architecture: [docs/architecture/overview.md](docs/architecture/overview.md)
 - Roadmap: [docs/operations/roadmap.md](docs/operations/roadmap.md)
