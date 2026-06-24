@@ -6,6 +6,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-06-24
+
 ### Added
 
 - Published CLI session-continuity smoke for validating memory recall,
