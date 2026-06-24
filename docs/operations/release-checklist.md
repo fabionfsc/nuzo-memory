@@ -65,11 +65,21 @@ npm run build
 npm run package:plugins
 npm run validate:npm
 npm run smoke:cli
-npm run smoke:claude-code-plugin
-npm run smoke:codex-plugin
+```
+
+Before `release:prepare`, also run published/package-resolution smokes for the
+current release:
+
+```bash
 npm run smoke:published:cli
 npm run smoke:published:mcp
+npm run smoke:claude-code-plugin
+npm run smoke:codex-plugin
 ```
+
+After `release:prepare`, those commands resolve the target version from npm.
+They are expected to fail until the target version is published. Run them again
+after publishing the target packages.
 
 Confirm the generated host artifacts contain no monorepo runtime paths:
 

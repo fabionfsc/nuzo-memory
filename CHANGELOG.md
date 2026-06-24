@@ -6,6 +6,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-06-24
+
 ### Documentation
 
 - Documented the `0.1.3` focus on product polish, installation
@@ -19,6 +21,13 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
   docs to match the current monorepo and package names.
 - Reorganized the docs navigation around install, CLI, MCP, host plugins, and
   privacy before deeper product, architecture, and release-operation pages.
+- Changed the user-facing install command to use the current CLI package
+  instead of pinning a patch release in first-read docs.
+- Polished the npm package READMEs for the CLI, MCP server, and core package
+  so npm users see the same install and package-role guidance as the main docs.
+- Clarified that published package and host plugin artifact smokes for a target
+  version run after that version is available on npm, while pre-publish
+  validation uses generated artifacts and npm package validation.
 
 ## [0.1.2] - 2026-06-24
 
