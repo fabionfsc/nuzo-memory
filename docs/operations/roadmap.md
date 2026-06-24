@@ -167,6 +167,8 @@ Completed:
 - effective user and project runtime configuration;
 - Dependabot, CodeQL, secret scanning, push protection, and required checks on
   `main`;
+- pull-request-only routine changes with administrator branch protection and
+  strict required checks;
 - a manual GitHub Actions OIDC workflow for npm dry runs and publishing.
 
 Remaining:
@@ -176,6 +178,4 @@ Remaining:
 - publish Codex and Claude Code marketplace listings;
 - gather installation feedback from real Codex and Claude Code workflows;
 - implement lifecycle integrations that preserve confirmed capture and
-  read-only recall defaults;
-- decide whether branch protection should apply to administrators so required
-  checks become preventive for every change.
+  read-only recall defaults.
