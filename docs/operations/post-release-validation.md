@@ -92,6 +92,18 @@ temporary SQLite store, runs separate CLI processes for session-style writes and
 recall, validates read-only capture suggestions, checks duplicate detection,
 and confirms `doctor` does not expose memory content.
 
+The focused MCP smoke is:
+
+```bash
+npm run smoke:published:mcp
+```
+
+It installs the current released MCP package into a temporary npm prefix,
+connects through the official MCP SDK over stdio, runs separate server
+processes for session-style writes and recall, validates read-only capture
+suggestions, checks duplicate detection, and confirms `memory.doctor` does not
+expose memory content.
+
 ## Capture Suggestion Boundary
 
 Automatic memory should remain suggestion-first.

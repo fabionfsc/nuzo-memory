@@ -11,6 +11,9 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Published CLI session-continuity smoke for validating memory recall,
   read-only capture suggestions, duplicate detection, and doctor output through
   the package users install.
+- Published MCP session-continuity smoke for validating recall across separate
+  stdio server sessions, read-only capture suggestions, duplicate detection,
+  and doctor output through the package host plugins resolve.
 
 ### Documentation
 

@@ -138,6 +138,7 @@ npm run package:plugins
 npm run validate:npm
 npm run smoke:cli
 npm run smoke:published:cli
+npm run smoke:published:mcp
 ```
 
 Manual dispatch can also run a release rehearsal job. It uses Node.js 24 and
@@ -163,6 +164,10 @@ The published CLI smoke installs `@nuzo/memory-cli` into a temporary npm prefix
 and validates session continuity through separate `nuzo` process invocations.
 It is a post-release confidence check for the package users install, not a
 replacement for staged artifact validation before publication.
+
+The published MCP smoke installs `@nuzo/mcp-server` into a temporary npm prefix
+and validates session continuity through separate stdio server processes. It is
+the package-level confidence check for the runtime host plugins resolve.
 
 Documentation validation installs `requirements-docs.txt` and runs:
 
