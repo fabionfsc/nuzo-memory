@@ -156,9 +156,10 @@ Exit criteria:
 Goal: make routine releases and host installation easier without weakening the
 local-first product boundary.
 
-Status: in progress. Scope authorization, optimistic concurrency, effective
-runtime configuration, Dependabot, CodeQL, branch protection, and the
-repository side of npm trusted publishing are implemented.
+Status: mostly complete for release infrastructure. Scope authorization,
+optimistic concurrency, effective runtime configuration, Dependabot, CodeQL,
+branch protection, npm trusted publishing, provenance, and the `0.1.1` release
+are implemented.
 
 Completed:
 
@@ -169,13 +170,41 @@ Completed:
   `main`;
 - pull-request-only routine changes with administrator branch protection and
   strict required checks;
-- a manual GitHub Actions OIDC workflow for npm dry runs and publishing.
+- a manual GitHub Actions OIDC workflow for npm dry runs and publishing;
+- trusted npm publication with SLSA provenance for `@nuzo/memory-core`,
+  `@nuzo/memory-cli`, and `@nuzo/mcp-server`.
 
 Remaining:
 
-- register each npm package as a trusted-publishing target and verify
-  provenance on the next release;
 - publish Codex and Claude Code marketplace listings;
 - gather installation feedback from real Codex and Claude Code workflows;
 - implement lifecycle integrations that preserve confirmed capture and
   read-only recall defaults.
+
+## Stage 7: Real Workflow Hardening
+
+Goal: prove that Nuzo feels useful in real agent work, not only in source-tree
+tests.
+
+Status: next focus for `0.1.2`. The published packages and plugin artifacts are
+available; the remaining work is to validate memory continuity across fresh
+sessions and host integrations.
+
+Detailed validation plan: `docs/operations/post-release-validation.md`.
+
+Deliverables:
+
+- installed CLI session-continuity smoke;
+- installed MCP stdio session-continuity smoke;
+- Codex plugin release-artifact recall and capture suggestion validation;
+- Claude Code plugin release-artifact recall and capture suggestion validation;
+- documented capture suggestion criteria for confirmed writes;
+- focused GitHub Issues for any host limitation or manual validation gap.
+
+Exit criteria:
+
+- a fake durable memory stored in one session is recalled in a fresh session;
+- `memory.recall_hook` stays read-only;
+- `memory.suggest_capture` never persists inferred drafts before confirmation;
+- host plugins remain thin wrappers around the published MCP runtime;
+- docs describe only install and verification paths that were tested.

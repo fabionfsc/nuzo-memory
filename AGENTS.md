@@ -3,7 +3,7 @@
 This repository is the design, implementation, and documentation home for Nuzo.
 
 Nuzo is a local-first, auditable memory layer for Codex, Claude Code, and
-MCP-compatible AI agents. Version `0.1.0` is the first public MVP release.
+MCP-compatible AI agents. Version `0.1.1` is the current public release.
 
 ## Current State
 
@@ -11,7 +11,7 @@ MCP-compatible AI agents. Version `0.1.0` is the first public MVP release.
 - Primary docs site: `https://nuzo.com.br`
 - GitHub Pages fallback: `https://fabionfsc.github.io/nuzo-memory/`
 - Docs engine: MkDocs Material
-- Runtime code: public `0.1.0` MVP in `packages/core`, `packages/cli`, `packages/mcp-server`, `packages/codex-plugin`, and `packages/claude-code-plugin`
+- Runtime code: public `0.1.1` release in `packages/core`, `packages/cli`, `packages/mcp-server`, `packages/codex-plugin`, and `packages/claude-code-plugin`
 - Current implementation: SQLite storage, FTS recall, policy checks, JSON export/import, CLI commands, and MCP memory tools
 - Intended package direction: `core -> cli -> mcp-server -> host plugins`
 
@@ -37,7 +37,8 @@ Start with:
 16. `docs/operations/runtime-support.md`
 17. `docs/operations/npm-publishing.md`
 18. `docs/operations/release-checklist.md`
-19. `docs/operations/spec-driven-workflow.md`
+19. `docs/operations/post-release-validation.md`
+20. `docs/operations/spec-driven-workflow.md`
 
 ## Local Operator Notes
 
@@ -56,6 +57,7 @@ If `AGENTS.local.md` exists at the repository root, read it after this file.
 ## Host Plugin Direction
 
 - Nuzo is host-neutral. Codex and Claude Code are priority hosts, but MCP/core remain the product center.
+- For the `0.1.2` phase, prioritize proving real memory continuity across fresh CLI, MCP, Codex, and Claude Code sessions before adding unrelated features.
 - Prefer official host plugin paths before adding local installer scripts or development-only workarounds.
 - Do not add plugin install/update helpers until the supported host plugin workflow and local plugin directory contract are stable and documented.
 - Host plugins should remain thin wrappers around the MCP server and should not contain memory business logic.
