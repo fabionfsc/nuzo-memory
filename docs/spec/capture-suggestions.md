@@ -49,6 +49,26 @@ Common memory-worthy categories:
 
 Not every useful sentence should become memory. One-off task details, temporary errors, command output, and speculative notes should stay in the current conversation unless the user explicitly asks to save them.
 
+## Candidate Decision Rules
+
+Candidate detection is a host or agent heuristic. It must decide whether to
+call `memory.suggest_capture`; the core service only validates the proposed
+draft. Use this decision table before proposing a draft:
+
+| Signal | Action | Example |
+| --- | --- | --- |
+| Durable preference, project decision, recurring instruction, stable fact, or repeated workflow note | Suggest a draft through `memory.suggest_capture` | "For Nuzo, always use GitHub Issues for executable work." |
+| The scope is unclear, mixed between user/project/team, or likely host-specific | Ask a clarifying question before calling `memory.suggest_capture` | "Remember that for me, or only for this repo?" |
+| The statement contains credentials, private file contents, sensitive customer/payment details, raw logs, one-off task state, or speculation | Do not call `memory.suggest_capture`; ask for a sanitized durable memory only if useful | "My token is `ghp_...`." |
+
+Allowed candidates should be short, affirmative memories. Avoid storing long
+conversation excerpts. Rewrite only to remove filler; do not invent stronger
+claims than the user stated.
+
+Blocked candidates are not "rejected memories". They should leave no memory,
+draft record, audit event, or hidden note unless the user explicitly provides a
+safe replacement and confirms it.
+
 ## Draft Format
 
 A capture suggestion should be shown as a small, editable draft:

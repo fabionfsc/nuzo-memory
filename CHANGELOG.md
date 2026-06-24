@@ -19,6 +19,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Generated Claude Code plugin artifact smoke for validating `Nuzo` metadata,
   `${CLAUDE_PLUGIN_ROOT}` cwd resolution, and the same published MCP runtime
   continuity flow.
+- Capture suggestion candidate rules and core examples covering allowed,
+  duplicate, blocked, rejected, and confirmed drafts without silent writes.
 
 ### Documentation
 
