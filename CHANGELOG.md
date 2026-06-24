@@ -15,6 +15,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Shortened public agent guidance, kept local operator notes in ignored
   `AGENTS.local.md`, and removed `AGENTS.md` from the public contribution
   reading path.
+- Documented Markdown naming conventions and refreshed the repository layout
+  docs to match the current monorepo and package names.
 
 ## [0.1.2] - 2026-06-24
 

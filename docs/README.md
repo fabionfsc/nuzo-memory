@@ -13,11 +13,11 @@ contracts, and operations documentation.
 6. `product/requirements.md`
 7. `architecture/overview.md`
 8. `architecture/boundaries.md`
-9. `architecture/agent-host-compatibility.md`
-10. `spec/memory-model.md`
-11. `spec/capture-suggestions.md`
-12. `spec/tools.md`
-13. `implementation/stage-1-core.md`
+9. `architecture/repository-layout.md`
+10. `architecture/agent-host-compatibility.md`
+11. `spec/memory-model.md`
+12. `spec/capture-suggestions.md`
+13. `spec/tools.md`
 14. `operations/local-cli.md`
 15. `operations/codex-plugin.md`
 16. `operations/claude-code-plugin.md`
@@ -60,7 +60,9 @@ Substantial or cross-boundary changes follow
 
 ### Implementation
 
-Defines the next implementation stages before code lands.
+Preserves implementation-stage notes when they still explain current behavior
+or release history. New execution work should normally live in GitHub Issues,
+not new implementation-stage pages.
 
 ### ADR
 
