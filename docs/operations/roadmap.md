@@ -214,7 +214,7 @@ Exit criteria:
 Goal: make Nuzo easier to understand, install, and use before adding another
 large capability layer.
 
-Status: next focus for `0.1.3`.
+Status: shipped in `0.1.3`.
 
 This stage should reduce public complexity, not add more surface area. The
 technical package boundaries can stay clean while the public onboarding presents
@@ -266,7 +266,7 @@ Non-goals for this stage:
 Goal: make Nuzo feel integrated and intelligent in CLI agent workflows while
 keeping memory local, inspectable, and user-controlled.
 
-Status: planned as the `0.2.0` product milestone after the `0.1.3` polish pass.
+Status: shipped in `0.2.0` as the first agent memory lifecycle milestone.
 
 This stage is the bridge from "Nuzo exposes memory tools" to "Nuzo gives agent
 sessions a real memory loop." The user experience should feel familiar to
@@ -358,6 +358,8 @@ risk.
 #### `0.2.0`: Codex Agent Memory Loop
 
 Focus: prove the main Nuzo experience in Codex.
+
+Status: shipped in `0.2.0`.
 
 Deliverables:
 

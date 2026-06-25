@@ -8,14 +8,15 @@ Human users usually install `@nuzo/memory-cli` instead.
 
 ## Run
 
-Use a fixed version in host plugins and automated configuration:
+For direct MCP host configuration:
 
 ```bash
-npm exec --yes --package=@nuzo/mcp-server@0.1.3 -- nuzo-mcp-server
+npm exec --yes --package=@nuzo/mcp-server -- nuzo-mcp-server
 ```
 
-Avoid `latest` in plugin manifests and reproducible host configs. Host
-artifacts should pin the same version as the Nuzo release they ship with.
+Generated host plugin artifacts pin the matching `@nuzo/mcp-server` version
+for reproducible installs. Direct npm examples omit a release number so normal
+users get the current package.
 
 ## Tools
 

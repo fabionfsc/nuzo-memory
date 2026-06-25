@@ -33,7 +33,6 @@ The public docs currently managed by that list are:
 | `docs/operations/claude-code-plugin.md` | generated plugin `@nuzo/mcp-server@X.Y.Z` example and validation text. |
 | `docs/operations/npm-publishing.md` | current npm package version list. |
 | `docs/operations/versioning.md` | current package version block. |
-| `packages/mcp-server/README.md` | npm package README example for reproducible host runtime execution. |
 
 ## Checked By `release:check`
 

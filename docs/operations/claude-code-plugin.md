@@ -95,14 +95,14 @@ The generated release artifact instead uses:
   "mcpServers": {
     "nuzo": {
       "command": "npm",
-      "args": ["exec", "--yes", "--package=@nuzo/mcp-server@0.1.3", "--", "nuzo-mcp-server"],
+      "args": ["exec", "--yes", "--package=@nuzo/mcp-server@0.2.0", "--", "nuzo-mcp-server"],
       "cwd": "${CLAUDE_PLUGIN_ROOT}"
     }
   }
 }
 ```
 
-`0.1.3` matches the current release. Future packaging pins the actual plugin
+`0.2.0` matches the current release. Future packaging pins the actual plugin
 version. This keeps the artifact portable across supported platforms while
 allowing npm to install the correct native SQLite build.
 
@@ -158,8 +158,8 @@ npm run package:plugins
 claude plugin validate build/plugins/claude-code/nuzo --strict
 ```
 
-The generated `0.1.3` config resolves the matching public
-`@nuzo/mcp-server@0.1.3` package. It has been installed through an isolated
+The generated `0.2.0` config resolves the matching public
+`@nuzo/mcp-server@0.2.0` package. It has been installed through an isolated
 Claude Code marketplace, and `claude mcp list` reports the Nuzo server as
 connected.
 

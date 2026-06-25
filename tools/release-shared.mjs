@@ -28,7 +28,6 @@ export const publicReleaseReferencePaths = [
   "docs/operations/codex-plugin.md",
   "docs/operations/npm-publishing.md",
   "docs/operations/versioning.md",
-  "packages/mcp-server/README.md",
 ];
 
 export const nuzoWorkspaceDependencies = new Set([

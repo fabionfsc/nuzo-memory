@@ -23,8 +23,8 @@
   <a href="#mvp-status">
     <img alt="MVP" src="https://img.shields.io/badge/MVP-100%25-00a7b5">
   </a>
-  <a href="https://github.com/fabionfsc/nuzo-memory/releases/tag/v0.1.3">
-    <img alt="Release" src="https://img.shields.io/badge/release-v0.1.3-22c55e">
+  <a href="https://github.com/fabionfsc/nuzo-memory/releases/tag/v0.2.0">
+    <img alt="Release" src="https://img.shields.io/badge/release-v0.2.0-22c55e">
   </a>
   <a href="#license">
     <img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-64748b">
@@ -87,7 +87,7 @@ to install all three for normal CLI use.
 
 ## MVP Status
 
-**Release `0.1.3` is current.**
+**Release `0.2.0` is current.**
 
 The MVP is complete: local SQLite storage, FTS recall, CLI lifecycle commands,
 12 MCP memory tools, Codex and Claude Code plugin artifacts, npm packages,
