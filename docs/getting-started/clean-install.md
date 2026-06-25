@@ -41,7 +41,7 @@ Verify the released CLI without cloning:
 ```bash
 NUZO_PUBLISHED_DIR=/tmp/nuzo-published-cli
 rm -rf "$NUZO_PUBLISHED_DIR"
-npm install --prefix "$NUZO_PUBLISHED_DIR" @nuzo/memory-cli@0.1.3
+npm install --prefix "$NUZO_PUBLISHED_DIR" @nuzo/memory-cli@0.2.0
 "$NUZO_PUBLISHED_DIR/node_modules/.bin/nuzo" memory --store /tmp/nuzo-published.sqlite init
 NUZO_DOCTOR_SKIP_GIT=1 "$NUZO_PUBLISHED_DIR/node_modules/.bin/nuzo" memory --store /tmp/nuzo-published.sqlite doctor
 rm -rf "$NUZO_PUBLISHED_DIR"

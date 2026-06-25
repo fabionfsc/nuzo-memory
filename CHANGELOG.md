@@ -6,6 +6,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-24
+
 ### Documentation
 
 - Expanded the roadmap for the `0.2.0` agent memory lifecycle milestone and
@@ -39,6 +41,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
   updates and stale `expected_revision` conflicts.
 - MCP `memory.update` now returns structured Nuzo memory errors for stale
   revision conflicts.
+- Simplified the MCP server npm README command so direct installs omit a
+  release number, while generated host plugin artifacts remain version-pinned.
 
 ### Fixed
 

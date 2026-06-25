@@ -2,33 +2,31 @@
 
 This page defines the product-hardening loop after each public release.
 
-The `0.1.2` release proved session continuity through published CLI, MCP,
-Codex plugin, and Claude Code plugin runtime paths. The next loop should keep
-that validation intact while making the product easier to install, explain, and
-use.
+The `0.2.0` release proves the first agent memory lifecycle: read-only
+task-start recall, explicit save requests, inferred capture drafts, confirmed
+writes, duplicate/update guidance, structured update conflicts, and
+session-continuity documentation.
 
 ## Current Focus
 
-For `0.1.3`, prioritize:
+For `0.2.1`, prioritize:
 
-- simple installation guidance that starts with `@nuzo/memory-cli`;
-- clear package-role guidance for CLI, MCP server, and core library users;
-- README and docs entry points that avoid internal release mechanics on first
-  read;
-- public contribution guidance through `CONTRIBUTING.md`;
-- local operator and agent notes outside committed public docs;
 - continued installed-package validation over source-tree-only validation;
 - continued Codex and Claude Code host behavior through official plugin paths;
 - read-only recall before work starts;
 - capture suggestions that require explicit confirmation;
+- sharper candidate rules for preferences, project decisions, instructions,
+  stable facts, and workflow notes;
+- update suggestions when a new statement changes existing memory;
+- conflict handling with expected revisions in host-facing flows;
+- better rejection and blocked-content messages;
 - documentation that matches commands tested against published packages.
 
 Defer features that do not strengthen this flow, including sync, embeddings,
 UI, background capture, local installer scripts, and host-specific memory
 formats.
 
-The `0.2.0` phase should focus on the complete capture lifecycle and agent UX.
-Post-`0.2.0` work may explore optional semantic search, local embeddings, or
+Post-`0.2.x` work may explore optional semantic search, local embeddings, or
 provider plugins, but those must remain opt-in and must not introduce network
 calls, telemetry, or inferred writes by default.
 
@@ -147,20 +145,19 @@ until the user confirms them. The validation loop must prove:
 - duplicate suggestions do not create new active memories;
 - secrets and unsafe content are blocked by core policy.
 
-## Acceptance Criteria For 0.1.3
+## Acceptance Criteria For 0.2.0
 
-`0.1.3` should be considered ready when:
+`0.2.0` should be considered ready when:
 
-- the README gives a credible 60-second install and first-use path;
-- docs explain that most users install only `@nuzo/memory-cli`;
-- MCP and host setup docs explain when `@nuzo/mcp-server` is needed;
-- core package docs make clear that `@nuzo/memory-core` is for library or
-  Nuzo development use;
-- public docs no longer route external contributors through `AGENTS.md`;
-- local-only operator notes are ignored and untracked;
 - published CLI and MCP packages continue to pass session-continuity smoke tests;
 - Codex and Claude Code release artifacts continue to validate against the
   published MCP runtime;
+- task-start recall remains read-only and does not add capture suggestions;
+- explicit save requests go through `memory.suggest_capture` before confirmed
+  writes;
+- rejected capture drafts are not persisted;
+- duplicate and update decisions are documented and validated;
+- stale update revisions return structured conflict errors;
 - docs describe only install and verification paths that were tested;
 - issue hunting finds no release-blocking doc drift, stale version references,
   or untracked runtime artifacts;
@@ -171,12 +168,12 @@ until the user confirms them. The validation loop must prove:
 
 Create or update GitHub Issues for:
 
-- README 60-second onboarding polish;
-- package role and installation simplification;
-- public AGENTS guidance versus local operator notes;
-- Markdown inventory and naming convention cleanup;
-- docs navigation around install and usage first;
 - capture suggestion candidate criteria and rejection examples;
+- update suggestions for changed existing memories;
+- host-facing expected revision conflict guidance;
+- Claude Code lifecycle parity;
+- generic MCP-host lifecycle guidance;
+- local lifecycle benchmark fixtures;
 - docs drift checks for published package commands.
 
 Keep issues executable. Broad product notes belong in roadmap docs; assignable
