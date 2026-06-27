@@ -8,6 +8,8 @@ The plugin is intentionally thin:
 - the transport lives in `packages/mcp-server`;
 - this package provides Codex plugin metadata and MCP defaults.
 - `skills/nuzo-memory/SKILL.md` guides recall and confirmed capture behavior.
+- `hooks/hooks.json` injects bounded read-only recall at session start and user
+  prompt submission.
 
 ## Local Development
 
@@ -39,6 +41,9 @@ npm run package:plugins
 
 The release artifact is written to `build/plugins/codex/nuzo` and pins the
 matching `@nuzo/mcp-server` version through `npm exec`.
+
+After installation, inspect `/hooks` and trust the Nuzo command hooks. Codex
+does not execute new or changed plugin hooks before trust review.
 
 The default memory store is:
 

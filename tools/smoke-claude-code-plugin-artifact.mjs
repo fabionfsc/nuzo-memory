@@ -5,6 +5,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { assertMcpSessionContinuity } from "./mcp-session-continuity.mjs";
+import { prepareStagedMcpRuntime } from "./staged-mcp-runtime.mjs";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const generatedPluginRoot = join(repositoryRoot, "build", "plugins", "claude-code", "nuzo");
@@ -13,7 +14,9 @@ const pluginRoot = join(testRoot, "plugin", "nuzo");
 const storePath = join(testRoot, "memory", "claude-code-plugin.sqlite");
 
 try {
-  run("npm", ["run", "package:plugins"], repositoryRoot);
+  if (process.env.NUZO_USE_EXISTING_ARTIFACTS !== "1") {
+    run("npm", ["run", "package:plugins"], repositoryRoot);
+  }
   cpSync(generatedPluginRoot, pluginRoot, { recursive: true });
 
   const manifest = readJson(join(pluginRoot, ".claude-plugin", "plugin.json"));
@@ -41,10 +44,13 @@ try {
     join(repositoryRoot, "packages", "mcp-server", "dist", "tool-contract.js")
   );
 
+  const runtime = process.env.NUZO_PLUGIN_SMOKE_PUBLISHED === "1"
+    ? { command: server.command, args: server.args }
+    : prepareStagedMcpRuntime(repositoryRoot, testRoot);
   await assertMcpSessionContinuity({
     cwd: pluginRoot,
-    command: server.command,
-    args: server.args,
+    command: runtime.command,
+    args: runtime.args,
     memoryStore: storePath,
     label: "generated Claude Code plugin artifact",
     expectedToolNames: expectedMcpTools,

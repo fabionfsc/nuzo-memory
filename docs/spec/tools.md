@@ -23,6 +23,11 @@ Selectors are not authorization. A syntactically valid scope only says which
 records a caller is asking for. Core policy must still decide whether that
 caller may access the scope.
 
+For MCP and host-plugin calls, `project:auto` is a reserved convenience
+selector. The server resolves it to a stable `project:<path-hash>` derived from
+the active host project directory before calling core. It must never be stored
+or queried as one shared literal project scope.
+
 Restricted MCP or host-plugin sessions can be configured with an explicit
 scope allowlist. In restricted mode:
 
@@ -460,6 +465,12 @@ MCP doctor returns a read-only diagnostic summary for host agents:
     "archived_memories": 1,
     "total_memories": 5
   },
+  "lifecycle": {
+    "recall_hook": "available",
+    "automatic_host_hooks": "verify_in_host",
+    "autoload_tag": "autoload",
+    "supported_events": ["SessionStart", "UserPromptSubmit"]
+  },
   "tools": [
     "memory.remember",
     "memory.recall",
@@ -487,6 +498,11 @@ Runtime checks:
 - store path is readable;
 - store path and parent directory are writable without creating durable memory.
 
+Lifecycle diagnostics distinguish runtime capability from host activation.
+`automatic_host_hooks: verify_in_host` means the user must still verify that
+the plugin hook is enabled and trusted in Codex or Claude Code. MCP cannot
+inspect or override that host-level decision.
+
 Handler-only integrations that do not provide runtime diagnostics return
 `not_performed` explicitly. Future checks may inspect exports for obvious
 secrets.
@@ -499,6 +515,7 @@ nuzo memory remember "The user prefers concise output." --kind preference --tag 
 nuzo memory suggest-capture "The user prefers concise output." --kind preference --reason "Durable response style preference."
 nuzo memory recall "output style"
 nuzo memory list --tag codex
+nuzo memory list --all-scopes
 nuzo memory update mem_01HZY --expected-revision 1 --content "The user prefers concise final answers."
 nuzo memory history mem_01HZY
 nuzo memory forget mem_01HZY --expected-revision 2 --archive
@@ -509,3 +526,10 @@ nuzo memory export --path ./memories.memory.export.md
 nuzo memory import ./memories.memory.export.json --dry-run
 nuzo memory doctor
 ```
+
+`project:auto` values written literally by versions before `0.2.1` cannot be
+assigned automatically because the original project path was not stored.
+`nuzo memory doctor` reports active legacy records. Review them with
+`nuzo memory list --all-scopes`, then run `nuzo memory update <id> --scope
+project:auto` from the intended project directory to move each record to that
+project's resolved scope.

@@ -208,6 +208,42 @@ describe("SQLiteMemoryDatabase", () => {
     database.close();
   });
 
+  it("prioritizes exact tag matches over common prompt words", async () => {
+    const { database, service } = createTempDatabase();
+    await service.remember({
+      content: "Current project marker uses a generic context path.",
+      kind: "fact",
+      scope: "project:nuzo",
+      tags: ["projecttopic"],
+      source: "test",
+    });
+    const tagged = [];
+    for (let index = 0; index < 7; index += 1) {
+      tagged.push(await service.remember({
+        content: `Bounded recall fixture ${index} must respect the result limit.`,
+        kind: "note",
+        scope: "project:nuzo",
+        tags: ["boundedtopic"],
+        source: "test",
+      }));
+    }
+
+    const results = await service.recall({
+      query: "List every boundedtopic fixture number available in the current context.",
+      scope: "project:nuzo",
+      limit: 5,
+    });
+
+    expect(results).toHaveLength(5);
+    expect(results.every((result) => result.memory.tags.includes("boundedtopic"))).toBe(true);
+    expect(results.every((result) => tagged.some((memory) => memory.id === result.memory.id)))
+      .toBe(true);
+    expect(results.every((result) => result.reason.startsWith("Matched tags: boundedtopic")))
+      .toBe(true);
+
+    database.close();
+  });
+
   it("rejects stale update and forget revisions across SQLite connections", async () => {
     const { database: firstDatabase, directory, service: firstService } = createTempDatabase();
     const secondDatabase = new SQLiteMemoryDatabase({ path: join(directory, "memories.sqlite") });

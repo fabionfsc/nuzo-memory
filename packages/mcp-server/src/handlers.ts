@@ -101,6 +101,7 @@ export interface ImportToolInput {
 export interface MemoryToolHandlerOptions {
   storePath?: string;
   doctorDiagnostics?: MemoryDoctorDiagnostics;
+  projectScope?: `project:${string}`;
 }
 
 export interface MemoryDoctorDiagnostics {
@@ -200,6 +201,12 @@ export interface MemoryToolHandlers {
       archived_memories: number | null;
       total_memories: number | null;
     };
+    lifecycle: {
+      recall_hook: "available";
+      automatic_host_hooks: "verify_in_host";
+      autoload_tag: "autoload";
+      supported_events: ["SessionStart", "UserPromptSubmit"];
+    };
     tools: string[];
     warnings: string[];
   }>;
@@ -248,7 +255,7 @@ export function createMemoryToolHandlers(
       const rememberInput: RememberMemoryInput = {
         content: input.content,
         kind: input.kind,
-        scope: input.scope as MemoryScope,
+        scope: resolveToolScope(input.scope, options.projectScope),
         tags: input.tags,
         source: input.source,
       };
@@ -268,7 +275,7 @@ export function createMemoryToolHandlers(
     async recall(input) {
       const results = await service.recall({
         query: input.query,
-        scope: input.scope as MemoryScope,
+        scope: resolveToolScope(input.scope, options.projectScope),
         limit: input.limit,
         includeGlobal: input.include_global,
       });
@@ -281,7 +288,7 @@ export function createMemoryToolHandlers(
     async recallHook(input) {
       const query = buildRecallHookQuery(input.task_context);
       const limit = clampRecallHookLimit(input.limit);
-      const scope = (input.project_scope ?? "project:auto") as MemoryScope;
+      const scope = resolveToolScope(input.project_scope ?? "project:auto", options.projectScope);
       const results = await service.recall({
         query,
         scope,
@@ -306,7 +313,7 @@ export function createMemoryToolHandlers(
       const suggestInput: SuggestCaptureInput = {
         content: input.content,
         kind: input.kind,
-        scope: input.scope as MemoryScope,
+        scope: resolveToolScope(input.scope, options.projectScope),
         tags: input.tags,
         source: input.source,
         reason: input.reason,
@@ -331,7 +338,7 @@ export function createMemoryToolHandlers(
         includeArchived: input.include_archived,
       };
       if (input.scope !== undefined) {
-        listInput.scope = input.scope as MemoryScope;
+        listInput.scope = resolveToolScope(input.scope, options.projectScope);
       }
       if (input.tags.length > 0) {
         listInput.tags = input.tags;
@@ -358,7 +365,7 @@ export function createMemoryToolHandlers(
         updateInput.kind = input.kind;
       }
       if (input.scope !== undefined) {
-        updateInput.scope = input.scope as MemoryScope;
+        updateInput.scope = resolveToolScope(input.scope, options.projectScope);
       }
       if (input.tags !== undefined) {
         updateInput.tags = input.tags;
@@ -419,7 +426,7 @@ export function createMemoryToolHandlers(
         actor: "nuzo:mcp",
       };
       if (input.scope !== undefined) {
-        forgetInput.scope = input.scope as MemoryScope;
+        forgetInput.scope = resolveToolScope(input.scope, options.projectScope);
       }
       if (input.reason !== undefined) {
         forgetInput.reason = input.reason;
@@ -441,7 +448,7 @@ export function createMemoryToolHandlers(
         includeArchived: input.include_archived,
       };
       if (input.scope !== undefined) {
-        exportInput.scope = input.scope as MemoryScope;
+        exportInput.scope = resolveToolScope(input.scope, options.projectScope);
       }
       if (input.tags.length > 0) {
         exportInput.tags = input.tags;
@@ -457,7 +464,7 @@ export function createMemoryToolHandlers(
         dryRun: input.dry_run,
       };
       if (input.scope !== undefined) {
-        importInput.scope = input.scope as MemoryScope;
+        importInput.scope = resolveToolScope(input.scope, options.projectScope);
       }
 
       const result = await service.importMemories(importInput);
@@ -519,6 +526,12 @@ export function createMemoryToolHandlers(
           archived_memories: archivedMemories,
           total_memories: totalMemories,
         },
+        lifecycle: {
+          recall_hook: "available",
+          automatic_host_hooks: "verify_in_host",
+          autoload_tag: "autoload",
+          supported_events: ["SessionStart", "UserPromptSubmit"],
+        },
         tools: [...memoryToolNames],
         warnings,
       };
@@ -568,6 +581,16 @@ function clampRecallHookLimit(limit: number | undefined): number {
     return 5;
   }
   return Math.min(Math.max(Math.trunc(limit), 1), 8);
+}
+
+function resolveToolScope(
+  scope: string,
+  projectScope: `project:${string}` | undefined,
+): MemoryScope {
+  if (scope === "project:auto" && projectScope !== undefined) {
+    return projectScope;
+  }
+  return scope as MemoryScope;
 }
 
 function toRecallOutput(result: RecallMemoryResult) {

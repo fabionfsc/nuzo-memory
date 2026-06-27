@@ -56,6 +56,17 @@ Recommended initial tags:
 - `security`
 - `workflow`
 
+The `autoload` tag has defined host-integration semantics. Active memories with
+this tag may be included in a bounded, read-only session bootstrap before the
+first user prompt. Use it only for context that should apply broadly whenever
+its scope is active, such as a durable project convention or global response
+preference. Topic-specific memories should use descriptive tags such as
+`cloudflare`, `docker`, or `release` and rely on contextual recall instead.
+
+Tags are retrieval metadata, not instructions or authorization. Hosts may
+suggest topical tags for a capture draft, but inferred tags remain part of the
+user-confirmed draft and must never trigger a silent write.
+
 ## Confidence
 
 Confidence is a number from `0.0` to `1.0`.

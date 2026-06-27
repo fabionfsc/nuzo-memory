@@ -18,6 +18,16 @@ Generated host plugin artifacts pin the matching `@nuzo/mcp-server` version
 for reproducible installs. Direct npm examples omit a release number so normal
 users get the current package.
 
+Check the read-only host hook runner and local store with:
+
+```bash
+npm exec --yes --package=@nuzo/mcp-server -- nuzo-memory-hook --doctor
+```
+
+The runner supports `SessionStart` bootstrap through the `autoload` tag and
+contextual `UserPromptSubmit` recall. Host plugins configure it; direct MCP
+users do not need to run it manually.
+
 ## Tools
 
 The server exposes the Nuzo memory contract over MCP:

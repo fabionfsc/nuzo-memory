@@ -191,6 +191,7 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
 
   async search(input: RecallMemoriesInput): Promise<RecallMemoryResult[]> {
     const limit = input.limit ?? 8;
+    const candidateLimit = Math.min(Math.max(limit * 8, limit), 200);
     const query = toFtsQuery(input.query);
     if (!query) {
       return [];
@@ -203,23 +204,33 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
     const rows = this.database
       .prepare(
         `
-          SELECT m.*, bm25(memories_fts) * -1 AS score
+          SELECT m.*, bm25(memories_fts, 0.0, 0.0, 1.0, 5.0) * -1 AS score
           FROM memories_fts
           JOIN memories m ON m.id = memories_fts.id
           WHERE memories_fts MATCH @query
             AND m.archived_at IS NULL
             ${scopeClause}
-          ORDER BY bm25(memories_fts)
+          ORDER BY bm25(memories_fts, 0.0, 0.0, 1.0, 5.0)
           LIMIT @limit
         `,
       )
-      .all({ query, scope: input.scope, limit }) as SearchRow[];
+      .all({ query, scope: input.scope, limit: candidateLimit }) as SearchRow[];
 
-    return rows.map((row) => ({
-      memory: fromMemoryRow(row),
-      score: row.score,
-      reason: `Matched FTS query: ${query}`,
-    }));
+    const queryTerms = tokenizeSearchText(input.query);
+    return rows
+      .map((row) => {
+        const memory = fromMemoryRow(row);
+        const matchedTags = findExactTagMatches(queryTerms, memory.tags);
+        return {
+          memory,
+          score: row.score + matchedTags.length * 1_000,
+          reason: matchedTags.length > 0
+            ? `Matched tags: ${matchedTags.join(", ")}; FTS query: ${query}`
+            : `Matched FTS query: ${query}`,
+        };
+      })
+      .sort((left, right) => right.score - left.score)
+      .slice(0, limit);
   }
 
   async append(event: MemoryEvent): Promise<void> {
@@ -346,12 +357,25 @@ function parsePayload(value: string): Record<string, unknown> {
 }
 
 function toFtsQuery(query: string): string {
-  return query
-    .trim()
-    .split(/[^\p{L}\p{N}_]+/u)
-    .filter(Boolean)
+  return tokenizeSearchText(query)
     .map((term) => `"${term.replaceAll('"', '""')}"`)
     .join(" OR ");
+}
+
+function tokenizeSearchText(value: string): string[] {
+  return value
+    .trim()
+    .toLowerCase()
+    .split(/[^\p{L}\p{N}_]+/u)
+    .filter(Boolean);
+}
+
+function findExactTagMatches(queryTerms: string[], tags: string[]): string[] {
+  const queryTermSet = new Set(queryTerms);
+  return tags.filter((tag) => {
+    const tagTerms = [tag, ...tag.split(/[._-]+/u)].filter(Boolean);
+    return tagTerms.some((term) => queryTermSet.has(term));
+  });
 }
 
 function protectDatabaseFiles(path: string): void {

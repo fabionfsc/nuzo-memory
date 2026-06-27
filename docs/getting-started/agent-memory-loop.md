@@ -6,7 +6,9 @@ This walkthrough shows the core Nuzo loop:
 session A confirms a memory
   -> Nuzo stores it locally
 session B starts later
-  -> Nuzo recalls it read-only
+  -> Nuzo injects bounded read-only bootstrap memory
+first relevant prompt is submitted
+  -> Nuzo recalls matching content and topical tags
 user reviews or changes memory
   -> Nuzo records an auditable update or forget event
 ```
@@ -72,9 +74,15 @@ In a later session, recall by task context:
 nuzo memory recall "How should the agent report long-running work?"
 ```
 
-The same behavior is available to MCP hosts through `memory.recall_hook`. Host
-plugins should use it as read-only task-start context. It must not create
-capture suggestions or write memory.
+The same behavior is available to MCP hosts through `memory.recall_hook`.
+Codex and Claude Code plugins also bundle automatic read-only lifecycle hooks:
+
+- add `autoload` to a confirmed memory only when it should apply at every
+  session start in its scope;
+- use topical tags such as `cloudflare`, `docker`, or `workflow` for contextual
+  recall when a submitted prompt matches them.
+
+Neither recall path creates capture suggestions or writes memory.
 
 ## Direct Codex Flow
 
@@ -172,6 +180,7 @@ Repository smokes validate the same lifecycle with fake memory:
 
 ```bash
 npm run smoke:codex-plugin
+npm run smoke:host-hooks
 npm run smoke:published:mcp
 ```
 

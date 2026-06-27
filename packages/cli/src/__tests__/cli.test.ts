@@ -408,6 +408,39 @@ describe("nuzo memory cli", () => {
     }
   });
 
+  it("resolves project:auto instead of storing a shared literal scope", async () => {
+    const projectRoot = mkdtempSync(join(tmpdir(), "nuzo-project-auto-"));
+    tempDirectories.push(projectRoot);
+    const store = createStorePath();
+    const previousCwd = process.cwd();
+    process.chdir(projectRoot);
+    try {
+      const remembered = await runCli([
+        "memory",
+        "--store",
+        store,
+        "--scope",
+        "project:auto",
+        "remember",
+        "Use the resolved project scope.",
+        "--kind",
+        "instruction",
+      ]);
+      const history = await runCli([
+        "memory",
+        "--store",
+        store,
+        "history",
+        remembered.stdout[0] ?? "",
+      ]);
+
+      expect(history.stdout.join("\n")).toMatch(/"scope":"project:[a-f0-9]{16}"/);
+      expect(history.stdout.join("\n")).not.toContain("project:auto");
+    } finally {
+      process.chdir(previousCwd);
+    }
+  });
+
   it("rejects project init with a custom store", async () => {
     const store = createStorePath();
 
@@ -639,6 +672,43 @@ describe("nuzo memory cli", () => {
 
     const recall = await runCli(["memory", "--store", targetStore, "recall", "portable backups"]);
     expect(recall.stdout.join("\n")).toContain("portable memory backups");
+  });
+
+  it("reports and exposes legacy literal project:auto memories for scope review", async () => {
+    const store = createStorePath();
+    const exportDirectory = mkdtempSync(join(tmpdir(), "nuzo-legacy-auto-"));
+    const exportPath = join(exportDirectory, "legacy.memory.export.json");
+    tempDirectories.push(exportDirectory);
+    writeFileSync(exportPath, JSON.stringify({
+      format: "nuzo-memory-export",
+      version: 1,
+      exported_at: "2026-06-27T00:00:00.000Z",
+      memories: [
+        {
+          scope: "project:auto",
+          kind: "instruction",
+          content: "Review this legacy project scope.",
+          tags: ["workflow"],
+          source: "test:legacy",
+          confidence: 1,
+          created_at: "2026-06-27T00:00:00.000Z",
+          updated_at: "2026-06-27T00:00:00.000Z",
+          last_used_at: null,
+          archived_at: null,
+        },
+      ],
+    }), "utf8");
+
+    await runCli(["memory", "--store", store, "import", exportPath]);
+    const listed = await runCli(["memory", "--store", store, "list", "--all-scopes"]);
+    const doctor = await runCli(["memory", "--store", store, "doctor"], {
+      NUZO_DOCTOR_SKIP_GIT: "1",
+    });
+
+    expect(listed.stdout.join("\n")).toContain("scope=project:auto");
+    expect(doctor.stdout.join("\n")).toContain(
+      "Warning: 1 active legacy project:auto memory(s) require scope review",
+    );
   });
 
   it("reports malformed import documents without leaking runtime errors", async () => {

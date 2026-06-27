@@ -392,7 +392,39 @@ Execution tracker:
 - [#85](https://github.com/fabionfsc/nuzo-memory/issues/85):
   session-continuity dogfooding and docs.
 
-#### `0.2.1`: Capture Refinement And Updates
+#### `0.2.1`: Session Recall Bootstrap
+
+Focus: make relevant memory available automatically when Codex or Claude Code
+starts a session and when the user submits a prompt.
+
+Deliverables:
+
+- official plugin-bundled `SessionStart` and `UserPromptSubmit` hooks for Codex
+  and Claude Code;
+- bounded read-only bootstrap of `autoload` memories from `user:default` and
+  the current project scope;
+- contextual recall from prompt text, memory content, and topical tags;
+- stable project scope derivation from the host working directory;
+- one shared fail-open host runner with no capture or write path;
+- tag guidance that suggests topical labels without silently persisting them;
+- diagnostics for store readiness and host-hook limitations;
+- real two-session continuity tests for generated plugin artifacts.
+
+Exit criteria:
+
+- a confirmed memory from one session informs the first relevant prompt in a
+  fresh Codex or Claude Code session;
+- `autoload` context is available before the first prompt without loading every
+  stored memory;
+- hook execution remains read-only, bounded, local, and non-blocking;
+- both host plugins use the same Nuzo store and retrieval behavior.
+
+Execution tracker:
+
+- [#94](https://github.com/fabionfsc/nuzo-memory/issues/94): automatic
+  session recall bootstrap for Codex and Claude Code.
+
+#### `0.2.2`: Capture Refinement And Updates
 
 Focus: make capture less noisy and better at changing existing memory.
 
@@ -404,32 +436,15 @@ Deliverables:
 - conflict handling with expected revisions in host-facing flows;
 - better rejection and blocked-content messages;
 - tests for allowed, duplicate, update, conflict, blocked, and rejected capture
-  paths.
+  paths;
+- generic MCP-host guidance for hosts without compatible lifecycle hooks.
 
 Exit criteria:
 
 - Nuzo prefers updating relevant existing memory over creating low-value
   duplicates;
-- users can understand why a suggestion was shown or blocked.
-
-#### `0.2.2`: Claude Code And Generic MCP Parity
-
-Focus: make the same lifecycle work outside Codex.
-
-Deliverables:
-
-- Claude Code plugin guidance for task-start recall and confirmed capture;
-- generic MCP-host integration guide for agents that expose Nuzo tools but do
-  not support full plugin UX yet;
-- host compatibility matrix for recall, suggested capture, confirmation, and
-  update behavior;
-- smoke coverage or manual validation notes for the supported host paths.
-
-Exit criteria:
-
-- Codex and Claude Code use the same Nuzo memory store and MCP contract without
-  host-specific memory formats;
-- docs make clear which lifecycle behaviors each host currently supports.
+- users can understand why a suggestion was shown or blocked;
+- unsupported hosts have an explicit manual recall fallback.
 
 #### `0.2.3`: Audit, Review, And Trust UX
 

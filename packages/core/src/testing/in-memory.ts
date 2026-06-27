@@ -111,11 +111,22 @@ export class InMemorySearchIndex implements SearchIndex {
           memory.scope === input.scope || (input.includeGlobal === true && memory.scope === "user:default"),
       )
       .map((memory) => {
-        const haystack = `${memory.content} ${memory.tags.join(" ")}`.toLowerCase();
-        const matches = terms.filter((term) => haystack.includes(term));
+        const content = memory.content.toLowerCase();
+        const tags = memory.tags.join(" ").toLowerCase();
+        const contentMatches = terms.filter((term) => content.includes(term));
+        const tagMatches = terms.filter((term) => tags.includes(term));
+        const exactTagMatches = memory.tags.filter((tag) => {
+          const tagTerms = [tag, ...tag.split(/[._-]+/u)];
+          return tagTerms.some((tagTerm) => terms.includes(tagTerm));
+        });
+        const matches = [...new Set([...contentMatches, ...tagMatches])];
         return {
           memory: cloneMemory(memory),
-          score: matches.length / Math.max(terms.length, 1),
+          score: (
+            contentMatches.length +
+            tagMatches.length * 5 +
+            exactTagMatches.length * 1_000
+          ) / Math.max(terms.length, 1),
           reason: matches.length > 0 ? `Matched terms: ${matches.join(", ")}` : "No term match.",
         };
       })

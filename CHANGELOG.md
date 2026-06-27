@@ -6,6 +6,42 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-06-27
+
+### Added
+
+- Plugin-bundled `SessionStart` and `UserPromptSubmit` recall hooks for Codex
+  and Claude Code.
+- A shared `nuzo-memory-hook` executable in `@nuzo/mcp-server` that emits
+  bounded host `additionalContext` without capture or memory writes.
+- Explicit `autoload` tag semantics for bounded session bootstrap, alongside
+  topical tag recall for submitted prompts.
+- Host hook diagnostics for runtime, store, supported events, and the remaining
+  host-level trust check.
+- Cross-session host hook smoke coverage across 75 synthetic memories, 53
+  scenarios, common memory categories, project isolation, and 15 languages,
+  plus installed npm binary validation.
+
+### Changed
+
+- Codex and Claude Code plugin skills now treat lifecycle recall as the primary
+  path and MCP tool invocation as the fallback.
+- Host plugin artifacts package the same version-pinned read-only hook runner.
+- `memory.doctor` now reports lifecycle capability without claiming that a host
+  has enabled or trusted its plugin hooks.
+- Capture guidance now suggests a small set of user-confirmed topical tags.
+- Exact topical tag matches receive deterministic priority over incidental
+  common-word matches in SQLite and in-memory recall.
+
+### Fixed
+
+- `project:auto` now resolves to a stable path-derived project scope in the CLI
+  and MCP server instead of becoming one shared literal namespace.
+- CLI doctor now reports legacy literal `project:auto` records, and
+  `memory list --all-scopes` exposes them for explicit scope review.
+- Contextual prompt hooks no longer repeat `autoload` memories already injected
+  by the session-start hook.
+
 ## [0.2.0] - 2026-06-24
 
 ### Documentation

@@ -8,6 +8,7 @@ import {
 function createTestHandlers(options: {
   failList?: boolean;
   doctorDiagnostics?: MemoryDoctorDiagnostics;
+  projectScope?: `project:${string}`;
 } = {}) {
   let memory: MemoryRecord | null = null;
   const calls = {
@@ -221,6 +222,7 @@ function createTestHandlers(options: {
     calls,
     handlers: createMemoryToolHandlers(service, {
       storePath: "/tmp/nuzo-test.sqlite",
+      ...(options.projectScope === undefined ? {} : { projectScope: options.projectScope }),
       ...(options.doctorDiagnostics === undefined
         ? {}
         : { doctorDiagnostics: options.doctorDiagnostics }),
@@ -354,6 +356,12 @@ describe("memory MCP handlers", () => {
       current_version: null,
       supported_version: null,
       status: "not_performed",
+    });
+    expect(doctor.lifecycle).toEqual({
+      recall_hook: "available",
+      automatic_host_hooks: "verify_in_host",
+      autoload_tag: "autoload",
+      supported_events: ["SessionStart", "UserPromptSubmit"],
     });
     expect(doctor.tools).toContain("memory.import");
     expect(doctor.tools).toContain("memory.history");
@@ -495,6 +503,32 @@ describe("memory MCP handlers", () => {
     expect(calls.forgetMany).toBe(0);
     expect(calls.exportMemories).toBe(0);
     expect(calls.importMemories).toBe(0);
+  });
+
+  it("resolves project:auto to the active host project scope", async () => {
+    const { calls, handlers } = createTestHandlers({ projectScope: "project:resolved" });
+
+    await handlers.remember({
+      content: "Use the active project scope.",
+      kind: "instruction",
+      scope: "project:auto",
+      tags: ["workflow"],
+      source: "test",
+    });
+    const listed = await handlers.list({
+      scope: "project:auto",
+      tags: [],
+      include_archived: false,
+    });
+
+    const result = await handlers.recallHook({
+      task_context: "Cloudflare workflow",
+      project_scope: "project:auto",
+    });
+
+    expect(listed.memories[0]?.scope).toBe("project:resolved");
+    expect(result.scope).toBe("project:resolved");
+    expect(calls.recall.at(-1)?.scope).toBe("project:resolved");
   });
 
   it("validates capture suggestions without calling remember", async () => {

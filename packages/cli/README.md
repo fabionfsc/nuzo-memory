@@ -19,6 +19,7 @@ nuzo memory doctor
 nuzo memory remember "The demo project uses SQLite." --kind project_decision
 nuzo memory recall "SQLite"
 nuzo memory list
+nuzo memory list --all-scopes
 nuzo memory suggest-capture "The user prefers concise notes." --kind preference --reason "Durable response style preference."
 nuzo memory export --path ./memories.memory.export.json
 ```
