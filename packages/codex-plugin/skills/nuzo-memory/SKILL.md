@@ -13,9 +13,10 @@ Codex API or export.
 
 ### Task-Start Recall
 
-When a new task may depend on prior project context, user preferences,
-decisions, or recurring workflow notes, call `memory.recall_hook` before doing
-substantial work.
+Plugin lifecycle hooks provide bounded read-only recall at session start and
+alongside user prompts. If hook context is unavailable, call
+`memory.recall_hook` before substantial work whenever prior project context,
+user preferences, decisions, or recurring workflow notes may apply.
 
 Recall is read-only. Do not create capture suggestions during task-start recall.
 Use the recalled memories as context, but keep them separate from Codex built-in
@@ -47,6 +48,12 @@ For every explicit save request:
    final user-approved fields.
 6. If the user rejects the draft, do not write memory, audit events, or hidden
    notes.
+
+Suggest a small set of lowercase topical tags from subjects the user actually
+stated. For example, a recurring Cloudflare workflow may use `cloudflare`,
+`docker`, and `workflow`. Add `autoload` only when the memory should be loaded
+at every session start in its scope; topic-specific memories should rely on
+contextual recall.
 
 ### Inferred Capture
 

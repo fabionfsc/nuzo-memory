@@ -66,6 +66,19 @@ jobs:
       - name: Run CLI smoke test
         run: npm run smoke:cli
 
+      - name: Run host hook continuity smoke test
+        run: npm run smoke:host-hooks
+
+      - name: Run Claude Code plugin artifact smoke test
+        env:
+          NUZO_USE_EXISTING_ARTIFACTS: "1"
+        run: npm run smoke:claude-code-plugin
+
+      - name: Run Codex plugin artifact smoke test
+        env:
+          NUZO_USE_EXISTING_ARTIFACTS: "1"
+        run: npm run smoke:codex-plugin
+
   docs:
     name: Documentation validation
     runs-on: ubuntu-latest

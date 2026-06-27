@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import { createHash } from "node:crypto";
 import {
   chmodSync,
   mkdirSync,
@@ -24,6 +23,7 @@ import {
   SystemClock,
   memoryLimits,
   memoryScopePattern,
+  projectScopeFromPath,
   type MemoryKind,
   type ListMemoriesInput,
   type CaptureSuggestionResult,
@@ -119,7 +119,7 @@ export function createProgram(io: CliIO = defaultIO): Command {
   program
     .name("nuzo")
     .description("Local-first, auditable memory for AI agents.")
-    .version("0.2.0");
+    .version("0.2.1");
 
   const memory = program.command("memory").description("Manage local Nuzo stores.");
 
@@ -251,16 +251,29 @@ export function createProgram(io: CliIO = defaultIO): Command {
     .command("list")
     .description("List memories.")
     .option("--tag <tag...>", "Filter by tag.")
+    .option("--all-scopes", "List every authorized local scope.", false)
     .option("--include-archived", "Include archived memories.", false)
-    .action(withErrorHandling(io, async (commandOptions: { tag?: string[]; includeArchived: boolean }) => {
+    .action(withErrorHandling(io, async (commandOptions: {
+      tag?: string[];
+      allScopes: boolean;
+      includeArchived: boolean;
+    }) => {
       const options = memory.opts<GlobalOptions>();
+      if (commandOptions.allScopes && options.scope !== undefined) {
+        throw new NuzoMemoryError(
+          "MEMORY_SCOPE_CONFLICT",
+          "List --all-scopes cannot be combined with --scope.",
+        );
+      }
       const database = openDatabase(options);
       try {
         const service = createService(database);
         const listInput: ListMemoriesInput = {
           includeArchived: commandOptions.includeArchived,
-          scope: resolveScope(options),
         };
+        if (!commandOptions.allScopes) {
+          listInput.scope = resolveScope(options);
+        }
         if (commandOptions.tag) {
           listInput.tags = commandOptions.tag;
         }
@@ -269,7 +282,7 @@ export function createProgram(io: CliIO = defaultIO): Command {
 
         for (const item of memories) {
           const archived = item.archivedAt ? " archived" : "";
-          io.stdout(`${item.id}\trev=${item.revision}\t${item.kind}${archived}\t${item.content}`);
+          io.stdout(`${item.id}\trev=${item.revision}\tscope=${item.scope}\t${item.kind}${archived}\t${item.content}`);
         }
       } finally {
         database.close();
@@ -315,7 +328,7 @@ export function createProgram(io: CliIO = defaultIO): Command {
           updateInput.kind = commandOptions.kind;
         }
         if (commandOptions.scope !== undefined) {
-          updateInput.scope = commandOptions.scope;
+          updateInput.scope = resolveAutomaticScope(commandOptions.scope);
         }
         if (commandOptions.tag !== undefined) {
           updateInput.tags = commandOptions.tag;
@@ -434,7 +447,7 @@ export function createProgram(io: CliIO = defaultIO): Command {
           actor: "nuzo:cli",
         };
         if (commandOptions.scope !== undefined) {
-          forgetInput.scope = commandOptions.scope;
+          forgetInput.scope = resolveAutomaticScope(commandOptions.scope);
         }
         if (commandOptions.reason !== undefined) {
           forgetInput.reason = commandOptions.reason;
@@ -517,7 +530,7 @@ export function createProgram(io: CliIO = defaultIO): Command {
           dryRun: commandOptions.dryRun,
         };
         if (commandOptions.scope !== undefined) {
-          importInput.scope = commandOptions.scope;
+          importInput.scope = resolveAutomaticScope(commandOptions.scope);
         }
 
         const result = await service.importMemories(importInput);
@@ -533,7 +546,7 @@ export function createProgram(io: CliIO = defaultIO): Command {
     .description("Check the local memory environment.")
     .action(withErrorHandling(io, async () => {
       const options = memory.opts<GlobalOptions>();
-      const report = createDoctorReport(options);
+      const report = await createDoctorReport(options);
       io.stdout(`Store: ${report.storePath}`);
       io.stdout(`Store exists: ${report.storeExists ? "yes" : "no"}`);
       io.stdout(`Store directory: ${report.storeDirectory}`);
@@ -651,7 +664,7 @@ function resolveRuntimeConfig(options: GlobalOptions): {
     storePath: options.store !== undefined
       ? resolve(options.store)
       : activeConfig?.storage.path ?? getDefaultStorePath(),
-    scope: options.scope ?? activeConfig?.default_scope ?? "user:default",
+    scope: resolveAutomaticScope(options.scope ?? activeConfig?.default_scope ?? "user:default"),
     recall: {
       limit: activeConfig?.recall.limit ?? 8,
       includeGlobal: activeConfig?.recall.include_global ?? false,
@@ -750,6 +763,12 @@ function resolveUserStoragePath(path: string): string {
     : resolve(path);
 }
 
+function resolveAutomaticScope(scope: MemoryScope): MemoryScope {
+  return scope === "project:auto"
+    ? projectScopeFromPath(realpathSync(process.cwd()))
+    : scope;
+}
+
 function parseRecallConfig(
   value: unknown,
   configPath: string,
@@ -821,7 +840,7 @@ function resolveInitContext(
       configStorePath: ".nuzo/memory/memories.sqlite",
       project: true,
       projectRoot,
-      scope: projectScope(projectRoot),
+      scope: projectScopeFromPath(projectRoot),
       storePath: join(nuzoRoot, "memory", "memories.sqlite"),
     };
   }
@@ -836,18 +855,13 @@ function resolveInitContext(
     configStorePath: storePath,
     project: false,
     projectRoot: null,
-    scope: options.scope ?? "user:default",
+    scope: resolveAutomaticScope(options.scope ?? "user:default"),
     storePath,
   };
 }
 
 function getDefaultStorePath(): string {
   return resolve(homedir(), ".nuzo", "memory", "memories.sqlite");
-}
-
-function projectScope(projectRoot: string): MemoryScope {
-  const digest = createHash("sha256").update(projectRoot).digest("hex").slice(0, 16);
-  return `project:${digest}`;
 }
 
 function ensureStoreDirectory(storePath: string): void {
@@ -924,7 +938,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function createDoctorReport(options: GlobalOptions): DoctorReport {
+async function createDoctorReport(options: GlobalOptions): Promise<DoctorReport> {
   const storePath = resolveStorePath(options);
   const storeDirectory = dirname(storePath);
   const gitTracking = findTrackedMemoryFiles();
@@ -941,6 +955,22 @@ function createDoctorReport(options: GlobalOptions): DoctorReport {
   }
   if (gitTracking.status === "unavailable") {
     warnings.push(`Git tracking check unavailable: ${gitTracking.reason}`);
+  }
+  if (pathExists(storePath)) {
+    const database = new SQLiteMemoryDatabase({ path: storePath });
+    try {
+      const legacyProjectMemories = await database.list({
+        scope: "project:auto",
+        includeArchived: false,
+      });
+      if (legacyProjectMemories.length > 0) {
+        warnings.push(
+          `${legacyProjectMemories.length} active legacy project:auto memory(s) require scope review`,
+        );
+      }
+    } finally {
+      database.close();
+    }
   }
 
   return {

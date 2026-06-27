@@ -6,13 +6,16 @@ Hooks must stay conservative. They should improve recall and suggestion quality,
 
 ## Current Status
 
-Nuzo includes MCP-level read-only lifecycle primitives:
+Nuzo `0.2.0` includes MCP-level read-only lifecycle primitives:
 
 - `memory.recall_hook` for task-start recall;
 - `memory.suggest_capture` for validating inferred memory drafts before
   confirmation.
 
-Automatic host hooks are not enabled yet.
+Nuzo `0.2.1` adds automatic host integration through the official
+`SessionStart` and `UserPromptSubmit` events exposed by Codex and Claude Code.
+The integration remains read-only and fail-open: a missing store or hook error
+must not block the host session.
 
 This document defines the policy that must be satisfied before adding hooks to Codex, Claude Code, or another agent host.
 
@@ -52,6 +55,26 @@ Allowed behavior:
 - return read-only metadata such as `memory_writes: false` and `capture_suggestions: false`.
 
 The `memory.recall_hook` prototype does not update `last_used_at` or append recall audit events.
+
+Host integrations use two complementary recall phases:
+
+| Phase | Host event | Input | Retrieval |
+| --- | --- | --- | --- |
+| Session bootstrap | `SessionStart` | current working directory | bounded active `autoload` memories from the current project and `user:default` |
+| Contextual recall | `UserPromptSubmit` | current prompt and working directory | bounded FTS matches from memory content and tags in the current project and `user:default` |
+
+The session bootstrap runs before a prompt exists, so it must not guess a task
+topic or load every memory. Contextual recall runs alongside each submitted
+prompt so topic tags such as `cloudflare` can retrieve relevant instructions
+even when the session started in an unrelated directory.
+
+Recalled context must be formatted as factual, inspectable Nuzo memory records
+and injected through the host's `additionalContext` mechanism. Results are
+bounded by count and output size. Empty results produce no injected context.
+
+The host runner must derive a stable `project:<path-hash>` scope from the
+session working directory. The literal `project:auto` selector must not become
+a shared project namespace in storage.
 
 Not allowed:
 
@@ -145,6 +168,15 @@ They must not contain:
 
 All hook writes and reads must go through the Nuzo MCP tools.
 
+The generated host plugins may bundle the same small hook runner and host hook
+configuration. Codex and Claude Code wrappers must not implement ranking,
+storage, secret scanning, or capture policy independently.
+
+Hook execution is optional and user-controllable. Codex requires users to
+review and trust plugin command hooks. Claude Code can disable plugin hooks.
+Nuzo diagnostics and documentation must report these host controls honestly;
+installation alone must not be described as proof that hooks executed.
+
 ## Initial Implementation Order
 
 1. Manual recall through MCP tools.
@@ -168,3 +200,10 @@ Before shipping a host hook:
 - inferred drafts pass through `memory.suggest_capture`;
 - tests cover allowed and blocked capture examples;
 - README and roadmap mention the behavior accurately.
+- a memory confirmed in one session is available as context in a fresh session;
+- topical tags can retrieve a memory from the first relevant prompt;
+- session bootstrap only includes explicitly tagged `autoload` memories;
+- contextual prompt recall excludes `autoload` memories already supplied by
+  session bootstrap;
+- host hook failures do not block the user's prompt;
+- hook output is bounded and contains no capture suggestion or memory write.

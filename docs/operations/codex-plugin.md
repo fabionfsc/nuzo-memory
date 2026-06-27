@@ -14,10 +14,12 @@ The Codex plugin contract starts with:
 
 - a plugin folder;
 - a required `.codex-plugin/plugin.json` manifest;
-- optional bundled capabilities such as skills, apps, and MCP servers;
+- optional bundled capabilities such as skills, hooks, apps, and MCP servers;
 - installation through the Codex plugin directory or a configured marketplace source.
 
-For Nuzo, the plugin should only package the MCP server. It should not store memory, rank recall results, validate privacy policy, or implement import/export behavior directly.
+For Nuzo, the plugin packages the MCP server, memory skill, and read-only
+lifecycle hooks. It does not store memory, rank recall results, validate
+privacy policy, or implement import/export behavior directly.
 
 Codex identifies the plugin by the manifest `name`, so Nuzo keeps the stable identifier `nuzo` and the human display name `Nuzo`.
 
@@ -30,6 +32,11 @@ packages/codex-plugin/
 ├── .codex-plugin/
 │   └── plugin.json
 ├── .mcp.json
+├── hooks/
+│   └── hooks.json
+├── skills/
+│   └── nuzo-memory/
+│       └── SKILL.md
 ├── README.md
 └── package.json
 ```
@@ -41,6 +48,11 @@ build/plugins/codex/nuzo/
 ├── .codex-plugin/
 │   └── plugin.json
 ├── .mcp.json
+├── hooks/
+│   └── hooks.json
+├── skills/
+│   └── nuzo-memory/
+│       └── SKILL.md
 └── LICENSE
 ```
 
@@ -69,17 +81,24 @@ the published MCP package to the same version as the plugin:
   "mcpServers": {
     "nuzo": {
       "command": "npm",
-      "args": ["exec", "--yes", "--package=@nuzo/mcp-server@0.2.0", "--", "nuzo-mcp-server"]
+      "args": ["exec", "--yes", "--package=@nuzo/mcp-server@0.2.1", "--", "nuzo-mcp-server"]
     }
   }
 }
 ```
 
-`0.2.0` matches the current release. Future packaging uses the actual shared
+`0.2.1` matches the current release. Future packaging uses the actual shared
 package version and rejects version drift.
 
 The first launch may need npm registry access. Nuzo does not use `latest` and
 does not require a global install.
+
+The release artifact uses the same pinned MCP package for its read-only hook
+runner:
+
+```text
+npm exec --yes --package=@nuzo/mcp-server@<plugin-version> -- nuzo-memory-hook
+```
 
 The MCP server uses the default local memory store:
 
@@ -145,10 +164,13 @@ codex
 /plugins
 ```
 
-7. Install or enable `Nuzo`, then start a new thread before relying on the plugin.
+7. Install or enable `Nuzo`, open `/hooks`, and trust the two Nuzo command hooks.
 
-The generated `0.2.0` config resolves the matching public
-`@nuzo/mcp-server@0.2.0` package. It has been installed through an isolated
+8. Start a new thread. `SessionStart` loads bounded `autoload` memory and
+   `UserPromptSubmit` recalls topic matches from content and tags.
+
+The generated `0.2.1` config resolves the matching public
+`@nuzo/mcp-server@0.2.1` package. It has been installed through an isolated
 Codex marketplace and used to call `memory.doctor` successfully.
 
 ## Direct MCP Fallback
@@ -178,21 +200,22 @@ Use this only to isolate MCP behavior. Plugin validation should still go through
 
 ## Nuzo Skill
 
-The plugin ships `skills/nuzo-memory/SKILL.md`. It guides Codex to use
-read-only task-start recall, keep Nuzo separate from Codex built-in generated
-memories, and propose inferred memory drafts before calling
-`memory.remember`.
+The plugin ships `skills/nuzo-memory/SKILL.md` plus official `SessionStart` and
+`UserPromptSubmit` hooks. Hooks inject bounded read-only context; the skill
+keeps Nuzo separate from Codex built-in generated memories and guides confirmed
+capture behavior.
 
 The skill is host guidance only. Secret scanning, validation, storage, search,
 audit, and import/export behavior remain in core and MCP.
 
-For the `0.2.0` agent memory lifecycle, the Codex skill is the first
-host-facing behavior surface. It should make the following loop natural in a
-fresh Codex session:
+The host-facing lifecycle makes the following loop natural in a fresh Codex
+session:
 
 ```text
-start task
-  -> memory.recall_hook
+start session
+  -> SessionStart recalls autoload memory
+submit task
+  -> UserPromptSubmit recalls matching content and tags
   -> use recalled context
 user asks to remember or states durable context
   -> memory.suggest_capture
@@ -259,6 +282,8 @@ Release validation additionally checks:
 - `@nuzo/mcp-server` is pinned to the plugin version and runs the explicit
   `nuzo-mcp-server` binary;
 - no sibling monorepo path remains in the artifact.
+- `SessionStart` and `UserPromptSubmit` use the same version-pinned,
+  read-only hook runner.
 
 The repository check also validates the plugin metadata:
 
@@ -277,8 +302,9 @@ npm run package:plugins
 - Public marketplace listing is not yet available; repository marketplace
   installation remains the distribution path.
 - Runtime memory remains local and should not be committed to Git.
-- Automatic recall or capture hooks must follow `docs/operations/lifecycle-hooks.md`
-  before implementation.
+- Codex skips plugin command hooks until the user reviews and trusts them in
+  `/hooks`; installation alone does not prove automatic recall is active.
+- Automatic capture is not enabled. Inferred writes still require confirmation.
 - Capture suggestions must follow `docs/spec/capture-suggestions.md`, validate inferred drafts with `memory.suggest_capture`, and call `memory.remember` only after confirmation.
 
 ## Source References
@@ -286,3 +312,4 @@ npm run package:plugins
 - Codex manual, [Build plugins](https://developers.openai.com/codex/plugins/build): plugin manifests, marketplace metadata, local plugin testing, and workspace sharing.
 - Codex manual, [Plugins](https://developers.openai.com/codex/plugins): plugin directory, install flow, enabled state, and new-thread pickup after install.
 - Codex manual, [Model Context Protocol](https://developers.openai.com/codex/mcp): direct MCP setup and plugin-provided MCP server configuration.
+- Codex manual, [Hooks](https://developers.openai.com/codex/hooks): lifecycle events, plugin-bundled hooks, trust review, and `additionalContext`.

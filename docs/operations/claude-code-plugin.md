@@ -14,6 +14,8 @@ Development source:
 packages/claude-code-plugin/
 ├── .claude-plugin/plugin.json
 ├── .mcp.json
+├── hooks/
+│   └── hooks.json
 ├── skills/
 │   └── nuzo-memory/
 │       └── SKILL.md
@@ -29,6 +31,8 @@ build/plugins/claude-code/nuzo/
 ├── skills/
 │   └── nuzo-memory/
 │       └── SKILL.md
+├── hooks/
+│   └── hooks.json
 ├── .mcp.json
 └── LICENSE
 ```
@@ -45,13 +49,13 @@ The package currently provides:
 
 - Claude Code plugin metadata;
 - MCP server defaults for the `nuzo` MCP server;
-- a Claude Code skill that tells the host how to use Nuzo safely.
+- a Claude Code skill that tells the host how to use Nuzo safely;
+- read-only `SessionStart` and `UserPromptSubmit` hooks.
 
 It does not provide:
 
 - a separate memory engine;
 - Claude-specific storage;
-- lifecycle hooks;
 - an installer script;
 - native Claude Code memory migration.
 
@@ -95,14 +99,14 @@ The generated release artifact instead uses:
   "mcpServers": {
     "nuzo": {
       "command": "npm",
-      "args": ["exec", "--yes", "--package=@nuzo/mcp-server@0.2.0", "--", "nuzo-mcp-server"],
+      "args": ["exec", "--yes", "--package=@nuzo/mcp-server@0.2.1", "--", "nuzo-mcp-server"],
       "cwd": "${CLAUDE_PLUGIN_ROOT}"
     }
   }
 }
 ```
 
-`0.2.0` matches the current release. Future packaging pins the actual plugin
+`0.2.1` matches the current release. Future packaging pins the actual plugin
 version. This keeps the artifact portable across supported platforms while
 allowing npm to install the correct native SQLite build.
 
@@ -149,7 +153,8 @@ claude --plugin-dir packages/claude-code-plugin
 /reload-plugins
 ```
 
-6. Confirm the `nuzo` MCP server and the `nuzo-memory` skill are visible in Claude Code before relying on the plugin.
+6. Confirm the `nuzo` MCP server and the `nuzo-memory` skill are visible, then
+   inspect `/hooks` before relying on automatic recall.
 
 7. To validate the release layout, generate it and run the host validator:
 
@@ -158,8 +163,8 @@ npm run package:plugins
 claude plugin validate build/plugins/claude-code/nuzo --strict
 ```
 
-The generated `0.2.0` config resolves the matching public
-`@nuzo/mcp-server@0.2.0` package. It has been installed through an isolated
+The generated `0.2.1` config resolves the matching public
+`@nuzo/mcp-server@0.2.1` package. It has been installed through an isolated
 Claude Code marketplace, and `claude mcp list` reports the Nuzo server as
 connected.
 
@@ -231,23 +236,26 @@ Memory lifecycle, policy checks, recall ranking, import/export, and storage belo
 
 ## Hooks
 
-Claude Code supports hooks, but Nuzo should not add automatic recall or capture hooks until the policy is documented.
+The plugin bundles the same read-only lifecycle used by Codex:
 
-The hook policy is defined in `docs/operations/lifecycle-hooks.md`.
+- `SessionStart` injects bounded `autoload` memory from the active project and
+  `user:default`;
+- `UserPromptSubmit` recalls relevant memory from prompt text, memory content,
+  and topical tags;
+- empty results inject no context;
+- errors fail open and never block the prompt;
+- neither event suggests or writes memory.
 
-The capture suggestion contract is defined in `docs/spec/capture-suggestions.md`.
+Run the packaged runner diagnostic with:
 
-Before adding host-specific hooks, document:
+```bash
+npm exec --yes --package=@nuzo/mcp-server -- nuzo-memory-hook --doctor
+```
 
-- when recall is triggered;
-- when capture is suggested;
-- which memories require user confirmation;
-- how secrets and transient logs are filtered;
-- how users disable the behavior.
-
-The current safe prototypes are the MCP tools `memory.recall_hook` and
-`memory.suggest_capture`. They give Claude Code read-only recall and capture
-draft validation without enabling automatic writes.
+The report confirms runtime and store readiness. Claude Code remains the
+authority for whether plugin hooks are enabled; verify them through `/hooks`.
+The hook policy is defined in `docs/operations/lifecycle-hooks.md`, and capture
+remains governed by `docs/spec/capture-suggestions.md`.
 
 ## Portability
 
@@ -269,3 +277,4 @@ This covers memories created and managed through Nuzo. It does not promise acces
 - Claude Code docs, [Plugins reference](https://code.claude.com/docs/en/plugins-reference): manifest schema, component locations, and plugin CLI commands.
 - Claude Code docs, [MCP](https://code.claude.com/docs/en/mcp): stdio MCP setup and plugin-provided MCP variable behavior.
 - Claude Code docs, [Settings](https://code.claude.com/docs/en/settings): plugin enablement, scopes, and marketplace configuration.
+- Claude Code docs, [Hooks reference](https://code.claude.com/docs/en/hooks): plugin hooks, `SessionStart`, `UserPromptSubmit`, and `additionalContext`.

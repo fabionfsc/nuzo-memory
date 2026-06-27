@@ -32,6 +32,7 @@ npm run nuzo -- memory init --project
 npm run nuzo -- memory remember "The project uses SQLite for local storage." --kind project_decision --tag storage
 npm run nuzo -- memory suggest-capture "The user prefers concise final answers." --kind preference --reason "Durable response style preference."
 npm run nuzo -- memory recall "local storage"
+npm run nuzo -- memory list --all-scopes
 npm run nuzo -- memory export --path ./memories.memory.export.json
 npm run nuzo -- memory history mem_01HZY
 npm run nuzo -- memory forget-many --tag obsolete
@@ -52,6 +53,10 @@ storage, audit history, or usage metadata. Use it before asking the user to
 confirm a memory inferred from conversation context. Pass `--json` when a host,
 script, or agent needs a machine-readable result close to the MCP
 `memory.suggest_capture` shape.
+
+`list --all-scopes` is an administrator audit view for the selected local
+store. It is also the recovery path for literal `project:auto` records created
+before `0.2.1`; `doctor` warns when active records require review.
 
 ## Smoke Test
 

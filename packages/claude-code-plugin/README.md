@@ -7,6 +7,7 @@ It is intentionally thin:
 - `.claude-plugin/plugin.json` declares the plugin package.
 - `.mcp.json` points Claude Code at the Nuzo MCP server.
 - `skills/nuzo-memory/SKILL.md` gives Claude Code host-specific guidance.
+- `hooks/hooks.json` adds bounded read-only session and prompt recall.
 
 Memory behavior stays in `packages/core` and is exposed through `packages/mcp-server`.
 
@@ -15,7 +16,9 @@ inspection.
 
 ## Current Scope
 
-This package is a scaffold for the supported Claude Code plugin path. It is not a separate memory engine and it does not add lifecycle hooks yet.
+This package is a thin wrapper for the supported Claude Code plugin path. It is
+not a separate memory engine and its lifecycle hooks never capture or write
+memory.
 
 The local MCP config currently assumes the monorepo has been built:
 

@@ -83,6 +83,7 @@ def main() -> None:
         validate_nuzo_server(nuzo_server, manifest["version"], release)
 
     validate_nuzo_skill(root / "skills" / "nuzo-memory" / "SKILL.md")
+    validate_nuzo_hooks(root / "hooks" / "hooks.json", manifest["version"], release)
 
     print(f"plugin validation passed: {root}")
 
@@ -135,6 +136,46 @@ def validate_nuzo_skill(path: pathlib.Path) -> None:
     for guidance in required_guidance:
         if guidance not in content:
             fail(f"Nuzo skill missing required guidance: {guidance}")
+
+
+def validate_nuzo_hooks(path: pathlib.Path, version: str, release: bool) -> None:
+    if not path.exists():
+        fail("hooks/hooks.json is missing")
+    config = load_json(path)
+    hooks = config.get("hooks") if isinstance(config, dict) else None
+    if not isinstance(hooks, dict):
+        fail("hooks/hooks.json must define hooks")
+    if set(config.keys()) != {"hooks"}:
+        fail("Codex hooks/hooks.json must contain only the supported hooks field")
+    session = hooks.get("SessionStart")
+    prompt = hooks.get("UserPromptSubmit")
+    if not isinstance(session, list) or len(session) != 1:
+        fail("hooks must define one SessionStart matcher")
+    if session[0].get("matcher") != "startup|resume|clear|compact":
+        fail("SessionStart must cover startup, resume, clear, and compact")
+    if not isinstance(prompt, list) or len(prompt) != 1:
+        fail("hooks must define one UserPromptSubmit matcher")
+    commands = []
+    for group in [session[0], prompt[0]]:
+        handlers = group.get("hooks") if isinstance(group, dict) else None
+        if not isinstance(handlers, list) or len(handlers) != 1:
+            fail("each Nuzo lifecycle event must define one hook handler")
+        handler = handlers[0]
+        if handler.get("type") != "command" or handler.get("timeout") != 10:
+            fail("Nuzo recall hooks must be bounded command hooks")
+        commands.append(handler.get("command"))
+    if commands[0] != commands[1]:
+        fail("Nuzo lifecycle events must use the same hook runner")
+    expected = (
+        f"npm exec --yes --package=@nuzo/mcp-server@{version} -- nuzo-memory-hook"
+        if release
+        else 'node "${CLAUDE_PLUGIN_ROOT}/../mcp-server/dist/host-hook-cli.js"'
+    )
+    if commands[0] != expected:
+        fail("Nuzo hook runner must use the expected pinned release or local development command")
+    serialized = json.dumps(config).lower()
+    if "suggest_capture" in serialized or "memory.remember" in serialized:
+        fail("lifecycle hook configuration must not contain capture or write paths")
 
 
 if __name__ == "__main__":

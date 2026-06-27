@@ -17,6 +17,7 @@ import {
   memoryLimits,
   memoryScopePattern,
   memoryTagPattern,
+  projectScopeFromPath,
   schemaVersion,
   type MemoryService,
   type MemoryExportDocument,
@@ -47,6 +48,7 @@ export interface NuzoMcpServerOptions {
   storePath?: string;
   authorizedScopes?: readonly MemoryScope[];
   doctorDiagnostics?: MemoryDoctorDiagnostics;
+  projectPath?: string;
 }
 
 export interface NuzoMcpServerRuntime {
@@ -69,11 +71,12 @@ export function createNuzoMcpServerRuntime(options: NuzoMcpServerOptions = {}): 
   let closed = false;
   const server = new McpServer({
     name: "nuzo",
-    version: "0.2.0",
+    version: "0.2.1",
   });
 
   registerMemoryTools(server, service, {
     storePath,
+    ...(options.projectPath === undefined ? {} : { projectPath: options.projectPath }),
     doctorDiagnostics: options.doctorDiagnostics ?? {
       schema: {
         currentVersion: database.getSchemaVersion(),
@@ -100,6 +103,9 @@ export function registerMemoryTools(
 ): void {
   const handlerOptions = {
     ...(options.storePath === undefined ? {} : { storePath: options.storePath }),
+    projectScope: projectScopeFromPath(
+      options.projectPath ?? process.env.CLAUDE_PROJECT_DIR ?? process.cwd(),
+    ),
     ...(options.doctorDiagnostics === undefined
       ? {}
       : { doctorDiagnostics: options.doctorDiagnostics }),

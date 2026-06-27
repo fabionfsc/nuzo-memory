@@ -137,6 +137,7 @@ npm run build
 npm run package:plugins
 npm run validate:npm
 npm run smoke:cli
+npm run smoke:host-hooks
 npm run smoke:claude-code-plugin
 npm run smoke:codex-plugin
 npm run smoke:published:cli
@@ -162,6 +163,15 @@ suggestions, confirmed writes, recall, and exit codes, then confirms the
 installed MCP binary starts and supports the same suggestion-to-recall lifecycle
 over stdio. It does not publish packages or require npm credentials.
 
+The host hook continuity smoke uses an isolated SQLite store populated only
+with synthetic data. Its `0.2.1` matrix covers 75 memories and 53 scenarios,
+including global and project scopes, `autoload` bootstrap, exact topical tags,
+archived and unrelated records, bounded output, fail-open input handling,
+common preference/fact/instruction/decision workflows, and prompts in 14
+languages (English plus 14 non-English languages). Representative ephemeral Codex sessions complement this
+deterministic test before release; Claude Code remains covered by artifact and
+schema validation when its authenticated host CLI is unavailable locally.
+
 The published CLI smoke installs `@nuzo/memory-cli` into a temporary npm prefix
 and validates session continuity through separate `nuzo` process invocations.
 It is a post-release confidence check for the package users install, not a
@@ -173,8 +183,10 @@ the package-level confidence check for the runtime host plugins resolve.
 
 The Codex plugin artifact smoke regenerates the release-layout plugin, verifies
 the host-facing metadata loads as `Nuzo`, reads its bundled MCP config, and
-validates continuity through the published version-pinned MCP command that the
-plugin artifact exposes.
+validates continuity through staged npm tarballs before publication. It still
+asserts the version-pinned command in the generated config. After publication,
+`NUZO_PLUGIN_SMOKE_PUBLISHED=1 npm run smoke:codex-plugin` validates the exact
+public command that the plugin exposes.
 
 The continuity assertion covers the `0.2.0` Codex task-start recall contract:
 a first MCP session writes a fake confirmed memory, a later session calls
@@ -194,7 +206,9 @@ For update safety, the smoke also updates a confirmed capture with
 
 The Claude Code plugin artifact smoke performs the same release-layout
 continuity validation while also resolving the `${CLAUDE_PLUGIN_ROOT}` cwd
-placeholder against an isolated temporary plugin install path.
+placeholder against an isolated temporary plugin install path. Set
+`NUZO_PLUGIN_SMOKE_PUBLISHED=1` after release to exercise its exact public
+version-pinned command.
 
 Documentation validation installs `requirements-docs.txt` and runs:
 

@@ -56,6 +56,7 @@ try {
 
   assertCliWorkflow(testRoot, cliStorePath);
   await assertMcpProtocol(testRoot, mcpStorePath);
+  assertHostHookDoctor(testRoot, mcpStorePath);
   console.log(`npm artifact validation passed: ${installedMcp.version}`);
 } finally {
   rmSync(testRoot, { recursive: true, force: true });
@@ -137,6 +138,35 @@ function cliExecutableName() {
 
 function executableName() {
   return process.platform === "win32" ? "nuzo-mcp-server.cmd" : "nuzo-mcp-server";
+}
+
+function assertHostHookDoctor(cwd, memoryStore) {
+  const executable = join(
+    cwd,
+    "node_modules",
+    ".bin",
+    process.platform === "win32" ? "nuzo-memory-hook.cmd" : "nuzo-memory-hook",
+  );
+  const result = spawnSync(executable, ["--doctor"], {
+    cwd,
+    encoding: "utf8",
+    env: { ...process.env, NUZO_MEMORY_STORE: memoryStore },
+  });
+  if (result.error) {
+    throw result.error;
+  }
+  if (result.status !== 0) {
+    fail(`installed host hook doctor failed: ${JSON.stringify(result.stderr)}`);
+  }
+  const report = JSON.parse(result.stdout);
+  if (
+    report.status !== "ready" ||
+    report.mode !== "read_only" ||
+    !report.supported_events?.includes("SessionStart") ||
+    !report.supported_events?.includes("UserPromptSubmit")
+  ) {
+    fail(`installed host hook doctor returned unexpected output: ${result.stdout}`);
+  }
 }
 
 function tarballName(pkg) {

@@ -1,6 +1,6 @@
 # Getting Started
 
-Nuzo `0.2.0` is the current public release.
+Nuzo `0.2.1` is the current public release.
 
 Most users should start with the released CLI. Repository setup is only needed
 when you want to contribute to Nuzo itself.

@@ -1,0 +1,28 @@
+{
+  "description": "Recall relevant Nuzo memory at session start and before each user prompt.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/../mcp-server/dist/host-hook-cli.js\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/../mcp-server/dist/host-hook-cli.js\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

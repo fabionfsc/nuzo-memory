@@ -181,6 +181,7 @@ describe("MCP protocol contract", () => {
         arguments: {},
       })) as {
         counts: { active_memories: number; total_memories: number };
+        lifecycle: { automatic_host_hooks: string; autoload_tag: string };
         ok: boolean;
         schema: {
           current_version: number;
@@ -196,6 +197,10 @@ describe("MCP protocol contract", () => {
         counts: {
           active_memories: 1,
           total_memories: 1,
+        },
+        lifecycle: {
+          automatic_host_hooks: "verify_in_host",
+          autoload_tag: "autoload",
         },
         ok: true,
         schema: {

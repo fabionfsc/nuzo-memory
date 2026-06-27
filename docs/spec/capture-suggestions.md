@@ -65,6 +65,13 @@ Allowed candidates should be short, affirmative memories. Avoid storing long
 conversation excerpts. Rewrite only to remove filler; do not invent stronger
 claims than the user stated.
 
+Hosts should suggest a small set of lowercase topical tags from the durable
+subjects explicitly present in the statement. For example, a recurring
+Cloudflare workflow may use `cloudflare`, `docker`, and `workflow`. Add
+`autoload` only when the memory should be present at every session start in its
+scope; ordinary topic-specific memories should be recalled when a prompt
+matches their content or tags.
+
 Blocked candidates are not "rejected memories". They should leave no memory,
 draft record, audit event, or hidden note unless the user explicitly provides a
 safe replacement and confirms it.
@@ -198,6 +205,7 @@ These examples may produce drafts:
 | "I like concise status updates while work is running." | `preference` | `user:default` |
 | "This repo uses `/tmp/nuzo-git` as the git dir workaround." | `fact` | `project:<path-hash>` |
 | "When changing MCP tools, update `docs/spec/tools.md` first." | `instruction` | `project:<path-hash>` |
+| "For Cloudflare work on this host, use `/opt/docker/cloudflare`." | `instruction` | `user:default` |
 
 ## Blocked Examples
 

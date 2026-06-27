@@ -8,6 +8,7 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const outputRoot = join(repositoryRoot, "build", "plugins");
 const mcpPackage = readJson(join(repositoryRoot, "packages", "mcp-server", "package.json"));
 const packageSpec = `${mcpPackage.name}@${mcpPackage.version}`;
+const hookCommand = `npm exec --yes --package=${packageSpec} -- nuzo-memory-hook`;
 
 if (mcpPackage.version === "0.0.0") {
   console.warn("Packaging pre-release plugin artifacts against unpublished MCP version 0.0.0.");
@@ -20,7 +21,8 @@ const artifacts = [
     host: "codex",
     source: join(repositoryRoot, "packages", "codex-plugin"),
     destination: join(outputRoot, "codex", "nuzo"),
-    include: [".codex-plugin", "skills"],
+    include: [".codex-plugin", "skills", "hooks"],
+    includeHookDescription: false,
     mcp: {
       mcpServers: {
         nuzo: {
@@ -35,7 +37,8 @@ const artifacts = [
     host: "claude-code",
     source: join(repositoryRoot, "packages", "claude-code-plugin"),
     destination: join(outputRoot, "claude-code", "nuzo"),
-    include: [".claude-plugin", "skills"],
+    include: [".claude-plugin", "skills", "hooks"],
+    includeHookDescription: true,
     mcp: {
       mcpServers: {
         nuzo: {
@@ -62,9 +65,40 @@ for (const artifact of artifacts) {
     `${JSON.stringify(artifact.mcp, null, 2)}\n`,
     "utf8",
   );
+  writeFileSync(
+    join(artifact.destination, "hooks", "hooks.json"),
+    `${JSON.stringify(createReleaseHooks(hookCommand, artifact.includeHookDescription), null, 2)}\n`,
+    "utf8",
+  );
 
   runValidator(artifact.validator, artifact.destination);
   console.log(`packaged ${artifact.host}: ${artifact.destination}`);
+}
+
+function createReleaseHooks(command, includeDescription) {
+  const handler = {
+    type: "command",
+    command,
+    timeout: 10,
+  };
+  return {
+    ...(includeDescription
+      ? { description: "Recall relevant Nuzo memory at session start and before each user prompt." }
+      : {}),
+    hooks: {
+      SessionStart: [
+        {
+          matcher: "startup|resume|clear|compact",
+          hooks: [handler],
+        },
+      ],
+      UserPromptSubmit: [
+        {
+          hooks: [handler],
+        },
+      ],
+    },
+  };
 }
 
 function readJson(path) {

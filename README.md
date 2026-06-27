@@ -23,8 +23,8 @@
   <a href="#mvp-status">
     <img alt="MVP" src="https://img.shields.io/badge/MVP-100%25-00a7b5">
   </a>
-  <a href="https://github.com/fabionfsc/nuzo-memory/releases/tag/v0.2.0">
-    <img alt="Release" src="https://img.shields.io/badge/release-v0.2.0-22c55e">
+  <a href="https://github.com/fabionfsc/nuzo-memory/releases/tag/v0.2.1">
+    <img alt="Release" src="https://img.shields.io/badge/release-v0.2.1-22c55e">
   </a>
   <a href="#license">
     <img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-64748b">
@@ -87,15 +87,27 @@ to install all three for normal CLI use.
 
 ## MVP Status
 
-**Release `0.2.0` is current.**
+**Release `0.2.1` is current.**
 
 The MVP is complete: local SQLite storage, FTS recall, CLI lifecycle commands,
 12 MCP memory tools, Codex and Claude Code plugin artifacts, npm packages,
 GitHub Pages, CI, CodeQL, and release validation are in place.
 
-The current release focuses on product polish: simpler onboarding, clearer
-package guidance, leaner public docs, and a cleaner split between public
-contribution guidance and machine-local operator notes.
+The current release adds bounded, read-only session recall for Codex and Claude
+Code. Plugin hooks load explicitly tagged `autoload` context at session start
+and recall topic matches from memory content and tags alongside user prompts.
+Memory writes remain visible and confirmed.
+
+## Automatic Agent Recall
+
+The Codex and Claude Code plugins use the hosts' official `SessionStart` and
+`UserPromptSubmit` events. A memory tagged `autoload` may be loaded at session
+start; topical tags such as `cloudflare` or `workflow` participate in contextual
+recall when a prompt matches them. Hooks never capture or modify memory.
+
+Host-level hook enablement and trust remain under user control. See the
+[Codex](docs/operations/codex-plugin.md) and
+[Claude Code](docs/operations/claude-code-plugin.md) setup pages.
 
 ## Core Commands
 
@@ -105,6 +117,7 @@ nuzo memory remember "The user prefers concise implementation notes." --kind pre
 nuzo memory suggest-capture "The user prefers concise final answers." --kind preference --reason "Durable response style preference."
 nuzo memory recall "concise implementation notes"
 nuzo memory list
+nuzo memory list --all-scopes
 nuzo memory update mem_01HZY --expected-revision 1 --content "Updated memory content."
 nuzo memory history mem_01HZY
 nuzo memory forget mem_01HZY --expected-revision 2
