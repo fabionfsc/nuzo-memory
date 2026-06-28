@@ -57,6 +57,9 @@ jobs:
       - name: Build packages
         run: npm run build
 
+      - name: Run capture intelligence benchmark
+        run: npm run benchmark:capture
+
       - name: Package host plugins
         run: npm run package:plugins
 

@@ -62,6 +62,8 @@ npm run check
 npm run release:check
 npm test
 npm run build
+npm run benchmark:recall
+npm run benchmark:capture
 npm run package:plugins
 npm run validate:npm
 npm run smoke:cli
