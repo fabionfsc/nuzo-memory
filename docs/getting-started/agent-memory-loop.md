@@ -22,6 +22,11 @@ Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
 
 ```bash
 npm install --global @nuzo/memory
+```
+
+Initialize the local store when you want to manage memory directly:
+
+```bash
 nuzo memory init
 ```
 
