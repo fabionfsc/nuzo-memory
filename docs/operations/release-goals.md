@@ -105,6 +105,8 @@ Initial tracking:
 
 Goal: improve local retrieval with measurable quality rather than intuition.
 
+Status: shipped in `0.5.0`.
+
 Initial tracking:
 
 - [#116](https://github.com/fabionfsc/nuzo-memory/issues/116) Add public recall benchmark fixtures.

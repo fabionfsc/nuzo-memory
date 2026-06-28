@@ -6,6 +6,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-06-28
+
 ### Added
 
 - Deterministic local recall benchmark covering synthetic English,
@@ -17,6 +19,12 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - SQLite recall now ignores common prompt stop words and filters weak
   single-term noise from multi-term queries while preserving exact short-tag
   recall.
+
+### Fixed
+
+- Scoped FTS ranking now rejects unrelated single-term candidates while
+  preserving unique strong terms, exact topical tags, inspectable reasons,
+  and bounded result limits.
 
 ## [0.4.0] - 2026-06-28
 
