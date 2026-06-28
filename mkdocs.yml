@@ -89,6 +89,7 @@ nav:
   - Architecture:
       - Overview: architecture/overview.md
       - Boundaries: architecture/boundaries.md
+      - Memory Trust Boundary: architecture/memory-trust-boundary.md
       - Agent Host Compatibility: architecture/agent-host-compatibility.md
       - Storage: architecture/storage.md
       - Repository Layout: architecture/repository-layout.md

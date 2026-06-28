@@ -28,6 +28,10 @@ export function prepareStagedMcpRuntime(repositoryRoot, testRoot) {
   return {
     command: process.execPath,
     args: [join(runtimeRoot, "node_modules", "@nuzo", "memory", "dist", "mcp-server", "index.js")],
+    hook: {
+      command: process.execPath,
+      args: [join(runtimeRoot, "node_modules", "@nuzo", "memory", "dist", "mcp-server", "host-hook-cli.js")],
+    },
   };
 }
 

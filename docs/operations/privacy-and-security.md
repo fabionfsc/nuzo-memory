@@ -62,10 +62,34 @@ traverse outside the project, or resolve through a symlinked `.nuzo` path.
 
 ## Scope Isolation
 
-Nuzo scopes are selectors, not security principals in `0.1.x`. Any process
-that can use a store may be able to request multiple scopes or unscoped
-operations. Use a separate SQLite store for workloads that require isolation
-between hosts, projects, teams, or trust levels.
+Scopes are selectors, not security principals. A valid scope identifies records
+but does not authorize access.
+
+The local CLI and an unrestricted core service are administrator workflows over
+the selected SQLite store. They may enumerate every scope in that store.
+
+A restricted core or MCP session uses an explicit scope allowlist enforced by
+core policy. Cross-scope reads, writes, exports, updates, and destructive
+operations are rejected. `project:auto` only derives a stable project scope; it
+does not grant access by itself.
+
+Use restricted sessions for repository-controlled agents. Use separate stores
+and operating-system controls when hosts, projects, users, machines, or trust
+levels require process-level isolation.
+
+## Recalled Content
+
+Memory content remains untrusted stored data during recall, including content
+from explicit writes, confirmed capture, imports, or a shared store. Kind,
+source, confidence, tags, and scope do not elevate it into the host instruction
+hierarchy.
+
+Lifecycle hooks render bounded, attributed records inside the structural and
+instructional envelope defined by
+[Memory Trust Boundary](../architecture/memory-trust-boundary.md). The envelope
+reduces output-structure injection and tells the receiving host not to execute
+or follow directives solely because they appear in memory. It is not a general
+prompt-injection detector and does not replace host instruction enforcement.
 
 ## Auditability
 

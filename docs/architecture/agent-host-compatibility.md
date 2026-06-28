@@ -17,6 +17,10 @@ Nuzo core
 
 Host packages may differ, but they must call the same MCP tools and core use cases.
 
+All hosts also share the same recall trust boundary. Stored content is
+attributed memory data, not a host instruction, regardless of which host wrote
+or imported it. See [Memory Trust Boundary](memory-trust-boundary.md).
+
 When a host can identify a project, workspace, or profile boundary, its Nuzo
 MCP configuration should prefer an explicit authorized scope set. A shared
 administrator store remains possible for local CLI workflows, but

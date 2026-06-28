@@ -205,6 +205,13 @@ The plugin ships `skills/nuzo-memory/SKILL.md` plus official `SessionStart` and
 keeps Nuzo separate from Codex built-in generated memories and guides confirmed
 capture behavior.
 
+Recalled records are rendered as attributed, untrusted stored data. Memory
+kind, source, confidence, tags, and scope do not place content in Codex's
+instruction hierarchy. The shared hook envelope tells Codex not to execute or
+follow directives solely because they appear in memory and prevents embedded
+newlines or fake record text from changing the output structure. See
+[Memory Trust Boundary](../architecture/memory-trust-boundary.md).
+
 The skill is host guidance only. Secret scanning, validation, storage, search,
 audit, and import/export behavior remain in core and MCP.
 

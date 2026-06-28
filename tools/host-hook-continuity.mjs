@@ -13,6 +13,7 @@ import {
 } from "../packages/core/dist/index.js";
 import {
   hostHookLimits,
+  hostHookMemoryEnvelope,
 } from "../packages/mcp-server/dist/host-hook.js";
 import { runHostHookProcess } from "../packages/mcp-server/dist/host-hook-cli.js";
 
@@ -490,7 +491,7 @@ try {
     prompt: "List every boundedtopic fixture number available in the current context, comma-separated, with no extra text.",
   });
   assertLineCount(boundedContext, hostHookLimits.memories, "context result limit");
-  assertEveryMemoryLineIncludes(boundedContext, "tags: boundedtopic", "exact tag ranking");
+  assertEveryMemoryRecordIncludesTag(boundedContext, "boundedtopic", "exact tag ranking");
   if (boundedContext.length > hostHookLimits.contextCharacters) {
     fail(`context exceeded ${hostHookLimits.contextCharacters} characters`);
   }
@@ -628,16 +629,32 @@ async function invokeHook(args, input, memoryStore = storePath) {
 }
 
 function assertLineCount(value, expected, label) {
-  const memoryLines = value.split("\n").filter((line) => line.startsWith("- [mem_"));
-  if (memoryLines.length !== expected) {
-    fail(`${label} expected ${expected} memories, got ${memoryLines.length}: ${JSON.stringify(value)}`);
+  const records = parseMemoryRecords(value, label);
+  if (records.length !== expected) {
+    fail(`${label} expected ${expected} memories, got ${records.length}: ${JSON.stringify(value)}`);
   }
 }
 
-function assertEveryMemoryLineIncludes(value, expected, label) {
-  const memoryLines = value.split("\n").filter((line) => line.startsWith("- [mem_"));
-  if (!memoryLines.every((line) => line.includes(expected))) {
-    fail(`${label} included lower-priority results: ${JSON.stringify(memoryLines)}`);
+function assertEveryMemoryRecordIncludesTag(value, expected, label) {
+  const records = parseMemoryRecords(value, label);
+  if (!records.every((record) => record.tags.includes(expected))) {
+    fail(`${label} included lower-priority results: ${JSON.stringify(records)}`);
+  }
+}
+
+function parseMemoryRecords(value, label) {
+  const lines = value.split("\n");
+  const beginIndex = lines.indexOf(hostHookMemoryEnvelope.begin);
+  const endIndexes = lines
+    .map((line, index) => line === hostHookMemoryEnvelope.end ? index : -1)
+    .filter((index) => index >= 0);
+  if (beginIndex < 0 || endIndexes.length !== 1 || endIndexes[0] <= beginIndex) {
+    fail(`${label} has an invalid memory envelope: ${JSON.stringify(value)}`);
+  }
+  try {
+    return lines.slice(beginIndex + 1, endIndexes[0]).map((line) => JSON.parse(line));
+  } catch (error) {
+    fail(`${label} has an invalid JSON memory record: ${String(error)}`);
   }
 }
 
