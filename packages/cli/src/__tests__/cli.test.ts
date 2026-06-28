@@ -242,6 +242,43 @@ describe("nuzo memory cli", () => {
     expect(audit.stdout[0]).toContain("global\tmemory.exported\tnuzo:cli");
     expect(audit.stdout[0]).not.toContain("concise final answers");
 
+    const memoryAudit = await runCli([
+      "memory",
+      "--store",
+      store,
+      "audit",
+      "--memory-id",
+      id,
+      "--event-type",
+      "memory.created",
+      "memory.updated",
+      "--actor",
+      "nuzo:cli",
+      "--since",
+      "2000-01-01T00:00:00.000Z",
+      "--until",
+      "2999-01-01T00:00:00.000Z",
+      "--limit",
+      "10",
+    ]);
+    expect(memoryAudit.stdout).toHaveLength(2);
+    expect(memoryAudit.stdout[0]).toContain(`${id}\tmemory.updated\tnuzo:cli`);
+    expect(memoryAudit.stdout[1]).toContain(`${id}\tmemory.created\tnuzo:cli`);
+    expect(memoryAudit.stdout.join("\n")).not.toContain("concise final answers");
+
+    const scopedExportAudit = await runCli([
+      "memory",
+      "--store",
+      store,
+      "--scope",
+      "user:default",
+      "audit",
+      "--event-type",
+      "memory.exported",
+    ]);
+    expect(scopedExportAudit.stdout).toHaveLength(1);
+    expect(scopedExportAudit.stdout[0]).toContain("global\tmemory.exported\tnuzo:cli");
+
     const archived = await runCli(["memory", "--store", store, "forget", id, "--archive"]);
     expect(archived.stdout).toEqual(["Archived"]);
 

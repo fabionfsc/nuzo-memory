@@ -197,6 +197,24 @@ describe("MCP protocol contract", () => {
         },
       ]);
 
+      const memoryAudit = parseToolJson(await client.callTool({
+        name: "memory.audit",
+        arguments: {
+          memory_id: remembered.id,
+          event_type: ["memory.created"],
+          actor: "test:mcp-client",
+          since: "2000-01-01T00:00:00.000Z",
+          until: "2999-01-01T00:00:00.000Z",
+        },
+      })) as { events: Array<{ event_type: string; memory_id: string; actor: string }> };
+      expect(memoryAudit.events).toMatchObject([
+        {
+          event_type: "memory.created",
+          memory_id: remembered.id,
+          actor: "test:mcp-client",
+        },
+      ]);
+
       const preview = parseToolJson(await client.callTool({
         name: "memory.forget_many",
         arguments: {
@@ -284,6 +302,13 @@ describe("MCP protocol contract", () => {
       })) as { created: boolean; id: string };
       expect(remembered.created).toBe(true);
 
+      await client.callTool({
+        name: "memory.export",
+        arguments: {
+          scope: "project:nuzo",
+        },
+      });
+
       await expectToolError(client.callTool({
         name: "memory.remember",
         arguments: {
@@ -309,6 +334,22 @@ describe("MCP protocol contract", () => {
         name: "memory.audit",
         arguments: {},
       }));
+      const scopedAudit = parseToolJson(await client.callTool({
+        name: "memory.audit",
+        arguments: {
+          scope: "project:nuzo",
+          event_type: ["memory.exported"],
+        },
+      })) as { events: Array<{ event_type: string; memory_id: string | null; payload: { scope?: string } }> };
+      expect(scopedAudit.events).toMatchObject([
+        {
+          event_type: "memory.exported",
+          memory_id: null,
+          payload: {
+            scope: "project:nuzo",
+          },
+        },
+      ]);
     } finally {
       await client.close();
       runtime.close();

@@ -460,6 +460,11 @@ Export memories as a versioned JSON document.
 
 This is the Nuzo portability format. Codex, Claude Code, and future host plugins should expose this same tool instead of creating host-specific export formats.
 
+JSON export version `1` preserves memory record provenance fields that are part
+of the memory model, including `source`, scope, kind, tags, confidence, and
+timestamps. It does not export audit history. Export itself appends a
+store-wide `memory.exported` audit event with `memory_id: null`.
+
 The MCP tool returns JSON only. The CLI can also render the same document as
 Markdown for human review based on the output path extension. Markdown exports
 are not import inputs.
@@ -479,6 +484,11 @@ Input:
 Import memories from a documented file format.
 
 Imports accept Nuzo JSON export documents. A memory export created through Nuzo in one host should be importable through Nuzo in another host, as long as both hosts use compatible Nuzo versions.
+
+Import preserves each imported memory's exported `source` field unless the
+caller supplies a replacement scope. Import appends `memory.imported` audit
+events using the importing surface as `actor` and records `originalScope`,
+effective `scope`, and archive state in metadata-only payloads.
 
 Imports should be idempotent for exact memory equivalents. If a target store already has a memory with the same scope, kind, normalized content, and normalized tags, the import should skip that item instead of creating a duplicate.
 
