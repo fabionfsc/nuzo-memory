@@ -6,6 +6,11 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+### Fixed
+
+- Published plugin artifact smokes now load built trust-test helpers after
+  packaging, so a clean checkout does not require pre-existing `dist` output.
+
 ## [0.3.1] - 2026-06-28
 
 ### Added
