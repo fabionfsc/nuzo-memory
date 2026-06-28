@@ -6,6 +6,18 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+### Added
+
+- Deterministic local recall benchmark covering synthetic English,
+  Portuguese, Unicode, topical tag, scope, bounded-result, noise, and
+  realistic agent-prompt fixtures.
+
+### Changed
+
+- SQLite recall now ignores common prompt stop words and filters weak
+  single-term noise from multi-term queries while preserving exact short-tag
+  recall.
+
 ## [0.4.0] - 2026-06-28
 
 ### Added

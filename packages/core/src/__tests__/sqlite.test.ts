@@ -290,6 +290,60 @@ describe("SQLiteMemoryDatabase", () => {
     database.close();
   });
 
+  it("filters single-term noise from multi-term recall queries", async () => {
+    const { database, service } = createTempDatabase();
+    await service.remember({
+      content: "Cloudflare routing changes use the local reverse proxy workflow.",
+      kind: "project_decision",
+      scope: "project:nuzo",
+      tags: ["cloudflare", "routing", "workflow"],
+      source: "test",
+    });
+    await service.remember({
+      content: "Publish npm releases through trusted publishing with SLSA provenance.",
+      kind: "project_decision",
+      scope: "project:nuzo",
+      tags: ["npm", "release", "provenance"],
+      source: "test",
+    });
+
+    const provenance = await service.recall({
+      query: "How should the npm release provenance be published?",
+      scope: "project:nuzo",
+      limit: 5,
+    });
+    expect(provenance.map((result) => result.memory.tags[0])).toEqual(["npm"]);
+
+    const unrelatedSpecificQuery = await service.recall({
+      query: "Kubernetes ingress routing",
+      scope: "project:nuzo",
+      limit: 5,
+    });
+    expect(unrelatedSpecificQuery).toEqual([]);
+
+    database.close();
+  });
+
+  it("accepts distinctive terms without fixture-specific vocabulary", async () => {
+    const { database, service } = createTempDatabase();
+    const observability = await service.remember({
+      content: "Observability uses local spans for diagnostic traces.",
+      kind: "project_decision",
+      scope: "project:nuzo",
+      tags: ["diagnostics"],
+      source: "test",
+    });
+
+    const results = await service.recall({
+      query: "What observability guidance applies?",
+      scope: "project:nuzo",
+      limit: 5,
+    });
+
+    expect(results.map((result) => result.memory.id)).toEqual([observability.id]);
+    database.close();
+  });
+
   it("rejects stale update and forget revisions across SQLite connections", async () => {
     const { database: firstDatabase, directory, service: firstService } = createTempDatabase();
     const secondDatabase = new SQLiteMemoryDatabase({ path: join(directory, "memories.sqlite") });
