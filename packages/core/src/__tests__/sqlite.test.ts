@@ -208,6 +208,52 @@ describe("SQLiteMemoryDatabase", () => {
     database.close();
   });
 
+  it("queries store-wide audit events with SQLite filters", async () => {
+    const { database, service } = createTempDatabase();
+
+    const memory = await service.remember({
+      content: "SQLite audit filters include global export events.",
+      kind: "note",
+      scope: "project:nuzo",
+      tags: ["audit"],
+      source: "test:sqlite",
+    });
+    await service.exportMemories({
+      scope: "project:nuzo",
+      actor: "test:export",
+    });
+    await service.forget({
+      id: memory.id,
+      actor: "test:forget",
+      mode: "delete",
+      confirm: true,
+      reason: "Verify deleted memory scope remains auditable.",
+    });
+
+    const scopedEvents = await database.query({ scope: "project:nuzo" });
+    expect(scopedEvents.map((event) => event.eventType)).toEqual([
+      "memory.deleted",
+      "memory.exported",
+      "memory.created",
+    ]);
+    expect(scopedEvents[0]?.payload).toMatchObject({
+      scope: "project:nuzo",
+    });
+
+    const exportedEvents = await database.query({
+      eventTypes: ["memory.exported"],
+      actor: "test:export",
+    });
+    expect(exportedEvents).toMatchObject([
+      {
+        memoryId: null,
+        eventType: "memory.exported",
+      },
+    ]);
+
+    database.close();
+  });
+
   it("prioritizes exact tag matches over common prompt words", async () => {
     const { database, service } = createTempDatabase();
     await service.remember({

@@ -15,6 +15,7 @@ import {
   SystemClock,
   NuzoMemoryError,
   memoryLimits,
+  memoryEventTypes,
   memoryScopePattern,
   memoryTagPattern,
   projectScopeFromPath,
@@ -36,6 +37,7 @@ import type {
   SuggestCaptureToolInput,
   UpdateToolInput,
   MemoryDoctorDiagnostics,
+  AuditToolInput,
 } from "./handlers.js";
 
 const defaultStorePath = resolve(homedir(), ".nuzo", "memory", "memories.sqlite");
@@ -43,6 +45,7 @@ const scopeSchema = z.string().max(memoryLimits.scopeLength).regex(memoryScopePa
 const tagSchema = z.string().regex(memoryTagPattern);
 const memoryIdSchema = z.string().min(1).max(memoryLimits.identifierLength);
 const exportDateSchema = z.string().max(memoryLimits.dateLength);
+const eventTypeSchema = z.enum(memoryEventTypes);
 
 export interface NuzoMcpServerOptions {
   storePath?: string;
@@ -292,6 +295,45 @@ export function registerMemoryTools(
         id: input.id,
       };
       return jsonToolResult(await handlers.history(historyInput));
+    },
+  );
+
+  server.registerTool(
+    "memory.audit",
+    {
+      description: "List bounded store-wide Nuzo audit events without memory content.",
+      inputSchema: {
+        memory_id: memoryIdSchema.optional(),
+        event_type: z.array(eventTypeSchema).max(16).default([]),
+        actor: z.string().min(1).max(memoryLimits.actorLength).optional(),
+        scope: scopeSchema.optional(),
+        since: exportDateSchema.optional(),
+        until: exportDateSchema.optional(),
+        limit: z.number().int().min(1).max(200).default(50),
+      },
+    },
+    async (input) => {
+      const auditInput: AuditToolInput = {
+        event_type: input.event_type,
+        limit: input.limit,
+      };
+      if (input.memory_id !== undefined) {
+        auditInput.memory_id = input.memory_id;
+      }
+      if (input.actor !== undefined) {
+        auditInput.actor = input.actor;
+      }
+      if (input.scope !== undefined) {
+        auditInput.scope = input.scope;
+      }
+      if (input.since !== undefined) {
+        auditInput.since = input.since;
+      }
+      if (input.until !== undefined) {
+        auditInput.until = input.until;
+      }
+
+      return jsonToolResult(await handlers.audit(auditInput));
     },
   );
 

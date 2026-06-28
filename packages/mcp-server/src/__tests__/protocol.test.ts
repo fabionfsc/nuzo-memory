@@ -69,6 +69,16 @@ describe("MCP protocol contract", () => {
             },
           },
         });
+      expect(tools.tools.find((tool) => tool.name === "memory.audit")?.inputSchema)
+        .toMatchObject({
+          type: "object",
+          properties: {
+            limit: {
+              default: 50,
+              type: "integer",
+            },
+          },
+        });
 
       const readySuggestion = parseToolJson(await client.callTool({
         name: "memory.suggest_capture",
@@ -161,6 +171,31 @@ describe("MCP protocol contract", () => {
         "memory.created",
       ]);
       expect(history.events.every((event) => event.memory_id === remembered.id)).toBe(true);
+
+      await client.callTool({
+        name: "memory.export",
+        arguments: {
+          scope: "project:nuzo",
+        },
+      });
+
+      const audit = parseToolJson(await client.callTool({
+        name: "memory.audit",
+        arguments: {
+          scope: "project:nuzo",
+          event_type: ["memory.exported"],
+          limit: 5,
+        },
+      })) as { events: Array<{ event_type: string; memory_id: string | null; payload: { scope?: string } }> };
+      expect(audit.events).toMatchObject([
+        {
+          event_type: "memory.exported",
+          memory_id: null,
+          payload: {
+            scope: "project:nuzo",
+          },
+        },
+      ]);
 
       const preview = parseToolJson(await client.callTool({
         name: "memory.forget_many",
@@ -269,6 +304,10 @@ describe("MCP protocol contract", () => {
           scope: "project:nuzo",
           include_global: true,
         },
+      }));
+      await expectToolError(client.callTool({
+        name: "memory.audit",
+        arguments: {},
       }));
     } finally {
       await client.close();

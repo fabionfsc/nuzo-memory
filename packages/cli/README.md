@@ -1,6 +1,6 @@
 # @nuzo/memory-cli
 
-Legacy Nuzo CLI package.
+Legacy transition Nuzo CLI package.
 
 Use the unified package instead:
 
@@ -10,6 +10,9 @@ npm install --global @nuzo/memory
 
 `@nuzo/memory` includes the `nuzo` command, the `nuzo-mcp-server` binary, and
 the `nuzo-memory-hook` lifecycle runner used by host plugins.
+
+This package remains published during the transition window for existing users
+and automation. New installs should use `@nuzo/memory`.
 
 ## Legacy Install
 

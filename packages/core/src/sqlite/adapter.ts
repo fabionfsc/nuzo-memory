@@ -3,6 +3,7 @@ import { chmodSync, closeSync, existsSync, openSync } from "node:fs";
 import { NuzoMemoryError } from "../errors.js";
 import type { AuditLog, MemoryStore, SearchIndex, TransactionManager } from "../ports.js";
 import type {
+  AuditEventFilter,
   ListMemoriesInput,
   MemoryEvent,
   MemoryKind,
@@ -254,6 +255,58 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
     const rows = this.database
       .prepare("SELECT * FROM memory_events WHERE memory_id = ? ORDER BY created_at ASC")
       .all(memoryIdOrFilter) as MemoryEventRow[];
+    return rows.map(fromEventRow);
+  }
+
+  async query(filter: AuditEventFilter): Promise<MemoryEvent[]> {
+    const where: string[] = [];
+    const params: Record<string, unknown> = {
+      limit: filter.limit ?? 50,
+    };
+
+    if (filter.memoryId !== undefined) {
+      where.push("e.memory_id = @memory_id");
+      params.memory_id = filter.memoryId;
+    }
+
+    if (filter.eventTypes !== undefined && filter.eventTypes.length > 0) {
+      const placeholders = filter.eventTypes.map((_, index) => `@event_type_${index}`);
+      where.push(`e.event_type IN (${placeholders.join(", ")})`);
+      filter.eventTypes.forEach((eventType, index) => {
+        params[`event_type_${index}`] = eventType;
+      });
+    }
+
+    if (filter.actor !== undefined) {
+      where.push("e.actor = @actor");
+      params.actor = filter.actor;
+    }
+
+    if (filter.scope !== undefined) {
+      where.push("(m.scope = @scope OR json_extract(e.payload, '$.scope') = @scope OR json_extract(e.payload, '$.originalScope') = @scope)");
+      params.scope = filter.scope;
+    }
+
+    if (filter.since !== undefined) {
+      where.push("e.created_at >= @since");
+      params.since = filter.since.toISOString();
+    }
+
+    if (filter.until !== undefined) {
+      where.push("e.created_at <= @until");
+      params.until = filter.until.toISOString();
+    }
+
+    const sql = `
+      SELECT e.*
+      FROM memory_events e
+      LEFT JOIN memories m ON m.id = e.memory_id
+      ${where.length > 0 ? `WHERE ${where.join(" AND ")}` : ""}
+      ORDER BY e.created_at DESC, e.id DESC
+      LIMIT @limit
+    `;
+
+    const rows = this.database.prepare(sql).all(params) as MemoryEventRow[];
     return rows.map(fromEventRow);
   }
 

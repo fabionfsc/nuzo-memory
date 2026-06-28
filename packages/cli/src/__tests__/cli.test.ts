@@ -225,6 +225,23 @@ describe("nuzo memory cli", () => {
     expect(history.stdout[1]).toContain("memory.updated");
     expect(history.stdout.join("\n")).not.toContain("concise final answers");
 
+    const auditExportPath = join(tempDirectories[0] ?? tmpdir(), "audit-export.json");
+    await runCli(["memory", "--store", store, "export", "--path", auditExportPath]);
+
+    const audit = await runCli([
+      "memory",
+      "--store",
+      store,
+      "audit",
+      "--event-type",
+      "memory.exported",
+      "--limit",
+      "5",
+    ]);
+    expect(audit.stdout).toHaveLength(1);
+    expect(audit.stdout[0]).toContain("global\tmemory.exported\tnuzo:cli");
+    expect(audit.stdout[0]).not.toContain("concise final answers");
+
     const archived = await runCli(["memory", "--store", store, "forget", id, "--archive"]);
     expect(archived.stdout).toEqual(["Archived"]);
 

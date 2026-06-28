@@ -1,4 +1,5 @@
 import type {
+  AuditEventFilter,
   CaptureSuggestionDraft,
   ForgetMemoryInput,
   ForgetMemoriesInput,
@@ -66,6 +67,16 @@ export interface UpdateToolInput {
 
 export interface HistoryToolInput {
   id: string;
+}
+
+export interface AuditToolInput {
+  memory_id?: string;
+  event_type: string[];
+  actor?: string;
+  scope?: string;
+  since?: string;
+  until?: string;
+  limit: number;
 }
 
 export interface ForgetToolInput {
@@ -163,6 +174,9 @@ export interface MemoryToolHandlers {
     memory: MemoryToolRecord;
   }>;
   history(input: HistoryToolInput): Promise<{
+    events: MemoryToolEvent[];
+  }>;
+  audit(input: AuditToolInput): Promise<{
     events: MemoryToolEvent[];
   }>;
   forget(input: ForgetToolInput): Promise<{
@@ -383,14 +397,36 @@ export function createMemoryToolHandlers(
     async history(input) {
       const events = await service.history(input.id);
       return {
-        events: events.map((event) => ({
-          id: event.id,
-          memory_id: event.memoryId,
-          event_type: event.eventType,
-          actor: event.actor,
-          payload: event.payload,
-          created_at: event.createdAt.toISOString(),
-        })),
+        events: events.map(toToolEvent),
+      };
+    },
+
+    async audit(input) {
+      const auditInput: AuditEventFilter = {
+        limit: input.limit,
+      };
+      if (input.memory_id !== undefined) {
+        auditInput.memoryId = input.memory_id;
+      }
+      if (input.event_type.length > 0) {
+        auditInput.eventTypes = input.event_type as NonNullable<AuditEventFilter["eventTypes"]>;
+      }
+      if (input.actor !== undefined) {
+        auditInput.actor = input.actor;
+      }
+      if (input.scope !== undefined) {
+        auditInput.scope = resolveToolScope(input.scope, options.projectScope);
+      }
+      if (input.since !== undefined) {
+        auditInput.since = new Date(input.since);
+      }
+      if (input.until !== undefined) {
+        auditInput.until = new Date(input.until);
+      }
+
+      const events = await service.audit(auditInput);
+      return {
+        events: events.map(toToolEvent),
       };
     },
 
@@ -632,5 +668,23 @@ function toToolRecord(memory: MemoryRecord): MemoryToolRecord {
     updated_at: memory.updatedAt.toISOString(),
     last_used_at: memory.lastUsedAt?.toISOString() ?? null,
     archived_at: memory.archivedAt?.toISOString() ?? null,
+  };
+}
+
+function toToolEvent(event: {
+  id: string;
+  memoryId: string | null;
+  eventType: string;
+  actor: string;
+  payload: Record<string, unknown>;
+  createdAt: Date;
+}): MemoryToolEvent {
+  return {
+    id: event.id,
+    memory_id: event.memoryId,
+    event_type: event.eventType,
+    actor: event.actor,
+    payload: event.payload,
+    created_at: event.createdAt.toISOString(),
   };
 }

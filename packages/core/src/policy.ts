@@ -1,7 +1,8 @@
 import { invariant, NuzoMemoryError } from "./errors.js";
 import type { PolicyEngine, SecretScanner } from "./ports.js";
-import { memoryKinds, type MemoryScope } from "./types.js";
+import { memoryEventTypes, memoryKinds, type MemoryScope } from "./types.js";
 import type {
+  AuditEventFilter,
   ListMemoriesInput,
   MemoryRecord,
   RecallMemoriesInput,
@@ -156,6 +157,58 @@ export class DefaultPolicyEngine implements PolicyEngine {
     }
   }
 
+  async assertCanAudit(input: AuditEventFilter, currentMemory?: MemoryRecord | null): Promise<void> {
+    if (input.scope !== undefined) {
+      assertScope(input.scope);
+      this.assertScopeAllowed(input.scope);
+    } else if (currentMemory !== undefined && currentMemory !== null) {
+      this.assertScopeAllowed(currentMemory.scope);
+    } else if (this.allowedScopes !== null) {
+      throw new NuzoMemoryError(
+        "MEMORY_SCOPE_REQUIRED",
+        "A scope is required for this restricted memory session.",
+      );
+    }
+
+    if (input.actor !== undefined) {
+      invariant(input.actor.trim().length > 0, "MEMORY_ACTOR_EMPTY", "Memory actor cannot be empty.");
+      invariant(input.actor.length <= memoryLimits.actorLength, "MEMORY_ACTOR_INVALID", "Memory actor is too long.", {
+        maxLength: memoryLimits.actorLength,
+      });
+    }
+
+    for (const eventType of input.eventTypes ?? []) {
+      invariant(
+        memoryEventTypes.includes(eventType),
+        "MEMORY_AUDIT_EVENT_TYPE_INVALID",
+        "Audit event type is not supported.",
+        { eventType },
+      );
+    }
+
+    if (input.limit !== undefined) {
+      invariant(input.limit > 0 && input.limit <= 200, "MEMORY_AUDIT_LIMIT_INVALID", "Audit limit must be 1-200.", {
+        limit: input.limit,
+      });
+    }
+
+    if (input.since !== undefined) {
+      assertValidDate(input.since, "since");
+    }
+
+    if (input.until !== undefined) {
+      assertValidDate(input.until, "until");
+    }
+
+    if (input.since !== undefined && input.until !== undefined) {
+      invariant(
+        input.since.getTime() <= input.until.getTime(),
+        "MEMORY_AUDIT_TIME_RANGE_INVALID",
+        "Audit since must be earlier than or equal to until.",
+      );
+    }
+  }
+
   private assertScopeAllowed(scope: MemoryScope): void {
     if (this.allowedScopes === null) {
       return;
@@ -180,5 +233,11 @@ function assertScope(scope: MemoryScope): void {
 function assertTag(tag: string): void {
   invariant(memoryTagPattern.test(tag), "MEMORY_TAG_INVALID", "Memory tag is invalid.", {
     tag,
+  });
+}
+
+function assertValidDate(date: Date, field: string): void {
+  invariant(!Number.isNaN(date.getTime()), "MEMORY_DATE_INVALID", "Memory date is invalid.", {
+    field,
   });
 }

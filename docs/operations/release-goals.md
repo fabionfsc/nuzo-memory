@@ -76,6 +76,8 @@ Deliverables:
 - define provenance for explicit writes, confirmed capture, imports, CLI,
   MCP, and host integrations;
 - review import/export compatibility for any provenance fields;
+- define the lifecycle policy for legacy transition packages before the stable
+  compatibility commitment;
 - provide a user workflow for reviewing, exporting, and removing memory.
 
 Exit criteria:
@@ -87,6 +89,15 @@ Exit criteria:
   in audit payloads;
 - provenance survives supported JSON export/import when the format promises it;
 - new public contracts are documented and covered at protocol level.
+
+Initial tracking:
+
+- [#106](https://github.com/fabionfsc/nuzo-memory/issues/106) Define global audit query contract.
+- [#107](https://github.com/fabionfsc/nuzo-memory/issues/107) Define provenance fields and import/export behavior.
+- [#108](https://github.com/fabionfsc/nuzo-memory/issues/108) Protect audit queries under restricted scope mode.
+- [#109](https://github.com/fabionfsc/nuzo-memory/issues/109) Expose store-wide audit in CLI.
+- [#110](https://github.com/fabionfsc/nuzo-memory/issues/110) Expose store-wide audit in MCP.
+- [#111](https://github.com/fabionfsc/nuzo-memory/issues/111) Define legacy package lifecycle policy.
 
 ## `0.5.0`: Recall Quality
 

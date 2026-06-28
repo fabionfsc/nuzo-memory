@@ -6,6 +6,18 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+### Added
+
+- Store-wide audit query contracts are now exposed through core, CLI, and MCP
+  with bounded filters for event type, actor, memory ID, scope, time, and
+  result limit.
+
+### Changed
+
+- npm publishing docs now define `@nuzo/memory-cli` and `@nuzo/mcp-server` as
+  legacy transition packages pending an explicit pre-`1.0.0` lifecycle
+  decision.
+
 ### Fixed
 
 - Published plugin artifact smokes now load built trust-test helpers after

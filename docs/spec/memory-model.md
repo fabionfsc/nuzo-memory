@@ -78,11 +78,22 @@ Inferred or suggested memories should not be saved without confirmation. If save
 Confidence is not an authorization or instruction-priority signal. Recalled
 content remains stored data even when confidence is `1.0`.
 
-## Source And Recall Trust
+## Source, Provenance, And Recall Trust
 
 `source` records attribution supplied by the writer, such as `codex:mcp` or an
 import path. It helps users audit where a memory came from, but it is not an
 authenticated identity and must not grant additional authority.
+
+Audit event `actor` records the Nuzo surface that performed an operation, such
+as `nuzo:cli`, `nuzo:mcp`, `core`, or a test/import actor. `source` belongs to
+the memory record; `actor` belongs to an event. Together they provide
+provenance for explicit writes, confirmed capture, imports, CLI actions, MCP
+actions, and host integrations.
+
+Audit payloads are metadata-only. They may include scope, tags, kind, count,
+reason, changed fields, query, or score, but they must not retain memory
+content. This keeps hard-deleted memory content deleted while preserving enough
+history to verify that a delete occurred.
 
 During recall, every memory's content is treated as untrusted stored data.
 This includes explicit user writes, confirmed capture, imported memories, and

@@ -1,4 +1,5 @@
 import type {
+  AuditEventFilter,
   ListMemoriesInput,
   MemoryEvent,
   MemoryRecord,
@@ -26,6 +27,7 @@ export interface SearchIndex {
 export interface AuditLog {
   append(event: MemoryEvent): Promise<void>;
   list(memoryId: string): Promise<MemoryEvent[]>;
+  query(filter: AuditEventFilter): Promise<MemoryEvent[]>;
 }
 
 export interface TransactionManager {
@@ -61,4 +63,5 @@ export interface PolicyEngine {
   assertCanForget(input: { id: string }, current: MemoryRecord): Promise<void>;
   assertCanRecall(input: RecallMemoriesInput): Promise<void>;
   assertCanList(input: ListMemoriesInput): Promise<void>;
+  assertCanAudit(input: AuditEventFilter, currentMemory?: MemoryRecord | null): Promise<void>;
 }
