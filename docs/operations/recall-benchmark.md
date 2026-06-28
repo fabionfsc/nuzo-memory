@@ -156,3 +156,16 @@ average latency < 1 ms on the local fixture
 
 These numbers are evidence for the bundled synthetic fixture only. Future
 fixtures should extend the benchmark before changing the envelope.
+
+## Published 0.5.0 Verification
+
+The `0.5.0` release passed the benchmark envelope, Node.js 22 and 24 CI,
+CodeQL, strict documentation build, npm artifact validation, and the
+75-memory/53-scenario lifecycle-hook matrix. The published
+`@nuzo/memory-core`, `@nuzo/memory`, `@nuzo/memory-cli`, and
+`@nuzo/mcp-server` packages expose npm provenance for `0.5.0`.
+
+Post-publication CLI, MCP, Codex plugin, and Claude Code plugin smokes also
+passed while resolving the exact public `0.5.0` packages. This confirms that
+the benchmark remains development evidence only and is not bundled into the
+runtime package path.

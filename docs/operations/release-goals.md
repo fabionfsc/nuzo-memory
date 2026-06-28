@@ -133,7 +133,7 @@ Exit criteria:
   calls, or embeddings;
 - the English benchmark group has enough coverage to fail independently on
   top-1 accuracy, expected recall, or unexpected noise;
-- recall quality improves over the `0.3.x` baseline on agreed fixtures without
+- recall quality improves over the `v0.4.0` baseline on agreed fixtures without
   regressing scope isolation or latency bounds;
 - ranking reasons remain inspectable and correspond to the implemented score;
 - lifecycle hooks continue to return a small bounded context.
