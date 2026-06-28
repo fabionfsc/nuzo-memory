@@ -1,34 +1,30 @@
 # Post-Release Validation
 
-This page defines the product-hardening loop after each public release.
-
-The `0.2.0` release proves the first agent memory lifecycle: read-only
-task-start recall, explicit save requests, inferred capture drafts, confirmed
-writes, duplicate/update guidance, structured update conflicts, and
-session-continuity documentation.
+This page defines the product-hardening loop after each public release. The
+loop preserves read-only task-start recall, explicit save requests, inferred
+capture drafts, confirmed writes, duplicate/update guidance, structured update
+conflicts, and session-continuity validation across release goals.
 
 ## Current Focus
 
-For `0.2.1`, prioritize:
+For every current release, prioritize:
 
 - continued installed-package validation over source-tree-only validation;
 - continued Codex and Claude Code host behavior through official plugin paths;
 - read-only recall before work starts;
 - capture suggestions that require explicit confirmation;
-- sharper candidate rules for preferences, project decisions, instructions,
-  stable facts, and workflow notes;
-- update suggestions when a new statement changes existing memory;
+- the active goal's benchmark and public-contract exit criteria;
 - conflict handling with expected revisions in host-facing flows;
-- better rejection and blocked-content messages;
+- clear rejection, ambiguity, and blocked-content messages;
 - documentation that matches commands tested against published packages.
 
 Defer features that do not strengthen this flow, including sync, embeddings,
 UI, background capture, local installer scripts, and host-specific memory
 formats.
 
-Post-`0.2.x` work may explore optional semantic search, local embeddings, or
-provider plugins, but those must remain opt-in and must not introduce network
-calls, telemetry, or inferred writes by default.
+For `0.6.0`, this loop must additionally prove read-only relationship evidence
+before confirmed create or update decisions. Optional semantic search remains
+a later goal and must not be pulled into capture classification.
 
 ## Real Flow To Prove
 
@@ -44,7 +40,10 @@ The canonical post-release smoke is:
 8. Confirm the suggestion does not write before user confirmation.
 9. Confirm a duplicate suggestion reports the existing memory instead of
    proposing a redundant write.
-10. Run `memory.doctor` or `nuzo memory doctor` against the same store.
+10. Confirm a new memory through `memory.remember`.
+11. When the release supports replacement evidence, confirm updates through
+    `memory.update` with `expected_revision` and test the conflict path.
+12. Run `memory.doctor` or `nuzo memory doctor` against the same store.
 
 Use fake memory content only.
 
@@ -63,7 +62,8 @@ For each host, capture evidence for:
 - `memory.doctor` works;
 - `memory.recall_hook` can read existing test memory;
 - `memory.suggest_capture` returns a read-only draft;
-- confirmed capture calls `memory.remember`;
+- confirmed creation calls `memory.remember`;
+- confirmed replacement calls `memory.update` with the displayed revision;
 - no host wrapper duplicates core memory logic.
 
 If a host cannot automate one of these checks yet, document the manual command
@@ -145,9 +145,9 @@ until the user confirms them. The validation loop must prove:
 - duplicate suggestions do not create new active memories;
 - secrets and unsafe content are blocked by core policy.
 
-## Acceptance Criteria For 0.2.0
+## Release Acceptance Invariants
 
-`0.2.0` should be considered ready when:
+A release that changes capture or host behavior is ready only when:
 
 - published CLI and MCP packages continue to pass session-continuity smoke tests;
 - Codex and Claude Code release artifacts continue to validate against the
@@ -164,17 +164,10 @@ until the user confirms them. The validation loop must prove:
 - open work that remains is represented by focused GitHub Issues;
 - no new hidden-write memory path has been introduced.
 
-## Issue Seeds
+## Issue Tracking
 
-Create or update GitHub Issues for:
-
-- capture suggestion candidate criteria and rejection examples;
-- update suggestions for changed existing memories;
-- host-facing expected revision conflict guidance;
-- Claude Code lifecycle parity;
-- generic MCP-host lifecycle guidance;
-- local lifecycle benchmark fixtures;
-- docs drift checks for published package commands.
-
-Keep issues executable. Broad product notes belong in roadmap docs; assignable
-work belongs in GitHub Issues.
+Create focused issues from the active release goal only when their contract,
+boundary, and acceptance evidence are concrete. Keep broad product direction
+in the roadmap and use issues for assignable work. After release, close
+completed issues and carry documented non-blockers into the next applicable
+milestone.

@@ -140,28 +140,131 @@ Exit criteria:
 
 ## `0.6.0`: Capture Intelligence
 
-Goal: reduce redundant memory and make changes to existing memory explicit.
+Goal: decide whether a confirmed capture should create, update, or skip memory
+without turning inference into write authority.
+
+Status: planned as two evidence-gated passes. Both passes belong to the
+`0.6.0` milestone; they are not artificial `0.5.x` patch releases. Source
+versions remain at the last public release until the final release commit. A
+prerelease such as `0.6.0-alpha.1` is used only if external evaluation is
+needed and npm prerelease distribution is explicitly made safe first.
+
+Tracking:
+
+- Definition and evidence: [#125](https://github.com/fabionfsc/nuzo-memory/issues/125)
+  defines the contract, [#126](https://github.com/fabionfsc/nuzo-memory/issues/126)
+  adds fixtures and the baseline, [#127](https://github.com/fabionfsc/nuzo-memory/issues/127)
+  implements core evidence, and [#128](https://github.com/fabionfsc/nuzo-memory/issues/128)
+  exposes it through CLI and MCP.
+- Confirmed decisions: [#129](https://github.com/fabionfsc/nuzo-memory/issues/129)
+  covers create/update/conflict behavior and
+  [#130](https://github.com/fabionfsc/nuzo-memory/issues/130) aligns Codex and
+  Claude Code.
+- Release proof: [#131](https://github.com/fabionfsc/nuzo-memory/issues/131)
+  collects end-to-end evidence after both passes.
+- Supporting post-release documentation alignment is tracked in
+  [#124](https://github.com/fabionfsc/nuzo-memory/issues/124).
+
+Relationship evidence uses this planning taxonomy:
+
+| Relationship | Meaning | Default write decision |
+| --- | --- | --- |
+| `exact_duplicate` | The same normalized durable statement already exists in the target scope. | None. |
+| `update_candidate` | The candidate appears to replace or revise an existing durable statement. | None until the user confirms an update. |
+| `related` | Existing memory is relevant but the candidate may remain independently useful. | None until the user chooses whether to create. |
+| `independent` | No sufficiently related active memory was found inside the bounded search. | None until the user confirms creation. |
+| `uncertain` | Evidence cannot safely distinguish the relationships above. | Ask for clarification; do not write. |
+
+Policy rejection is orthogonal to this taxonomy. A blocked candidate stops
+before relationship evidence can authorize any action. Relationship evidence
+is advisory data, never permission to persist.
+
+### Pass 1: Capture Evidence
+
+This pass is read-only. It defines and measures the decision boundary before
+adding any new mutation flow.
 
 Deliverables:
 
-- define exact duplicate, related memory, update candidate, and independent
-  memory relationships;
-- return inspectable related-memory evidence before a host asks for a write;
-- prefer `memory.update` with `expected_revision` when a confirmed candidate
-  changes an existing memory;
-- preserve confirm, edit, and reject outcomes for every inferred candidate;
-- improve conflict, blocked-content, and rejection messages;
-- test allowed, duplicate, related, update, conflict, blocked, and rejected
-  flows across core, MCP, and supported hosts.
+- specify additive core and `memory.suggest_capture` relationship contracts
+  before implementation, including compatibility with current consumers;
+- add public synthetic fixtures with English as the primary quality bar and
+  Portuguese, Unicode, scope, policy, and ambiguity safety coverage;
+- measure the exact-duplicate-only `0.5.0` baseline before tuning;
+- retrieve a bounded set of active candidates from the authorized target
+  scope without cross-scope disclosure;
+- return inspectable evidence such as relationship, memory ID, revision,
+  matched terms or tags, and a concise reason;
+- distinguish `uncertain` from `independent` rather than forcing a weak match;
+- keep candidate detection outside storage and keep suggestion evaluation free
+  of memory and audit writes;
+- use no telemetry, mandatory embeddings, remote LLM, or network dependency.
+
+Pass 1 gate:
+
+- the contract and fixture expectations are reviewed before ranking changes;
+- the baseline and proposed quality envelope are reproducible from repository
+  commands;
+- policy rejection, scope isolation, result bounds, and zero-write behavior
+  pass with no exceptions;
+- English classification and ambiguity cases can fail independently;
+- evidence is inspectable and corresponds to the implemented decision;
+- existing recall benchmark and lifecycle-hook bounds do not regress.
+
+Pass 2 cannot begin until this gate is satisfied.
+
+### Pass 2: Confirmed Decisions
+
+This pass turns evidence into explicit user choices while preserving the
+existing write APIs and policy boundary.
+
+Deliverables:
+
+- present create, update, keep-separate, clarify, and reject outcomes without
+  selecting one silently;
+- keep `exact_duplicate`, blocked, rejected, and unresolved `uncertain`
+  outcomes write-free;
+- route confirmed independent creation through `memory.remember`;
+- route confirmed replacement through `memory.update` with the displayed
+  memory ID and `expected_revision`;
+- require a fresh read and confirmation after `MEMORY_REVISION_CONFLICT`, with
+  no silent retry;
+- preserve source attribution and metadata-only audit events for confirmed
+  writes;
+- align CLI, MCP, Codex, and Claude Code guidance and protocol tests with the
+  same core decisions;
+- validate separate-session flows against staged and published artifacts.
+
+### Non-Goals
+
+- silent or confidence-triggered writes;
+- storing rejected suggestions, hidden drafts, or conversation transcripts;
+- automatic conflict resolution or background retries;
+- cross-scope candidate comparison that can disclose unauthorized memory;
+- semantic retrieval, embeddings, sync, or remote classification;
+- host-specific relationship logic that duplicates core behavior;
+- changing the canonical memory model solely to retain suggestion state.
 
 Exit criteria:
 
-- no inferred candidate is persisted without explicit confirmation;
-- changed durable facts and preferences do not create unbounded duplicate rows
-  by default;
-- relation and update suggestions are explainable and individually rejectable;
-- revision conflicts require a fresh read and confirmation rather than a
-  silent retry.
+- no inferred, blocked, rejected, duplicate, or uncertain candidate is
+  persisted without an explicit confirmed decision;
+- exact duplicates create zero new active memories by default;
+- changed durable facts and preferences prefer an inspectable confirmed
+  update over an unbounded additional row;
+- every relation and recommended decision includes bounded evidence and remains
+  individually confirmable, editable, or rejectable;
+- all candidate lookup is scope-safe and bounded in candidates, output, and
+  latency;
+- revision conflicts require a fresh read and confirmation instead of a
+  silent retry;
+- the capture benchmark records baseline and tuned results without private
+  data, telemetry, network calls, embeddings, or fixture-specific ranking
+  vocabulary;
+- CLI, MCP, Codex, and Claude Code tests prove allowed, duplicate, related,
+  update, conflict, blocked, rejected, and ambiguous flows;
+- the `0.5.0` recall benchmark, lifecycle-hook matrix, audit guarantees, npm
+  artifact validation, and supported runtime matrix remain green.
 
 ## `0.7.0`: Optional Semantics
 
