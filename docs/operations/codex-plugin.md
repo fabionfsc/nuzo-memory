@@ -81,13 +81,13 @@ the published Nuzo package to the same version as the plugin:
   "mcpServers": {
     "nuzo": {
       "command": "npm",
-      "args": ["exec", "--yes", "--package=@nuzo/memory@0.4.0", "--", "nuzo-mcp-server"]
+      "args": ["exec", "--yes", "--package=@nuzo/memory@0.5.0", "--", "nuzo-mcp-server"]
     }
   }
 }
 ```
 
-`0.4.0` matches the current release. Future packaging uses the actual shared
+`0.5.0` matches the current release. Future packaging uses the actual shared
 package version and rejects version drift.
 
 The first launch may need npm registry access. Nuzo does not use `latest` and
@@ -169,8 +169,8 @@ codex
 8. Start a new thread. `SessionStart` loads bounded `autoload` memory and
    `UserPromptSubmit` recalls topic matches from content and tags.
 
-The generated `0.4.0` config resolves the matching public
-`@nuzo/memory@0.4.0` package. It has been installed through an isolated
+The generated `0.5.0` config resolves the matching public
+`@nuzo/memory@0.5.0` package. It has been installed through an isolated
 Codex marketplace and used to call `memory.doctor` successfully.
 
 ## Direct MCP Fallback

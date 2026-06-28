@@ -356,8 +356,8 @@ Nuzo `0.3.0`. Current planning is organized by release goals with explicit
 deliverables and exit criteria:
 
 1. `0.3.1`: trust baseline (shipped);
-2. `0.4.0`: audit and provenance;
-3. `0.5.0`: recall quality;
+2. `0.4.0`: audit and provenance (shipped);
+3. `0.5.0`: recall quality (shipped);
 4. `0.6.0`: capture intelligence;
 5. `0.7.0`: optional semantics;
 6. `0.8.0`: host reliability;

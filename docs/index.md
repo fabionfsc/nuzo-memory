@@ -13,7 +13,7 @@
   <div class="nuzo-progress" aria-label="MVP progress 100 percent">
     <span style="width: 100%"></span>
   </div>
-  <p class="nuzo-progress__label"><strong>0.4.0</strong> current release</p>
+  <p class="nuzo-progress__label"><strong>0.5.0</strong> current release</p>
   <div class="nuzo-stats" markdown>
   <span><strong>12</strong> MCP tools</span>
   <span><strong>0</strong> telemetry</span>
@@ -56,7 +56,7 @@ Agents can write code, inspect repositories, run tools, and help make project de
 
 ## Current Release
 
-Nuzo `0.4.0` is the current public release.
+Nuzo `0.5.0` is the current public release.
 
 - `@nuzo/memory` is the user package.
 - `@nuzo/memory-core` is for library integrations.
