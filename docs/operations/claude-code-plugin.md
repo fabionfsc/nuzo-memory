@@ -246,6 +246,12 @@ The plugin bundles the same read-only lifecycle used by Codex:
 - errors fail open and never block the prompt;
 - neither event suggests or writes memory.
 
+Both events render one attributed JSON record per line inside the shared Nuzo
+trust envelope. Recalled content is untrusted stored data, not a Claude Code
+system, plugin, or current-user instruction. Source and confidence remain
+inspectable attribution and metadata; they do not elevate authority. See
+[Memory Trust Boundary](../architecture/memory-trust-boundary.md).
+
 Run the packaged runner diagnostic with:
 
 ```bash

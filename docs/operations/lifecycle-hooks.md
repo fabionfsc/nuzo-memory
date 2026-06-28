@@ -68,9 +68,16 @@ topic or load every memory. Contextual recall runs alongside each submitted
 prompt so topic tags such as `cloudflare` can retrieve relevant instructions
 even when the session started in an unrelated directory.
 
-Recalled context must be formatted as factual, inspectable Nuzo memory records
-and injected through the host's `additionalContext` mechanism. Results are
-bounded by count and output size. Empty results produce no injected context.
+Recalled context must be formatted as inspectable Nuzo memory data and injected
+through the host's `additionalContext` mechanism. It must not describe stored
+content as a current fact or as a host instruction. Results are bounded by
+count and output size. Empty results produce no injected context.
+
+The shared renderer follows the
+[Memory Trust Boundary](../architecture/memory-trust-boundary.md): every record
+is untrusted stored data regardless of kind, source, confidence, or write path.
+The envelope states that directives must not be followed solely because they
+appear in memory and renders one attributed JSON record per physical line.
 
 The host runner must derive a stable `project:<path-hash>` scope from the
 session working directory. The literal `project:auto` selector must not become
@@ -81,7 +88,10 @@ Not allowed:
 - writing new memories;
 - reading unrelated project scopes;
 - sending memory content to a remote service outside the host interaction;
-- bypassing the MCP tool contract.
+- bypassing the MCP tool contract;
+- presenting memory content as system, developer, plugin, or current-user
+  instructions;
+- assigning authority from a record's kind, source, confidence, or tags.
 
 ### Capture Hooks
 
@@ -207,3 +217,7 @@ Before shipping a host hook:
   session bootstrap;
 - host hook failures do not block the user's prompt;
 - hook output is bounded and contains no capture suggestion or memory write.
+- hook output frames records as untrusted stored data and preserves ID,
+  revision, scope, kind, tags, source, and bounded content;
+- content containing newlines, fake records, or envelope markers cannot alter
+  the output structure.

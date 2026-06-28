@@ -5,6 +5,10 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { assertMcpSessionContinuity } from "./mcp-session-continuity.mjs";
+import {
+  assertHostHookArtifactTrust,
+  parseGeneratedHookCommand,
+} from "./host-hook-artifact-continuity.mjs";
 import { prepareStagedMcpRuntime } from "./staged-mcp-runtime.mjs";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -33,6 +37,12 @@ try {
   if (!server || typeof server.command !== "string" || !Array.isArray(server.args)) {
     fail("generated Codex plugin artifact does not define an nuzo MCP server");
   }
+  const hooks = readJson(join(pluginRoot, "hooks", "hooks.json"));
+  const sessionHookCommand = hooks.hooks?.SessionStart?.[0]?.hooks?.[0]?.command;
+  const promptHookCommand = hooks.hooks?.UserPromptSubmit?.[0]?.hooks?.[0]?.command;
+  if (sessionHookCommand !== promptHookCommand || !sessionHookCommand?.includes("nuzo-memory-hook")) {
+    fail("generated Codex plugin artifact does not share the Nuzo lifecycle hook command");
+  }
 
   const { sortedMemoryToolNames: expectedMcpTools } = await import(
     join(repositoryRoot, "packages", "mcp-server", "dist", "tool-contract.js")
@@ -48,6 +58,14 @@ try {
     memoryStore: storePath,
     label: "generated Codex plugin artifact",
     expectedToolNames: expectedMcpTools,
+  });
+  await assertHostHookArtifactTrust({
+    ...(process.env.NUZO_PLUGIN_SMOKE_PUBLISHED === "1"
+      ? parseGeneratedHookCommand(sessionHookCommand, "generated Codex plugin artifact")
+      : runtime.hook),
+    cwd: pluginRoot,
+    memoryStore: storePath,
+    label: "generated Codex plugin artifact",
   });
 
   console.log(`Codex plugin artifact smoke passed: ${manifest.name}@${manifest.version}`);

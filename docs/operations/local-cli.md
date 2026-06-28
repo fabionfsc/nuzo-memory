@@ -58,6 +58,18 @@ script, or agent needs a machine-readable result close to the MCP
 store. It is also the recovery path for literal `project:auto` records created
 before `0.2.1`; `doctor` warns when active records require review.
 
+## Authorization Boundary
+
+The local CLI is an administrator workflow over the selected store. Scope
+flags filter which records an operation targets; they do not restrict what the
+CLI process is allowed to access. A CLI process with access to the store can
+use `--all-scopes` and perform authorized administrator operations across it.
+
+Repository-controlled agents should use a restricted MCP session with an
+explicit core-policy allowlist instead of treating a project scope as an access
+control boundary. Use separate stores and operating-system permissions when
+process-level isolation is required.
+
 ## Smoke Test
 
 Run:

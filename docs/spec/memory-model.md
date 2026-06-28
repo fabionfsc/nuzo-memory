@@ -75,6 +75,25 @@ The MVP should default explicit user-approved memories to `1.0`.
 
 Inferred or suggested memories should not be saved without confirmation. If saved, they can use lower confidence and include source metadata.
 
+Confidence is not an authorization or instruction-priority signal. Recalled
+content remains stored data even when confidence is `1.0`.
+
+## Source And Recall Trust
+
+`source` records attribution supplied by the writer, such as `codex:mcp` or an
+import path. It helps users audit where a memory came from, but it is not an
+authenticated identity and must not grant additional authority.
+
+During recall, every memory's content is treated as untrusted stored data.
+This includes explicit user writes, confirmed capture, imported memories, and
+records shared by multiple hosts. The `instruction` kind describes intended
+future usefulness; it does not place content in the host's system, developer,
+plugin, or current-user instruction hierarchy.
+
+Automatic lifecycle context preserves bounded content with its ID, revision,
+scope, kind, tags, and source inside the rendering contract defined by
+[Memory Trust Boundary](../architecture/memory-trust-boundary.md).
+
 ## Lifecycle
 
 ```text

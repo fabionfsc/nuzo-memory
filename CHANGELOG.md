@@ -6,6 +6,23 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+### Added
+
+- Memory-poisoning threat model and hostile-content regression coverage for
+  direct lifecycle hooks and generated Codex and Claude Code artifacts.
+
+### Changed
+
+- Lifecycle hooks now render bounded, source-attributed JSON records inside an
+  explicit untrusted-data envelope instead of interpolating memory into plain
+  text bullets.
+
+### Fixed
+
+- Privacy and host documentation now distinguishes scope selection, restricted
+  core-policy authorization, administrator CLI access, and separate-store
+  isolation.
+
 ## [0.3.0] - 2026-06-27
 
 ### Added
