@@ -67,7 +67,7 @@ Exit criteria:
 Goal: let users answer what changed in a store, who or what caused it, and where
 the affected memory originated.
 
-Status: prepared for `0.4.0`.
+Status: shipped in `0.4.0`.
 
 Deliverables:
 
