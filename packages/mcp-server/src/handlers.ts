@@ -1,5 +1,7 @@
 import type {
   AuditEventFilter,
+  ConfirmCaptureDecision,
+  ConfirmCaptureInput,
   CaptureSuggestionDraft,
   ForgetMemoryInput,
   ForgetMemoriesInput,
@@ -48,6 +50,21 @@ export interface SuggestCaptureToolInput {
   confidence?: number;
   reason: string;
   relationship_mode?: "exact" | "bounded";
+}
+
+export interface ConfirmCaptureToolInput {
+  decision: ConfirmCaptureDecision;
+  content: string;
+  kind: MemoryKind;
+  scope: string;
+  tags: string[];
+  source: string;
+  confidence?: number;
+  reason: string;
+  confirm: boolean;
+  actor: string;
+  target_memory_id?: string;
+  expected_revision?: number;
 }
 
 export interface ListToolInput {
@@ -185,6 +202,14 @@ export interface MemoryToolHandlers {
         reason: string;
       }>;
     };
+  }>;
+  confirmCapture(input: ConfirmCaptureToolInput): Promise<{
+    decision: ConfirmCaptureDecision;
+    status: "created" | "updated" | "skipped" | "needs_clarification";
+    memory_writes: boolean;
+    requires_confirmation: false;
+    reason: string;
+    memory: MemoryToolRecord | null;
   }>;
   list(input: ListToolInput): Promise<{
     memories: MemoryToolRecord[];
@@ -391,6 +416,38 @@ export function createMemoryToolHandlers(
         };
       }
       return output;
+    },
+
+    async confirmCapture(input) {
+      const confirmInput: ConfirmCaptureInput = {
+        decision: input.decision,
+        content: input.content,
+        kind: input.kind,
+        scope: resolveToolScope(input.scope, options.projectScope),
+        tags: input.tags,
+        source: input.source,
+        reason: input.reason,
+        confirm: input.confirm,
+        actor: input.actor,
+      };
+      if (input.confidence !== undefined) {
+        confirmInput.confidence = input.confidence;
+      }
+      if (input.target_memory_id !== undefined) {
+        confirmInput.targetMemoryId = input.target_memory_id;
+      }
+      if (input.expected_revision !== undefined) {
+        confirmInput.expectedRevision = input.expected_revision;
+      }
+      const result = await service.confirmCapture(confirmInput);
+      return {
+        decision: result.decision,
+        status: result.status,
+        memory_writes: result.memoryWrites,
+        requires_confirmation: false,
+        reason: result.reason,
+        memory: result.memory ? toToolRecord(result.memory) : null,
+      };
     },
 
     async list(input) {

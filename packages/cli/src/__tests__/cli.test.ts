@@ -494,6 +494,162 @@ describe("nuzo memory cli", () => {
     ]);
   });
 
+  it("applies confirmed capture decisions from the CLI", async () => {
+    const store = createStorePath();
+
+    const created = await runCli([
+      "memory",
+      "--store",
+      store,
+      "confirm-capture",
+      "The user prefers concise final answers.",
+      "--decision",
+      "create",
+      "--kind",
+      "preference",
+      "--tag",
+      "communication",
+      "--source",
+      "codex:capture-confirmed",
+      "--reason",
+      "The user confirmed a durable preference.",
+      "--yes",
+      "--json",
+    ]);
+    const createdOutput = JSON.parse(created.stdout[0] ?? "{}") as {
+      status: string;
+      memory_writes: boolean;
+      memory: { id: string; revision: number } | null;
+    };
+    const memoryId = createdOutput.memory?.id ?? "";
+    expect(createdOutput).toMatchObject({
+      status: "created",
+      memory_writes: true,
+      memory: {
+        revision: 1,
+      },
+    });
+
+    const duplicate = await runCli([
+      "memory",
+      "--store",
+      store,
+      "confirm-capture",
+      " the USER prefers concise final answers. ",
+      "--decision",
+      "create",
+      "--kind",
+      "note",
+      "--reason",
+      "The user confirmed an equivalent draft.",
+      "--yes",
+      "--json",
+    ]);
+    expect(JSON.parse(duplicate.stdout[0] ?? "{}")).toMatchObject({
+      status: "skipped",
+      memory_writes: false,
+      memory: {
+        id: memoryId,
+        revision: 1,
+      },
+    });
+
+    const updated = await runCli([
+      "memory",
+      "--store",
+      store,
+      "confirm-capture",
+      "The user prefers detailed final answers.",
+      "--decision",
+      "update",
+      "--kind",
+      "preference",
+      "--tag",
+      "communication",
+      "--reason",
+      "The user confirmed a replacement preference.",
+      "--target-memory-id",
+      memoryId,
+      "--expected-revision",
+      "1",
+      "--yes",
+      "--json",
+    ]);
+    expect(JSON.parse(updated.stdout[0] ?? "{}")).toMatchObject({
+      status: "updated",
+      memory_writes: true,
+      memory: {
+        id: memoryId,
+        revision: 2,
+        content: "The user prefers detailed final answers.",
+      },
+    });
+
+    const stale = await runCli([
+      "memory",
+      "--store",
+      store,
+      "confirm-capture",
+      "This stale confirmed update must not commit.",
+      "--decision",
+      "update",
+      "--kind",
+      "preference",
+      "--reason",
+      "The user confirmed using a stale displayed revision.",
+      "--target-memory-id",
+      memoryId,
+      "--expected-revision",
+      "1",
+      "--yes",
+    ]);
+    expect(stale.stderr).toEqual(["MEMORY_REVISION_CONFLICT: Memory changed before this operation could commit."]);
+
+    const rejected = await runCli([
+      "memory",
+      "--store",
+      store,
+      "confirm-capture",
+      "Rejected draft.",
+      "--decision",
+      "reject",
+      "--kind",
+      "note",
+      "--reason",
+      "The user rejected the draft.",
+    ]);
+    expect(rejected.stdout).toEqual([
+      [
+        "Decision: reject",
+        "Status: skipped",
+        "Memory writes: no",
+        "Requires confirmation: no",
+        "Reason: The user rejected the draft.",
+      ].join("\n"),
+    ]);
+
+    const clarify = await runCli([
+      "memory",
+      "--store",
+      store,
+      "confirm-capture",
+      "Ambiguous draft.",
+      "--decision",
+      "clarify",
+      "--kind",
+      "note",
+      "--reason",
+      "The user asked for clarification.",
+      "--json",
+    ]);
+    expect(JSON.parse(clarify.stdout[0] ?? "{}")).toMatchObject({
+      decision: "clarify",
+      status: "needs_clarification",
+      memory_writes: false,
+      memory: null,
+    });
+  });
+
   it("rejects unsafe or malformed capture suggestions", async () => {
     const store = createStorePath();
 

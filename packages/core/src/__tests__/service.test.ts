@@ -493,6 +493,196 @@ describe("memory service", () => {
     await expect(auditLog.list("mem_000001")).resolves.toEqual([]);
   });
 
+  it("applies explicit confirmed capture create, keep-separate, reject, and clarify decisions", async () => {
+    const { auditLog, service } = createTestService();
+
+    const created = await service.confirmCapture({
+      decision: "create",
+      content: "The user prefers concise final answers.",
+      kind: "preference",
+      scope: "user:default",
+      tags: ["communication"],
+      source: "test:capture-confirmed",
+      reason: "The user confirmed a durable preference.",
+      confirm: true,
+      actor: "test",
+    });
+    expect(created).toMatchObject({
+      decision: "create",
+      status: "created",
+      memoryWrites: true,
+      memory: { content: "The user prefers concise final answers." },
+      requiresConfirmation: false,
+    });
+    expect(created.memory?.id).toBeDefined();
+
+    const duplicate = await service.confirmCapture({
+      decision: "create",
+      content: "  the USER prefers concise final answers. ",
+      kind: "note",
+      scope: "user:default",
+      tags: ["style"],
+      source: "test:capture-confirmed",
+      reason: "The user confirmed an equivalent draft.",
+      confirm: true,
+      actor: "test",
+    });
+    expect(duplicate).toMatchObject({
+      decision: "create",
+      status: "skipped",
+      memoryWrites: false,
+      memory: { id: created.memory?.id },
+    });
+
+    const separate = await service.confirmCapture({
+      decision: "keep_separate",
+      content: "The user prefers concise final answers.",
+      kind: "note",
+      scope: "user:default",
+      tags: ["style"],
+      source: "test:capture-confirmed",
+      reason: "The user explicitly asked to keep a separate memory.",
+      confirm: true,
+      actor: "test",
+    });
+    expect(separate).toMatchObject({
+      decision: "keep_separate",
+      status: "created",
+      memoryWrites: true,
+    });
+
+    const beforeReadOnly = await service.list({ includeArchived: true });
+    const reject = await service.confirmCapture({
+      decision: "reject",
+      content: "Rejected drafts write nothing.",
+      kind: "note",
+      scope: "user:default",
+      source: "test:capture-confirmed",
+      reason: "The user rejected the draft.",
+      actor: "test",
+    });
+    const clarify = await service.confirmCapture({
+      decision: "clarify",
+      content: "Ambiguous drafts require clarification.",
+      kind: "note",
+      scope: "user:default",
+      source: "test:capture-confirmed",
+      reason: "The draft was ambiguous.",
+      actor: "test",
+    });
+    expect(reject).toMatchObject({ status: "skipped", memoryWrites: false, memory: null });
+    expect(clarify).toMatchObject({ status: "needs_clarification", memoryWrites: false, memory: null });
+    await expect(service.list({ includeArchived: true })).resolves.toEqual(beforeReadOnly);
+    await expect(auditLog.query({ limit: 20 })).resolves.toHaveLength(2);
+  });
+
+  it("applies confirmed capture updates with expected revisions and no silent conflict retry", async () => {
+    const { service } = createTestService();
+    const memory = await service.remember({
+      content: "The user prefers concise final answers.",
+      kind: "preference",
+      scope: "user:default",
+      tags: ["communication"],
+      source: "test",
+    });
+
+    const updated = await service.confirmCapture({
+      decision: "update",
+      content: "The user prefers detailed final answers.",
+      kind: "preference",
+      scope: "user:default",
+      tags: ["communication"],
+      source: "test:capture-confirmed",
+      reason: "The user confirmed a replacement preference.",
+      confirm: true,
+      actor: "test",
+      targetMemoryId: memory.id,
+      expectedRevision: memory.revision,
+    });
+    expect(updated).toMatchObject({
+      decision: "update",
+      status: "updated",
+      memoryWrites: true,
+      memory: {
+        id: memory.id,
+        revision: 2,
+        content: "The user prefers detailed final answers.",
+      },
+    });
+
+    await expect(
+      service.confirmCapture({
+        decision: "update",
+        content: "This stale confirmed update must not commit.",
+        kind: "preference",
+        scope: "user:default",
+        source: "test:capture-confirmed",
+        reason: "The user confirmed using a stale displayed revision.",
+        confirm: true,
+        actor: "test",
+        targetMemoryId: memory.id,
+        expectedRevision: memory.revision,
+      }),
+    ).rejects.toMatchObject({
+      code: "MEMORY_REVISION_CONFLICT",
+      details: {
+        id: memory.id,
+        expectedRevision: 1,
+        currentRevision: 2,
+      },
+    });
+    await expect(service.list({ scope: "user:default" })).resolves.toMatchObject([
+      { id: memory.id, revision: 2, content: "The user prefers detailed final answers." },
+    ]);
+  });
+
+  it("requires explicit confirmation and policy approval before confirmed capture writes", async () => {
+    const { service } = createRestrictedTestService(["project:nuzo"]);
+
+    await expect(
+      service.confirmCapture({
+        decision: "create",
+        content: "Unconfirmed capture must not write.",
+        kind: "note",
+        scope: "project:nuzo",
+        source: "test:capture-confirmed",
+        reason: "The user has not confirmed the write.",
+        actor: "test",
+      }),
+    ).rejects.toMatchObject({
+      code: "MEMORY_CAPTURE_CONFIRMATION_REQUIRED",
+    });
+    await expect(
+      service.confirmCapture({
+        decision: "create",
+        content: "Global memory is forbidden here.",
+        kind: "note",
+        scope: "user:default",
+        source: "test:capture-confirmed",
+        reason: "The write targets a forbidden scope.",
+        confirm: true,
+        actor: "test",
+      }),
+    ).rejects.toMatchObject({
+      code: "MEMORY_SCOPE_FORBIDDEN",
+    });
+    await expect(
+      service.confirmCapture({
+        decision: "create",
+        content: "github token is ghp_123456789012345678901234567890123456",
+        kind: "note",
+        scope: "project:nuzo",
+        source: "test:capture-confirmed",
+        reason: "The draft contains a secret.",
+        confirm: true,
+        actor: "test",
+      }),
+    ).rejects.toMatchObject({
+      code: "MEMORY_SECRET_DETECTED",
+    });
+    await expect(service.list({ scope: "project:nuzo" })).resolves.toEqual([]);
+  });
+
   it("enforces restricted scope authorization", async () => {
     const { service } = createRestrictedTestService(["project:nuzo"]);
     const memory = await service.remember({

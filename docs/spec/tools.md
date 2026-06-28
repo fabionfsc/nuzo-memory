@@ -378,6 +378,92 @@ new write unless the user explicitly wants a separate memory. A bounded
 after confirmation. `related` and `uncertain` require a user decision before
 any write path is offered.
 
+### `memory.confirm_capture`
+
+Apply an explicit user decision for a previously suggested capture draft.
+
+This tool is the confirmed-write companion to `memory.suggest_capture`. It does
+not infer user intent. Callers must pass the final user-approved draft fields
+and the explicit decision.
+
+Input for confirmed creation:
+
+```json
+{
+  "decision": "create",
+  "content": "The user prefers concise final answers.",
+  "kind": "preference",
+  "scope": "user:default",
+  "tags": ["workflow"],
+  "source": "codex:capture-confirmed",
+  "confidence": 0.72,
+  "reason": "The user confirmed the draft.",
+  "confirm": true
+}
+```
+
+Input for confirmed replacement:
+
+```json
+{
+  "decision": "update",
+  "target_memory_id": "mem_01HZY...",
+  "expected_revision": 3,
+  "content": "The user prefers detailed final answers.",
+  "kind": "preference",
+  "scope": "user:default",
+  "tags": ["workflow"],
+  "source": "codex:capture-confirmed",
+  "reason": "The user confirmed the replacement.",
+  "confirm": true
+}
+```
+
+Supported decisions:
+
+| `decision` | Behavior |
+| --- | --- |
+| `create` | Create through the canonical remember path only when `confirm` is `true`; exact active duplicates are skipped by default. |
+| `update` | Update `target_memory_id` through the canonical update path using `expected_revision`; conflicts return `MEMORY_REVISION_CONFLICT`. |
+| `keep_separate` | Create a separate memory through the canonical remember path only when `confirm` is `true`. |
+| `clarify` | Write nothing and return `needs_clarification`. |
+| `reject` | Write nothing and return `skipped`. |
+
+Output:
+
+```json
+{
+  "decision": "update",
+  "status": "updated",
+  "memory_writes": true,
+  "requires_confirmation": false,
+  "reason": "The user confirmed the replacement.",
+  "memory": {
+    "id": "mem_01HZY...",
+    "revision": 4,
+    "content": "The user prefers detailed final answers.",
+    "kind": "preference",
+    "scope": "user:default",
+    "tags": ["workflow"],
+    "source": "codex:capture-confirmed",
+    "confidence": 0.72,
+    "created_at": "2026-06-19T00:00:00.000Z",
+    "updated_at": "2026-06-28T00:00:00.000Z",
+    "last_used_at": null,
+    "archived_at": null
+  }
+}
+```
+
+`create`, `keep_separate`, and `update` require `confirm: true`. `reject` and
+`clarify` ignore `confirm` and must not create memories, audit events, usage
+updates, stored drafts, or hidden notes. Confirmed writes remain subject to the
+same policy checks as direct `memory.remember` and `memory.update` calls.
+
+Revision conflicts are never retried silently. A client must re-read the memory
+and ask the user to confirm again before calling `memory.confirm_capture` or
+`memory.update` with a newer `expected_revision`.
+
 ### `memory.list`
 
 List memories by filters.
@@ -679,6 +765,7 @@ MCP doctor returns a read-only diagnostic summary for host agents:
     "memory.recall",
     "memory.recall_hook",
     "memory.suggest_capture",
+    "memory.confirm_capture",
     "memory.list",
     "memory.update",
     "memory.history",
@@ -716,6 +803,7 @@ secrets.
 nuzo memory init
 nuzo memory remember "The user prefers concise output." --kind preference --tag codex
 nuzo memory suggest-capture "The user prefers concise output." --kind preference --reason "Durable response style preference."
+nuzo memory confirm-capture "The user prefers concise output." --decision create --kind preference --reason "User confirmed the draft." --yes
 nuzo memory recall "output style"
 nuzo memory list --tag codex
 nuzo memory list --all-scopes

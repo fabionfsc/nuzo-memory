@@ -27,6 +27,9 @@ import {
   projectScopeFromPath,
   type MemoryKind,
   type ListMemoriesInput,
+  type ConfirmCaptureDecision,
+  type ConfirmCaptureInput,
+  type ConfirmCaptureResult,
   type CaptureSuggestionResult,
   type MemoryRecord,
   type MemoryScope,
@@ -66,6 +69,20 @@ interface SuggestCaptureCommandOptions {
   confidence?: number;
   relationshipMode?: "exact" | "bounded";
   reason: string;
+  json: boolean;
+}
+
+interface ConfirmCaptureCommandOptions {
+  decision: ConfirmCaptureDecision;
+  kind: MemoryKind;
+  tag?: string[];
+  source: string;
+  confidence?: number;
+  reason: string;
+  yes: boolean;
+  actor: string;
+  targetMemoryId?: string;
+  expectedRevision?: number;
   json: boolean;
 }
 
@@ -216,6 +233,56 @@ export function createProgram(io: CliIO = defaultIO): Command {
         };
         const suggestion = await service.suggestCapture(suggestionInput);
         io.stdout(formatCaptureSuggestion(suggestion, commandOptions.json));
+      } finally {
+        database.close();
+      }
+    }));
+
+  memory
+    .command("confirm-capture")
+    .description("Apply an explicit user decision for a validated capture draft.")
+    .argument("<content>", "Confirmed or rejected memory content.")
+    .requiredOption("--decision <decision>", "Decision: create, update, keep_separate, clarify, or reject.", parseConfirmCaptureDecision)
+    .requiredOption("--kind <kind>", "Memory kind.")
+    .requiredOption("--reason <reason>", "Reason for the confirmed decision.")
+    .option("--tag <tag...>", "Memory tag. Can be used multiple times.")
+    .option("--source <source>", "Confirmed capture source.", "nuzo:cli:capture-confirmed")
+    .option("--confidence <number>", "Capture confidence between 0 and 1.", parseConfidence)
+    .option("--target-memory-id <id>", "Existing memory ID for update decisions.")
+    .option("--expected-revision <number>", "Displayed memory revision for update decisions.", parsePositiveInteger)
+    .option("--actor <actor>", "Audit actor.", "nuzo:cli")
+    .option("--yes", "Explicitly confirm create, keep-separate, or update writes.", false)
+    .option("--json", "Print JSON output for scripting.", false)
+    .action(withErrorHandling(io, async (
+      content: string,
+      commandOptions: ConfirmCaptureCommandOptions,
+    ) => {
+      const options = memory.opts<GlobalOptions>();
+      const database = openDatabase(options);
+      try {
+        const service = createService(database);
+        const confirmInput: ConfirmCaptureInput = {
+          decision: commandOptions.decision,
+          content,
+          kind: commandOptions.kind,
+          scope: resolveScope(options),
+          tags: commandOptions.tag ?? [],
+          source: commandOptions.source,
+          reason: commandOptions.reason,
+          confirm: commandOptions.yes,
+          actor: commandOptions.actor,
+        };
+        if (commandOptions.confidence !== undefined) {
+          confirmInput.confidence = commandOptions.confidence;
+        }
+        if (commandOptions.targetMemoryId !== undefined) {
+          confirmInput.targetMemoryId = commandOptions.targetMemoryId;
+        }
+        if (commandOptions.expectedRevision !== undefined) {
+          confirmInput.expectedRevision = commandOptions.expectedRevision;
+        }
+        const result = await service.confirmCapture(confirmInput);
+        io.stdout(formatConfirmCapture(result, commandOptions.json));
       } finally {
         database.close();
       }
@@ -1228,6 +1295,39 @@ function toCaptureSuggestionOutput(suggestion: CaptureSuggestionResult) {
   return output;
 }
 
+function formatConfirmCapture(
+  result: ConfirmCaptureResult,
+  json: boolean,
+): string {
+  const output = toConfirmCaptureOutput(result);
+  if (json) {
+    return JSON.stringify(output, null, 2);
+  }
+
+  const lines = [
+    `Decision: ${output.decision}`,
+    `Status: ${output.status}`,
+    `Memory writes: ${output.memory_writes ? "yes" : "no"}`,
+    "Requires confirmation: no",
+    `Reason: ${output.reason}`,
+  ];
+  if (output.memory !== null) {
+    lines.push(`Memory: ${output.memory.id}`);
+  }
+  return lines.join("\n");
+}
+
+function toConfirmCaptureOutput(result: ConfirmCaptureResult) {
+  return {
+    decision: result.decision,
+    status: result.status,
+    memory_writes: result.memoryWrites,
+    requires_confirmation: false,
+    reason: result.reason,
+    memory: result.memory ? toCliMemoryRecord(result.memory) : null,
+  };
+}
+
 function toCliMemoryRecord(memory: MemoryRecord) {
   return {
     id: memory.id,
@@ -1308,6 +1408,21 @@ function parseRelationshipMode(value: string): "exact" | "bounded" {
     return value;
   }
   throw new InvalidArgumentError("Expected relationship mode to be exact or bounded.");
+}
+
+function parseConfirmCaptureDecision(value: string): ConfirmCaptureDecision {
+  if (
+    value === "create" ||
+    value === "update" ||
+    value === "keep_separate" ||
+    value === "clarify" ||
+    value === "reject"
+  ) {
+    return value;
+  }
+  throw new InvalidArgumentError(
+    "Expected capture decision to be create, update, keep_separate, clarify, or reject.",
+  );
 }
 
 function isMain(): boolean {

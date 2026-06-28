@@ -27,6 +27,7 @@ function createTestHandlers(options: {
     forgetMany: 0,
     exportMemories: 0,
     importMemories: 0,
+    confirmCapture: 0,
   };
   const service: MemoryService = {
     async suggestCapture(input) {
@@ -83,6 +84,71 @@ function createTestHandlers(options: {
           reason: input.reason.trim(),
         },
         duplicate,
+      };
+    },
+    async confirmCapture(input) {
+      calls.confirmCapture += 1;
+      if (input.decision === "reject") {
+        return {
+          decision: input.decision,
+          status: "skipped",
+          memoryWrites: false,
+          memory: null,
+          requiresConfirmation: false,
+          reason: input.reason.trim(),
+        };
+      }
+      if (input.decision === "clarify") {
+        return {
+          decision: input.decision,
+          status: "needs_clarification",
+          memoryWrites: false,
+          memory: null,
+          requiresConfirmation: false,
+          reason: input.reason.trim(),
+        };
+      }
+      if (input.decision === "update" && memory) {
+        memory = {
+          ...memory,
+          revision: memory.revision + 1,
+          content: input.content.trim(),
+          kind: input.kind,
+          scope: input.scope,
+          tags: input.tags ?? [],
+          confidence: input.confidence ?? memory.confidence,
+          updatedAt: new Date("2026-06-13T01:00:00.000Z"),
+        };
+        return {
+          decision: input.decision,
+          status: "updated",
+          memoryWrites: true,
+          memory,
+          requiresConfirmation: false,
+          reason: input.reason.trim(),
+        };
+      }
+      memory = {
+        id: "mem_000001",
+        revision: 1,
+        scope: input.scope,
+        kind: input.kind,
+        content: input.content.trim(),
+        tags: input.tags ?? [],
+        source: input.source,
+        confidence: input.confidence ?? 1,
+        createdAt: new Date("2026-06-13T00:00:00.000Z"),
+        updatedAt: new Date("2026-06-13T00:00:00.000Z"),
+        lastUsedAt: null,
+        archivedAt: null,
+      };
+      return {
+        decision: input.decision,
+        status: "created",
+        memoryWrites: true,
+        memory,
+        requiresConfirmation: false,
+        reason: input.reason.trim(),
       };
     },
     async remember(input) {
@@ -664,5 +730,76 @@ describe("memory MCP handlers", () => {
         ],
       },
     });
+  });
+
+  it("confirms capture decisions through the core service", async () => {
+    const { calls, handlers } = createTestHandlers();
+
+    const created = await handlers.confirmCapture({
+      decision: "create",
+      content: "The user prefers concise final answers.",
+      kind: "preference",
+      scope: "user:default",
+      tags: ["communication"],
+      source: "codex:capture-confirmed",
+      reason: "The user confirmed a durable preference.",
+      confirm: true,
+      actor: "nuzo:mcp",
+    });
+    expect(created).toMatchObject({
+      decision: "create",
+      status: "created",
+      memory_writes: true,
+      requires_confirmation: false,
+      memory: {
+        id: "mem_000001",
+        revision: 1,
+        scope: "user:default",
+      },
+    });
+
+    const updated = await handlers.confirmCapture({
+      decision: "update",
+      content: "The user prefers detailed final answers.",
+      kind: "preference",
+      scope: "user:default",
+      tags: ["communication"],
+      source: "codex:capture-confirmed",
+      reason: "The user confirmed a replacement preference.",
+      confirm: true,
+      actor: "nuzo:mcp",
+      target_memory_id: "mem_000001",
+      expected_revision: 1,
+    });
+    expect(updated).toMatchObject({
+      decision: "update",
+      status: "updated",
+      memory_writes: true,
+      memory: {
+        id: "mem_000001",
+        revision: 2,
+        content: "The user prefers detailed final answers.",
+      },
+    });
+
+    const rejected = await handlers.confirmCapture({
+      decision: "reject",
+      content: "Rejected draft.",
+      kind: "note",
+      scope: "user:default",
+      tags: [],
+      source: "codex:capture-confirmed",
+      reason: "The user rejected the draft.",
+      confirm: false,
+      actor: "nuzo:mcp",
+    });
+    expect(rejected).toMatchObject({
+      decision: "reject",
+      status: "skipped",
+      memory_writes: false,
+      memory: null,
+    });
+    expect(calls.confirmCapture).toBe(3);
+    expect(calls.remember).toBe(0);
   });
 });

@@ -57,6 +57,11 @@ script, or agent needs a machine-readable result close to the MCP
 the opt-in `0.6.0` relationship evidence contract; omitting it keeps the
 exact-only compatibility behavior.
 
+`nuzo memory confirm-capture` applies an explicit user decision after a draft
+has been shown. `create`, `keep_separate`, and `update` require `--yes`.
+`update` also requires `--target-memory-id` and `--expected-revision` from the
+memory shown to the user. `reject` and `clarify` write nothing.
+
 `list --all-scopes` is an administrator audit view for the selected local
 store. It is also the recovery path for literal `project:auto` records created
 before `0.2.1`; `doctor` warns when active records require review.
