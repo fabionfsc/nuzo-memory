@@ -194,6 +194,10 @@ describe("memory service", () => {
       scope: "project:nuzo",
       source: "test",
     });
+    await unrestricted.service.exportMemories({
+      scope: "project:nuzo",
+      actor: "test:export",
+    });
     const forbidden = await unrestricted.service.remember({
       content: "Forbidden user audit event.",
       kind: "note",
@@ -223,6 +227,17 @@ describe("memory service", () => {
         memoryId: allowed.id,
       },
     ]);
+    await expect(restricted.service.audit({ scope: "project:nuzo" })).resolves.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          eventType: "memory.exported",
+          memoryId: null,
+          payload: expect.objectContaining({
+            scope: "project:nuzo",
+          }),
+        }),
+      ]),
+    );
   });
 
   it("rejects likely secrets", async () => {
@@ -821,11 +836,11 @@ describe("memory service", () => {
       kind: "preference",
       scope: "user:default",
       tags: ["export"],
-      source: "test",
+      source: "codex:capture-confirmed",
     });
 
     const document = await source.service.exportMemories({
-      actor: "test",
+      actor: "nuzo:cli",
       scope: "user:default",
     });
 
@@ -835,11 +850,28 @@ describe("memory service", () => {
     });
     expect(document.memories).toHaveLength(1);
     expect(document.memories[0]?.content).toBe("The user prefers JSON exports for migrations.");
+    expect(document.memories[0]?.source).toBe("codex:capture-confirmed");
+
+    await expect(source.service.audit({ eventTypes: ["memory.exported"] })).resolves.toMatchObject([
+      {
+        memoryId: null,
+        eventType: "memory.exported",
+        actor: "nuzo:cli",
+        payload: {
+          scope: "user:default",
+          tags: [],
+          includeArchived: false,
+          count: 1,
+        },
+      },
+    ]);
+    expect(JSON.stringify(await source.service.audit({ eventTypes: ["memory.exported"] })))
+      .not.toContain("JSON exports for migrations");
 
     const target = createTestService();
     const result = await target.service.importMemories({
       document,
-      actor: "test",
+      actor: "nuzo:mcp",
     });
 
     expect(result).toEqual({
@@ -853,6 +885,18 @@ describe("memory service", () => {
       scope: "user:default",
     });
     expect(imported[0]?.memory.content).toBe("The user prefers JSON exports for migrations.");
+    expect(imported[0]?.memory.source).toBe("codex:capture-confirmed");
+    await expect(target.service.audit({ eventTypes: ["memory.imported"] })).resolves.toMatchObject([
+      {
+        eventType: "memory.imported",
+        actor: "nuzo:mcp",
+        payload: {
+          originalScope: "user:default",
+          scope: "user:default",
+          archived: false,
+        },
+      },
+    ]);
   });
 
   it("skips duplicate imports in the same target scope", async () => {
