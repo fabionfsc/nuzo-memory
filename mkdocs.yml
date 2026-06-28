@@ -111,6 +111,7 @@ nav:
       - Release Checklist: operations/release-checklist.md
       - Post-Release Validation: operations/post-release-validation.md
       - Recall Benchmark: operations/recall-benchmark.md
+      - Capture Intelligence Benchmark: operations/capture-benchmark.md
       - Coding Standards: operations/coding-standards.md
       - Testing Strategy: operations/testing-strategy.md
       - GitHub Release Plan: operations/github-release-plan.md

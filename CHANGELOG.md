@@ -6,6 +6,12 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+### Added
+
+- Deterministic Capture Intelligence benchmark with a reproducible `v0.5.0`
+  baseline, English-primary relationship fixtures, and zero-write, policy,
+  scope, archived, latency, and evidence-bound safety gates.
+
 ## [0.5.0] - 2026-06-28
 
 ### Added

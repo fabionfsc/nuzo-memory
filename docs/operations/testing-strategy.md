@@ -120,6 +120,24 @@ telemetry, network calls, or embeddings. English recall is the primary quality
 group and has its own strict top-1, recall, and zero-noise envelope; other
 language cases protect compatibility and tokenization regressions.
 
+Capture-intelligence changes should run:
+
+```bash
+npm run benchmark:capture
+```
+
+Until bounded relationship evidence is implemented, the default profile
+reproduces the `v0.5.0` exact-duplicate baseline. The future gate is explicit:
+
+```bash
+npm run benchmark:capture -- --expect bounded
+```
+
+The capture benchmark uses public synthetic data and independently reports
+English relationship quality, policy blocks, scope and archived isolation,
+candidate/evidence bounds, latency, and zero memory or audit writes. The
+bounded profile must pass before `0.6.0` release preparation.
+
 Smoke tests may set `NUZO_DOCTOR_SKIP_GIT=1` so restricted environments do not
 warn only because Git tracking inspection is unavailable. Tests should still
 cover normal warning behavior for missing stores and tracked memory files.
@@ -146,6 +164,7 @@ npm run check
 npm run release:check
 npm test
 npm run build
+npm run benchmark:capture
 npm run package:plugins
 npm run validate:npm
 npm run smoke:cli
