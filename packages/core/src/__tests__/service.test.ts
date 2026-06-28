@@ -389,6 +389,53 @@ describe("memory service", () => {
     await expect(service.list({ scope: "user:default" })).resolves.toHaveLength(1);
   });
 
+  it("returns bounded relationship evidence without writing memory or audit events", async () => {
+    const { auditLog, service } = createTestService();
+    const memory = await service.remember({
+      content: "The user prefers concise final answers with explicit tradeoffs.",
+      kind: "preference",
+      scope: "user:default",
+      tags: ["communication", "style"],
+      source: "test",
+    });
+    const beforeEvents = await auditLog.list(memory.id);
+
+    const suggestion = await service.suggestCapture({
+      content: "The user prefers detailed final answers with explicit tradeoffs.",
+      kind: "preference",
+      scope: "user:default",
+      tags: ["communication"],
+      source: "codex:capture-suggestion",
+      confidence: 0.8,
+      reason: "The user stated a durable response style preference.",
+      relationshipMode: "bounded",
+    });
+
+    expect(suggestion).toMatchObject({
+      status: "review",
+      memoryWrites: false,
+      requiresConfirmation: true,
+      duplicate: null,
+      relationshipMode: "bounded",
+      relationship: "update_candidate",
+      relationshipEvidence: {
+        version: 1,
+        primaryMemoryId: memory.id,
+        candidateLimit: 20,
+        returnedLimit: 3,
+        candidates: [
+          {
+            memory: { id: memory.id },
+            matchedTags: ["communication"],
+          },
+        ],
+      },
+    });
+    expect(suggestion.relationshipEvidence?.candidates[0]?.matchedTerms).toContain("final");
+    await expect(service.list({ scope: "user:default" })).resolves.toHaveLength(1);
+    await expect(auditLog.list(memory.id)).resolves.toEqual(beforeEvents);
+  });
+
   it("applies remember policy to capture suggestions", async () => {
     const { service } = createRestrictedTestService(["project:nuzo"]);
 

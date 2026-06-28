@@ -8,6 +8,10 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ### Added
 
+- Opt-in bounded Capture Intelligence relationship evidence in core, MCP, and
+  CLI for `memory.suggest_capture`, covering update, related, independent,
+  uncertain, exact duplicate, policy-blocked, scope, archived, and evidence
+  limit cases without writes.
 - Deterministic Capture Intelligence benchmark with a reproducible `v0.5.0`
   baseline, English-primary relationship fixtures, and zero-write, policy,
   scope, archived, latency, and evidence-bound safety gates.

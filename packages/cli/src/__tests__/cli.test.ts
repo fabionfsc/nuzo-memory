@@ -382,6 +382,66 @@ describe("nuzo memory cli", () => {
     expect(output.duplicate?.id).toMatch(/^mem_/);
   });
 
+  it("prints bounded capture relationship evidence as JSON", async () => {
+    const store = createStorePath();
+    await runCli([
+      "memory",
+      "--store",
+      store,
+      "remember",
+      "The user prefers concise final answers with explicit tradeoffs.",
+      "--kind",
+      "preference",
+      "--tag",
+      "communication",
+      "style",
+    ]);
+
+    const suggestion = await runCli([
+      "memory",
+      "--store",
+      store,
+      "suggest-capture",
+      "The user prefers detailed final answers with explicit tradeoffs.",
+      "--kind",
+      "preference",
+      "--tag",
+      "communication",
+      "--reason",
+      "The user stated a durable response style preference.",
+      "--relationship-mode",
+      "bounded",
+      "--json",
+    ]);
+    const output = JSON.parse(suggestion.stdout[0] ?? "{}") as {
+      status: string;
+      relationship_mode?: string;
+      relationship?: string;
+      relationship_evidence?: {
+        primary_memory_id: string | null;
+        candidate_limit: number;
+        returned_limit: number;
+        candidates: Array<{ memory: { id: string }; matched_tags: string[] }>;
+      };
+    };
+
+    expect(output).toMatchObject({
+      status: "review",
+      relationship_mode: "bounded",
+      relationship: "update_candidate",
+      relationship_evidence: {
+        candidate_limit: 20,
+        returned_limit: 3,
+        candidates: [
+          {
+            matched_tags: ["communication"],
+          },
+        ],
+      },
+    });
+    expect(output.relationship_evidence?.primary_memory_id).toMatch(/^mem_/);
+  });
+
   it("rejects unsafe or malformed capture suggestions", async () => {
     const store = createStorePath();
 
