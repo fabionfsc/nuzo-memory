@@ -355,7 +355,7 @@ The completed stages above preserve the history and rationale that produced
 Nuzo `0.3.0`. Current planning is organized by release goals with explicit
 deliverables and exit criteria:
 
-1. `0.3.1`: trust baseline;
+1. `0.3.1`: trust baseline (shipped);
 2. `0.4.0`: audit and provenance;
 3. `0.5.0`: recall quality;
 4. `0.6.0`: capture intelligence;

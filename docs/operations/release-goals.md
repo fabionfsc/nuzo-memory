@@ -36,6 +36,8 @@ and exit criteria of each release should remain coherent.
 
 Goal: close immediate trust gaps without adding a new public memory capability.
 
+Status: shipped in `0.3.1`.
+
 Deliverables:
 
 - document a threat model for memory poisoning and prompt injection through
