@@ -25,7 +25,9 @@ Candidate detection is outside Nuzo core. The host or agent may decide that a
 message looks durable, but the Nuzo MCP server provides `memory.suggest_capture`
 as the read-only validation boundary before any confirmation prompt is shown.
 The tool validates the draft, normalizes fields, runs secret and scope policy,
-and reports exact active duplicates without writing storage or audit state.
+and reports exact active duplicates without writing storage or audit state. In
+the `0.6.0` bounded mode it also returns versioned relationship evidence; the
+default remains the exact-only `0.5.0` behavior for compatibility.
 
 ## Candidate Criteria
 
@@ -139,8 +141,8 @@ Agents may batch multiple suggestions, but each suggested memory must remain ins
 
 ## Duplicate Handling
 
-`memory.suggest_capture` checks active memories in the same scope before a host
-asks the user to save a draft.
+By default, `memory.suggest_capture` checks active memories in the same scope
+before a host asks the user to save a draft.
 
 For the MVP, duplicate detection is exact and conservative:
 
@@ -155,6 +157,154 @@ still `false`, and the existing memory is returned for display. Hosts should
 normally show the existing memory and skip the save prompt unless the user
 explicitly asks to create a separate memory.
 
+## Relationship Evidence Contract
+
+Relationship analysis is opt-in so existing clients cannot silently
+misinterpret a new decision as the legacy `ready` result.
+
+Relationship meanings are normative:
+
+| Relationship | Contract meaning |
+| --- | --- |
+| `exact_duplicate` | Draft content equals an active same-scope memory after the existing case-insensitive, whitespace-collapsed normalization. |
+| `update_candidate` | The draft appears to revise the same durable assertion, preference, decision, or instruction, such that keeping both active would be contradictory or misleading. |
+| `related` | The draft and an active same-scope memory share durable subject matter, but both may remain true and independently useful. |
+| `independent` | Exhaustive bounded retrieval found no active same-scope candidate meeting the documented evidence threshold. |
+| `uncertain` | Evidence is weak, conflicting, ambiguous between relationships, or non-exhaustive in a way that could change the decision. |
+
+These relationships describe evidence, not truth. In particular,
+`update_candidate` does not establish that the draft is newer or correct, and
+`independent` does not authorize creation. Policy rejection is a separate,
+terminal outcome and is never represented as a relationship.
+
+The core input adds:
+
+```ts
+type CaptureRelationshipMode = "exact" | "bounded";
+
+interface SuggestCaptureInput extends RememberMemoryInput {
+  reason: string;
+  relationshipMode?: CaptureRelationshipMode;
+}
+```
+
+Omitting `relationshipMode` means `exact` and preserves the `0.5.0` result
+shape. `bounded` requests the new relationship fields. At the MCP boundary the
+same input is named `relationship_mode`.
+
+The bounded core result adds these contracts:
+
+```ts
+type CaptureRelationship =
+  | "exact_duplicate"
+  | "update_candidate"
+  | "related"
+  | "independent"
+  | "uncertain";
+
+interface CaptureRelationshipCandidate {
+  memory: MemoryRecord;
+  matchedTerms: string[];
+  matchedTags: string[];
+  reason: string;
+}
+
+interface CaptureRelationshipEvidence {
+  version: 1;
+  primaryMemoryId: string | null;
+  candidateLimit: 20;
+  returnedLimit: 3;
+  evaluatedCount: number;
+  searchExhaustive: boolean;
+  evidenceTruncated: boolean;
+  reason: string;
+  candidates: CaptureRelationshipCandidate[];
+}
+
+interface BoundedCaptureSuggestionResult {
+  status: "ready" | "duplicate" | "review";
+  memoryWrites: false;
+  requiresConfirmation: true;
+  draft: CaptureSuggestionDraft;
+  duplicate: MemoryRecord | null;
+  relationshipMode: "bounded";
+  relationship: CaptureRelationship;
+  relationshipEvidence: CaptureRelationshipEvidence;
+}
+```
+
+Exact-mode results retain the existing `CaptureSuggestionResult` fields only.
+Bounded mode uses this status mapping:
+
+| Relationship | Status | Primary memory | Host behavior before any write |
+| --- | --- | --- | --- |
+| `exact_duplicate` | `duplicate` | Required | Show the existing memory; default to no write. |
+| `update_candidate` | `review` | Required | Show current and proposed content; offer a confirmed update. |
+| `related` | `review` | Required | Explain the relation; ask whether to keep a separate memory. |
+| `independent` | `ready` | `null` | Offer confirmed creation. |
+| `uncertain` | `review` | `null` | Ask for clarification; do not offer a default write. |
+
+`status` remains for compatibility and coarse control flow. Bounded clients
+must use `relationship` for the decision and must never treat `review` as
+creation-ready.
+
+### Evidence Rules And Limits
+
+- Policy validation and scope authorization run before candidate lookup. A
+  blocked candidate returns the existing structured policy error, not a
+  relationship.
+- Candidate lookup uses only active memories in the resolved target scope. It
+  does not include `user:default`, another project, or any other scope unless
+  that scope is itself the explicit authorized target.
+- Exact normalized duplicate lookup is deterministic and happens before
+  ranked evaluation. It must not become a best-effort result hidden by the
+  ranked candidate cap.
+- Ranked evaluation considers at most 20 candidates and returns at most 3,
+  ordered from strongest to weakest evidence. Equivalent evidence is ordered
+  by memory ID ascending so repeated evaluation is deterministic.
+- Each returned candidate includes the complete authorized memory record, at
+  most 8 matched terms, at most 8 matched tags, and a reason no longer than
+  1,000 characters.
+- The top-level reason is also limited to 1,000 characters.
+- `evaluatedCount` is between 0 and 20. `candidates` contains between 0 and 3
+  items. `evidenceTruncated` is true when qualifying evidence was omitted from
+  the returned list.
+- `searchExhaustive` says whether candidate retrieval proved that no additional
+  candidate could change the decision. Hitting the evaluation limit normally
+  makes it false.
+- `primaryMemoryId` equals the first candidate's memory ID for
+  `exact_duplicate`, `update_candidate`, and `related`.
+- `independent` requires `primaryMemoryId: null`, an empty candidate list,
+  `searchExhaustive: true`, and `evidenceTruncated: false`.
+- `uncertain` requires `primaryMemoryId: null`. It is mandatory when evidence
+  is ambiguous or a non-exhaustive search cannot safely establish
+  independence.
+- An exact duplicate short-circuits broader classification. The legacy
+  `duplicate` field and bounded primary candidate refer to the same memory. Its
+  bounded evidence reports one evaluated and returned candidate,
+  `searchExhaustive: true`, and `evidenceTruncated: false`.
+
+The evidence version starts at `1`. Additive fields may be introduced within
+that version, but changing relationship meaning, limits, required fields, or
+status mapping requires an explicit contract and versioning decision.
+
+### Compatibility And Failure Safety
+
+- Existing clients omit relationship mode and continue receiving only
+  `ready` or `duplicate` with the legacy `duplicate` field.
+- New clients request bounded mode and require `relationshipMode: "bounded"`
+  in the core result or `relationship_mode: "bounded"` in public JSON.
+- If a bounded request reaches an older server, an unknown-input error or a
+  missing response marker is treated as unsupported. The client must clarify
+  or fall back to explicit exact-only behavior; it must not assume
+  `independent`.
+- Relationship output does not create a memory, append an audit event, change
+  a revision, update `last_used_at`, or persist a draft.
+- Relationship evidence cannot call or authorize `memory.remember` or
+  `memory.update`. Those remain separate, explicitly confirmed operations.
+- No relationship result is retained for analytics, telemetry, or later
+  background processing.
+
 ## Update Handling
 
 Some capture candidates are not exact duplicates, but they clearly change an
@@ -165,10 +315,11 @@ Use this decision table:
 
 | Candidate relationship | Host behavior |
 | --- | --- |
-| Same normalized content in the same scope | Show the duplicate returned by `memory.suggest_capture`; do not write a new memory by default. |
-| Same durable preference, fact, instruction, or project decision with changed content | Show the existing memory and the proposed replacement; call `memory.update` only after the user confirms or edits the change. |
-| Related but independently useful memory | Ask whether to save a separate memory, then use `memory.remember` only after confirmation. |
-| Unclear relationship | Ask a clarifying question before saving or updating. |
+| `exact_duplicate` | Show the duplicate returned by `memory.suggest_capture`; do not write a new memory by default. |
+| `update_candidate` | Show the existing memory and the proposed replacement; call `memory.update` only after the user confirms or edits the change. |
+| `related` | Ask whether to save a separate memory, then use `memory.remember` only after confirmation. |
+| `independent` | Offer to save through `memory.remember`, but only after confirmation. |
+| `uncertain` | Ask a clarifying question before saving or updating. |
 
 Update prompts should include the current memory content, proposed content,
 kind, scope, tags, and reason. The host should pass `expected_revision` from the
@@ -248,7 +399,11 @@ Core must validate both capture suggestions and confirmed writes.
 - applying the same content, kind, scope, tag, source, confidence, secret, and
   authorization policy as `memory.remember`;
 - returning a normalized draft;
-- detecting exact active duplicates in the same scope;
+- detecting exact active duplicates in the same scope in every mode;
+- returning the versioned, bounded relationship result only when the caller
+  explicitly requests it;
+- classifying relationship evidence in core rather than a CLI, MCP handler, or
+  host plugin;
 - staying read-only.
 
 Confirmation is not a bypass for:

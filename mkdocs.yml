@@ -124,3 +124,4 @@ nav:
       - Stable Tool Contracts: adr/0005-stable-tool-contracts.md
       - Host Plugin Runtime Distribution: adr/0006-host-plugin-runtime-distribution.md
       - Test Organization: adr/0007-test-organization.md
+      - Opt-In Capture Relationship Evidence: adr/0008-opt-in-capture-relationship-evidence.md
