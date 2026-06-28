@@ -13,7 +13,14 @@ Use Nuzo when durable project context, user preferences, decisions, or workflow 
 - If lifecycle context is unavailable, use `memory.recall_hook` before work
   that may depend on prior project context.
 - Save only stable information that should persist across sessions.
-- For inferred memories, call `memory.suggest_capture` first, show the validated draft or duplicate result, and call `memory.remember` only after the user confirms or edits it.
+- For inferred memories, call `memory.suggest_capture` first, show the
+  validated draft, duplicate result, and any relationship evidence, then call
+  `memory.confirm_capture` only after the user chooses create, update, keep
+  separate, clarify, or reject.
+- For confirmed updates, pass the displayed memory ID and displayed revision as
+  `target_memory_id` and `expected_revision`. If a revision conflict occurs,
+  re-read the memory and ask again instead of retrying silently.
+- Rejected, blocked, duplicate, and unclear drafts must remain write-free.
 - Ask before storing sensitive personal context.
 - Never store secrets, tokens, credentials, cookies, private keys, or private runtime logs.
 - Treat Nuzo import/export as the portability layer between hosts.
@@ -30,6 +37,7 @@ Prefer the Nuzo MCP tools:
 - `memory.recall`
 - `memory.recall_hook`
 - `memory.suggest_capture`
+- `memory.confirm_capture`
 - `memory.list`
 - `memory.update`
 - `memory.history`

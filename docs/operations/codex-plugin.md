@@ -189,6 +189,7 @@ Use this only to isolate MCP behavior. Plugin validation should still go through
 - `memory.recall`
 - `memory.recall_hook`
 - `memory.suggest_capture`
+- `memory.confirm_capture`
 - `memory.list`
 - `memory.update`
 - `memory.history`
@@ -226,8 +227,9 @@ submit task
   -> use recalled context
 user asks to remember or states durable context
   -> memory.suggest_capture
-  -> user confirms, edits, or rejects
-  -> memory.remember or memory.update after confirmation
+  -> show draft, duplicate, or relationship evidence
+  -> user chooses create, update, keep separate, clarify, or reject
+  -> memory.confirm_capture applies the explicit decision
 next Codex session
   -> memory.recall_hook returns the confirmed memory
 ```
@@ -258,10 +260,14 @@ The user prefers short status updates while work is running.
 
 2. Call `memory.suggest_capture` with the draft, kind, scope, tags, source,
    confidence, and reason.
-3. Show the validated draft or duplicate result.
-4. If the user confirms or edits it, call `memory.remember` with the final
-   fields.
-5. If the user rejects it, write nothing.
+3. Show the validated draft, duplicate result, and any relationship evidence.
+4. If the user confirms or edits it, call `memory.confirm_capture` with the
+   explicit decision. Use `create` for a new memory, `update` with the displayed
+   memory ID and revision for a replacement, or `keep_separate` for a related
+   memory that should remain distinct.
+5. If the user rejects or needs clarification, do not write memory. Call
+   `memory.confirm_capture` with `reject` or `clarify` only when a structured
+   no-write result is useful.
 
 Explicit intent lowers ambiguity, but it does not bypass core policy checks,
 secret scanning, duplicate detection, or the visible draft step.
@@ -312,7 +318,7 @@ npm run package:plugins
 - Codex skips plugin command hooks until the user reviews and trusts them in
   `/hooks`; installation alone does not prove automatic recall is active.
 - Automatic capture is not enabled. Inferred writes still require confirmation.
-- Capture suggestions must follow `docs/spec/capture-suggestions.md`, validate inferred drafts with `memory.suggest_capture`, and call `memory.remember` only after confirmation.
+- Capture suggestions must follow `docs/spec/capture-suggestions.md`, validate inferred drafts with `memory.suggest_capture`, and call `memory.confirm_capture` only after an explicit user decision.
 
 ## Source References
 

@@ -54,15 +54,18 @@ nuzo memory suggest-capture \
 `suggest-capture` validates and normalizes the draft, but it does not write
 memory.
 
-After the user confirms the draft, write it:
+After the user confirms the draft, apply the explicit decision:
 
 ```bash
-nuzo memory remember \
+nuzo memory confirm-capture \
   "The demo project prefers concise status updates during long-running work." \
+  --decision create \
   --kind preference \
   --tag demo \
   --tag workflow \
-  --source codex:capture-confirmed
+  --source codex:capture-confirmed \
+  --reason "The user confirmed the draft." \
+  --yes
 ```
 
 The command prints a memory ID such as:
@@ -101,9 +104,9 @@ The Nuzo Codex skill should guide the agent through this sequence:
 
 ```text
 memory.suggest_capture
-  -> show the validated draft or duplicate
-  -> user confirms, edits, or rejects
-  -> memory.remember only after confirmation
+  -> show the validated draft, duplicate, or relationship evidence
+  -> user chooses create, update, keep separate, clarify, or reject
+  -> memory.confirm_capture applies the explicit decision
 ```
 
 If the user rejects the draft, Nuzo should write nothing. If the draft is an

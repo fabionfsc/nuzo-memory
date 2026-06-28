@@ -395,9 +395,10 @@ They must not contain:
 - host-specific import/export formats;
 - automatic write paths.
 
-Confirmed new memories must call `memory.remember`. Confirmed replacements of
-an existing memory must call `memory.update` with the revision shown to the
-user. Host wrappers must not write storage directly.
+Confirmed host flows must call `memory.confirm_capture` with the explicit user
+decision. Confirmed new memories route through the canonical remember behavior,
+and confirmed replacements route through the canonical update behavior with the
+revision shown to the user. Host wrappers must not write storage directly.
 
 ## Core Responsibilities
 

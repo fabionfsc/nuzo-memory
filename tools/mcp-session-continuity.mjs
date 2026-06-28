@@ -7,6 +7,7 @@ import {
 const rememberedMemory = "MCP session continuity smoke stores fake memory across stdio sessions.";
 const suggestedMemory = "MCP session continuity smoke prefers confirmed capture drafts.";
 const rejectedMemory = "MCP session continuity smoke rejects inferred capture drafts.";
+const unclearMemory = "MCP session continuity smoke needs clarification before saving.";
 const updatedMemory = "MCP session continuity smoke prefers reviewed capture draft updates.";
 const testScope = "project:mcp-session-continuity";
 const testTag = "session-continuity";
@@ -146,18 +147,72 @@ export async function assertMcpSessionContinuity({
       fail(`${label} rejected capture draft was persisted: ${JSON.stringify(afterReject)}`);
     }
 
-    const confirmed = parseToolJson(await client.callTool({
-      name: "memory.remember",
+    const rejected = parseToolJson(await client.callTool({
+      name: "memory.confirm_capture",
       arguments: {
+        decision: "reject",
+        content: rejectedSuggestion.draft.content,
+        kind: rejectedSuggestion.draft.kind,
+        scope: rejectedSuggestion.draft.scope,
+        tags: rejectedSuggestion.draft.tags,
+        source: "test:mcp-session-rejected-confirmation",
+        confidence: rejectedSuggestion.draft.confidence,
+        reason: "Validates explicit rejected capture decisions do not persist.",
+        confirm: false,
+      },
+    }));
+    if (
+      rejected.decision !== "reject" ||
+      rejected.status !== "skipped" ||
+      rejected.memory_writes !== false ||
+      rejected.memory !== null
+    ) {
+      fail(`${label} rejected capture decision wrote memory: ${JSON.stringify(rejected)}`);
+    }
+
+    const clarify = parseToolJson(await client.callTool({
+      name: "memory.confirm_capture",
+      arguments: {
+        decision: "clarify",
+        content: unclearMemory,
+        kind: "note",
+        scope: testScope,
+        tags: [testTag],
+        source: "test:mcp-session-clarify",
+        reason: "Validates ambiguous capture decisions remain write-free.",
+        confirm: false,
+      },
+    }));
+    if (
+      clarify.decision !== "clarify" ||
+      clarify.status !== "needs_clarification" ||
+      clarify.memory_writes !== false ||
+      clarify.memory !== null
+    ) {
+      fail(`${label} clarification capture decision wrote memory: ${JSON.stringify(clarify)}`);
+    }
+
+    const confirmed = parseToolJson(await client.callTool({
+      name: "memory.confirm_capture",
+      arguments: {
+        decision: "create",
         content: suggestion.draft.content,
         kind: suggestion.draft.kind,
         scope: suggestion.draft.scope,
         tags: suggestion.draft.tags,
         source: "test:mcp-session-confirmed",
         confidence: suggestion.draft.confidence,
+        reason: "Validates confirmed capture creates through the host-facing decision tool.",
+        confirm: true,
       },
     }));
-    if (typeof confirmed.id !== "string" || !confirmed.id.startsWith("mem_")) {
+    if (
+      confirmed.decision !== "create" ||
+      confirmed.status !== "created" ||
+      confirmed.memory_writes !== true ||
+      typeof confirmed.memory?.id !== "string" ||
+      !confirmed.memory.id.startsWith("mem_")
+    ) {
       fail(`${label} confirmed capture did not create a memory id: ${JSON.stringify(confirmed)}`);
     }
 
@@ -170,23 +225,31 @@ export async function assertMcpSessionContinuity({
       },
     }));
     const confirmedResult = afterConfirm.results.find((result) => result.content === suggestedMemory);
-    if (confirmedResult?.id !== confirmed.id || confirmedResult.revision !== 1) {
+    if (confirmedResult?.id !== confirmed.memory.id || confirmedResult.revision !== 1) {
       fail(`${label} confirmed capture was not recalled with revision 1: ${JSON.stringify(afterConfirm)}`);
     }
 
     const updated = parseToolJson(await client.callTool({
-      name: "memory.update",
+      name: "memory.confirm_capture",
       arguments: {
-        id: confirmed.id,
+        decision: "update",
+        target_memory_id: confirmed.memory.id,
         expected_revision: confirmedResult.revision,
         content: updatedMemory,
         kind: "preference",
+        scope: testScope,
         tags: [testTag, "updated"],
+        source: "test:mcp-session-confirmed-update",
         confidence: 0.9,
+        reason: "Validates confirmed capture updates with the displayed revision.",
+        confirm: true,
       },
     }));
     if (
-      updated.memory?.id !== confirmed.id ||
+      updated.decision !== "update" ||
+      updated.status !== "updated" ||
+      updated.memory_writes !== true ||
+      updated.memory?.id !== confirmed.memory.id ||
       updated.memory?.content !== updatedMemory ||
       updated.memory?.revision !== 2
     ) {
@@ -194,11 +257,18 @@ export async function assertMcpSessionContinuity({
     }
 
     await expectToolError(client.callTool({
-      name: "memory.update",
+      name: "memory.confirm_capture",
       arguments: {
-        id: confirmed.id,
+        decision: "update",
+        target_memory_id: confirmed.memory.id,
         expected_revision: confirmedResult.revision,
         content: "This stale update must not commit.",
+        kind: "preference",
+        scope: testScope,
+        tags: [testTag],
+        source: "test:mcp-session-stale-update",
+        reason: "Validates stale confirmed capture updates return conflict guidance.",
+        confirm: true,
       },
     }), ["MEMORY_REVISION_CONFLICT", "Memory changed before this operation could commit."], label);
 
@@ -219,6 +289,29 @@ export async function assertMcpSessionContinuity({
       duplicate.duplicate.content !== updatedMemory
     ) {
       fail(`${label} duplicate suggestion failed: ${JSON.stringify(duplicate)}`);
+    }
+
+    const duplicateCreate = parseToolJson(await client.callTool({
+      name: "memory.confirm_capture",
+      arguments: {
+        decision: "create",
+        content: " mcp session continuity smoke prefers reviewed   capture draft updates. ",
+        kind: "note",
+        scope: testScope,
+        tags: [testTag],
+        source: "test:mcp-session-duplicate-confirmed",
+        reason: "Validates confirmed duplicate creates remain write-free by default.",
+        confirm: true,
+      },
+    }));
+    if (
+      duplicateCreate.decision !== "create" ||
+      duplicateCreate.status !== "skipped" ||
+      duplicateCreate.memory_writes !== false ||
+      duplicateCreate.memory?.id !== confirmed.memory.id ||
+      duplicateCreate.memory?.revision !== 2
+    ) {
+      fail(`${label} confirmed duplicate create was not skipped: ${JSON.stringify(duplicateCreate)}`);
     }
 
     const doctor = parseToolJson(await client.callTool({
