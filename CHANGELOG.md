@@ -6,6 +6,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-06-28
+
 ### Added
 
 - Store-wide audit query contracts are now exposed through core, CLI, and MCP
