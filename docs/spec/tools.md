@@ -154,12 +154,13 @@ Output:
 ### `memory.suggest_capture`
 
 Validate and normalize an inferred memory draft before asking the user whether
-to save it.
+to save or update it.
 
 This tool is read-only. It must not create memory records, append audit events,
 update usage metadata, or persist rejected drafts. Candidate detection stays in
-the host or agent; Nuzo validates the proposed draft and reports whether an
-equivalent active memory already exists in the same scope.
+the host or agent; Nuzo validates the proposed draft. Exact duplicate checking
+is the compatibility default. Callers may explicitly request bounded
+relationship evidence in `0.6.0`.
 
 Input:
 
@@ -175,6 +176,19 @@ Input:
 }
 ```
 
+Optional relationship input:
+
+```json
+{
+  "relationship_mode": "bounded"
+}
+```
+
+`relationship_mode` is optional and accepts `exact` or `bounded`. Omission
+means `exact`. The partial example above is combined with the normal draft
+input; it is not a separate tool call. Relationship meanings and core evidence
+invariants are defined in [Capture Suggestions](capture-suggestions.md).
+
 Behavior:
 
 - applies the same core validation, scope authorization, tag rules, confidence
@@ -182,13 +196,18 @@ Behavior:
 - trims content and de-duplicates tags in the returned draft;
 - checks active memories in the same scope for exact normalized content
   duplicates;
+- when `relationship_mode` is `bounded`, evaluates the versioned relationship
+  contract after the exact check;
 - returns `requires_confirmation: true` for every successful response;
 - returns `memory_writes: false` and does not persist the draft.
 
 Duplicate matching is intentionally narrow: case-insensitive, whitespace-collapsed
 content equality within the same active scope. Tags, kind, source, and confidence
-do not make identical content a new suggestion. Broader semantic duplicate
-detection is a future ranking feature, not part of this MVP contract.
+do not make identical content a new suggestion. This exact check remains
+deterministic in bounded mode and is separate from ranked candidate limits.
+
+When relationship mode is omitted or `exact`, the following `ready` and
+`duplicate` responses remain unchanged from `0.5.0`.
 
 Output when ready to ask the user:
 
@@ -243,10 +262,121 @@ Output when an exact active duplicate exists:
 }
 ```
 
+Bounded output for an update candidate:
+
+```json
+{
+  "status": "review",
+  "memory_writes": false,
+  "requires_confirmation": true,
+  "draft": {
+    "content": "The user prefers detailed final answers.",
+    "kind": "preference",
+    "scope": "user:default",
+    "tags": ["workflow"],
+    "source": "codex:capture-suggestion",
+    "confidence": 0.72,
+    "reason": "The user changed a recurring response style preference."
+  },
+  "duplicate": null,
+  "relationship_mode": "bounded",
+  "relationship": "update_candidate",
+  "relationship_evidence": {
+    "version": 1,
+    "primary_memory_id": "mem_01HZY...",
+    "candidate_limit": 20,
+    "returned_limit": 3,
+    "evaluated_count": 2,
+    "search_exhaustive": true,
+    "evidence_truncated": false,
+    "reason": "The draft changes an existing response-style preference.",
+    "candidates": [
+      {
+        "memory": {
+          "id": "mem_01HZY...",
+          "revision": 3,
+          "content": "The user prefers concise final answers.",
+          "kind": "preference",
+          "scope": "user:default",
+          "tags": ["workflow"],
+          "source": "codex:mcp",
+          "confidence": 1,
+          "created_at": "2026-06-19T00:00:00.000Z",
+          "updated_at": "2026-06-28T00:00:00.000Z",
+          "last_used_at": null,
+          "archived_at": null
+        },
+        "matched_terms": ["user", "prefers", "final", "answers"],
+        "matched_tags": ["workflow"],
+        "reason": "Same scoped preference and subject with changed detail."
+      }
+    ]
+  }
+}
+```
+
+Bounded status mapping:
+
+| `relationship` | `status` | Required client behavior |
+| --- | --- | --- |
+| `exact_duplicate` | `duplicate` | Show the existing memory and default to no write. |
+| `update_candidate` | `review` | Offer `memory.update` only after confirmation. |
+| `related` | `review` | Ask whether the draft should remain separate. |
+| `independent` | `ready` | Offer `memory.remember` only after confirmation. |
+| `uncertain` | `review` | Ask for clarification and do not offer a default write. |
+
+Bounded response additions:
+
+| Field | Contract |
+| --- | --- |
+| `relationship_mode` | Always `bounded`; required by clients that requested bounded mode. |
+| `relationship` | One value from the mapping above. |
+| `relationship_evidence.version` | `1`. |
+| `primary_memory_id` | First candidate ID for exact, update, or related; otherwise `null`. |
+| `candidate_limit` | Always `20`. |
+| `returned_limit` | Always `3`. |
+| `evaluated_count` | Integer from `0` through `20`. |
+| `search_exhaustive` | Whether retrieval proved no omitted candidate could change the decision. |
+| `evidence_truncated` | Whether qualifying evidence was omitted from the returned list. |
+| `reason` | At most 1,000 characters and must explain the top-level relationship. |
+| `candidates` | Zero to three active same-scope memory records with bounded matching evidence. |
+
+Each candidate contains a normal public memory record, up to 8
+`matched_terms`, up to 8 `matched_tags`, and a reason of at most 1,000
+characters. Candidates are ordered strongest first. Archived or cross-scope
+records must never appear. Equivalent evidence is ordered by memory ID
+ascending for deterministic output.
+
+For `independent`, `primary_memory_id` is `null`, `candidates` is empty,
+`search_exhaustive` is true, and `evidence_truncated` is false. If evidence is
+ambiguous, or a non-exhaustive search cannot safely establish independence,
+the result must be `uncertain` instead.
+
+An exact duplicate short-circuits broader classification and returns exactly
+one bounded candidate with `evaluated_count: 1`, `search_exhaustive: true`, and
+`evidence_truncated: false`.
+
+Policy or authorization failures retain their existing structured errors and
+do not return relationship output. Relationship analysis never creates a
+memory, audit event, usage update, or stored draft.
+
+Compatibility rules:
+
+- clients that omit `relationship_mode` keep the exact-only response shape;
+- clients that request bounded mode must require the matching response marker;
+- an unknown-input error or missing marker means the server is older or did
+  not honor bounded mode;
+- that fallback must not be interpreted as `independent`;
+- the legacy `duplicate` field remains populated only for an exact duplicate
+  and refers to the same memory as bounded primary evidence.
+
 If the user confirms or edits a ready draft, the host must call
 `memory.remember` with the final user-approved fields. A duplicate response is
 advisory; hosts should normally show the existing memory and avoid asking for a
-new write unless the user explicitly wants a separate memory.
+new write unless the user explicitly wants a separate memory. A bounded
+`update_candidate` uses `memory.update` with the displayed ID and revision only
+after confirmation. `related` and `uncertain` require a user decision before
+any write path is offered.
 
 ### `memory.list`
 
