@@ -63,6 +63,9 @@ describe("MCP protocol contract", () => {
           type: "object",
           required: ["content", "kind", "reason"],
           properties: {
+            relationship_mode: {
+              type: "string",
+            },
             source: {
               default: "nuzo:capture-suggestion",
               type: "string",
@@ -272,6 +275,171 @@ describe("MCP protocol contract", () => {
     }
   });
 
+  it("round-trips bounded capture relationships and policy outcomes through the SDK", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "nuzo-mcp-capture-contract-"));
+    tempDirectories.push(directory);
+    const runtime = createNuzoMcpServerRuntime({
+      storePath: join(directory, "memories.sqlite"),
+    });
+    const client = new Client({
+      name: "nuzo-capture-contract-test",
+      version: "0.0.0",
+    });
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+
+    try {
+      await Promise.all([
+        runtime.server.connect(serverTransport),
+        client.connect(clientTransport),
+      ]);
+
+      const response = await rememberProtocolMemory(client, {
+        content: "The user prefers concise final answers with explicit tradeoffs.",
+        kind: "preference",
+        scope: "user:default",
+        tags: ["communication", "style"],
+      });
+      await rememberProtocolMemory(client, {
+        content: "Run MkDocs strict validation before merging documentation changes.",
+        kind: "instruction",
+        scope: "project:nuzo",
+        tags: ["docs", "mkdocs", "workflow"],
+      });
+      await rememberProtocolMemory(client, {
+        content: "Dependency changes require an audit and signature verification.",
+        kind: "instruction",
+        scope: "project:nuzo",
+        tags: ["dependencies", "security", "workflow"],
+      });
+      await rememberProtocolMemory(client, {
+        content: "Release changes use a focused branch and squash merge.",
+        kind: "instruction",
+        scope: "project:nuzo",
+        tags: ["git", "release", "workflow"],
+      });
+
+      const cases = [
+        {
+          content: "The user prefers concise final answers with explicit tradeoffs.",
+          kind: "note",
+          scope: "user:default",
+          expectedRelationship: "exact_duplicate",
+          expectedStatus: "duplicate",
+          expectedPrimary: response.id,
+          expectedDuplicate: response.id,
+        },
+        {
+          content: "The user prefers detailed final answers with explicit tradeoffs.",
+          kind: "preference",
+          scope: "user:default",
+          expectedRelationship: "update_candidate",
+          expectedStatus: "review",
+          expectedPrimary: response.id,
+          expectedDuplicate: null,
+        },
+        {
+          content: "Use short headings when presenting final answers.",
+          kind: "preference",
+          scope: "user:default",
+          expectedRelationship: "related",
+          expectedStatus: "review",
+          expectedPrimary: response.id,
+          expectedDuplicate: null,
+        },
+        {
+          content: "Rust source files use rustfmt before review.",
+          kind: "instruction",
+          scope: "project:nuzo",
+          expectedRelationship: "independent",
+          expectedStatus: "ready",
+          expectedPrimary: null,
+          expectedDuplicate: null,
+        },
+        {
+          content: "Use the preferred validation process for important changes.",
+          kind: "instruction",
+          scope: "project:nuzo",
+          expectedRelationship: "uncertain",
+          expectedStatus: "review",
+          expectedPrimary: null,
+          expectedDuplicate: null,
+        },
+      ] as const;
+
+      for (const item of cases) {
+        const before = await protocolState(client);
+        const suggestion = parseToolJson(await client.callTool({
+          name: "memory.suggest_capture",
+          arguments: {
+            content: item.content,
+            kind: item.kind,
+            scope: item.scope,
+            tags: ["capture-contract"],
+            source: "test:capture-suggestion",
+            confidence: 0.8,
+            reason: "Protocol contract coverage for bounded capture evidence.",
+            relationship_mode: "bounded",
+          },
+        })) as BoundedSuggestionOutput;
+        const after = await protocolState(client);
+
+        expect(after).toEqual(before);
+        expect(suggestion).toMatchObject({
+          status: item.expectedStatus,
+          memory_writes: false,
+          requires_confirmation: true,
+          duplicate: item.expectedDuplicate === null ? null : { id: item.expectedDuplicate },
+          relationship_mode: "bounded",
+          relationship: item.expectedRelationship,
+          relationship_evidence: {
+            version: 1,
+            primary_memory_id: item.expectedPrimary,
+            candidate_limit: 20,
+            returned_limit: 3,
+          },
+        });
+        expect(suggestion.relationship_evidence.evaluated_count).toBeGreaterThanOrEqual(0);
+        expect(suggestion.relationship_evidence.evaluated_count).toBeLessThanOrEqual(20);
+        expect(suggestion.relationship_evidence.reason.length).toBeGreaterThan(0);
+        expect(suggestion.relationship_evidence.reason.length).toBeLessThanOrEqual(1_000);
+        expect(suggestion.relationship_evidence.candidates.length).toBeLessThanOrEqual(3);
+        for (const candidate of suggestion.relationship_evidence.candidates) {
+          expect(candidate.memory.scope).toBe(item.scope);
+          expect(candidate.memory.revision).toBeGreaterThanOrEqual(1);
+          expect(candidate.matched_terms.length).toBeLessThanOrEqual(8);
+          expect(candidate.matched_tags.length).toBeLessThanOrEqual(8);
+          expect(candidate.reason.length).toBeGreaterThan(0);
+          expect(candidate.reason.length).toBeLessThanOrEqual(1_000);
+        }
+        if (item.expectedPrimary === null) {
+          expect(suggestion.relationship_evidence.primary_memory_id).toBeNull();
+        } else {
+          expect(suggestion.relationship_evidence.candidates[0]?.memory.id).toBe(item.expectedPrimary);
+        }
+      }
+
+      const secretBefore = await protocolState(client);
+      const secret = await client.callTool({
+        name: "memory.suggest_capture",
+        arguments: {
+          content: "github token is ghp_123456789012345678901234567890123456",
+          kind: "note",
+          scope: "project:nuzo",
+          reason: "Protocol contract coverage for blocked capture evidence.",
+          relationship_mode: "bounded",
+        },
+      });
+      expect(secret.isError).toBe(true);
+      const secretText = toolText(secret);
+      expect(secretText).toContain("Memory content looks sensitive.");
+      expect(secretText).not.toContain("relationship_mode");
+      await expect(protocolState(client)).resolves.toEqual(secretBefore);
+    } finally {
+      await client.close();
+      runtime.close();
+    }
+  });
+
   it("enforces authorized scopes through the MCP runtime", async () => {
     const directory = mkdtempSync(join(tmpdir(), "nuzo-mcp-protocol-"));
     tempDirectories.push(directory);
@@ -328,6 +496,16 @@ describe("MCP protocol contract", () => {
           query: "authorized project scope",
           scope: "project:nuzo",
           include_global: true,
+        },
+      }));
+      await expectToolError(client.callTool({
+        name: "memory.suggest_capture",
+        arguments: {
+          content: "Restricted MCP runtime cannot suggest capture for global memory.",
+          kind: "note",
+          scope: "user:default",
+          reason: "The inferred draft targets a forbidden scope.",
+          relationship_mode: "bounded",
         },
       }));
       await expectToolError(client.callTool({
@@ -488,6 +666,15 @@ describe("MCP protocol contract", () => {
         },
       }));
       await expectToolError(client.callTool({
+        name: "memory.suggest_capture",
+        arguments: {
+          content: "Invalid relationship mode should be rejected by the MCP schema.",
+          kind: "note",
+          reason: "The mode is outside the public contract.",
+          relationship_mode: "fuzzy",
+        },
+      }));
+      await expectToolError(client.callTool({
         name: "memory.import",
         arguments: {
           document: {
@@ -518,6 +705,75 @@ describe("MCP protocol contract", () => {
   });
 });
 
+interface BoundedSuggestionOutput {
+  status: string;
+  memory_writes: boolean;
+  requires_confirmation: boolean;
+  duplicate: { id: string } | null;
+  relationship_mode: "bounded";
+  relationship: string;
+  relationship_evidence: {
+    version: 1;
+    primary_memory_id: string | null;
+    candidate_limit: number;
+    returned_limit: number;
+    evaluated_count: number;
+    search_exhaustive: boolean;
+    evidence_truncated: boolean;
+    reason: string;
+    candidates: Array<{
+      memory: {
+        id: string;
+        revision: number;
+        scope: string;
+      };
+      matched_terms: string[];
+      matched_tags: string[];
+      reason: string;
+    }>;
+  };
+}
+
+async function rememberProtocolMemory(
+  client: Client,
+  input: {
+    content: string;
+    kind: "preference" | "project_decision" | "fact" | "instruction" | "note";
+    scope: string;
+    tags: string[];
+  },
+): Promise<{ id: string }> {
+  return parseToolJson(await client.callTool({
+    name: "memory.remember",
+    arguments: {
+      ...input,
+      source: "test:mcp-client",
+    },
+  })) as { id: string };
+}
+
+async function protocolState(client: Client): Promise<{
+  auditEvents: number;
+  memoryIds: string[];
+}> {
+  const listed = parseToolJson(await client.callTool({
+    name: "memory.list",
+    arguments: {
+      include_archived: true,
+    },
+  })) as { memories: Array<{ id: string }> };
+  const audit = parseToolJson(await client.callTool({
+    name: "memory.audit",
+    arguments: {
+      limit: 200,
+    },
+  })) as { events: unknown[] };
+  return {
+    auditEvents: audit.events.length,
+    memoryIds: listed.memories.map((memory) => memory.id).sort(),
+  };
+}
+
 async function expectToolError(resultPromise: Promise<Awaited<ReturnType<Client["callTool"]>>>): Promise<void> {
   const result = await resultPromise;
   expect(result.isError).toBe(true);
@@ -529,11 +785,15 @@ async function expectToolError(resultPromise: Promise<Awaited<ReturnType<Client[
 }
 
 function parseToolJson(result: Awaited<ReturnType<Client["callTool"]>>): unknown {
+  return JSON.parse(toolText(result));
+}
+
+function toolText(result: Awaited<ReturnType<Client["callTool"]>>): string {
   const text = result.content.find(
     (item): item is Extract<typeof item, { type: "text" }> => item.type === "text",
   );
   if (!text) {
-    throw new Error("Expected MCP tool result to contain text JSON.");
+    throw new Error("Expected MCP tool result to contain text.");
   }
-  return JSON.parse(text.text);
+  return text.text;
 }
