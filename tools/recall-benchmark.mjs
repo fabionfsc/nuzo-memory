@@ -1,15 +1,21 @@
 #!/usr/bin/env node
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { isAbsolute, join, resolve } from "node:path";
 import { performance } from "node:perf_hooks";
-import {
+import { pathToFileURL } from "node:url";
+
+const coreModulePath = optionValue("--core-module");
+const coreModuleSpecifier = coreModulePath === undefined
+  ? new URL("../packages/core/dist/index.js", import.meta.url).href
+  : pathToFileURL(isAbsolute(coreModulePath) ? coreModulePath : resolve(coreModulePath)).href;
+const {
   createMemoryService,
   DefaultPolicyEngine,
   RegexSecretScanner,
   SQLiteMemoryDatabase,
   SystemClock,
-} from "../packages/core/dist/index.js";
+} = await import(coreModuleSpecifier);
 
 const keepStore = process.argv.includes("--keep");
 const jsonOutput = process.argv.includes("--json");
@@ -677,6 +683,7 @@ try {
   const report = {
     benchmark: "nuzo-recall-quality",
     version: 1,
+    coreModule: coreModulePath ?? "workspace",
     store: keepStore ? storePath : "temporary",
     fixtures: fixtures.length,
     cases: cases.length,
@@ -846,4 +853,16 @@ function ratio(numerator, denominator) {
 
 function formatPercent(value) {
   return `${(value * 100).toFixed(1)}%`;
+}
+
+function optionValue(name) {
+  const optionIndex = process.argv.indexOf(name);
+  if (optionIndex === -1) {
+    return undefined;
+  }
+  const value = process.argv[optionIndex + 1];
+  if (value === undefined || value.startsWith("--")) {
+    throw new Error(`${name} requires a module path`);
+  }
+  return value;
 }

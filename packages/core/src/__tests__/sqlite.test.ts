@@ -324,6 +324,26 @@ describe("SQLiteMemoryDatabase", () => {
     database.close();
   });
 
+  it("accepts distinctive terms without fixture-specific vocabulary", async () => {
+    const { database, service } = createTempDatabase();
+    const observability = await service.remember({
+      content: "Observability uses local spans for diagnostic traces.",
+      kind: "project_decision",
+      scope: "project:nuzo",
+      tags: ["diagnostics"],
+      source: "test",
+    });
+
+    const results = await service.recall({
+      query: "What observability guidance applies?",
+      scope: "project:nuzo",
+      limit: 5,
+    });
+
+    expect(results.map((result) => result.memory.id)).toEqual([observability.id]);
+    database.close();
+  });
+
   it("rejects stale update and forget revisions across SQLite connections", async () => {
     const { database: firstDatabase, directory, service: firstService } = createTempDatabase();
     const secondDatabase = new SQLiteMemoryDatabase({ path: join(directory, "memories.sqlite") });

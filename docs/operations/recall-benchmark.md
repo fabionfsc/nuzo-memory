@@ -26,6 +26,13 @@ To inspect the generated SQLite store manually:
 npm run benchmark:recall -- --keep
 ```
 
+To evaluate the same fixtures against another built core revision, pass its
+entry module explicitly:
+
+```bash
+npm run benchmark:recall -- --core-module /path/to/core/dist/index.js
+```
+
 ## Fixture Coverage
 
 English is the primary quality bar. The benchmark keeps more English cases than
@@ -90,17 +97,49 @@ improvement without scope-isolation or latency regression.
 
 ## Current Baseline
 
-The first `0.5.0` benchmark run against the `0.4.0` recall behavior exposed
-noise from common prompt words and single-term matches in otherwise specific
-queries. The initial tuning keeps SQLite FTS local and simple:
+The fixture harness was also run unchanged against the core built from tag
+`v0.4.0`. That baseline measured:
+
+```text
+fixtures = 103
+cases = 31
+top1 = 96.8%
+expected_recall = 96.8%
+noise = 50.0%
+ranking reasons = 100%
+average latency = 0.60 ms
+max latency = 2.13 ms
+
+english cases = 13
+english top1 = 92.3%
+english expected_recall = 100%
+english noise = 64.3%
+```
+
+Latency is machine-dependent; the relevance and noise results are
+deterministic for these fixtures. Reproduce the comparison from a clean
+checkout with:
+
+```bash
+git worktree add --detach /tmp/nuzo-memory-v0.4.0 v0.4.0
+(cd /tmp/nuzo-memory-v0.4.0 && npm ci && npm run build -w @nuzo/memory-core)
+npm run benchmark:recall -- \
+  --core-module /tmp/nuzo-memory-v0.4.0/packages/core/dist/index.js
+git worktree remove /tmp/nuzo-memory-v0.4.0
+```
+
+The baseline exposed noise from common prompt words and single-term matches
+in otherwise specific queries. The initial tuning keeps SQLite FTS local and
+simple:
 
 - remove common English and Portuguese prompt stop words before building the
   FTS query;
 - require strong evidence for multi-term queries, so weak operational terms
   such as release, review, routing, docs, workflow, or testing do not pull
   unrelated memories on their own;
-- allow a small set of distinctive single-term matches for host-like prompts
-  where the domain term is itself enough evidence;
+- allow a strong term that appears in only one scoped FTS candidate as
+  distinctive single-term evidence, without maintaining fixture-specific
+  vocabulary;
 - keep exact tag matches strong for short topical queries;
 - require multiple exact tag matches before a long query can pass on tags
   alone, unless the tag itself is distinctive.

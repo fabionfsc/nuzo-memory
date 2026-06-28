@@ -219,32 +219,33 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
 
     const queryTerms = tokenizeSearchText(input.query);
     const minimumMatches = minimumRecallMatches(queryTerms);
-    return rows
-      .map((row) => {
-        const memory = fromMemoryRow(row);
-        const matchedTags = findExactTagMatches(queryTerms, memory.tags);
-        const matchedStrongTags = matchedTags.filter((tag) => !recallWeakTagTerms.has(tag));
-        const matchedTerms = findRecallTermMatches(queryTerms, memory);
-        const matchedStrongTerms = matchedTerms.filter((term) => !recallWeakTagTerms.has(term));
-        return {
-          memory,
-          matchedTerms,
-          matchedTags,
-          matchedStrongTags,
-          matchedStrongTerms,
-          score: row.score + matchedTags.length * 1_000 + matchedTerms.length * 10,
-          reason: [
-            matchedTags.length > 0 ? `Matched tags: ${matchedTags.join(", ")}` : null,
-            matchedTerms.length > 0 ? `Matched terms: ${matchedTerms.join(", ")}` : null,
-            `FTS query: ${query}`,
-          ].filter(Boolean).join("; "),
-        };
-      })
+    const candidates = rows.map((row) => {
+      const memory = fromMemoryRow(row);
+      const matchedTags = findExactTagMatches(queryTerms, memory.tags);
+      const matchedStrongTags = matchedTags.filter((tag) => !recallWeakTerms.has(tag));
+      const matchedTerms = findRecallTermMatches(queryTerms, memory);
+      const matchedStrongTerms = matchedTerms.filter((term) => !recallWeakTerms.has(term));
+      return {
+        memory,
+        matchedTerms,
+        matchedTags,
+        matchedStrongTags,
+        matchedStrongTerms,
+        score: row.score + matchedTags.length * 1_000 + matchedTerms.length * 10,
+        reason: [
+          matchedTags.length > 0 ? `Matched tags: ${matchedTags.join(", ")}` : null,
+          matchedTerms.length > 0 ? `Matched terms: ${matchedTerms.join(", ")}` : null,
+          `FTS query: ${query}`,
+        ].filter(Boolean).join("; "),
+      };
+    });
+    const strongTermFrequency = countTermFrequency(
+      candidates.map((candidate) => candidate.matchedStrongTerms),
+    );
+    return candidates
       .filter((result) => (
         (result.matchedTerms.length >= minimumMatches && result.matchedStrongTerms.length > 0) ||
-        result.matchedStrongTerms.length >= minimumMatches ||
-        result.matchedStrongTerms.some(isDistinctiveSingleRecallTerm) ||
-        (queryTerms.length <= 2 && result.matchedStrongTags.length > 0) ||
+        result.matchedStrongTerms.some((term) => strongTermFrequency.get(term) === 1) ||
         result.matchedTags.length >= 2 ||
         result.matchedStrongTags.length > 0
       ))
@@ -468,6 +469,16 @@ function minimumRecallMatches(queryTerms: string[]): number {
   return 2;
 }
 
+function countTermFrequency(termGroups: string[][]): Map<string, number> {
+  const frequencies = new Map<string, number>();
+  for (const terms of termGroups) {
+    for (const term of new Set(terms)) {
+      frequencies.set(term, (frequencies.get(term) ?? 0) + 1);
+    }
+  }
+  return frequencies;
+}
+
 const recallStopWords = new Set([
   "a",
   "an",
@@ -524,7 +535,7 @@ const recallStopWords = new Set([
   "que",
 ]);
 
-const recallWeakTagTerms = new Set([
+const recallWeakTerms = new Set([
   "ci",
   "docs",
   "errors",
@@ -537,22 +548,6 @@ const recallWeakTagTerms = new Set([
   "testing",
   "workflow",
 ]);
-
-const recallDistinctiveSingleMatchTerms = new Set([
-  "api",
-  "bezpieczeństwa",
-  "cloudflare",
-  "credentials",
-  "databasewijzigingen",
-  "geheimnisse",
-  "go",
-  "node",
-  "한국어",
-]);
-
-function isDistinctiveSingleRecallTerm(term: string): boolean {
-  return recallDistinctiveSingleMatchTerms.has(term);
-}
 
 function protectDatabaseFiles(path: string): void {
   for (const candidate of [path, `${path}-wal`, `${path}-shm`]) {
