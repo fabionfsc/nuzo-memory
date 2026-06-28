@@ -17,11 +17,11 @@ Core and unified packages use the same version and must be released together.
 
 ## Current Release
 
-Version `0.3.0` is the current release:
+Version `0.3.1` is the current release:
 
 ```text
-@nuzo/memory-core@0.3.0
-@nuzo/memory@0.3.0
+@nuzo/memory-core@0.3.1
+@nuzo/memory@0.3.1
 ```
 
 The packages are published together from the same source version. Routine

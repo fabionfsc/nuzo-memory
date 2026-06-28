@@ -11,7 +11,7 @@ Nuzo is pre-`1.0` software with a public MVP release.
 Packages currently use:
 
 ```text
-0.3.0
+0.3.1
 ```
 
 Development commits keep the last released version until an explicit release

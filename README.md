@@ -20,8 +20,8 @@
   <a href="https://nuzo.com.br">
     <img alt="Docs" src="https://img.shields.io/badge/docs-nuzo.com.br-111827">
   </a>
-  <a href="https://github.com/fabionfsc/nuzo-memory/releases/tag/v0.3.0">
-    <img alt="Release" src="https://img.shields.io/badge/release-v0.3.0-22c55e">
+  <a href="https://github.com/fabionfsc/nuzo-memory/releases/tag/v0.3.1">
+    <img alt="Release" src="https://img.shields.io/badge/release-v0.3.1-22c55e">
   </a>
   <a href="#license">
     <img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-64748b">

@@ -6,6 +6,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-06-28
+
 ### Added
 
 - Memory-poisoning threat model and hostile-content regression coverage for
