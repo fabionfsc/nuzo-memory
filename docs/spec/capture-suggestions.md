@@ -235,7 +235,9 @@ They must not contain:
 - host-specific import/export formats;
 - automatic write paths.
 
-All confirmed writes must call `memory.remember`.
+Confirmed new memories must call `memory.remember`. Confirmed replacements of
+an existing memory must call `memory.update` with the revision shown to the
+user. Host wrappers must not write storage directly.
 
 ## Core Responsibilities
 
@@ -260,13 +262,13 @@ Confirmation is not a bypass for:
 
 If core rejects a confirmed draft, the host should show the structured error and avoid retrying automatically.
 
-## Initial Implementation Order
+## MVP Implementation Order
 
 1. Document capture suggestion policy.
 2. Add test fixtures for allowed and blocked examples.
 3. Add host prompt/skill guidance for suggesting drafts.
 4. Add optional read-only recall hook.
 5. Add `memory.suggest_capture` as a read-only validation and duplicate check.
-6. Add confirmed capture flow that calls `memory.remember`.
+6. Add confirmed new-capture flow that calls `memory.remember`.
 
 Do not add a capture hook that writes directly to storage.
