@@ -2,8 +2,8 @@
 
 Nuzo `0.3.0` is the current public release.
 
-Most users should start with the released package. Repository setup is only
-needed when you want to contribute to Nuzo itself.
+Most users start with the npm package and then enable the plugin for their AI
+agent host.
 
 ## Install
 
@@ -11,21 +11,33 @@ Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
 
 ```bash
 npm install --global @nuzo/memory
+```
+
+This installs the local `nuzo` CLI and the MCP runtime used by host plugins.
+
+## Agent Plugins
+
+The npm package does not enable Codex or Claude Code by itself. Install or
+enable the Nuzo plugin in the host after installing the runtime.
+
+| Host | Setup |
+| --- | --- |
+| Codex | Install or enable the `Nuzo` plugin, then trust its hooks when prompted. |
+| Claude Code | Install or enable the `Nuzo` plugin, then verify the `nuzo` MCP server is connected. |
+| Other MCP hosts | Configure `nuzo-mcp-server` as a stdio MCP server. |
+
+See [Codex plugin](../operations/codex-plugin.md) and
+[Claude Code plugin](../operations/claude-code-plugin.md).
+
+## Manage Memory
+
+Use the CLI to inspect and maintain local memory:
+
+```bash
 nuzo memory init
 nuzo memory doctor
-```
-
-Store and recall a fake memory:
-
-```bash
-nuzo memory remember "The demo project uses SQLite for local storage." --kind project_decision
-nuzo memory recall "local storage"
-```
-
-The first user-facing command is:
-
-```bash
-nuzo memory init
+nuzo memory list
+nuzo memory recall "deployment preferences"
 ```
 
 It creates:
@@ -39,12 +51,6 @@ It creates:
     └── logs/
 ```
 
-Initialize project-local memory from a project root with:
-
-```bash
-nuzo memory init --project
-```
-
 ## Packages
 
 You usually need one package.
@@ -54,101 +60,11 @@ You usually need one package.
 | `@nuzo/memory` | CLI, MCP server, and host lifecycle hooks. |
 | `@nuzo/memory-core` | library-level integration or Nuzo package development. |
 
-## Read The Project
+## More
 
-If you are evaluating or contributing to Nuzo, start with:
-
-1. `README.md`
-2. `CONTRIBUTING.md`
-3. `docs/spec/tools.md`
-4. `docs/operations/roadmap.md`
-5. `docs/architecture/overview.md`
-
-## Work On Documentation
-
-Create a local docs environment:
-
-```bash
-python3 -m venv .venv-docs
-.venv-docs/bin/pip install -r requirements-docs.txt
-```
-
-Serve locally:
-
-```bash
-.venv-docs/bin/mkdocs serve
-```
-
-Validate:
-
-```bash
-.venv-docs/bin/mkdocs build --strict
-```
-
-## Work On The TypeScript Workspace
-
-Use Node.js 22 LTS or 24 LTS with npm 10 or newer. These are the runtime lines
-validated in CI. See [Runtime Support](../operations/runtime-support.md) for
-the full policy and native SQLite troubleshooting.
-
-Install dependencies:
-
-```bash
-npm install
-```
-
-Type-check:
-
-```bash
-npm run check
-```
-
-Build:
-
-```bash
-npm run build
-```
-
-Run tests:
-
-```bash
-npm test
-```
-
-## Local Runtime Flow
-
-The workspace CLI is also available after a build:
-
-```bash
-npm run build
-npm run nuzo -- memory init
-```
-
-After that, the expected flow is:
-
-```bash
-nuzo memory remember "The user prefers concise implementation notes." --kind preference
-nuzo memory list
-nuzo memory update mem_01HZY --expected-revision 1 --content "The user prefers concise implementation notes and explicit tradeoffs."
-nuzo memory recall "How should the assistant write implementation notes?"
-nuzo memory forget mem_01HZY --expected-revision 2
-```
-
-When developing from the repository, use the workspace wrapper:
-
-```bash
-npm run nuzo -- memory remember "The user prefers concise implementation notes." --kind preference
-npm run nuzo -- memory list
-npm run nuzo -- memory update mem_01HZY --expected-revision 1 --content "The user prefers concise implementation notes and explicit tradeoffs."
-npm run nuzo -- memory recall "implementation notes"
-npm run nuzo -- memory export --path ./memories.memory.export.md
-```
-
-See `docs/operations/local-cli.md` for the current CLI packaging direction.
-
-For a clean checkout walkthrough that exercises install, build, remember, recall, export, and import, see `docs/getting-started/clean-install.md`.
-
-For the cross-session agent memory flow, see `docs/getting-started/agent-memory-loop.md`.
+- [Agent memory loop](agent-memory-loop.md)
+- [Local CLI details](../operations/local-cli.md)
+- [Tool contract](../spec/tools.md)
 
 ## Safety Reminder
 

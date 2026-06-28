@@ -10,22 +10,33 @@ It installs the CLI, MCP server, and host lifecycle hook runner.
 npm install --global @nuzo/memory
 ```
 
-## Commands
+## Agent Plugins
 
-```bash
-nuzo memory doctor
-nuzo memory remember "The project uses SQLite." --kind project_decision
-nuzo memory recall "SQLite"
-```
-
-MCP hosts and generated host plugins use the same package:
+The npm package is the runtime. Codex, Claude Code, and other MCP hosts still
+need Nuzo configured as a plugin or MCP server.
 
 ```bash
 npm exec --yes --package=@nuzo/memory -- nuzo-mcp-server
+```
+
+Generated Nuzo plugins also use:
+
+```bash
 npm exec --yes --package=@nuzo/memory -- nuzo-memory-hook --doctor
 ```
 
-## Includes
+## Manage Memory
+
+Use the CLI to inspect and maintain local memory:
+
+```bash
+nuzo memory init
+nuzo memory doctor
+nuzo memory list
+nuzo memory recall "deployment preferences"
+```
+
+## Binaries
 
 | Binary | Purpose |
 | --- | --- |

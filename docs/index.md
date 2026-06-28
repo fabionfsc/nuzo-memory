@@ -5,7 +5,7 @@
   <p class="nuzo-lead">Inspectable, portable memory for Codex, Claude Code, and MCP-compatible agents. Built for developer workflows where useful context should not become hidden state.</p>
   <p class="nuzo-actions">
     <a href="getting-started/" class="nuzo-button">Get started</a>
-    <a href="spec/tools/" class="nuzo-button nuzo-button--secondary">Tool contract</a>
+    <a href="operations/codex-plugin/" class="nuzo-button nuzo-button--secondary">Agent setup</a>
   </p>
   </div>
   <div class="nuzo-hero__panel" markdown>
@@ -22,48 +22,45 @@
   </div>
 </section>
 
+## Install
+
+```bash
+npm install --global @nuzo/memory
+```
+
+This installs the `nuzo` CLI, the `nuzo-mcp-server` runtime, and the
+`nuzo-memory-hook` runner used by host plugins.
+
+## Agent Setup
+
+Nuzo becomes automatic after the host plugin is installed and trusted.
+
+| Host | Next step |
+| --- | --- |
+| Codex | Install or enable the `Nuzo` plugin, then trust its hooks. |
+| Claude Code | Install or enable the `Nuzo` plugin, then verify the `nuzo` MCP server. |
+| MCP hosts | Configure `nuzo-mcp-server` as a stdio MCP server. |
+
+## Manage Memory
+
+```bash
+nuzo memory init
+nuzo memory doctor
+nuzo memory list
+nuzo memory recall "deployment preferences"
+```
+
 ## Why
 
 Agents can write code, inspect repositories, run tools, and help make project decisions. But most sessions still start from zero. Nuzo preserves useful context locally so users can inspect, edit, export, and delete what agents remember.
 
-## Principles
+## Current Release
 
-<div class="nuzo-grid" markdown>
+Nuzo `0.3.0` is the current public release.
 
-<div class="nuzo-card" markdown>
-### Local
-Memories live on the user's machine by default.
-</div>
-
-<div class="nuzo-card" markdown>
-### Auditable
-Every memory should expose content, scope, source, metadata, and history.
-</div>
-
-<div class="nuzo-card" markdown>
-### Portable
-Import/export formats are documented instead of opaque.
-</div>
-
-<div class="nuzo-card" markdown>
-### Agent-ready
-The integration boundary is a stable MCP tool contract.
-</div>
-
-</div>
-
-## Current Focus
-
-Nuzo `0.3.0` is the current public release. It includes a TypeScript core package, a local CLI backed by SQLite, an MCP server, host plugin artifacts, a published npm package, and installed-package validation.
-
-| Area | State |
-| --- | --- |
-| Core | Memory lifecycle, policy checks, SQLite storage, FTS search, tests. |
-| CLI | User/project init, lifecycle commands, audit history, dry-run bulk forget, portability, and diagnostics. |
-| MCP | 12 stdio tools covering recall, lifecycle, capture suggestion validation, audit history, bulk safety, portability, and diagnostics. |
-| Host Plugins | Codex and Claude Code artifacts install through isolated official marketplace flows and connect to the published Nuzo package. |
-| Release | `0.3.0` packages, tag, CI, Pages, plugin packaging, release-state checks, and published package smoke tests. |
-| Next | Public marketplace distribution, complete capture lifecycle UX, and field feedback from real Codex and Claude Code workflows. |
+- `@nuzo/memory` is the user package.
+- `@nuzo/memory-core` is for library integrations.
+- Codex and Claude Code plugins use the same MCP runtime.
 
 ## Runtime Storage
 
@@ -77,9 +74,6 @@ Runtime memory is user-owned state. It is ignored by Git by default and should n
 ## Start Reading
 
 - [Getting started](getting-started/index.md)
-- [Product vision](product/vision.md)
-- [Positioning](product/positioning.md)
-- [Architecture overview](architecture/overview.md)
-- [Memory model](spec/memory-model.md)
+- [Codex plugin](operations/codex-plugin.md)
+- [Claude Code plugin](operations/claude-code-plugin.md)
 - [Tool contract](spec/tools.md)
-- [Roadmap](operations/roadmap.md)

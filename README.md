@@ -44,21 +44,46 @@ Nuzo gives AI agents durable local memory without making that memory hidden. It
 is designed for Codex, Claude Code, and MCP-compatible hosts where useful
 context should stay inspectable and user-owned.
 
-## Install In 60 Seconds
+## Install
 
 Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
 
 ```bash
 npm install --global @nuzo/memory
-nuzo memory init
-nuzo memory doctor
 ```
 
-Store and recall a fake memory:
+This installs:
+
+| Binary | Purpose |
+| --- | --- |
+| `nuzo` | Manage local memories. |
+| `nuzo-mcp-server` | Expose Nuzo to MCP hosts. |
+| `nuzo-memory-hook` | Run read-only host recall hooks. |
+
+## Agent Plugins
+
+The npm package is the runtime. Agent hosts still need the Nuzo plugin enabled.
+
+| Host | Setup |
+| --- | --- |
+| Codex | Install or enable the `Nuzo` plugin, then trust its hooks when prompted. |
+| Claude Code | Install or enable the `Nuzo` plugin, then verify the `nuzo` MCP server is connected. |
+| Other MCP hosts | Configure `nuzo-mcp-server` as a stdio MCP server. |
+
+Plugin setup details:
+[Codex](docs/operations/codex-plugin.md) ·
+[Claude Code](docs/operations/claude-code-plugin.md)
+
+## Manage Memory
+
+Use the CLI when you want to inspect, edit, export, or remove memory directly.
 
 ```bash
-nuzo memory remember "The demo project uses SQLite for local storage." --kind project_decision
-nuzo memory recall "local storage"
+nuzo memory init
+nuzo memory doctor
+nuzo memory list
+nuzo memory recall "deployment preferences"
+nuzo memory export --path ./memories.memory.export.json
 ```
 
 Runtime memory defaults to:
@@ -66,42 +91,6 @@ Runtime memory defaults to:
 ```text
 ~/.nuzo/memory/memories.sqlite
 ```
-
-## Packages
-
-Most users install one package:
-
-| Package | Purpose |
-| --- | --- |
-| `@nuzo/memory` | CLI, MCP server, and host lifecycle hooks. |
-| `@nuzo/memory-core` | Library-level integrations. |
-
-## Agent Recall
-
-The Codex and Claude Code plugins use the hosts' official `SessionStart` and
-`UserPromptSubmit` events for bounded read-only recall.
-
-Memories tagged `autoload` may be loaded at session start. Topical tags such as
-`cloudflare` or `workflow` participate in contextual recall. Hooks never capture
-or modify memory.
-
-Host-level hook trust remains under user control. See the
-[Codex](docs/operations/codex-plugin.md) and
-[Claude Code](docs/operations/claude-code-plugin.md) setup pages.
-
-## Common Commands
-
-```bash
-nuzo memory init
-nuzo memory remember "The user prefers concise implementation notes." --kind preference
-nuzo memory suggest-capture "The user prefers concise final answers." --kind preference --reason "Durable response style preference."
-nuzo memory recall "concise implementation notes"
-nuzo memory list
-nuzo memory export --path ./memories.memory.export.json
-nuzo memory doctor
-```
-
-See the [tool contract](docs/spec/tools.md) for the full MCP surface.
 
 ## Defaults
 
@@ -115,9 +104,9 @@ See the [tool contract](docs/spec/tools.md) for the full MCP surface.
 
 - Primary site: https://nuzo.com.br
 - Getting started: [docs/getting-started/index.md](docs/getting-started/index.md)
+- Codex plugin: [docs/operations/codex-plugin.md](docs/operations/codex-plugin.md)
+- Claude Code plugin: [docs/operations/claude-code-plugin.md](docs/operations/claude-code-plugin.md)
 - Tool contract: [docs/spec/tools.md](docs/spec/tools.md)
-- Architecture: [docs/architecture/overview.md](docs/architecture/overview.md)
-- Roadmap: [docs/operations/roadmap.md](docs/operations/roadmap.md)
 
 ## Contributing
 
