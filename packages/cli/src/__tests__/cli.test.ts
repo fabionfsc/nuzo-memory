@@ -442,6 +442,58 @@ describe("nuzo memory cli", () => {
     expect(output.relationship_evidence?.primary_memory_id).toMatch(/^mem_/);
   });
 
+  it("prints bounded capture relationship evidence for humans", async () => {
+    const store = createStorePath();
+    const remembered = await runCli([
+      "memory",
+      "--store",
+      store,
+      "remember",
+      "The user prefers concise final answers with explicit tradeoffs.",
+      "--kind",
+      "preference",
+      "--tag",
+      "communication",
+      "style",
+    ]);
+    const memoryId = remembered.stdout[0] ?? "";
+
+    const suggestion = await runCli([
+      "memory",
+      "--store",
+      store,
+      "suggest-capture",
+      "The user prefers detailed final answers with explicit tradeoffs.",
+      "--kind",
+      "preference",
+      "--tag",
+      "communication",
+      "--reason",
+      "The user stated a durable response style preference.",
+      "--relationship-mode",
+      "bounded",
+    ]);
+
+    expect(suggestion.stderr).toEqual([]);
+    expect(suggestion.stdout).toEqual([
+      [
+        "Status: review",
+        "Memory writes: no",
+        "Requires confirmation: yes",
+        "Content: The user prefers detailed final answers with explicit tradeoffs.",
+        "Kind: preference",
+        "Scope: user:default",
+        "Tags: communication",
+        "Source: nuzo:cli:capture-suggestion",
+        "Confidence: 1",
+        "Reason: The user stated a durable response style preference.",
+        "Relationship: update_candidate",
+        "Relationship reason: The draft appears to revise an active same-scope memory rather than add a separate memory.",
+        `Primary memory: ${memoryId}`,
+      ].join("\n"),
+    ]);
+  });
+
   it("rejects unsafe or malformed capture suggestions", async () => {
     const store = createStorePath();
 

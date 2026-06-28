@@ -12,6 +12,9 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
   CLI for `memory.suggest_capture`, covering update, related, independent,
   uncertain, exact duplicate, policy-blocked, scope, archived, and evidence
   limit cases without writes.
+- MCP protocol and CLI output coverage for bounded Capture Intelligence
+  relationship evidence, including compatibility defaults, policy errors,
+  IDs, revisions, candidate limits, reasons, and zero-write invariants.
 - Deterministic Capture Intelligence benchmark with a reproducible `v0.5.0`
   baseline, English-primary relationship fixtures, and zero-write, policy,
   scope, archived, latency, and evidence-bound safety gates.
