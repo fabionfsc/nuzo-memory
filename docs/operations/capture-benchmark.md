@@ -40,7 +40,7 @@ npm run benchmark:capture -- \
   --core-module /path/to/core/dist/index.js
 ```
 
-Exercise the future bounded contract gate:
+Exercise the bounded contract gate:
 
 ```bash
 npm run benchmark:capture -- --expect bounded
@@ -48,13 +48,13 @@ npm run benchmark:capture -- --expect bounded
 
 The bounded command intentionally exits non-zero on `v0.5.0`, because that
 release implements exact duplicate detection but not the opt-in relationship
-contract. Issue #127 must make this profile pass through evidence-backed core
-behavior; it must not weaken fixture expectations to obtain a green result.
+contract. Current `0.6.0` development builds must pass this profile through
+evidence-backed core behavior; they must not weaken fixture expectations to
+obtain a green result.
 
 ## Expectation Profiles
 
-`baseline` is the default while Pass 1 has no classifier implementation. It
-requires the exact `v0.5.0` behavior:
+`baseline` preserves the exact `v0.5.0` behavior for reproducibility checks:
 
 - exact duplicates return `exact_duplicate` through the legacy duplicate
   result;
@@ -69,7 +69,8 @@ bounded evidence, the expected relationship and primary candidate, correct
 status mapping, and all evidence limits.
 
 The baseline profile is a reproducibility gate, not the `0.6.0` quality bar.
-The release cannot ship until the bounded profile passes.
+The bounded profile is the release quality bar for Pass 1 relationship
+evidence.
 
 ## Fixture Coverage
 
@@ -184,6 +185,11 @@ The 20.6% target accuracy is expected: `v0.5.0` can identify the seven exact
 duplicates but returns legacy `ready` for all 27 non-exact allowed cases. It
 does not distinguish update, related, independent, or uncertain, and it does
 not claim bounded evidence. This measured gap is the justification for #127.
+
+Current development builds after #127 should report 100% target accuracy,
+100% bounded-contract coverage, 100% safety, zero memory or audit writes, and
+no scope, archived, bound, or unexpected-candidate violations under
+`--expect bounded`.
 
 ## Change Control
 

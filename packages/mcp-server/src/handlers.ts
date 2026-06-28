@@ -47,6 +47,7 @@ export interface SuggestCaptureToolInput {
   source: string;
   confidence?: number;
   reason: string;
+  relationship_mode?: "exact" | "bounded";
 }
 
 export interface ListToolInput {
@@ -161,11 +162,29 @@ export interface MemoryToolHandlers {
     }>;
   }>;
   suggestCapture(input: SuggestCaptureToolInput): Promise<{
-    status: "ready" | "duplicate";
+    status: "ready" | "duplicate" | "review";
     memory_writes: false;
     requires_confirmation: true;
     draft: CaptureSuggestionToolDraft;
     duplicate: MemoryToolRecord | null;
+    relationship_mode?: "bounded";
+    relationship?: string;
+    relationship_evidence?: {
+      version: 1;
+      primary_memory_id: string | null;
+      candidate_limit: number;
+      returned_limit: number;
+      evaluated_count: number;
+      search_exhaustive: boolean;
+      evidence_truncated: boolean;
+      reason: string;
+      candidates: Array<{
+        memory: MemoryToolRecord;
+        matched_terms: string[];
+        matched_tags: string[];
+        reason: string;
+      }>;
+    };
   }>;
   list(input: ListToolInput): Promise<{
     memories: MemoryToolRecord[];
@@ -335,16 +354,43 @@ export function createMemoryToolHandlers(
       if (input.confidence !== undefined) {
         suggestInput.confidence = input.confidence;
       }
+      if (input.relationship_mode !== undefined) {
+        suggestInput.relationshipMode = input.relationship_mode;
+      }
 
       const result = await service.suggestCapture(suggestInput);
 
-      return {
+      const output = {
         status: result.status,
-        memory_writes: false,
-        requires_confirmation: true,
+        memory_writes: false as const,
+        requires_confirmation: true as const,
         draft: toSuggestionDraftOutput(result.draft),
         duplicate: result.duplicate ? toToolRecord(result.duplicate) : null,
       };
+      if (result.relationshipMode === "bounded" && result.relationship && result.relationshipEvidence) {
+        return {
+          ...output,
+          relationship_mode: result.relationshipMode,
+          relationship: result.relationship,
+          relationship_evidence: {
+            version: result.relationshipEvidence.version,
+            primary_memory_id: result.relationshipEvidence.primaryMemoryId,
+            candidate_limit: result.relationshipEvidence.candidateLimit,
+            returned_limit: result.relationshipEvidence.returnedLimit,
+            evaluated_count: result.relationshipEvidence.evaluatedCount,
+            search_exhaustive: result.relationshipEvidence.searchExhaustive,
+            evidence_truncated: result.relationshipEvidence.evidenceTruncated,
+            reason: result.relationshipEvidence.reason,
+            candidates: result.relationshipEvidence.candidates.map((candidate) => ({
+              memory: toToolRecord(candidate.memory),
+              matched_terms: candidate.matchedTerms,
+              matched_tags: candidate.matchedTags,
+              reason: candidate.reason,
+            })),
+          },
+        };
+      }
+      return output;
     },
 
     async list(input) {

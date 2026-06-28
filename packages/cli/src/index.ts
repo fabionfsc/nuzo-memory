@@ -64,6 +64,7 @@ interface SuggestCaptureCommandOptions {
   tag?: string[];
   source: string;
   confidence?: number;
+  relationshipMode?: "exact" | "bounded";
   reason: string;
   json: boolean;
 }
@@ -193,6 +194,7 @@ export function createProgram(io: CliIO = defaultIO): Command {
     .option("--tag <tag...>", "Memory tag. Can be used multiple times.")
     .option("--source <source>", "Capture suggestion source.", "nuzo:cli:capture-suggestion")
     .option("--confidence <number>", "Capture confidence between 0 and 1.", parseConfidence)
+    .option("--relationship-mode <mode>", "Capture relationship mode: exact or bounded.", parseRelationshipMode)
     .option("--json", "Print JSON output for scripting.", false)
     .action(withErrorHandling(io, async (
       content: string,
@@ -210,6 +212,7 @@ export function createProgram(io: CliIO = defaultIO): Command {
           source: commandOptions.source,
           reason: commandOptions.reason,
           ...(commandOptions.confidence === undefined ? {} : { confidence: commandOptions.confidence }),
+          ...(commandOptions.relationshipMode === undefined ? {} : { relationshipMode: commandOptions.relationshipMode }),
         };
         const suggestion = await service.suggestCapture(suggestionInput);
         io.stdout(formatCaptureSuggestion(suggestion, commandOptions.json));
@@ -1172,12 +1175,19 @@ function formatCaptureSuggestion(
   if (output.duplicate !== null) {
     lines.push(`Duplicate: ${output.duplicate.id}`);
   }
+  if ("relationship_mode" in output && output.relationship_mode === "bounded") {
+    lines.push(`Relationship: ${output.relationship}`);
+    lines.push(`Relationship reason: ${output.relationship_evidence.reason}`);
+    if (output.relationship_evidence.primary_memory_id !== null) {
+      lines.push(`Primary memory: ${output.relationship_evidence.primary_memory_id}`);
+    }
+  }
 
   return lines.join("\n");
 }
 
 function toCaptureSuggestionOutput(suggestion: CaptureSuggestionResult) {
-  return {
+  const output = {
     status: suggestion.status,
     memory_writes: false,
     requires_confirmation: true,
@@ -1192,6 +1202,30 @@ function toCaptureSuggestionOutput(suggestion: CaptureSuggestionResult) {
     },
     duplicate: suggestion.duplicate ? toCliMemoryRecord(suggestion.duplicate) : null,
   };
+  if (suggestion.relationshipMode === "bounded" && suggestion.relationship && suggestion.relationshipEvidence) {
+    return {
+      ...output,
+      relationship_mode: suggestion.relationshipMode,
+      relationship: suggestion.relationship,
+      relationship_evidence: {
+        version: suggestion.relationshipEvidence.version,
+        primary_memory_id: suggestion.relationshipEvidence.primaryMemoryId,
+        candidate_limit: suggestion.relationshipEvidence.candidateLimit,
+        returned_limit: suggestion.relationshipEvidence.returnedLimit,
+        evaluated_count: suggestion.relationshipEvidence.evaluatedCount,
+        search_exhaustive: suggestion.relationshipEvidence.searchExhaustive,
+        evidence_truncated: suggestion.relationshipEvidence.evidenceTruncated,
+        reason: suggestion.relationshipEvidence.reason,
+        candidates: suggestion.relationshipEvidence.candidates.map((candidate) => ({
+          memory: toCliMemoryRecord(candidate.memory),
+          matched_terms: candidate.matchedTerms,
+          matched_tags: candidate.matchedTags,
+          reason: candidate.reason,
+        })),
+      },
+    };
+  }
+  return output;
 }
 
 function toCliMemoryRecord(memory: MemoryRecord) {
@@ -1267,6 +1301,13 @@ function parseConfidence(value: string): number {
     throw new InvalidArgumentError("Expected a number between 0 and 1.");
   }
   return parsed;
+}
+
+function parseRelationshipMode(value: string): "exact" | "bounded" {
+  if (value === "exact" || value === "bounded") {
+    return value;
+  }
+  throw new InvalidArgumentError("Expected relationship mode to be exact or bounded.");
 }
 
 function isMain(): boolean {

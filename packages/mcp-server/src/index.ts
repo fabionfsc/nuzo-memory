@@ -195,6 +195,7 @@ export function registerMemoryTools(
         source: z.string().min(1).max(memoryLimits.sourceLength).default("nuzo:capture-suggestion"),
         confidence: z.number().min(0).max(1).optional(),
         reason: z.string().min(1).max(memoryLimits.reasonLength),
+        relationship_mode: z.enum(["exact", "bounded"]).optional(),
       },
     },
     async (input) => {
@@ -208,6 +209,9 @@ export function registerMemoryTools(
       };
       if (input.confidence !== undefined) {
         suggestInput.confidence = input.confidence;
+      }
+      if (input.relationship_mode !== undefined) {
+        suggestInput.relationship_mode = input.relationship_mode;
       }
 
       return jsonToolResult(await handlers.suggestCapture(suggestInput));

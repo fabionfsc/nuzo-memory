@@ -231,7 +231,7 @@ try {
     let suggestion = null;
     let error = null;
     try {
-      suggestion = await caseService.suggestCapture({
+      const suggestionInput = {
         content: benchmarkCase.content,
         kind: benchmarkCase.kind,
         scope: benchmarkCase.scope,
@@ -239,8 +239,11 @@ try {
         source: "benchmark:capture-suggestion",
         confidence: 0.8,
         reason: benchmarkCase.reason,
-        relationshipMode: "bounded",
-      });
+      };
+      if (expectation === "bounded") {
+        suggestionInput.relationshipMode = "bounded";
+      }
+      suggestion = await caseService.suggestCapture(suggestionInput);
     } catch (caught) {
       error = caught;
     }

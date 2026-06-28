@@ -31,10 +31,46 @@ function createTestHandlers(options: {
   const service: MemoryService = {
     async suggestCapture(input) {
       calls.suggestCapture += 1;
+      const duplicate = memory?.content.trim().toLowerCase() === input.content.trim().toLowerCase()
+        ? memory
+        : null;
+      if (input.relationshipMode === "bounded" && memory && duplicate === null) {
+        return {
+          status: "review",
+          memoryWrites: false,
+          requiresConfirmation: true,
+          draft: {
+            content: input.content.trim(),
+            kind: input.kind,
+            scope: input.scope,
+            tags: [...new Set(input.tags ?? [])],
+            source: input.source,
+            confidence: input.confidence ?? 1,
+            reason: input.reason.trim(),
+          },
+          duplicate: null,
+          relationshipMode: "bounded",
+          relationship: "update_candidate",
+          relationshipEvidence: {
+            version: 1,
+            primaryMemoryId: memory.id,
+            candidateLimit: 20,
+            returnedLimit: 3,
+            evaluatedCount: 1,
+            searchExhaustive: true,
+            evidenceTruncated: false,
+            reason: "Mock bounded relationship evidence.",
+            candidates: [{
+              memory,
+              matchedTerms: ["final"],
+              matchedTags: ["communication"],
+              reason: "Mock update candidate.",
+            }],
+          },
+        };
+      }
       return {
-        status: memory?.content.trim().toLowerCase() === input.content.trim().toLowerCase()
-          ? "duplicate"
-          : "ready",
+        status: duplicate ? "duplicate" : "ready",
         memoryWrites: false,
         requiresConfirmation: true,
         draft: {
@@ -46,9 +82,7 @@ function createTestHandlers(options: {
           confidence: input.confidence ?? 1,
           reason: input.reason.trim(),
         },
-        duplicate: memory?.content.trim().toLowerCase() === input.content.trim().toLowerCase()
-          ? memory
-          : null,
+        duplicate,
       };
     },
     async remember(input) {
@@ -588,6 +622,47 @@ describe("memory MCP handlers", () => {
       id: remembered.id,
       content: "The user prefers concise final answers.",
       scope: "user:default",
+    });
+  });
+
+  it("returns bounded capture relationship evidence", async () => {
+    const { handlers } = createTestHandlers();
+    const remembered = await handlers.remember({
+      content: "The user prefers concise final answers with explicit tradeoffs.",
+      kind: "preference",
+      scope: "user:default",
+      tags: ["communication", "style"],
+      source: "nuzo:mcp",
+    });
+
+    const suggestion = await handlers.suggestCapture({
+      content: "The user prefers detailed final answers with explicit tradeoffs.",
+      kind: "preference",
+      scope: "user:default",
+      tags: ["communication"],
+      source: "codex:capture-suggestion",
+      reason: "The user stated a durable response style preference.",
+      relationship_mode: "bounded",
+    });
+
+    expect(suggestion).toMatchObject({
+      status: "review",
+      memory_writes: false,
+      requires_confirmation: true,
+      duplicate: null,
+      relationship_mode: "bounded",
+      relationship: "update_candidate",
+      relationship_evidence: {
+        primary_memory_id: remembered.id,
+        candidate_limit: 20,
+        returned_limit: 3,
+        candidates: [
+          {
+            memory: { id: remembered.id },
+            matched_tags: ["communication"],
+          },
+        ],
+      },
     });
   });
 });

@@ -53,7 +53,9 @@ override a config that enables global recall for one command.
 storage, audit history, or usage metadata. Use it before asking the user to
 confirm a memory inferred from conversation context. Pass `--json` when a host,
 script, or agent needs a machine-readable result close to the MCP
-`memory.suggest_capture` shape.
+`memory.suggest_capture` shape. Pass `--relationship-mode bounded` to request
+the opt-in `0.6.0` relationship evidence contract; omitting it keeps the
+exact-only compatibility behavior.
 
 `list --all-scopes` is an administrator audit view for the selected local
 store. It is also the recovery path for literal `project:auto` records created

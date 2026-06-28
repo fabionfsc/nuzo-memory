@@ -83,7 +83,17 @@ export interface RememberMemoryInput {
 
 export interface SuggestCaptureInput extends RememberMemoryInput {
   reason: string;
+  relationshipMode?: CaptureRelationshipMode;
 }
+
+export type CaptureRelationshipMode = "exact" | "bounded";
+
+export type CaptureRelationship =
+  | "exact_duplicate"
+  | "update_candidate"
+  | "related"
+  | "independent"
+  | "uncertain";
 
 export interface CaptureSuggestionDraft {
   content: string;
@@ -96,11 +106,33 @@ export interface CaptureSuggestionDraft {
 }
 
 export interface CaptureSuggestionResult {
-  status: "ready" | "duplicate";
+  status: "ready" | "duplicate" | "review";
   memoryWrites: false;
   requiresConfirmation: true;
   draft: CaptureSuggestionDraft;
   duplicate: MemoryRecord | null;
+  relationshipMode?: "bounded";
+  relationship?: CaptureRelationship;
+  relationshipEvidence?: CaptureRelationshipEvidence;
+}
+
+export interface CaptureRelationshipCandidate {
+  memory: MemoryRecord;
+  matchedTerms: string[];
+  matchedTags: string[];
+  reason: string;
+}
+
+export interface CaptureRelationshipEvidence {
+  version: 1;
+  primaryMemoryId: string | null;
+  candidateLimit: 20;
+  returnedLimit: 3;
+  evaluatedCount: number;
+  searchExhaustive: boolean;
+  evidenceTruncated: boolean;
+  reason: string;
+  candidates: CaptureRelationshipCandidate[];
 }
 
 export interface RecallMemoriesInput {
