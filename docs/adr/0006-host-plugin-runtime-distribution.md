@@ -22,13 +22,13 @@ could let the plugin and MCP server versions drift.
 ## Decision
 
 Release plugin artifacts remain thin and resolve a version-pinned
-`@nuzo/mcp-server` package through `npm exec`:
+`@nuzo/memory` package through `npm exec`:
 
 ```text
-npm exec --yes --package=@nuzo/mcp-server@<plugin-version> -- nuzo-mcp-server
+npm exec --yes --package=@nuzo/memory@<plugin-version> -- nuzo-mcp-server
 ```
 
-The plugin and MCP server versions must match.
+The plugin and Nuzo package versions must match.
 
 Source plugin directories retain monorepo-relative MCP paths for development.
 `npm run package:plugins` creates release layouts under `build/plugins/` and
@@ -45,11 +45,11 @@ logic or a copied platform-specific `node_modules`.
   npm cache.
 - Subsequent launches can reuse npm's cache, but Nuzo does not promise fully
   offline first use.
-- A release is not installable until the matching MCP package version is
+- A release is not installable until the matching Nuzo package version is
   published.
 - Plugin release validation must reject `latest`, unpinned package specs, and
   monorepo-relative runtime paths.
-- MCP package publication must support Node.js 22 and 24 on the documented
+- Nuzo package publication must support Node.js 22 and 24 on the documented
   platforms.
 
 ## Alternatives Rejected

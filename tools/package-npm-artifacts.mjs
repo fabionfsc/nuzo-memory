@@ -21,14 +21,24 @@ const definitions = [
   {
     source: "packages/core",
     output: "memory-core",
+    kind: "source",
   },
   {
     source: "packages/cli",
     output: "memory-cli",
+    kind: "source",
+    legacy: true,
+  },
+  {
+    source: "packages/memory",
+    output: "memory",
+    kind: "unified",
   },
   {
     source: "packages/mcp-server",
     output: "mcp-server",
+    kind: "source",
+    legacy: true,
   },
 ];
 
@@ -55,7 +65,16 @@ for (const definition of definitions) {
   const publishPackage = createPublishPackage(sourcePackage);
 
   mkdirSync(destination, { recursive: true });
-  cpSync(join(sourceRoot, "dist"), join(destination, "dist"), { recursive: true });
+  if (definition.kind === "unified") {
+    cpSync(join(repositoryRoot, "packages", "cli", "dist"), join(destination, "dist", "cli"), {
+      recursive: true,
+    });
+    cpSync(join(repositoryRoot, "packages", "mcp-server", "dist"), join(destination, "dist", "mcp-server"), {
+      recursive: true,
+    });
+  } else {
+    cpSync(join(sourceRoot, "dist"), join(destination, "dist"), { recursive: true });
+  }
   cpSync(join(sourceRoot, "README.md"), join(destination, "README.md"));
   cpSync(join(repositoryRoot, "LICENSE"), join(destination, "LICENSE"));
   writeFileSync(
@@ -123,6 +142,9 @@ function sourceDirectoryFor(name) {
   if (name === "@nuzo/memory-cli") {
     return "packages/cli";
   }
+  if (name === "@nuzo/memory") {
+    return "packages/memory";
+  }
   if (name === "@nuzo/mcp-server") {
     return "packages/mcp-server";
   }
@@ -144,6 +166,20 @@ function validateStagedPackage(root, pkg) {
       fail("@nuzo/mcp-server must expose the nuzo-mcp-server binary");
     }
   }
+  if (pkg.name === "@nuzo/memory") {
+    if (pkg.dependencies?.["@nuzo/memory-core"] !== pkg.version) {
+      fail("@nuzo/memory must pin @nuzo/memory-core to the same version");
+    }
+    if (pkg.bin?.nuzo !== "dist/cli/index.js") {
+      fail("@nuzo/memory must expose the nuzo binary");
+    }
+    if (pkg.bin?.["nuzo-mcp-server"] !== "dist/mcp-server/index.js") {
+      fail("@nuzo/memory must expose the nuzo-mcp-server binary");
+    }
+    if (pkg.bin?.["nuzo-memory-hook"] !== "dist/mcp-server/host-hook-cli.js") {
+      fail("@nuzo/memory must expose the nuzo-memory-hook binary");
+    }
+  }
   if (pkg.name === "@nuzo/memory-cli") {
     if (pkg.dependencies?.["@nuzo/memory-core"] !== pkg.version) {
       fail("@nuzo/memory-cli must pin @nuzo/memory-core to the same version");
@@ -153,7 +189,10 @@ function validateStagedPackage(root, pkg) {
     }
   }
 
-  for (const requiredPath of ["dist/index.js", "README.md", "LICENSE"]) {
+  const requiredPaths = pkg.name === "@nuzo/memory"
+    ? ["dist/cli/index.js", "dist/mcp-server/index.js", "dist/mcp-server/host-hook-cli.js", "README.md", "LICENSE"]
+    : ["dist/index.js", "README.md", "LICENSE"];
+  for (const requiredPath of requiredPaths) {
     if (!existsSync(join(root, requiredPath))) {
       fail(`${pkg.name} staged package is missing ${requiredPath}`);
     }

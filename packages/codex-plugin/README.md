@@ -40,7 +40,7 @@ npm run package:plugins
 ```
 
 The release artifact is written to `build/plugins/codex/nuzo` and pins the
-matching `@nuzo/mcp-server` version through `npm exec`.
+matching `@nuzo/memory` version through `npm exec`.
 
 After installation, inspect `/hooks` and trust the Nuzo command hooks. Codex
 does not execute new or changed plugin hooks before trust review.

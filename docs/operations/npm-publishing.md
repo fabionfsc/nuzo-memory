@@ -3,31 +3,25 @@
 Nuzo's host plugins resolve the shared runtime from:
 
 ```text
-@nuzo/mcp-server
+@nuzo/memory
 ```
 
-The MCP package depends on:
+The unified package depends on:
 
 ```text
 @nuzo/memory-core
 ```
 
-The CLI package also depends on:
-
-```text
-@nuzo/memory-core
-```
-
-Core, CLI, and MCP packages use the same version and must be released together.
+Core and unified packages use the same version and must be released together.
+`@nuzo/memory-cli` and `@nuzo/mcp-server` are legacy transition packages.
 
 ## Current Release
 
-Version `0.2.1` is the current release:
+Version `0.3.0` is the current release:
 
 ```text
-@nuzo/memory-core@0.2.1
-@nuzo/memory-cli@0.2.1
-@nuzo/mcp-server@0.2.1
+@nuzo/memory-core@0.3.0
+@nuzo/memory@0.3.0
 ```
 
 The packages are published together from the same source version. Routine
@@ -87,7 +81,8 @@ The staging process:
 
 - removes `private` only from generated package metadata;
 - removes development scripts and dependencies;
-- pins the CLI and MCP server to the exact core version;
+- pins the unified package, CLI legacy package, and MCP legacy package to the
+  exact core version;
 - rejects local `file:`, `link:`, `workspace:`, relative, or absolute
   dependency references;
 - copies runtime output, README, and Apache-2.0 license;
@@ -104,7 +99,7 @@ npm run validate:npm
 The validation:
 
 1. rebuilds from clean `dist` directories;
-2. creates all three tarballs with `npm pack`;
+2. creates npm tarballs with `npm pack`;
 3. installs all tarballs into a temporary project;
 4. confirms package versions match;
 5. runs the installed `nuzo` binary through init, remember, suggest-capture,
@@ -129,10 +124,11 @@ The workflow is manual-only, runs from `main`, uses the GitHub environment
 `npm-publish`, and requests `id-token: write` for npm trusted publishing. It
 does not use `NODE_AUTH_TOKEN`.
 
-Configure a trusted publisher for each package on npmjs.com:
+Configure a trusted publisher for each published package on npmjs.com:
 
 ```text
 @nuzo/memory-core
+@nuzo/memory
 @nuzo/memory-cli
 @nuzo/mcp-server
 ```
@@ -154,7 +150,7 @@ SemVer input, builds the publish staging packages, rejects already-published
 versions, and publishes in dependency order:
 
 ```text
-@nuzo/memory-core -> @nuzo/memory-cli -> @nuzo/mcp-server
+@nuzo/memory-core -> @nuzo/memory -> legacy transition packages
 ```
 
 Run it first with `publish` set to `false`. That dry run proves the workflow
@@ -182,6 +178,9 @@ Publish in dependency order:
 cd build/npm/packages/memory-core
 npm publish --access public
 
+cd ../memory
+npm publish --access public
+
 cd ../memory-cli
 npm publish --access public
 
@@ -193,11 +192,10 @@ Verify before distributing host plugins:
 
 ```bash
 npm view @nuzo/memory-core@<version> version
-npm view @nuzo/memory-cli@<version> version
-npm view @nuzo/mcp-server@<version> version
+npm view @nuzo/memory@<version> version
 NUZO_VERIFY_DIR=/tmp/nuzo-published-verify
 rm -rf "$NUZO_VERIFY_DIR"
-npm install --prefix "$NUZO_VERIFY_DIR" @nuzo/memory-cli@<version> @nuzo/mcp-server@<version>
+npm install --prefix "$NUZO_VERIFY_DIR" @nuzo/memory@<version>
 NUZO_DOCTOR_SKIP_GIT=1 "$NUZO_VERIFY_DIR/node_modules/.bin/nuzo" memory doctor
 test -x "$NUZO_VERIFY_DIR/node_modules/.bin/nuzo-mcp-server"
 rm -rf "$NUZO_VERIFY_DIR"

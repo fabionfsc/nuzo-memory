@@ -7,10 +7,10 @@ import { spawnSync } from "node:child_process";
 import { assertMcpSessionContinuity } from "./mcp-session-continuity.mjs";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const mcpPackage = JSON.parse(
-  readFileSync(join(repositoryRoot, "packages", "mcp-server", "package.json"), "utf8"),
+const memoryPackage = JSON.parse(
+  readFileSync(join(repositoryRoot, "packages", "memory", "package.json"), "utf8"),
 );
-const packageSpec = process.argv[2] ?? `${mcpPackage.name}@${mcpPackage.version}`;
+const packageSpec = process.argv[2] ?? `${memoryPackage.name}@${memoryPackage.version}`;
 const testRoot = mkdtempSync(join(tmpdir(), "nuzo-published-mcp-"));
 const storePath = join(testRoot, "memory", "session-continuity.sqlite");
 

@@ -1,0 +1,36 @@
+{
+  "name": "@nuzo/memory",
+  "version": "0.3.0",
+  "private": true,
+  "description": "Unified Nuzo package for local memory, MCP server integration, and host lifecycle hooks.",
+  "keywords": [
+    "ai-agents",
+    "memory",
+    "mcp",
+    "codex",
+    "claude-code",
+    "local-first"
+  ],
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22",
+    "npm": ">=10"
+  },
+  "bin": {
+    "nuzo": "dist/cli/index.js",
+    "nuzo-mcp-server": "dist/mcp-server/index.js",
+    "nuzo-memory-hook": "dist/mcp-server/host-hook-cli.js"
+  },
+  "main": "dist/cli/index.js",
+  "types": "dist/cli/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@nuzo/memory-core": "0.3.0",
+    "commander": "^15.0.0",
+    "zod": "^4.1.13"
+  }
+}

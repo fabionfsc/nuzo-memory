@@ -20,11 +20,8 @@
   <a href="https://nuzo.com.br">
     <img alt="Docs" src="https://img.shields.io/badge/docs-nuzo.com.br-111827">
   </a>
-  <a href="#mvp-status">
-    <img alt="MVP" src="https://img.shields.io/badge/MVP-100%25-00a7b5">
-  </a>
-  <a href="https://github.com/fabionfsc/nuzo-memory/releases/tag/v0.2.1">
-    <img alt="Release" src="https://img.shields.io/badge/release-v0.2.1-22c55e">
+  <a href="https://github.com/fabionfsc/nuzo-memory/releases/tag/v0.3.0">
+    <img alt="Release" src="https://img.shields.io/badge/release-v0.3.0-22c55e">
   </a>
   <a href="#license">
     <img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-64748b">
@@ -43,18 +40,16 @@
 
 ---
 
-Nuzo gives AI agents durable local memory without making that memory hidden.
-Users can inspect, edit, export, import, and delete what agents remember.
-
-It is designed for developer workflows across Codex, Claude Code, and
-MCP-compatible hosts where useful context should stay user-owned.
+Nuzo gives AI agents durable local memory without making that memory hidden. It
+is designed for Codex, Claude Code, and MCP-compatible hosts where useful
+context should stay inspectable and user-owned.
 
 ## Install In 60 Seconds
 
 Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
 
 ```bash
-npm install --global @nuzo/memory-cli
+npm install --global @nuzo/memory
 nuzo memory init
 nuzo memory doctor
 ```
@@ -72,44 +67,29 @@ Runtime memory defaults to:
 ~/.nuzo/memory/memories.sqlite
 ```
 
-## Which Package Should I Use?
+## Packages
 
-Most users install only the CLI.
+Most users install one package:
 
-| Package | Use it when you need... |
+| Package | Purpose |
 | --- | --- |
-| `@nuzo/memory-cli` | the `nuzo` command for local memory control. |
-| `@nuzo/mcp-server` | an MCP stdio server for Codex, Claude Code, or another host. |
-| `@nuzo/memory-core` | library-level integration or Nuzo package development. |
+| `@nuzo/memory` | CLI, MCP server, and host lifecycle hooks. |
+| `@nuzo/memory-core` | Library-level integrations. |
 
-The packages share the same version and are released together. You do not need
-to install all three for normal CLI use.
-
-## MVP Status
-
-**Release `0.2.1` is current.**
-
-The MVP is complete: local SQLite storage, FTS recall, CLI lifecycle commands,
-12 MCP memory tools, Codex and Claude Code plugin artifacts, npm packages,
-GitHub Pages, CI, CodeQL, and release validation are in place.
-
-The current release adds bounded, read-only session recall for Codex and Claude
-Code. Plugin hooks load explicitly tagged `autoload` context at session start
-and recall topic matches from memory content and tags alongside user prompts.
-Memory writes remain visible and confirmed.
-
-## Automatic Agent Recall
+## Agent Recall
 
 The Codex and Claude Code plugins use the hosts' official `SessionStart` and
-`UserPromptSubmit` events. A memory tagged `autoload` may be loaded at session
-start; topical tags such as `cloudflare` or `workflow` participate in contextual
-recall when a prompt matches them. Hooks never capture or modify memory.
+`UserPromptSubmit` events for bounded read-only recall.
 
-Host-level hook enablement and trust remain under user control. See the
+Memories tagged `autoload` may be loaded at session start. Topical tags such as
+`cloudflare` or `workflow` participate in contextual recall. Hooks never capture
+or modify memory.
+
+Host-level hook trust remains under user control. See the
 [Codex](docs/operations/codex-plugin.md) and
 [Claude Code](docs/operations/claude-code-plugin.md) setup pages.
 
-## Core Commands
+## Common Commands
 
 ```bash
 nuzo memory init
@@ -117,62 +97,24 @@ nuzo memory remember "The user prefers concise implementation notes." --kind pre
 nuzo memory suggest-capture "The user prefers concise final answers." --kind preference --reason "Durable response style preference."
 nuzo memory recall "concise implementation notes"
 nuzo memory list
-nuzo memory list --all-scopes
-nuzo memory update mem_01HZY --expected-revision 1 --content "Updated memory content."
-nuzo memory history mem_01HZY
-nuzo memory forget mem_01HZY --expected-revision 2
 nuzo memory export --path ./memories.memory.export.json
-nuzo memory import ./memories.memory.export.json --dry-run
 nuzo memory doctor
 ```
 
-For project-local memory:
+See the [tool contract](docs/spec/tools.md) for the full MCP surface.
 
-```bash
-nuzo memory init --project
-```
+## Defaults
 
-## MCP Tools
-
-Nuzo exposes these tools through the MCP server:
-
-```text
-memory.remember
-memory.recall
-memory.recall_hook
-memory.suggest_capture
-memory.list
-memory.update
-memory.history
-memory.forget
-memory.forget_many
-memory.export
-memory.import
-memory.doctor
-```
-
-Inferred memories should go through `memory.suggest_capture` first. Writes
-should happen only after explicit user confirmation.
-
-## Privacy Defaults
-
-Nuzo should not:
-
-- send memories to a remote service by default;
-- call embedding APIs by default;
-- enable telemetry by default;
-- commit runtime memory files to Git;
-- hide memory writes from the user.
-
-SQLite is part of the product boundary, not a placeholder for a cloud database.
-The goal is reliable, inspectable, user-owned memory for local agent workflows.
+- Local SQLite storage.
+- No telemetry by default.
+- No remote embeddings by default.
+- No hidden inferred writes.
+- Runtime memory files stay out of Git.
 
 ## Documentation
 
 - Primary site: https://nuzo.com.br
 - Getting started: [docs/getting-started/index.md](docs/getting-started/index.md)
-- Clean install: [docs/getting-started/clean-install.md](docs/getting-started/clean-install.md)
-- Agent memory loop: [docs/getting-started/agent-memory-loop.md](docs/getting-started/agent-memory-loop.md)
 - Tool contract: [docs/spec/tools.md](docs/spec/tools.md)
 - Architecture: [docs/architecture/overview.md](docs/architecture/overview.md)
 - Roadmap: [docs/operations/roadmap.md](docs/operations/roadmap.md)

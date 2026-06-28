@@ -1,6 +1,6 @@
 {
   "name": "@nuzo/mcp-server",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "private": true,
   "description": "MCP server for Nuzo.",
   "keywords": [
@@ -38,7 +38,7 @@
     "test": "npm run build -w @nuzo/memory-core && npm run build && vitest run src"
   },
   "dependencies": {
-    "@nuzo/memory-core": "0.2.1",
+    "@nuzo/memory-core": "0.3.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "zod": "^4.1.13"
   },

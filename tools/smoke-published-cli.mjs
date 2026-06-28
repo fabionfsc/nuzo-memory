@@ -7,10 +7,10 @@ import { spawnSync } from "node:child_process";
 import { assertCliSessionContinuity } from "./cli-session-continuity.mjs";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const cliPackage = JSON.parse(
-  readFileSync(join(repositoryRoot, "packages", "cli", "package.json"), "utf8"),
+const memoryPackage = JSON.parse(
+  readFileSync(join(repositoryRoot, "packages", "memory", "package.json"), "utf8"),
 );
-const packageSpec = process.argv[2] ?? `${cliPackage.name}@${cliPackage.version}`;
+const packageSpec = process.argv[2] ?? `${memoryPackage.name}@${memoryPackage.version}`;
 const testRoot = mkdtempSync(join(tmpdir(), "nuzo-published-cli-"));
 const storePath = join(testRoot, "memory", "session-continuity.sqlite");
 

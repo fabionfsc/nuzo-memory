@@ -482,7 +482,26 @@ Exit criteria:
 - lifecycle quality can be evaluated locally and repeatedly without telemetry,
   network calls, remote embeddings, or private data.
 
-#### `0.3.0`: Optional Semantics Exploration
+#### `0.3.0`: Clean npm Distribution
+
+Focus: make the public installation path simple.
+
+Deliverables:
+
+- `@nuzo/memory` as the public user package;
+- `@nuzo/memory-core` for library-level integrations;
+- host plugin artifacts resolving the version-pinned `@nuzo/memory` package;
+- shorter user-facing install docs and package READMEs;
+- npm packaging, smoke tests, and trusted publishing updated for the unified
+  package.
+
+Exit criteria:
+
+- new users can install Nuzo with one npm package;
+- Codex and Claude Code plugin artifacts use the same package;
+- old package pages direct users to `@nuzo/memory`.
+
+#### `0.3.1`: Optional Semantics Exploration
 
 Focus: evaluate better recall quality without changing Nuzo's default product
 boundary.

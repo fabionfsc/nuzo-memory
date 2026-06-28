@@ -99,9 +99,9 @@ rg -n '\.\./mcp-server|packages/mcp-server' build/plugins
 
 The command should return no matches.
 
-Confirm the target `@nuzo/memory-core`, `@nuzo/memory-cli`, and
-`@nuzo/mcp-server` versions are not already published before publishing. After
-publishing, the MCP package must exist before shipping the plugin artifacts.
+Confirm the target `@nuzo/memory-core` and `@nuzo/memory` versions are not
+already published before publishing. After publishing, `@nuzo/memory` must
+exist before shipping the plugin artifacts.
 
 Follow `docs/operations/npm-publishing.md`. Confirm the `@nuzo` organization
 scope and maintainer access before changing source package privacy or running
@@ -111,11 +111,12 @@ Confirm npm trusted publishing is configured for each publishable package:
 
 ```text
 @nuzo/memory-core
+@nuzo/memory
 @nuzo/memory-cli
 @nuzo/mcp-server
 ```
 
-All three package settings must point to GitHub Actions, repository
+All package settings must point to GitHub Actions, repository
 `fabionfsc/nuzo-memory`, workflow `release-npm.yml`, environment
 `npm-publish`, and allowed action `npm publish`.
 
@@ -264,7 +265,7 @@ for the new version.
 
 - Confirm the GitHub release page is correct.
 - Confirm GitHub Pages still deploys successfully.
-- Confirm the matching `@nuzo/memory-core`, `@nuzo/memory-cli`, and
-  `@nuzo/mcp-server` versions are published.
+- Confirm the matching `@nuzo/memory-core` and `@nuzo/memory` versions are
+  published.
 - Open follow-up issues for deferred work.
 - Move `CHANGELOG.md` back to an empty `[Unreleased]` section for new development.

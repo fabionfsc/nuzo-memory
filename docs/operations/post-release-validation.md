@@ -53,7 +53,7 @@ Use fake memory content only.
 Codex and Claude Code are the priority hosts.
 
 Validate each host with the generated release artifact and the published
-`@nuzo/mcp-server` package. Development-only direct MCP configuration remains
+`@nuzo/memory` package. Development-only direct MCP configuration remains
 useful for debugging, but it is not enough to prove release readiness.
 
 For each host, capture evidence for:

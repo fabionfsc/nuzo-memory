@@ -7,6 +7,7 @@ assertReleaseVersion(version);
 
 const publishPackages = [
   ["@nuzo/memory-core", "build/npm/packages/memory-core/package.json"],
+  ["@nuzo/memory", "build/npm/packages/memory/package.json"],
   ["@nuzo/memory-cli", "build/npm/packages/memory-cli/package.json"],
   ["@nuzo/mcp-server", "build/npm/packages/mcp-server/package.json"],
 ];

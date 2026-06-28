@@ -4,7 +4,7 @@ The host-neutral memory engine for Nuzo.
 
 This package contains memory lifecycle behavior, policy checks, SQLite storage,
 FTS recall, audit events, and portable import/export contracts. It is consumed
-by `@nuzo/memory-cli` and `@nuzo/mcp-server`.
+by `@nuzo/memory`.
 
 Most users should install the CLI or a host plugin instead of depending on the
 core package directly.
@@ -17,8 +17,8 @@ Use `@nuzo/memory-core` when you are:
 - contributing to Nuzo itself;
 - writing a host wrapper that cannot use the MCP server directly.
 
-Use `@nuzo/memory-cli` for local command-line workflows.
-Use `@nuzo/mcp-server` for Codex, Claude Code, and other MCP-compatible hosts.
+Use `@nuzo/memory` for local command-line workflows, Codex, Claude Code, and
+other MCP-compatible hosts.
 
 ## Product Boundary
 

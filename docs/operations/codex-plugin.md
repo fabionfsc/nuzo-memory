@@ -74,30 +74,30 @@ packages/mcp-server/dist/index.js
 ```
 
 The generated release plugin does not rely on that sibling directory. It pins
-the published MCP package to the same version as the plugin:
+the published Nuzo package to the same version as the plugin:
 
 ```json
 {
   "mcpServers": {
     "nuzo": {
       "command": "npm",
-      "args": ["exec", "--yes", "--package=@nuzo/mcp-server@0.2.1", "--", "nuzo-mcp-server"]
+      "args": ["exec", "--yes", "--package=@nuzo/memory@0.3.0", "--", "nuzo-mcp-server"]
     }
   }
 }
 ```
 
-`0.2.1` matches the current release. Future packaging uses the actual shared
+`0.3.0` matches the current release. Future packaging uses the actual shared
 package version and rejects version drift.
 
 The first launch may need npm registry access. Nuzo does not use `latest` and
 does not require a global install.
 
-The release artifact uses the same pinned MCP package for its read-only hook
+The release artifact uses the same pinned Nuzo package for its read-only hook
 runner:
 
 ```text
-npm exec --yes --package=@nuzo/mcp-server@<plugin-version> -- nuzo-memory-hook
+npm exec --yes --package=@nuzo/memory@<plugin-version> -- nuzo-memory-hook
 ```
 
 The MCP server uses the default local memory store:
@@ -169,8 +169,8 @@ codex
 8. Start a new thread. `SessionStart` loads bounded `autoload` memory and
    `UserPromptSubmit` recalls topic matches from content and tags.
 
-The generated `0.2.1` config resolves the matching public
-`@nuzo/mcp-server@0.2.1` package. It has been installed through an isolated
+The generated `0.3.0` config resolves the matching public
+`@nuzo/memory@0.3.0` package. It has been installed through an isolated
 Codex marketplace and used to call `memory.doctor` successfully.
 
 ## Direct MCP Fallback
@@ -279,7 +279,7 @@ The validator checks:
 Release validation additionally checks:
 
 - the MCP server runs through `npm exec`;
-- `@nuzo/mcp-server` is pinned to the plugin version and runs the explicit
+- `@nuzo/memory` is pinned to the plugin version and runs the explicit
   `nuzo-mcp-server` binary;
 - no sibling monorepo path remains in the artifact.
 - `SessionStart` and `UserPromptSubmit` use the same version-pinned,
