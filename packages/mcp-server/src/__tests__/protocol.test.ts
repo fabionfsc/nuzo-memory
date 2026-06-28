@@ -440,6 +440,162 @@ describe("MCP protocol contract", () => {
     }
   });
 
+  it("applies confirmed capture decisions through the SDK without hidden writes", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "nuzo-mcp-confirm-capture-"));
+    tempDirectories.push(directory);
+    const runtime = createNuzoMcpServerRuntime({
+      storePath: join(directory, "memories.sqlite"),
+    });
+    const client = new Client({
+      name: "nuzo-confirm-capture-test",
+      version: "0.0.0",
+    });
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+
+    try {
+      await Promise.all([
+        runtime.server.connect(serverTransport),
+        client.connect(clientTransport),
+      ]);
+
+      const created = parseToolJson(await client.callTool({
+        name: "memory.confirm_capture",
+        arguments: {
+          decision: "create",
+          content: "The user prefers concise final answers.",
+          kind: "preference",
+          scope: "user:default",
+          tags: ["communication"],
+          source: "test:capture-confirmed",
+          reason: "The user confirmed a durable preference.",
+          confirm: true,
+        },
+      })) as ConfirmCaptureOutput;
+      expect(created).toMatchObject({
+        decision: "create",
+        status: "created",
+        memory_writes: true,
+        requires_confirmation: false,
+        memory: {
+          revision: 1,
+          content: "The user prefers concise final answers.",
+          source: "test:capture-confirmed",
+        },
+      });
+      const createdId = created.memory?.id ?? "";
+
+      const duplicate = parseToolJson(await client.callTool({
+        name: "memory.confirm_capture",
+        arguments: {
+          decision: "create",
+          content: " the USER prefers concise final answers. ",
+          kind: "note",
+          scope: "user:default",
+          tags: ["style"],
+          source: "test:capture-confirmed",
+          reason: "The user confirmed an equivalent draft.",
+          confirm: true,
+        },
+      })) as ConfirmCaptureOutput;
+      expect(duplicate).toMatchObject({
+        decision: "create",
+        status: "skipped",
+        memory_writes: false,
+        memory: {
+          id: createdId,
+          revision: 1,
+        },
+      });
+
+      const updated = parseToolJson(await client.callTool({
+        name: "memory.confirm_capture",
+        arguments: {
+          decision: "update",
+          content: "The user prefers detailed final answers.",
+          kind: "preference",
+          scope: "user:default",
+          tags: ["communication"],
+          source: "test:capture-confirmed",
+          reason: "The user confirmed a replacement preference.",
+          confirm: true,
+          target_memory_id: createdId,
+          expected_revision: 1,
+        },
+      })) as ConfirmCaptureOutput;
+      expect(updated).toMatchObject({
+        decision: "update",
+        status: "updated",
+        memory_writes: true,
+        memory: {
+          id: createdId,
+          revision: 2,
+          content: "The user prefers detailed final answers.",
+        },
+      });
+
+      const conflict = await client.callTool({
+        name: "memory.confirm_capture",
+        arguments: {
+          decision: "update",
+          content: "This stale confirmed update must not commit.",
+          kind: "preference",
+          scope: "user:default",
+          source: "test:capture-confirmed",
+          reason: "The user confirmed using a stale displayed revision.",
+          confirm: true,
+          target_memory_id: createdId,
+          expected_revision: 1,
+        },
+      });
+      expect(conflict.isError).toBe(true);
+      expect(parseToolJson(conflict)).toMatchObject({
+        code: "MEMORY_REVISION_CONFLICT",
+        details: {
+          id: createdId,
+          expectedRevision: 1,
+          currentRevision: 2,
+        },
+      });
+
+      const beforeReadOnly = await protocolState(client);
+      for (const decision of ["reject", "clarify"] as const) {
+        const result = parseToolJson(await client.callTool({
+          name: "memory.confirm_capture",
+          arguments: {
+            decision,
+            content: "This draft should not write.",
+            kind: "note",
+            scope: "user:default",
+            source: "test:capture-confirmed",
+            reason: `The user chose ${decision}.`,
+          },
+        })) as ConfirmCaptureOutput;
+        expect(result.memory_writes).toBe(false);
+        expect(result.memory).toBeNull();
+      }
+      await expect(protocolState(client)).resolves.toEqual(beforeReadOnly);
+
+      const blocked = await client.callTool({
+        name: "memory.confirm_capture",
+        arguments: {
+          decision: "create",
+          content: "github token is ghp_123456789012345678901234567890123456",
+          kind: "note",
+          scope: "user:default",
+          source: "test:capture-confirmed",
+          reason: "The user attempted to confirm an unsafe draft.",
+          confirm: true,
+        },
+      });
+      expect(blocked.isError).toBe(true);
+      expect(toolText(blocked)).toContain("Memory content looks sensitive.");
+      await expect(protocolState(client)).resolves.toEqual(beforeReadOnly);
+    } finally {
+      await client.close();
+      runtime.close();
+    }
+  });
+
   it("enforces authorized scopes through the MCP runtime", async () => {
     const directory = mkdtempSync(join(tmpdir(), "nuzo-mcp-protocol-"));
     tempDirectories.push(directory);
@@ -732,6 +888,20 @@ interface BoundedSuggestionOutput {
       reason: string;
     }>;
   };
+}
+
+interface ConfirmCaptureOutput {
+  decision: string;
+  status: string;
+  memory_writes: boolean;
+  requires_confirmation: false;
+  reason: string;
+  memory: {
+    id: string;
+    revision: number;
+    content: string;
+    source: string;
+  } | null;
 }
 
 async function rememberProtocolMemory(

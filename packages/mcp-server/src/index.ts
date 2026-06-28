@@ -29,6 +29,7 @@ import type {
   ExportToolInput,
   ForgetToolInput,
   ForgetManyToolInput,
+  ConfirmCaptureToolInput,
   HistoryToolInput,
   ImportToolInput,
   ListToolInput,
@@ -215,6 +216,54 @@ export function registerMemoryTools(
       }
 
       return jsonToolResult(await handlers.suggestCapture(suggestInput));
+    },
+  );
+
+  server.registerTool(
+    "memory.confirm_capture",
+    {
+      description: "Apply an explicit user decision for a previously suggested capture draft.",
+      inputSchema: {
+        decision: z.enum(["create", "update", "keep_separate", "clarify", "reject"]),
+        content: z.string().min(1).max(memoryLimits.contentLength),
+        kind: z.enum(["preference", "project_decision", "fact", "instruction", "note"]),
+        scope: scopeSchema.default("user:default"),
+        tags: z.array(tagSchema).max(memoryLimits.tags).default([]),
+        source: z.string().min(1).max(memoryLimits.sourceLength).default("nuzo:capture-confirmed"),
+        confidence: z.number().min(0).max(1).optional(),
+        reason: z.string().min(1).max(memoryLimits.reasonLength),
+        confirm: z.boolean().default(false),
+        actor: z.string().min(1).max(memoryLimits.sourceLength).default("nuzo:mcp"),
+        target_memory_id: memoryIdSchema.optional(),
+        expected_revision: z.number().int().min(1).optional(),
+      },
+    },
+    async (input) => {
+      const confirmInput: ConfirmCaptureToolInput = {
+        decision: input.decision,
+        content: input.content,
+        kind: input.kind,
+        scope: input.scope,
+        tags: input.tags,
+        source: input.source,
+        reason: input.reason,
+        confirm: input.confirm,
+        actor: input.actor,
+      };
+      if (input.confidence !== undefined) {
+        confirmInput.confidence = input.confidence;
+      }
+      if (input.target_memory_id !== undefined) {
+        confirmInput.target_memory_id = input.target_memory_id;
+      }
+      if (input.expected_revision !== undefined) {
+        confirmInput.expected_revision = input.expected_revision;
+      }
+      try {
+        return jsonToolResult(await handlers.confirmCapture(confirmInput));
+      } catch (error) {
+        return jsonErrorToolResult(error);
+      }
     },
   );
 

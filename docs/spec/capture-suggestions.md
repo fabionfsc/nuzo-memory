@@ -8,7 +8,10 @@ They exist to make Nuzo useful without turning memory into hidden state.
 
 Nuzo starts capture as host or agent behavior, not as a new persisted memory state.
 
-In the MVP, a host integration may detect a memory-worthy statement and prepare a draft, but persistence still routes through the existing `memory.remember` tool after user confirmation.
+In the MVP, a host integration may detect a memory-worthy statement and
+prepare a draft, but persistence still routes through explicit confirmation
+after user approval. Confirmed capture uses `memory.confirm_capture`, which in
+turn routes writes through the canonical remember and update behavior.
 
 ```text
 conversation context
@@ -16,7 +19,7 @@ conversation context
   -> memory.suggest_capture
   -> validated memory draft
   -> user confirm / edit / reject
-  -> memory.remember
+  -> memory.confirm_capture
 ```
 
 There is no silent write path.
@@ -115,12 +118,14 @@ Drafts returned by `memory.suggest_capture` always include
 
 ## User Flow
 
-Capture suggestions must offer three outcomes:
+Capture suggestions must offer explicit outcomes:
 
 | Outcome | Behavior |
 | --- | --- |
-| Confirm | Call `memory.remember` with the confirmed draft. |
-| Edit | Let the user change content, kind, scope, or tags before calling `memory.remember`. |
+| Create | Call `memory.confirm_capture` with `decision: "create"` and `confirm: true`. |
+| Update | Call `memory.confirm_capture` with `decision: "update"`, `target_memory_id`, `expected_revision`, and `confirm: true`. |
+| Keep separate | Call `memory.confirm_capture` with `decision: "keep_separate"` and `confirm: true`. |
+| Clarify | Ask a clarifying question and call `memory.confirm_capture` with `decision: "clarify"` only if a machine-readable no-write result is needed. |
 | Reject | Do not write anything. The rejection itself is not stored unless the user explicitly asks. |
 
 The confirmation prompt should be direct:
@@ -134,7 +139,7 @@ Scope: user:default
 Tags: workflow
 Reason: The user stated a recurring response style preference.
 
-Confirm, edit, or reject?
+Create, edit, keep separate, clarify, or reject?
 ```
 
 Agents may batch multiple suggestions, but each suggested memory must remain inspectable and individually rejectable.
@@ -316,20 +321,24 @@ Use this decision table:
 | Candidate relationship | Host behavior |
 | --- | --- |
 | `exact_duplicate` | Show the duplicate returned by `memory.suggest_capture`; do not write a new memory by default. |
-| `update_candidate` | Show the existing memory and the proposed replacement; call `memory.update` only after the user confirms or edits the change. |
-| `related` | Ask whether to save a separate memory, then use `memory.remember` only after confirmation. |
-| `independent` | Offer to save through `memory.remember`, but only after confirmation. |
+| `update_candidate` | Show the existing memory and proposed replacement; call `memory.confirm_capture` with `decision: "update"` only after the user confirms or edits the change. |
+| `related` | Ask whether to save a separate memory, then call `memory.confirm_capture` with `decision: "keep_separate"` only after confirmation. |
+| `independent` | Offer to save through `memory.confirm_capture` with `decision: "create"`, but only after confirmation. |
 | `uncertain` | Ask a clarifying question before saving or updating. |
 
 Update prompts should include the current memory content, proposed content,
 kind, scope, tags, and reason. The host should pass `expected_revision` from the
-memory it displayed to the user. If `memory.update` returns
+memory it displayed to the user. If `memory.confirm_capture` or `memory.update` returns
 `MEMORY_REVISION_CONFLICT`, the host must re-read the current memory and ask the
 user again; it must not retry silently.
 
 Confirmed updates remain subject to the same policy checks as new memories:
 secret scanning, scope validation, tag normalization, authorization, and audit
 history.
+
+`memory.confirm_capture` is a convenience boundary for confirmed capture flows.
+It still routes writes through the canonical remember and update behavior.
+`reject` and `clarify` decisions write nothing.
 
 ## Scope Rules
 
@@ -424,6 +433,7 @@ If core rejects a confirmed draft, the host should show the structured error and
 3. Add host prompt/skill guidance for suggesting drafts.
 4. Add optional read-only recall hook.
 5. Add `memory.suggest_capture` as a read-only validation and duplicate check.
-6. Add confirmed new-capture flow that calls `memory.remember`.
+6. Add confirmed capture flow that routes explicit decisions through
+   `memory.confirm_capture`, backed by canonical remember and update behavior.
 
 Do not add a capture hook that writes directly to storage.

@@ -3,6 +3,7 @@ export const memoryToolNames = [
   "memory.recall",
   "memory.recall_hook",
   "memory.suggest_capture",
+  "memory.confirm_capture",
   "memory.list",
   "memory.update",
   "memory.history",

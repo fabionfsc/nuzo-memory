@@ -8,6 +8,11 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ### Added
 
+- Explicit confirmed capture decisions in core, MCP, and CLI through
+  `memory.confirm_capture` / `nuzo memory confirm-capture`, routing confirmed
+  creates and keep-separate choices through canonical remember behavior,
+  confirmed replacements through revision-checked update behavior, and reject
+  or clarify choices through zero-write results.
 - Opt-in bounded Capture Intelligence relationship evidence in core, MCP, and
   CLI for `memory.suggest_capture`, covering update, related, independent,
   uncertain, exact duplicate, policy-blocked, scope, archived, and evidence

@@ -135,6 +135,31 @@ export interface CaptureRelationshipEvidence {
   candidates: CaptureRelationshipCandidate[];
 }
 
+export type ConfirmCaptureDecision =
+  | "create"
+  | "update"
+  | "keep_separate"
+  | "clarify"
+  | "reject";
+
+export interface ConfirmCaptureInput extends RememberMemoryInput {
+  decision: ConfirmCaptureDecision;
+  reason: string;
+  confirm?: boolean;
+  actor: string;
+  targetMemoryId?: string;
+  expectedRevision?: number;
+}
+
+export interface ConfirmCaptureResult {
+  decision: ConfirmCaptureDecision;
+  status: "created" | "updated" | "skipped" | "needs_clarification";
+  memoryWrites: boolean;
+  memory: MemoryRecord | null;
+  requiresConfirmation: false;
+  reason: string;
+}
+
 export interface RecallMemoriesInput {
   query: string;
   scope: MemoryScope;

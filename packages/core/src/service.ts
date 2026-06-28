@@ -13,6 +13,8 @@ import type {
   CaptureRelationship,
   CaptureRelationshipCandidate,
   CaptureRelationshipEvidence,
+  ConfirmCaptureInput,
+  ConfirmCaptureResult,
   CaptureSuggestionResult,
   ExportMemoriesInput,
   ForgetMemoryInput,
@@ -47,6 +49,7 @@ export interface MemoryServiceDependencies {
 
 export interface MemoryService {
   suggestCapture(input: SuggestCaptureInput): Promise<CaptureSuggestionResult>;
+  confirmCapture(input: ConfirmCaptureInput): Promise<ConfirmCaptureResult>;
   remember(input: RememberMemoryInput): Promise<MemoryRecord>;
   recall(input: RecallMemoriesInput): Promise<RecallMemoryResult[]>;
   list(input?: ListMemoriesInput): Promise<MemoryRecord[]>;
@@ -120,6 +123,100 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
     });
   }
 
+  async function rememberMemory(input: RememberMemoryInput): Promise<MemoryRecord> {
+    await policy.assertCanRemember(input);
+
+    const now = clock.now();
+    const memory: MemoryRecord = {
+      id: ids.memoryId(),
+      revision: 1,
+      scope: input.scope,
+      kind: input.kind,
+      content: input.content.trim(),
+      tags: [...new Set(input.tags ?? [])],
+      source: input.source,
+      confidence: input.confidence ?? 1,
+      createdAt: now,
+      updatedAt: now,
+      lastUsedAt: null,
+      archivedAt: null,
+    };
+
+    await runTransaction(async () => {
+      await store.create(memory);
+      await searchIndex.index(memory);
+      await auditLog.append({
+        id: ids.eventId(),
+        memoryId: memory.id,
+        eventType: "memory.created",
+        actor: input.source,
+        payload: { kind: memory.kind, scope: memory.scope, tags: memory.tags },
+        createdAt: now,
+      });
+    });
+
+    return memory;
+  }
+
+  async function updateMemory(input: UpdateMemoryInput): Promise<MemoryRecord> {
+    assertMemoryId(input.id);
+    const current = await store.findById(input.id);
+    if (!current) {
+      throw new NuzoMemoryError("MEMORY_NOT_FOUND", "Memory was not found.", { id: input.id });
+    }
+    assertExpectedRevision(input.expectedRevision, current);
+
+    const hasChanges =
+      input.content !== undefined ||
+      input.kind !== undefined ||
+      input.scope !== undefined ||
+      input.tags !== undefined ||
+      input.confidence !== undefined;
+    if (!hasChanges) {
+      throw new NuzoMemoryError("MEMORY_UPDATE_EMPTY", "At least one memory field must be updated.", {
+        id: input.id,
+      });
+    }
+
+    await policy.assertCanUpdate(input, current);
+
+    const updated: MemoryRecord = {
+      ...current,
+      revision: current.revision + 1,
+      content: input.content?.trim() ?? current.content,
+      kind: input.kind ?? current.kind,
+      scope: input.scope ?? current.scope,
+      tags: input.tags ? [...new Set(input.tags)] : current.tags,
+      confidence: input.confidence ?? current.confidence,
+      updatedAt: clock.now(),
+    };
+
+    await runTransaction(async () => {
+      const committed = await store.update(updated, current.revision);
+      assertRevisionCommitted(committed, input.id, current.revision);
+      await searchIndex.index(updated);
+      await auditLog.append({
+        id: ids.eventId(),
+        memoryId: updated.id,
+        eventType: "memory.updated",
+        actor: input.actor,
+        payload: {
+          changed: {
+            content: input.content !== undefined,
+            kind: input.kind !== undefined,
+            scope: input.scope !== undefined,
+            tags: input.tags !== undefined,
+            confidence: input.confidence !== undefined,
+          },
+          scope: updated.scope,
+        },
+        createdAt: updated.updatedAt,
+      });
+    });
+
+    return updated;
+  }
+
   return {
     async suggestCapture(input) {
       assertCaptureReason(input.reason);
@@ -154,39 +251,126 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       };
     },
 
-    async remember(input) {
-      await policy.assertCanRemember(input);
+    async confirmCapture(input) {
+      assertCaptureReason(input.reason);
+      assertActor(input.actor);
 
-      const now = clock.now();
-      const memory: MemoryRecord = {
-        id: ids.memoryId(),
-        revision: 1,
-        scope: input.scope,
-        kind: input.kind,
-        content: input.content.trim(),
-        tags: [...new Set(input.tags ?? [])],
-        source: input.source,
-        confidence: input.confidence ?? 1,
-        createdAt: now,
-        updatedAt: now,
-        lastUsedAt: null,
-        archivedAt: null,
-      };
+      if (input.decision === "reject") {
+        return {
+          decision: input.decision,
+          status: "skipped",
+          memoryWrites: false,
+          memory: null,
+          requiresConfirmation: false,
+          reason: input.reason.trim(),
+        };
+      }
 
-      await runTransaction(async () => {
-        await store.create(memory);
-        await searchIndex.index(memory);
-        await auditLog.append({
-          id: ids.eventId(),
-          memoryId: memory.id,
-          eventType: "memory.created",
-          actor: input.source,
-          payload: { kind: memory.kind, scope: memory.scope, tags: memory.tags },
-          createdAt: now,
-        });
+      if (input.decision === "clarify") {
+        return {
+          decision: input.decision,
+          status: "needs_clarification",
+          memoryWrites: false,
+          memory: null,
+          requiresConfirmation: false,
+          reason: input.reason.trim(),
+        };
+      }
+
+      if (input.confirm !== true) {
+        throw new NuzoMemoryError(
+          "MEMORY_CAPTURE_CONFIRMATION_REQUIRED",
+          "Confirmed capture writes require explicit confirmation.",
+          { decision: input.decision },
+        );
+      }
+
+      if (input.decision === "update") {
+        if (input.targetMemoryId === undefined) {
+          throw new NuzoMemoryError(
+            "MEMORY_TARGET_REQUIRED",
+            "Confirmed capture updates require a target memory.",
+            { decision: input.decision },
+          );
+        }
+        assertMemoryId(input.targetMemoryId);
+        if (input.expectedRevision === undefined) {
+          throw new NuzoMemoryError(
+            "MEMORY_EXPECTED_REVISION_REQUIRED",
+            "Confirmed capture updates require the displayed expected revision.",
+            { decision: input.decision, targetMemoryId: input.targetMemoryId },
+          );
+        }
+        const updateInput: UpdateMemoryInput = {
+          id: input.targetMemoryId,
+          expectedRevision: input.expectedRevision,
+          content: input.content,
+          kind: input.kind,
+          scope: input.scope,
+          tags: input.tags ?? [],
+          actor: input.actor,
+        };
+        if (input.confidence !== undefined) {
+          updateInput.confidence = input.confidence;
+        }
+        const memory = await updateMemory(updateInput);
+        return {
+          decision: input.decision,
+          status: "updated",
+          memoryWrites: true,
+          memory,
+          requiresConfirmation: false,
+          reason: input.reason.trim(),
+        };
+      }
+
+      if (input.decision === "create" || input.decision === "keep_separate") {
+        if (input.decision === "create") {
+          const duplicateKey = toCaptureDuplicateKey(input.content);
+          const memories = await store.list({ scope: input.scope });
+          const duplicate = memories.find((memory) => (
+            memory.archivedAt === null &&
+            toCaptureDuplicateKey(memory.content) === duplicateKey
+          )) ?? null;
+          if (duplicate) {
+            return {
+              decision: input.decision,
+              status: "skipped",
+              memoryWrites: false,
+              memory: duplicate,
+              requiresConfirmation: false,
+              reason: input.reason.trim(),
+            };
+          }
+        }
+        const rememberInput: RememberMemoryInput = {
+          content: input.content,
+          kind: input.kind,
+          scope: input.scope,
+          tags: input.tags ?? [],
+          source: input.source,
+        };
+        if (input.confidence !== undefined) {
+          rememberInput.confidence = input.confidence;
+        }
+        const memory = await rememberMemory(rememberInput);
+        return {
+          decision: input.decision,
+          status: "created",
+          memoryWrites: true,
+          memory,
+          requiresConfirmation: false,
+          reason: input.reason.trim(),
+        };
+      }
+
+      throw new NuzoMemoryError("MEMORY_CAPTURE_DECISION_INVALID", "Capture decision is invalid.", {
+        decision: input.decision,
       });
+    },
 
-      return memory;
+    async remember(input) {
+      return rememberMemory(input);
     },
 
     async recall(input) {
@@ -236,62 +420,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
     },
 
     async update(input) {
-      assertMemoryId(input.id);
-      const current = await store.findById(input.id);
-      if (!current) {
-        throw new NuzoMemoryError("MEMORY_NOT_FOUND", "Memory was not found.", { id: input.id });
-      }
-      assertExpectedRevision(input.expectedRevision, current);
-
-      const hasChanges =
-        input.content !== undefined ||
-        input.kind !== undefined ||
-        input.scope !== undefined ||
-        input.tags !== undefined ||
-        input.confidence !== undefined;
-      if (!hasChanges) {
-        throw new NuzoMemoryError("MEMORY_UPDATE_EMPTY", "At least one memory field must be updated.", {
-          id: input.id,
-        });
-      }
-
-      await policy.assertCanUpdate(input, current);
-
-      const updated: MemoryRecord = {
-        ...current,
-        revision: current.revision + 1,
-        content: input.content?.trim() ?? current.content,
-        kind: input.kind ?? current.kind,
-        scope: input.scope ?? current.scope,
-        tags: input.tags ? [...new Set(input.tags)] : current.tags,
-        confidence: input.confidence ?? current.confidence,
-        updatedAt: clock.now(),
-      };
-
-      await runTransaction(async () => {
-        const committed = await store.update(updated, current.revision);
-        assertRevisionCommitted(committed, input.id, current.revision);
-        await searchIndex.index(updated);
-        await auditLog.append({
-          id: ids.eventId(),
-          memoryId: updated.id,
-          eventType: "memory.updated",
-          actor: input.actor,
-          payload: {
-            changed: {
-              content: input.content !== undefined,
-              kind: input.kind !== undefined,
-              scope: input.scope !== undefined,
-              tags: input.tags !== undefined,
-              confidence: input.confidence !== undefined,
-            },
-            scope: updated.scope,
-          },
-          createdAt: updated.updatedAt,
-        });
-      });
-
-      return updated;
+      return updateMemory(input);
     },
 
     async history(memoryId) {
