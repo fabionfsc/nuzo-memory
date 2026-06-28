@@ -105,10 +105,19 @@ Initial tracking:
 
 Goal: improve local retrieval with measurable quality rather than intuition.
 
+Initial tracking:
+
+- [#116](https://github.com/fabionfsc/nuzo-memory/issues/116) Add public recall benchmark fixtures.
+- [#117](https://github.com/fabionfsc/nuzo-memory/issues/117) Add repeatable local recall benchmark command.
+- [#118](https://github.com/fabionfsc/nuzo-memory/issues/118) Measure 0.4.x recall baseline.
+- [#119](https://github.com/fabionfsc/nuzo-memory/issues/119) Evaluate and tune local recall ranking.
+- [#120](https://github.com/fabionfsc/nuzo-memory/issues/120) Validate lifecycle hooks against recall benchmark bounds.
+
 Deliverables:
 
-- add public, synthetic benchmark fixtures for English, Portuguese, Unicode,
-  topical tags, global/project scopes, and realistic agent prompts;
+- add public, synthetic benchmark fixtures with English as the primary quality
+  bar, plus Portuguese, Unicode, multilingual compatibility, topical tags,
+  global/project scopes, and realistic agent prompts;
 - measure relevance, noise, latency, and bounded-result behavior on small and
   medium stores;
 - evaluate tokenization, stop words, FTS query construction, tag weighting,
@@ -120,6 +129,8 @@ Exit criteria:
 
 - benchmark results are reproducible without private data, telemetry, network
   calls, or embeddings;
+- the English benchmark group has enough coverage to fail independently on
+  top-1 accuracy, expected recall, or unexpected noise;
 - recall quality improves over the `0.3.x` baseline on agreed fixtures without
   regressing scope isolation or latency bounds;
 - ranking reasons remain inspectable and correspond to the implemented score;

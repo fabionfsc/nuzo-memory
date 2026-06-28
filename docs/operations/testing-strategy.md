@@ -108,6 +108,18 @@ nuzo memory export --path ./memories.memory.export.json
 nuzo memory doctor
 ```
 
+Recall-quality changes should also run:
+
+```bash
+npm run benchmark:recall
+```
+
+The benchmark uses synthetic public data and validates relevance, noise,
+scope isolation, bounded results, ranking reasons, and local latency without
+telemetry, network calls, or embeddings. English recall is the primary quality
+group and has its own strict top-1, recall, and zero-noise envelope; other
+language cases protect compatibility and tokenization regressions.
+
 Smoke tests may set `NUZO_DOCTOR_SKIP_GIT=1` so restricted environments do not
 warn only because Git tracking inspection is unavailable. Tests should still
 cover normal warning behavior for missing stores and tracked memory files.

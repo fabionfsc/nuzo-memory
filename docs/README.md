@@ -32,8 +32,9 @@ contracts, and operations documentation.
 25. `operations/npm-publishing.md`
 26. `operations/release-checklist.md`
 27. `operations/post-release-validation.md`
-28. `operations/spec-driven-workflow.md`
-29. `operations/roadmap.md`
+28. `operations/recall-benchmark.md`
+29. `operations/spec-driven-workflow.md`
+30. `operations/roadmap.md`
 
 ## Sections
 

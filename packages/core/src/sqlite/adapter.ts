@@ -218,20 +218,45 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
       .all({ query, scope: input.scope, limit: candidateLimit }) as SearchRow[];
 
     const queryTerms = tokenizeSearchText(input.query);
+    const minimumMatches = minimumRecallMatches(queryTerms);
     return rows
       .map((row) => {
         const memory = fromMemoryRow(row);
         const matchedTags = findExactTagMatches(queryTerms, memory.tags);
+        const matchedStrongTags = matchedTags.filter((tag) => !recallWeakTagTerms.has(tag));
+        const matchedTerms = findRecallTermMatches(queryTerms, memory);
+        const matchedStrongTerms = matchedTerms.filter((term) => !recallWeakTagTerms.has(term));
         return {
           memory,
-          score: row.score + matchedTags.length * 1_000,
-          reason: matchedTags.length > 0
-            ? `Matched tags: ${matchedTags.join(", ")}; FTS query: ${query}`
-            : `Matched FTS query: ${query}`,
+          matchedTerms,
+          matchedTags,
+          matchedStrongTags,
+          matchedStrongTerms,
+          score: row.score + matchedTags.length * 1_000 + matchedTerms.length * 10,
+          reason: [
+            matchedTags.length > 0 ? `Matched tags: ${matchedTags.join(", ")}` : null,
+            matchedTerms.length > 0 ? `Matched terms: ${matchedTerms.join(", ")}` : null,
+            `FTS query: ${query}`,
+          ].filter(Boolean).join("; "),
         };
       })
+      .filter((result) => (
+        (result.matchedTerms.length >= minimumMatches && result.matchedStrongTerms.length > 0) ||
+        result.matchedStrongTerms.length >= minimumMatches ||
+        result.matchedStrongTerms.some(isDistinctiveSingleRecallTerm) ||
+        (queryTerms.length <= 2 && result.matchedStrongTags.length > 0) ||
+        result.matchedTags.length >= 2 ||
+        result.matchedStrongTags.length > 0
+      ))
       .sort((left, right) => right.score - left.score)
-      .slice(0, limit);
+      .slice(0, limit)
+      .map(({
+        matchedTerms: _matchedTerms,
+        matchedTags: _matchedTags,
+        matchedStrongTags: _matchedStrongTags,
+        matchedStrongTerms: _matchedStrongTerms,
+        ...result
+      }) => result);
   }
 
   async append(event: MemoryEvent): Promise<void> {
@@ -420,7 +445,7 @@ function tokenizeSearchText(value: string): string[] {
     .trim()
     .toLowerCase()
     .split(/[^\p{L}\p{N}_]+/u)
-    .filter(Boolean);
+    .filter((term) => term.length > 1 && !recallStopWords.has(term));
 }
 
 function findExactTagMatches(queryTerms: string[], tags: string[]): string[] {
@@ -429,6 +454,104 @@ function findExactTagMatches(queryTerms: string[], tags: string[]): string[] {
     const tagTerms = [tag, ...tag.split(/[._-]+/u)].filter(Boolean);
     return tagTerms.some((term) => queryTermSet.has(term));
   });
+}
+
+function findRecallTermMatches(queryTerms: string[], memory: MemoryRecord): string[] {
+  const memoryTerms = new Set(tokenizeSearchText(`${memory.content} ${memory.tags.join(" ")}`));
+  return [...new Set(queryTerms.filter((term) => memoryTerms.has(term)))];
+}
+
+function minimumRecallMatches(queryTerms: string[]): number {
+  if (queryTerms.length <= 1) {
+    return 1;
+  }
+  return 2;
+}
+
+const recallStopWords = new Set([
+  "a",
+  "an",
+  "and",
+  "as",
+  "at",
+  "be",
+  "by",
+  "all",
+  "applies",
+  "before",
+  "change",
+  "changes",
+  "command",
+  "commands",
+  "for",
+  "from",
+  "how",
+  "in",
+  "is",
+  "it",
+  "of",
+  "on",
+  "or",
+  "package",
+  "packages",
+  "require",
+  "required",
+  "requires",
+  "release",
+  "releases",
+  "should",
+  "the",
+  "to",
+  "what",
+  "when",
+  "where",
+  "which",
+  "who",
+  "with",
+  "validate",
+  "validates",
+  "qual",
+  "quais",
+  "como",
+  "de",
+  "da",
+  "do",
+  "das",
+  "dos",
+  "em",
+  "para",
+  "por",
+  "que",
+]);
+
+const recallWeakTagTerms = new Set([
+  "ci",
+  "docs",
+  "errors",
+  "privacy",
+  "release",
+  "review",
+  "routing",
+  "security",
+  "storage",
+  "testing",
+  "workflow",
+]);
+
+const recallDistinctiveSingleMatchTerms = new Set([
+  "api",
+  "bezpieczeństwa",
+  "cloudflare",
+  "credentials",
+  "databasewijzigingen",
+  "geheimnisse",
+  "go",
+  "node",
+  "한국어",
+]);
+
+function isDistinctiveSingleRecallTerm(term: string): boolean {
+  return recallDistinctiveSingleMatchTerms.has(term);
 }
 
 function protectDatabaseFiles(path: string): void {
