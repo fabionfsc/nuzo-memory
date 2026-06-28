@@ -129,6 +129,102 @@ describe("memory service", () => {
     expect(events.map((event) => event.eventType)).toEqual(["memory.created", "memory.recalled"]);
   });
 
+  it("queries bounded store-wide audit events with filters", async () => {
+    const { service } = createTestService();
+
+    const userMemory = await service.remember({
+      content: "User prefers audit summaries.",
+      kind: "preference",
+      scope: "user:default",
+      source: "test:user",
+    });
+    const projectMemory = await service.remember({
+      content: "Project exports should be visible in global audit.",
+      kind: "project_decision",
+      scope: "project:nuzo",
+      source: "test:project",
+    });
+    await service.exportMemories({
+      scope: "project:nuzo",
+      actor: "test:export",
+    });
+
+    await expect(service.audit({ limit: 2 })).resolves.toMatchObject([
+      {
+        eventType: "memory.exported",
+        memoryId: null,
+        actor: "test:export",
+      },
+      {
+        eventType: "memory.created",
+        memoryId: projectMemory.id,
+        actor: "test:project",
+      },
+    ]);
+
+    await expect(service.audit({ scope: "project:nuzo" })).resolves.toMatchObject([
+      {
+        eventType: "memory.exported",
+        memoryId: null,
+      },
+      {
+        eventType: "memory.created",
+        memoryId: projectMemory.id,
+      },
+    ]);
+
+    await expect(service.audit({
+      memoryId: userMemory.id,
+      eventTypes: ["memory.created"],
+      actor: "test:user",
+    })).resolves.toMatchObject([
+      {
+        eventType: "memory.created",
+        memoryId: userMemory.id,
+        actor: "test:user",
+      },
+    ]);
+  });
+
+  it("enforces restricted scope policy for audit queries", async () => {
+    const unrestricted = createTestService();
+    const allowed = await unrestricted.service.remember({
+      content: "Allowed project audit event.",
+      kind: "note",
+      scope: "project:nuzo",
+      source: "test",
+    });
+    const forbidden = await unrestricted.service.remember({
+      content: "Forbidden user audit event.",
+      kind: "note",
+      scope: "user:default",
+      source: "test",
+    });
+
+    const restricted = createRestrictedTestService(["project:nuzo"]);
+    for (const memory of await unrestricted.store.list({ includeArchived: true })) {
+      await restricted.store.create(memory);
+    }
+    for (const event of await unrestricted.service.audit()) {
+      await restricted.auditLog.append(event);
+    }
+
+    await expect(restricted.service.audit()).rejects.toMatchObject({
+      code: "MEMORY_SCOPE_REQUIRED",
+    });
+    await expect(restricted.service.audit({ scope: "user:default" })).rejects.toMatchObject({
+      code: "MEMORY_SCOPE_FORBIDDEN",
+    });
+    await expect(restricted.service.audit({ memoryId: forbidden.id })).rejects.toMatchObject({
+      code: "MEMORY_SCOPE_FORBIDDEN",
+    });
+    await expect(restricted.service.audit({ memoryId: allowed.id })).resolves.toMatchObject([
+      {
+        memoryId: allowed.id,
+      },
+    ]);
+  });
+
   it("rejects likely secrets", async () => {
     const { service } = createTestService();
 

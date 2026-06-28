@@ -22,6 +22,7 @@ import {
   SQLiteMemoryDatabase,
   SystemClock,
   memoryLimits,
+  memoryEventTypes,
   memoryScopePattern,
   projectScopeFromPath,
   type MemoryKind,
@@ -35,6 +36,8 @@ import {
   type MemoryExportDocument,
   type ExportMemoriesInput,
   type ImportMemoriesInput,
+  type AuditEventFilter,
+  type MemoryEvent,
 } from "@nuzo/memory-core";
 
 export interface CliIO {
@@ -409,6 +412,61 @@ export function createProgram(io: CliIO = defaultIO): Command {
             event.actor,
             JSON.stringify(event.payload),
           ].join("\t"));
+        }
+      } finally {
+        database.close();
+      }
+    }));
+
+  memory
+    .command("audit")
+    .description("List bounded store-wide audit events.")
+    .option("--memory-id <id>", "Filter by memory ID.")
+    .option("--event-type <event-type...>", "Filter by audit event type.", parseAuditEventType)
+    .option("--actor <actor>", "Filter by actor.")
+    .option("--scope <scope>", "Filter by memory scope.")
+    .option("--since <iso-date>", "Include events at or after this ISO timestamp.")
+    .option("--until <iso-date>", "Include events at or before this ISO timestamp.")
+    .option("--limit <number>", "Maximum number of events.", parsePositiveInteger)
+    .action(withErrorHandling(io, async (commandOptions: {
+      memoryId?: string;
+      eventType?: MemoryEvent["eventType"][];
+      actor?: string;
+      scope?: MemoryScope;
+      since?: string;
+      until?: string;
+      limit?: number;
+    }) => {
+      const options = memory.opts<GlobalOptions>();
+      const database = openDatabase(options);
+      try {
+        const service = createService(database);
+        const auditInput: AuditEventFilter = {
+          limit: commandOptions.limit ?? 50,
+        };
+        if (commandOptions.memoryId !== undefined) {
+          auditInput.memoryId = commandOptions.memoryId;
+        }
+        if (commandOptions.eventType !== undefined) {
+          auditInput.eventTypes = commandOptions.eventType;
+        }
+        if (commandOptions.actor !== undefined) {
+          auditInput.actor = commandOptions.actor;
+        }
+        const scope = commandOptions.scope ?? options.scope;
+        if (scope !== undefined) {
+          auditInput.scope = resolveAutomaticScope(scope);
+        }
+        if (commandOptions.since !== undefined) {
+          auditInput.since = parseIsoDate(commandOptions.since, "since");
+        }
+        if (commandOptions.until !== undefined) {
+          auditInput.until = parseIsoDate(commandOptions.until, "until");
+        }
+
+        const events = await service.audit(auditInput);
+        for (const event of events) {
+          io.stdout(formatAuditEvent(event));
         }
       } finally {
         database.close();
@@ -1153,6 +1211,17 @@ function toCliMemoryRecord(memory: MemoryRecord) {
   };
 }
 
+function formatAuditEvent(event: MemoryEvent): string {
+  return [
+    event.createdAt.toISOString(),
+    event.id,
+    event.memoryId ?? "global",
+    event.eventType,
+    event.actor,
+    JSON.stringify(event.payload),
+  ].join("\t");
+}
+
 function inferExportFormat(path?: string): ExportFormat {
   if (path?.toLowerCase().endsWith(".md")) {
     return "markdown";
@@ -1175,6 +1244,21 @@ function parsePositiveInteger(value: string): number {
     throw new InvalidArgumentError("Expected a positive integer.");
   }
   return parsed;
+}
+
+function parseIsoDate(value: string, field: string): Date {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new InvalidArgumentError(`Expected ${field} to be an ISO timestamp.`);
+  }
+  return parsed;
+}
+
+function parseAuditEventType(value: string, previous: MemoryEvent["eventType"][] = []): MemoryEvent["eventType"][] {
+  if (!memoryEventTypes.includes(value as MemoryEvent["eventType"])) {
+    throw new InvalidArgumentError(`Expected audit event type to be one of: ${memoryEventTypes.join(", ")}.`);
+  }
+  return [...previous, value as MemoryEvent["eventType"]];
 }
 
 function parseConfidence(value: string): number {

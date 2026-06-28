@@ -339,6 +339,69 @@ Output:
 The tool returns only events associated with the requested memory ID. It does
 not include memory content or events from other memories.
 
+### `memory.audit`
+
+List bounded store-wide audit events.
+
+This is a read-only operation. It exposes audit metadata, not memory content.
+Use it when a user needs to answer what changed in a store, which actor caused
+the change, or whether global events such as exports occurred.
+
+Input:
+
+```json
+{
+  "memory_id": "mem_01HZY...",
+  "event_type": ["memory.exported"],
+  "actor": "nuzo:mcp",
+  "scope": "project:abc123",
+  "since": "2026-06-19T00:00:00.000Z",
+  "until": "2026-06-20T00:00:00.000Z",
+  "limit": 50
+}
+```
+
+All filters are optional. `limit` defaults to `50` and must be between `1` and
+`200`. `event_type` accepts:
+
+- `memory.created`;
+- `memory.updated`;
+- `memory.archived`;
+- `memory.deleted`;
+- `memory.imported`;
+- `memory.exported`;
+- `memory.recalled`.
+
+Output:
+
+```json
+{
+  "events": [
+    {
+      "id": "evt_01HZY...",
+      "memory_id": null,
+      "event_type": "memory.exported",
+      "actor": "nuzo:mcp",
+      "payload": {
+        "scope": "project:abc123",
+        "tags": [],
+        "includeArchived": false,
+        "count": 3
+      },
+      "created_at": "2026-06-19T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+`memory_id: null` means the event applies to the store or operation rather
+than one memory record. Export events are global events.
+
+Restricted runtime mode must not reveal unauthorized scopes. A restricted
+session may query audit by an authorized `scope` or by a `memory_id` whose
+current memory record is still present and authorized. A broad audit query
+without scope is rejected in restricted mode.
+
 ### `memory.forget`
 
 Archive or delete a memory.

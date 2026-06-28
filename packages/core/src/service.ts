@@ -9,6 +9,7 @@ import type {
   TransactionManager,
 } from "./ports.js";
 import type {
+  AuditEventFilter,
   CaptureSuggestionResult,
   ExportMemoriesInput,
   ForgetMemoryInput,
@@ -48,6 +49,7 @@ export interface MemoryService {
   list(input?: ListMemoriesInput): Promise<MemoryRecord[]>;
   update(input: UpdateMemoryInput): Promise<MemoryRecord>;
   history(memoryId: string): Promise<MemoryEvent[]>;
+  audit(input?: AuditEventFilter): Promise<MemoryEvent[]>;
   exportMemories(input: ExportMemoriesInput): Promise<MemoryExportDocument>;
   importMemories(input: ImportMemoriesInput): Promise<ImportMemoriesResult>;
   forget(input: ForgetMemoryInput): Promise<void>;
@@ -93,7 +95,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
           memoryId: input.id,
           eventType: "memory.deleted",
           actor: input.actor,
-          payload: { reason: input.reason ?? null },
+          payload: { reason: input.reason ?? null, scope: memory.scope },
           createdAt: now,
         });
       });
@@ -109,7 +111,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
         memoryId: input.id,
         eventType: "memory.archived",
         actor: input.actor,
-        payload: { reason: input.reason ?? null },
+        payload: { reason: input.reason ?? null, scope: memory.scope },
         createdAt: now,
       });
     });
@@ -212,7 +214,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
             memoryId: current.id,
             eventType: "memory.recalled",
             actor: "core",
-            payload: { query: input.query, score: result.score },
+            payload: { query: input.query, score: result.score, scope: current.scope },
             createdAt: now,
           });
         }
@@ -276,6 +278,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
               tags: input.tags !== undefined,
               confidence: input.confidence !== undefined,
             },
+            scope: updated.scope,
           },
           createdAt: updated.updatedAt,
         });
@@ -287,6 +290,17 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
     async history(memoryId) {
       assertMemoryId(memoryId);
       return auditLog.list(memoryId);
+    },
+
+    async audit(input = {}) {
+      if (input.memoryId !== undefined) {
+        assertMemoryId(input.memoryId);
+      }
+      const currentMemory = input.memoryId === undefined
+        ? undefined
+        : await store.findById(input.memoryId);
+      await policy.assertCanAudit(input, currentMemory);
+      return auditLog.query(input);
     },
 
     async exportMemories(input) {

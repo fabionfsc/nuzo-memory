@@ -15,6 +15,25 @@ The unified package depends on:
 Core and unified packages use the same version and must be released together.
 `@nuzo/memory-cli` and `@nuzo/mcp-server` are legacy transition packages.
 
+## Package Lifecycle
+
+Use `@nuzo/memory` as the public runtime package for normal users and host
+plugins. It includes the `nuzo`, `nuzo-mcp-server`, and `nuzo-memory-hook`
+binaries.
+
+Use `@nuzo/memory-core` for library-level integrations and Nuzo development.
+
+`@nuzo/memory-cli` and `@nuzo/mcp-server` remain published only as transition
+packages for users or automation that adopted the earlier split package names.
+Routine releases keep them on the same SemVer version as `@nuzo/memory` until
+the project makes an explicit lifecycle decision before `1.0.0`.
+
+Before `1.0.0`, decide whether the legacy transition packages:
+
+- remain compatible aliases or wrappers;
+- stop receiving new versions after a documented cutoff; or
+- receive one final deprecation release that points users to `@nuzo/memory`.
+
 ## Current Release
 
 Version `0.3.1` is the current release:

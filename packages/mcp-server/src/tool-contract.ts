@@ -6,6 +6,7 @@ export const memoryToolNames = [
   "memory.list",
   "memory.update",
   "memory.history",
+  "memory.audit",
   "memory.forget",
   "memory.forget_many",
   "memory.export",

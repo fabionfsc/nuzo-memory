@@ -35,6 +35,7 @@ npm run nuzo -- memory recall "local storage"
 npm run nuzo -- memory list --all-scopes
 npm run nuzo -- memory export --path ./memories.memory.export.json
 npm run nuzo -- memory history mem_01HZY
+npm run nuzo -- memory audit --scope project:auto --event-type memory.exported
 npm run nuzo -- memory forget-many --tag obsolete
 npm run nuzo -- memory forget-many --scope project:auto --apply
 ```
@@ -57,6 +58,12 @@ script, or agent needs a machine-readable result close to the MCP
 `list --all-scopes` is an administrator audit view for the selected local
 store. It is also the recovery path for literal `project:auto` records created
 before `0.2.1`; `doctor` warns when active records require review.
+
+`memory history <id>` shows audit events for one memory ID. `memory audit`
+shows bounded store-wide audit events, including global events such as exports
+where `memory_id` is `global` in CLI output. Filter with `--memory-id`,
+`--event-type`, `--actor`, `--scope`, `--since`, `--until`, and `--limit`.
+Audit output is metadata-only and does not include memory content.
 
 ## Authorization Boundary
 

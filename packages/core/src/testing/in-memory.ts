@@ -1,5 +1,6 @@
 import type { AuditLog, Clock, IdGenerator, MemoryStore, SearchIndex } from "../ports.js";
 import type {
+  AuditEventFilter,
   ListMemoriesInput,
   MemoryEvent,
   MemoryRecord,
@@ -146,6 +147,24 @@ export class InMemoryAuditLog implements AuditLog {
   async list(memoryId: string): Promise<MemoryEvent[]> {
     return this.events.filter((event) => event.memoryId === memoryId).map(cloneEvent);
   }
+
+  async query(filter: AuditEventFilter): Promise<MemoryEvent[]> {
+    const limit = filter.limit ?? 50;
+    return this.events
+      .filter((event) => filter.memoryId === undefined || event.memoryId === filter.memoryId)
+      .filter((event) => filter.eventTypes === undefined || filter.eventTypes.includes(event.eventType))
+      .filter((event) => filter.actor === undefined || event.actor === filter.actor)
+      .filter((event) => filter.scope === undefined || eventPayloadScopeMatches(event, filter.scope))
+      .filter((event) => filter.since === undefined || event.createdAt >= filter.since)
+      .filter((event) => filter.until === undefined || event.createdAt <= filter.until)
+      .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime() || right.id.localeCompare(left.id))
+      .slice(0, limit)
+      .map(cloneEvent);
+  }
+}
+
+function eventPayloadScopeMatches(event: MemoryEvent, scope: string): boolean {
+  return event.payload.scope === scope || event.payload.originalScope === scope;
 }
 
 function cloneMemory(memory: MemoryRecord): MemoryRecord {

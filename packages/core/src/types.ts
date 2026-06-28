@@ -37,17 +37,39 @@ export interface MemoryRecord {
 export interface MemoryEvent {
   id: string;
   memoryId: string | null;
-  eventType:
-    | "memory.created"
-    | "memory.updated"
-    | "memory.archived"
-    | "memory.deleted"
-    | "memory.imported"
-    | "memory.exported"
-    | "memory.recalled";
+  eventType: MemoryEventType;
   actor: string;
   payload: Record<string, unknown>;
   createdAt: Date;
+}
+
+export type MemoryEventType =
+  | "memory.created"
+  | "memory.updated"
+  | "memory.archived"
+  | "memory.deleted"
+  | "memory.imported"
+  | "memory.exported"
+  | "memory.recalled";
+
+export const memoryEventTypes = [
+  "memory.created",
+  "memory.updated",
+  "memory.archived",
+  "memory.deleted",
+  "memory.imported",
+  "memory.exported",
+  "memory.recalled",
+] as const satisfies readonly MemoryEventType[];
+
+export interface AuditEventFilter {
+  memoryId?: string;
+  eventTypes?: MemoryEvent["eventType"][];
+  actor?: string;
+  scope?: MemoryScope;
+  since?: Date;
+  until?: Date;
+  limit?: number;
 }
 
 export interface RememberMemoryInput {
