@@ -39,19 +39,24 @@ Use `status:blocked` only when an issue has a concrete external blocker.
 
 ## Milestones
 
-Current milestones:
+Active release milestones follow `docs/operations/release-goals.md`:
 
-- `0.2.0 Agent Memory Lifecycle`
-- `MVP`
-- `Host Plugins`
-- `Lifecycle Hooks`
-- `Public Release`
+- `0.3.1 Trust Baseline`
+- `0.4.0 Audit And Provenance`
+- `0.5.0 Recall Quality`
+- `0.6.0 Capture Intelligence`
+- `0.7.0 Optional Semantics`
+- `0.8.0 Host Reliability`
+- `0.9.0 Contract Stabilization`
+- `1.0.0 Stable Release`
 
-Milestones should stay small enough to guide execution. Do not use them as permanent categories.
+Historical milestones may remain closed for traceability. Milestones should
+stay small enough to guide execution and must not become permanent categories.
 
-Use `0.2.0 Agent Memory Lifecycle` for Codex-first recall, explicit save
-requests, confirmed capture, update flow, dogfooding, and validation work that
-turns the existing MCP tools into a real cross-session agent memory loop.
+Create focused issues for the current or immediately upcoming milestone. Keep
+distant release direction in the release-goals document until evidence is
+strong enough to define assignable work. This avoids turning speculative
+implementation details into stale issue backlogs.
 
 ## Issue Quality
 

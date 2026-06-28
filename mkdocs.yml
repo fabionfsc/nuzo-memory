@@ -99,6 +99,7 @@ nav:
       - API Versioning: spec/api-versioning.md
   - Operations:
       - Roadmap: operations/roadmap.md
+      - Release Goals: operations/release-goals.md
       - GitHub Pages: operations/github-pages.md
       - Issue Tracking: operations/issue-tracking.md
       - Specification-Driven Workflow: operations/spec-driven-workflow.md
