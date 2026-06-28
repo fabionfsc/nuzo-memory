@@ -12,6 +12,9 @@ const publishPackages = [
   ["@nuzo/mcp-server", "build/npm/packages/mcp-server/package.json"],
 ];
 
+let unpublishedCount = 0;
+let publishedCount = 0;
+
 for (const [packageName, packagePath] of publishPackages) {
   const pkg = readJson(packagePath);
   if (pkg.name !== packageName) {
@@ -25,11 +28,19 @@ for (const [packageName, packagePath] of publishPackages) {
     encoding: "utf8",
   });
   if (view.status === 0) {
-    fail(`${packageName}@${version} is already published`);
+    publishedCount += 1;
+    console.log(`${packageName}@${version} is already published; retry will skip it`);
+    continue;
   }
   if (!view.stderr.includes("E404")) {
     fail(`could not verify ${packageName}@${version} publish target: ${view.stderr.trim()}`);
   }
+  unpublishedCount += 1;
+  console.log(`${packageName}@${version} is available`);
 }
 
-console.log(`npm publish targets are available for ${version}`);
+if (unpublishedCount === 0) {
+  console.log(`all npm publish targets already exist for ${version}`);
+} else {
+  console.log(`${unpublishedCount} npm publish target(s) are available for ${version}; ${publishedCount} already published`);
+}

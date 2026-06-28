@@ -65,18 +65,12 @@ jobs:
 
       - name: Dry-run npm publish
         if: ${{ !inputs.publish }}
-        working-directory: build/npm/packages
-        run: |
-          npm publish ./memory-core --access public --dry-run
-          npm publish ./memory --access public --dry-run
-          npm publish ./memory-cli --access public --dry-run
-          npm publish ./mcp-server --access public --dry-run
+        env:
+          PACKAGE_VERSION: ${{ inputs.package_version }}
+        run: node tools/publish-npm-artifacts.mjs "$PACKAGE_VERSION" dry-run
 
       - name: Publish packages with provenance
         if: ${{ inputs.publish }}
-        working-directory: build/npm/packages
-        run: |
-          npm publish ./memory-core --access public --provenance
-          npm publish ./memory --access public --provenance
-          npm publish ./memory-cli --access public --provenance
-          npm publish ./mcp-server --access public --provenance
+        env:
+          PACKAGE_VERSION: ${{ inputs.package_version }}
+        run: node tools/publish-npm-artifacts.mjs "$PACKAGE_VERSION" publish
