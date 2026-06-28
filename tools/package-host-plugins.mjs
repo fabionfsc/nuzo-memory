@@ -6,12 +6,12 @@ import { spawnSync } from "node:child_process";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const outputRoot = join(repositoryRoot, "build", "plugins");
-const mcpPackage = readJson(join(repositoryRoot, "packages", "mcp-server", "package.json"));
-const packageSpec = `${mcpPackage.name}@${mcpPackage.version}`;
+const memoryPackage = readJson(join(repositoryRoot, "packages", "memory", "package.json"));
+const packageSpec = `${memoryPackage.name}@${memoryPackage.version}`;
 const hookCommand = `npm exec --yes --package=${packageSpec} -- nuzo-memory-hook`;
 
-if (mcpPackage.version === "0.0.0") {
-  console.warn("Packaging pre-release plugin artifacts against unpublished MCP version 0.0.0.");
+if (memoryPackage.version === "0.0.0") {
+  console.warn("Packaging pre-release plugin artifacts against unpublished Nuzo package version 0.0.0.");
 }
 
 rmSync(outputRoot, { recursive: true, force: true });

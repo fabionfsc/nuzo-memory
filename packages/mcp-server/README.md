@@ -1,64 +1,18 @@
 # @nuzo/mcp-server
 
-The MCP stdio server for Nuzo, a local-first and auditable memory layer for AI
-agents.
+Legacy Nuzo MCP server package.
 
-Use this package when an MCP-compatible host needs access to Nuzo memory tools.
-Human users usually install `@nuzo/memory-cli` instead.
-
-## Run
-
-For direct MCP host configuration:
+Use the unified package instead:
 
 ```bash
-npm exec --yes --package=@nuzo/mcp-server -- nuzo-mcp-server
+npm exec --yes --package=@nuzo/memory -- nuzo-mcp-server
 ```
 
-Generated host plugin artifacts pin the matching `@nuzo/mcp-server` version
-for reproducible installs. Direct npm examples omit a release number so normal
-users get the current package.
-
-Check the read-only host hook runner and local store with:
+Generated host plugin artifacts pin `@nuzo/memory` for reproducible installs.
 
 ```bash
-npm exec --yes --package=@nuzo/mcp-server -- nuzo-memory-hook --doctor
+npm exec --yes --package=@nuzo/memory -- nuzo-memory-hook --doctor
 ```
-
-The runner supports `SessionStart` bootstrap through the `autoload` tag and
-contextual `UserPromptSubmit` recall. Host plugins configure it; direct MCP
-users do not need to run it manually.
-
-## Tools
-
-The server exposes the Nuzo memory contract over MCP:
-
-```text
-memory.remember
-memory.recall
-memory.recall_hook
-memory.suggest_capture
-memory.list
-memory.update
-memory.history
-memory.forget
-memory.forget_many
-memory.export
-memory.import
-memory.doctor
-```
-
-`memory.suggest_capture` is read-only. Use it to validate inferred memory
-drafts before asking the user to confirm a write through `memory.remember`.
-
-## Defaults
-
-Runtime memory is stored locally under:
-
-```text
-~/.nuzo/memory/
-```
-
-Nuzo does not enable telemetry, sync, embeddings, or network calls by default.
 
 Documentation: https://nuzo.com.br/
 

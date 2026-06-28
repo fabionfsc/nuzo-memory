@@ -157,11 +157,11 @@ Release-state validation confirms that root/workspace versions, Nuzo internal
 dependency pins, lockfile workspace entries, CLI version output, MCP server
 version metadata, and changelog structure stay aligned.
 
-The npm artifact validation installs generated core, CLI, and MCP tarballs into
-a temporary project. It exercises the installed CLI workflow, read-only capture
-suggestions, confirmed writes, recall, and exit codes, then confirms the
-installed MCP binary starts and supports the same suggestion-to-recall lifecycle
-over stdio. It does not publish packages or require npm credentials.
+The npm artifact validation installs generated core and Nuzo package tarballs
+into a temporary project. It exercises the installed CLI workflow, read-only
+capture suggestions, confirmed writes, recall, and exit codes, then confirms
+the installed MCP binary starts and supports the same suggestion-to-recall
+lifecycle over stdio. It does not publish packages or require npm credentials.
 
 The host hook continuity smoke uses an isolated SQLite store populated only
 with synthetic data. Its `0.2.1` matrix covers 75 memories and 53 scenarios,
@@ -172,14 +172,11 @@ languages (English plus 14 non-English languages). Representative ephemeral Code
 deterministic test before release; Claude Code remains covered by artifact and
 schema validation when its authenticated host CLI is unavailable locally.
 
-The published CLI smoke installs `@nuzo/memory-cli` into a temporary npm prefix
-and validates session continuity through separate `nuzo` process invocations.
-It is a post-release confidence check for the package users install, not a
-replacement for staged artifact validation before publication.
-
-The published MCP smoke installs `@nuzo/mcp-server` into a temporary npm prefix
-and validates session continuity through separate stdio server processes. It is
-the package-level confidence check for the runtime host plugins resolve.
+The published CLI and MCP smokes install `@nuzo/memory` into a temporary npm
+prefix and validate session continuity through separate `nuzo` and stdio server
+processes. They are post-release confidence checks for the package users and
+host plugins install, not replacements for staged artifact validation before
+publication.
 
 The Codex plugin artifact smoke regenerates the release-layout plugin, verifies
 the host-facing metadata loads as `Nuzo`, reads its bundled MCP config, and

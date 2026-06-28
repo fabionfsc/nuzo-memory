@@ -65,8 +65,8 @@ cleanly. Prefer merging small operational notes into the relevant docs page.
 
 - Repository name: `nuzo-memory`.
 - CLI command: `nuzo memory`.
-- CLI package: `@nuzo/memory-cli`.
-- MCP server package: `@nuzo/mcp-server`.
+- User package: `@nuzo/memory`.
 - Core package: `@nuzo/memory-core`.
+- Legacy transition packages: `@nuzo/memory-cli` and `@nuzo/mcp-server`.
 - Host plugin display name: `Nuzo`.
 - Default config directory: `~/.nuzo/`.

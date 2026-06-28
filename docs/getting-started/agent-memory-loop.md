@@ -21,7 +21,7 @@ tokens, raw logs, or private file contents.
 Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
 
 ```bash
-npm install --global @nuzo/memory-cli
+npm install --global @nuzo/memory
 nuzo memory init
 ```
 

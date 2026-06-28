@@ -1,16 +1,16 @@
 # Getting Started
 
-Nuzo `0.2.1` is the current public release.
+Nuzo `0.3.0` is the current public release.
 
-Most users should start with the released CLI. Repository setup is only needed
-when you want to contribute to Nuzo itself.
+Most users should start with the released package. Repository setup is only
+needed when you want to contribute to Nuzo itself.
 
-## Install The CLI
+## Install
 
 Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
 
 ```bash
-npm install --global @nuzo/memory-cli
+npm install --global @nuzo/memory
 nuzo memory init
 nuzo memory doctor
 ```
@@ -45,18 +45,14 @@ Initialize project-local memory from a project root with:
 nuzo memory init --project
 ```
 
-## Choose A Package
+## Packages
 
-You do not need to install every Nuzo package.
+You usually need one package.
 
 | Package | Use it when you need... |
 | --- | --- |
-| `@nuzo/memory-cli` | the `nuzo` command for local memory control. |
-| `@nuzo/mcp-server` | an MCP stdio server for Codex, Claude Code, or another host. |
+| `@nuzo/memory` | CLI, MCP server, and host lifecycle hooks. |
 | `@nuzo/memory-core` | library-level integration or Nuzo package development. |
-
-The CLI is the default starting point for humans. Host plugins and MCP clients
-resolve the MCP server runtime when they need it.
 
 ## Read The Project
 

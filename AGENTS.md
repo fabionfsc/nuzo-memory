@@ -4,7 +4,7 @@ This repository is the design, implementation, and documentation home for
 Nuzo.
 
 Nuzo is a local-first, auditable memory layer for Codex, Claude Code, and
-MCP-compatible AI agents. Version `0.2.1` is the current public release.
+MCP-compatible AI agents. Version `0.3.0` is the current public release.
 
 ## Start Here
 
@@ -53,11 +53,11 @@ data, or personal operator notes in public docs, issues, examples, or tests.
 The intended package direction is:
 
 ```text
-core -> cli -> mcp-server -> host plugins
+core -> cli/mcp-server -> memory package -> host plugins
 ```
 
-Most users install `@nuzo/memory-cli`. MCP hosts and generated host plugin
-artifacts resolve `@nuzo/mcp-server`. Library-level integrations use
+Most users install `@nuzo/memory`. MCP hosts and generated host plugin
+artifacts resolve `@nuzo/memory`. Library-level integrations use
 `@nuzo/memory-core`.
 
 Source workspace packages remain private. Publish only generated npm staging

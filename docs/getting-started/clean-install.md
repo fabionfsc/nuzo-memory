@@ -3,8 +3,8 @@
 This walkthrough starts from a clean installation path and uses fake memory data
 only.
 
-It verifies the public CLI package first. The source checkout section is only
-for contributors.
+It verifies the public package first. The source checkout section is only for
+contributors.
 
 ## Prerequisites
 
@@ -29,11 +29,10 @@ of the CI matrix. See the [runtime support policy](../operations/runtime-support
 Most users install only:
 
 ```text
-@nuzo/memory-cli
+@nuzo/memory
 ```
 
-The CLI brings the runtime it needs for local memory control. Use
-`@nuzo/mcp-server` when an MCP host needs the stdio server, and
+It includes the CLI, MCP server, and read-only lifecycle hook runner. Use
 `@nuzo/memory-core` only for library-level integrations or Nuzo development.
 
 Verify the released CLI without cloning:
@@ -41,7 +40,7 @@ Verify the released CLI without cloning:
 ```bash
 NUZO_PUBLISHED_DIR=/tmp/nuzo-published-cli
 rm -rf "$NUZO_PUBLISHED_DIR"
-npm install --prefix "$NUZO_PUBLISHED_DIR" @nuzo/memory-cli@0.2.1
+npm install --prefix "$NUZO_PUBLISHED_DIR" @nuzo/memory@0.3.0
 "$NUZO_PUBLISHED_DIR/node_modules/.bin/nuzo" memory --store /tmp/nuzo-published.sqlite init
 NUZO_DOCTOR_SKIP_GIT=1 "$NUZO_PUBLISHED_DIR/node_modules/.bin/nuzo" memory --store /tmp/nuzo-published.sqlite doctor
 rm -rf "$NUZO_PUBLISHED_DIR"

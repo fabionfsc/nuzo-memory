@@ -1,4 +1,4 @@
-import { mkdirSync, readdirSync } from "node:fs";
+import { mkdirSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 
@@ -9,8 +9,10 @@ export function prepareStagedMcpRuntime(repositoryRoot, testRoot) {
 
   const tarballsRoot = join(repositoryRoot, "build", "npm", "tarballs");
   const tarballs = readdirSync(tarballsRoot);
-  const coreTarball = findTarball(tarballs, "nuzo-memory-core-");
-  const mcpTarball = findTarball(tarballs, "nuzo-mcp-server-");
+  const corePackage = readJson(join(repositoryRoot, "packages", "core", "package.json"));
+  const memoryPackage = readJson(join(repositoryRoot, "packages", "memory", "package.json"));
+  const coreTarball = findTarball(tarballs, tarballName(corePackage));
+  const memoryTarball = findTarball(tarballs, tarballName(memoryPackage));
   const runtimeRoot = join(testRoot, "staged-runtime");
   mkdirSync(runtimeRoot, { recursive: true });
   run("npm", [
@@ -20,21 +22,29 @@ export function prepareStagedMcpRuntime(repositoryRoot, testRoot) {
     "--no-audit",
     "--no-fund",
     join(tarballsRoot, coreTarball),
-    join(tarballsRoot, mcpTarball),
+    join(tarballsRoot, memoryTarball),
   ], repositoryRoot);
 
   return {
     command: process.execPath,
-    args: [join(runtimeRoot, "node_modules", "@nuzo", "mcp-server", "dist", "index.js")],
+    args: [join(runtimeRoot, "node_modules", "@nuzo", "memory", "dist", "mcp-server", "index.js")],
   };
 }
 
-function findTarball(files, prefix) {
-  const matches = files.filter((file) => file.startsWith(prefix) && file.endsWith(".tgz"));
+function findTarball(files, expectedName) {
+  const matches = files.filter((file) => file === expectedName);
   if (matches.length !== 1) {
-    throw new Error(`Expected one ${prefix} tarball, found ${matches.length}.`);
+    throw new Error(`Expected one ${expectedName} tarball, found ${matches.length}.`);
   }
   return matches[0];
+}
+
+function tarballName(pkg) {
+  return `${pkg.name.replace(/^@/, "").replace("/", "-")}-${pkg.version}.tgz`;
+}
+
+function readJson(path) {
+  return JSON.parse(readFileSync(path, "utf8"));
 }
 
 function run(command, args, cwd) {

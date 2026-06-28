@@ -99,14 +99,14 @@ The generated release artifact instead uses:
   "mcpServers": {
     "nuzo": {
       "command": "npm",
-      "args": ["exec", "--yes", "--package=@nuzo/mcp-server@0.2.1", "--", "nuzo-mcp-server"],
+      "args": ["exec", "--yes", "--package=@nuzo/memory@0.3.0", "--", "nuzo-mcp-server"],
       "cwd": "${CLAUDE_PLUGIN_ROOT}"
     }
   }
 }
 ```
 
-`0.2.1` matches the current release. Future packaging pins the actual plugin
+`0.3.0` matches the current release. Future packaging pins the actual plugin
 version. This keeps the artifact portable across supported platforms while
 allowing npm to install the correct native SQLite build.
 
@@ -163,8 +163,8 @@ npm run package:plugins
 claude plugin validate build/plugins/claude-code/nuzo --strict
 ```
 
-The generated `0.2.1` config resolves the matching public
-`@nuzo/mcp-server@0.2.1` package. It has been installed through an isolated
+The generated `0.3.0` config resolves the matching public
+`@nuzo/memory@0.3.0` package. It has been installed through an isolated
 Claude Code marketplace, and `claude mcp list` reports the Nuzo server as
 connected.
 
@@ -217,7 +217,7 @@ The validator checks:
 Release validation additionally checks:
 
 - the MCP server runs through `npm exec`;
-- `@nuzo/mcp-server` is pinned to the plugin version and runs the explicit
+- `@nuzo/memory` is pinned to the plugin version and runs the explicit
   `nuzo-mcp-server` binary;
 - `cwd` resolves through `${CLAUDE_PLUGIN_ROOT}`;
 - no sibling monorepo path remains.
@@ -249,7 +249,7 @@ The plugin bundles the same read-only lifecycle used by Codex:
 Run the packaged runner diagnostic with:
 
 ```bash
-npm exec --yes --package=@nuzo/mcp-server -- nuzo-memory-hook --doctor
+npm exec --yes --package=@nuzo/memory -- nuzo-memory-hook --doctor
 ```
 
 The report confirms runtime and store readiness. Claude Code remains the

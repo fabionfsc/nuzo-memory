@@ -6,6 +6,24 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-27
+
+### Added
+
+- `@nuzo/memory` npm package for the CLI, MCP server, and host lifecycle hook
+  runner.
+- Package README for the new recommended user install path.
+
+### Changed
+
+- Codex and Claude Code release artifacts now resolve `@nuzo/memory` instead
+  of the legacy MCP-only package.
+- User-facing install docs now point to one package: `@nuzo/memory`.
+- `@nuzo/memory-cli` and `@nuzo/mcp-server` package READMEs now point to
+  `@nuzo/memory`.
+- npm release validation now checks the unified package binaries for CLI, MCP,
+  and host hook workflows.
+
 ## [0.2.1] - 2026-06-27
 
 ### Added

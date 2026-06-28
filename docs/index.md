@@ -13,7 +13,7 @@
   <div class="nuzo-progress" aria-label="MVP progress 100 percent">
     <span style="width: 100%"></span>
   </div>
-  <p class="nuzo-progress__label"><strong>0.2.1</strong> current release</p>
+  <p class="nuzo-progress__label"><strong>0.3.0</strong> current release</p>
   <div class="nuzo-stats" markdown>
   <span><strong>12</strong> MCP tools</span>
   <span><strong>0</strong> telemetry</span>
@@ -54,15 +54,15 @@ The integration boundary is a stable MCP tool contract.
 
 ## Current Focus
 
-Nuzo `0.2.1` is the current public release. It includes a TypeScript core package, a local CLI backed by SQLite, an MCP server, host plugin artifacts, published npm runtime packages, and installed-package validation.
+Nuzo `0.3.0` is the current public release. It includes a TypeScript core package, a local CLI backed by SQLite, an MCP server, host plugin artifacts, a published npm package, and installed-package validation.
 
 | Area | State |
 | --- | --- |
 | Core | Memory lifecycle, policy checks, SQLite storage, FTS search, tests. |
 | CLI | User/project init, lifecycle commands, audit history, dry-run bulk forget, portability, and diagnostics. |
 | MCP | 12 stdio tools covering recall, lifecycle, capture suggestion validation, audit history, bulk safety, portability, and diagnostics. |
-| Host Plugins | Codex and Claude Code artifacts install through isolated official marketplace flows and connect to the published MCP runtime. |
-| Release | `0.2.1` packages, tag, CI, Pages, plugin packaging, release-state checks, and published package smoke tests. |
+| Host Plugins | Codex and Claude Code artifacts install through isolated official marketplace flows and connect to the published Nuzo package. |
+| Release | `0.3.0` packages, tag, CI, Pages, plugin packaging, release-state checks, and published package smoke tests. |
 | Next | Public marketplace distribution, complete capture lifecycle UX, and field feedback from real Codex and Claude Code workflows. |
 
 ## Runtime Storage

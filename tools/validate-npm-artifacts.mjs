@@ -13,11 +13,9 @@ const { sortedMemoryToolNames: expectedMcpTools } = await import(
 );
 const tarballsRoot = join(repositoryRoot, "build", "npm", "tarballs");
 const corePackage = readJson(join(repositoryRoot, "packages", "core", "package.json"));
-const cliPackage = readJson(join(repositoryRoot, "packages", "cli", "package.json"));
-const mcpPackage = readJson(join(repositoryRoot, "packages", "mcp-server", "package.json"));
+const memoryPackage = readJson(join(repositoryRoot, "packages", "memory", "package.json"));
 const coreTarball = join(tarballsRoot, tarballName(corePackage));
-const cliTarball = join(tarballsRoot, tarballName(cliPackage));
-const mcpTarball = join(tarballsRoot, tarballName(mcpPackage));
+const memoryTarball = join(tarballsRoot, tarballName(memoryPackage));
 const testRoot = mkdtempSync(join(tmpdir(), "nuzo-npm-artifacts-"));
 const cliStorePath = join(testRoot, "memory", "cli.sqlite");
 const mcpStorePath = join(testRoot, "memory", "mcp.sqlite");
@@ -32,8 +30,7 @@ try {
       "--no-audit",
       "--no-fund",
       coreTarball,
-      cliTarball,
-      mcpTarball,
+      memoryTarball,
     ],
     testRoot,
   );
@@ -41,23 +38,17 @@ try {
   const installedCore = readJson(
     join(testRoot, "node_modules", "@nuzo", "memory-core", "package.json"),
   );
-  const installedCli = readJson(
-    join(testRoot, "node_modules", "@nuzo", "memory-cli", "package.json"),
+  const installedMemory = readJson(
+    join(testRoot, "node_modules", "@nuzo", "memory", "package.json"),
   );
-  const installedMcp = readJson(
-    join(testRoot, "node_modules", "@nuzo", "mcp-server", "package.json"),
-  );
-  if (
-    installedCore.version !== installedCli.version ||
-    installedCore.version !== installedMcp.version
-  ) {
-    fail("installed core, CLI, and MCP package versions differ");
+  if (installedCore.version !== installedMemory.version) {
+    fail("installed core and memory package versions differ");
   }
 
   assertCliWorkflow(testRoot, cliStorePath);
   await assertMcpProtocol(testRoot, mcpStorePath);
   assertHostHookDoctor(testRoot, mcpStorePath);
-  console.log(`npm artifact validation passed: ${installedMcp.version}`);
+  console.log(`npm artifact validation passed: ${installedMemory.version}`);
 } finally {
   rmSync(testRoot, { recursive: true, force: true });
 }

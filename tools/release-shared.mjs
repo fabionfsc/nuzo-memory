@@ -10,6 +10,7 @@ export const packagePaths = [
   "packages/cli/package.json",
   "packages/codex-plugin/package.json",
   "packages/core/package.json",
+  "packages/memory/package.json",
   "packages/mcp-server/package.json",
 ];
 
@@ -33,6 +34,7 @@ export const publicReleaseReferencePaths = [
 export const nuzoWorkspaceDependencies = new Set([
   "@nuzo/memory-core",
   "@nuzo/memory-cli",
+  "@nuzo/memory",
   "@nuzo/mcp-server",
   "@nuzo/codex-plugin",
   "@nuzo/claude-code-plugin",

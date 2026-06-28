@@ -101,7 +101,7 @@ The memory commands should remain grouped under:
 nuzo memory
 ```
 
-The released package name is `@nuzo/memory-cli`; the user-facing command stays
+The released user package is `@nuzo/memory`; the user-facing command stays
 `nuzo`.
 
 ## Boundaries

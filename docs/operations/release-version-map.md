@@ -29,8 +29,8 @@ The public docs currently managed by that list are:
 | `docs/index.md` | docs homepage current release panel and release state table. |
 | `docs/getting-started/index.md` | current public release line. |
 | `docs/getting-started/clean-install.md` | clean install package version. |
-| `docs/operations/codex-plugin.md` | generated plugin `@nuzo/mcp-server@X.Y.Z` example and validation text. |
-| `docs/operations/claude-code-plugin.md` | generated plugin `@nuzo/mcp-server@X.Y.Z` example and validation text. |
+| `docs/operations/codex-plugin.md` | generated plugin `@nuzo/memory@X.Y.Z` example and validation text. |
+| `docs/operations/claude-code-plugin.md` | generated plugin `@nuzo/memory@X.Y.Z` example and validation text. |
 | `docs/operations/npm-publishing.md` | current npm package version list. |
 | `docs/operations/versioning.md` | current package version block. |
 
