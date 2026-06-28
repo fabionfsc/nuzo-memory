@@ -67,6 +67,8 @@ Exit criteria:
 Goal: let users answer what changed in a store, who or what caused it, and where
 the affected memory originated.
 
+Status: prepared for `0.4.0`.
+
 Deliverables:
 
 - specify a store-wide audit query contract in core, CLI, and MCP;
