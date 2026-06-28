@@ -43,11 +43,20 @@ For every explicit save request:
 2. Choose the narrowest useful scope.
 3. Call `memory.suggest_capture` with content, kind, scope, tags, source,
    confidence, and reason.
-4. Show the validated draft or duplicate result to the user.
-5. If the user confirms or edits the draft, call `memory.remember` with the
-   final user-approved fields.
-6. If the user rejects the draft, do not write memory, audit events, or hidden
-   notes.
+4. Show the validated draft, duplicate result, and any relationship evidence to
+   the user before asking for a decision.
+5. Offer explicit decisions: create, update, keep separate, clarify, or reject.
+6. If the user confirms or edits a new memory, call `memory.confirm_capture`
+   with `decision: "create"` and `confirm: true`.
+7. If the user confirms an update, call `memory.confirm_capture` with
+   `decision: "update"`, the displayed `target_memory_id`, and the displayed
+   `expected_revision`.
+8. If the user wants a related memory saved separately, call
+   `memory.confirm_capture` with `decision: "keep_separate"` and
+   `confirm: true`.
+9. If the user rejects or asks to clarify, call `memory.confirm_capture` with
+   `decision: "reject"` or `decision: "clarify"` only when a structured
+   no-write result is useful. Otherwise, write nothing.
 
 Suggest a small set of lowercase topical tags from subjects the user actually
 stated. For example, a recurring Cloudflare workflow may use `cloudflare`,
@@ -77,8 +86,10 @@ Keep project decisions in the active project scope and cross-project preferences
 in `user:default`.
 
 If a new statement changes an existing memory, prefer showing the existing
-memory and asking whether to update it instead of creating a duplicate. Use
-`memory.update` with the displayed memory's expected revision only after the user confirms or edits the update draft.
+memory, its revision, and bounded relationship evidence before asking whether
+to update it instead of creating a duplicate. Use `memory.confirm_capture` with
+the displayed memory's expected revision only after the user confirms or edits
+the update draft.
 If the update reports a revision conflict, re-read the memory and ask again; do
 not retry silently.
 
@@ -100,6 +111,7 @@ Use `memory.history` when the user needs an audit trail. Preview
 - `memory.recall`
 - `memory.recall_hook`
 - `memory.suggest_capture`
+- `memory.confirm_capture`
 - `memory.list`
 - `memory.update`
 - `memory.history`

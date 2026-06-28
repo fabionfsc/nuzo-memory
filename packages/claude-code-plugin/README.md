@@ -11,8 +11,8 @@ It is intentionally thin:
 
 Memory behavior stays in `packages/core` and is exposed through `packages/mcp-server`.
 
-The shared MCP contract includes `memory.history` for read-only audit
-inspection.
+The shared MCP contract includes `memory.confirm_capture` for explicit capture
+decisions and `memory.history` for read-only audit inspection.
 
 ## Current Scope
 

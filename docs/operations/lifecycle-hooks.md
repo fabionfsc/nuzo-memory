@@ -108,8 +108,9 @@ Allowed behavior:
 - classify the draft as `preference`, `project_decision`, `fact`, `instruction`, or `note`;
 - suggest tags and scope;
 - show exact duplicates instead of proposing redundant writes;
-- ask the user to confirm, edit, or reject;
-- call `memory.remember` only after confirmation.
+- show bounded relationship evidence before asking for a decision;
+- ask the user to create, update, keep separate, clarify, or reject;
+- call `memory.confirm_capture` only after an explicit decision.
 
 Not allowed:
 
@@ -194,8 +195,9 @@ installation alone must not be described as proof that hooks executed.
 3. MCP-level read-only recall hook prototype.
 4. MCP-level read-only capture suggestion validation.
 5. Capture suggestion prompt with no persistence.
-6. Confirmed capture calling `memory.remember`.
-7. Optional update suggestions calling `memory.update`.
+6. Confirmed capture calling `memory.confirm_capture`.
+7. Update suggestions passing the displayed memory ID and revision through
+   `memory.confirm_capture`.
 
 Do not implement hard-delete hooks.
 

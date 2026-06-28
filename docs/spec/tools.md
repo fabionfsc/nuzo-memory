@@ -49,7 +49,10 @@ agent should not enumerate unrelated memory.
 
 Store a memory.
 
-Inferred memories must not call this tool until the user confirms a capture draft. See `docs/spec/capture-suggestions.md`.
+Inferred host capture must not call this tool directly; use
+`memory.confirm_capture` after the user confirms a capture draft. Direct
+library-style integrations may still use `memory.remember` for explicit writes.
+See `docs/spec/capture-suggestions.md`.
 
 Input:
 
@@ -116,7 +119,8 @@ Prototype read-only recall entrypoint for host lifecycle hooks.
 
 This tool exists so Codex, Claude Code, or another MCP-compatible host can recall relevant context at the start of a task without introducing automatic memory capture.
 
-It never creates memories and does not produce capture suggestions. Confirmed writes still go through `memory.remember`.
+It never creates memories and does not produce capture suggestions. Confirmed
+host capture still goes through `memory.confirm_capture`.
 
 Input:
 
@@ -371,12 +375,13 @@ Compatibility rules:
   and refers to the same memory as bounded primary evidence.
 
 If the user confirms or edits a ready draft, the host must call
-`memory.remember` with the final user-approved fields. A duplicate response is
-advisory; hosts should normally show the existing memory and avoid asking for a
-new write unless the user explicitly wants a separate memory. A bounded
-`update_candidate` uses `memory.update` with the displayed ID and revision only
-after confirmation. `related` and `uncertain` require a user decision before
-any write path is offered.
+`memory.confirm_capture` with the final user-approved fields and explicit
+decision. A duplicate response is advisory; hosts should normally show the
+existing memory and avoid asking for a new write unless the user explicitly
+wants a separate memory. A bounded `update_candidate` uses
+`memory.confirm_capture` with `decision: "update"`, the displayed ID, and the
+displayed revision only after confirmation. `related` and `uncertain` require a
+user decision before any write path is offered.
 
 ### `memory.confirm_capture`
 
