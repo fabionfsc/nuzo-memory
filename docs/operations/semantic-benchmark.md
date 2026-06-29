@@ -97,7 +97,7 @@ measured:
 | Mode | Overall top-1 | English top-1 | English MRR | Overall noise |
 | --- | ---: | ---: | ---: | ---: |
 | FTS | 65.0% | 62.5% | 62.5% | 7.1% |
-| Semantic candidate | 95.0% | 93.8% | 93.8% | 0.0% |
+| Semantic candidate | 90.0% | 87.5% | 87.5% | 0.0% |
 | Hybrid | 95.0% | 93.8% | 93.8% | 5.0% |
 
 The hybrid lift was 31.3 percentage points for English top-1 and MRR. All
@@ -105,6 +105,12 @@ safety gates passed. These numbers justify defining the optional provider and
 index boundary and building a local prototype; they do not yet authorize a
 runtime semantic implementation. Issue `#145` owns the final ship-or-defer
 decision against that prototype.
+
+The `0.7.0` prototype now runs this fixture provider through the exported core
+provider contract, derived SQLite sidecar, revision checks, cosine search, and
+hybrid fusion implementation. The provider remains benchmark-only; the
+sidecar and fusion measurements therefore validate runtime mechanics without
+claiming that a fixture concept map is a general embedding model.
 
 ## Runtime Separation
 

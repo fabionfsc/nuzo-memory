@@ -6,6 +6,11 @@ This package contains memory lifecycle behavior, policy checks, SQLite storage,
 FTS recall, audit events, and portable import/export contracts. It is consumed
 by `@nuzo/memory`.
 
+SQLite FTS is the default retrieval path. The optional semantic contracts are
+inert unless a library caller supplies a provider, builds a derived sidecar,
+and explicitly requests semantic or hybrid retrieval. Canonical writes never
+invoke an embedding provider.
+
 Most users should install the CLI or a host plugin instead of depending on the
 core package directly.
 

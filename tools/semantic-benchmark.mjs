@@ -7,9 +7,13 @@ import { performance } from "node:perf_hooks";
 
 import {
   createMemoryService,
+  createHybridSearchIndex,
+  createSemanticSearch,
   DefaultPolicyEngine,
+  rebuildSemanticIndex,
   RegexSecretScanner,
   SQLiteMemoryDatabase,
+  semanticIndexPathFor,
   SystemClock,
 } from "../packages/core/dist/index.js";
 
@@ -84,7 +88,15 @@ const safetyCases = [
 
 class DeterministicBenchmarkEncoder {
   networkRequests = 0;
-  descriptor = { id: "public-synthetic-concept-hash-v1", dimensions: 384, network: false, runtimeCandidate: false };
+  descriptor = { id: "public-synthetic-concept-hash-v1", model: "public-concept-hash", revision: "1", dimensions: 384, network: "none", runtimeCandidate: false };
+
+  async embedDocuments(texts) {
+    return texts.map((text) => this.embed(text));
+  }
+
+  async embedQuery(text) {
+    return this.embed(text);
+  }
 
   embed(text) {
     const normalized = text.toLowerCase().normalize("NFKD").replace(/\p{M}/gu, "");
@@ -133,17 +145,27 @@ async function runBenchmark() {
   }
 
   const keyById = new Map([...memories].map(([key, memory]) => [memory.id, key]));
-  const activeVectors = fixtures
-    .filter((item) => !item.archived)
-    .map((item) => ({ item, memory: memories.get(item.key), vector: encoder.embed(item.content + " " + item.tags.join(" ")) }));
+  const semanticPath = semanticIndexPathFor(storePath);
+  await rebuildSemanticIndex({
+    path: semanticPath,
+    provider: encoder,
+    memories: await service.list({ includeArchived: false }),
+  });
+  const semantic = createSemanticSearch({
+    path: semanticPath,
+    provider: encoder,
+    store: database,
+    similarityFloor: 0.34,
+  });
+  const searchIndex = createHybridSearchIndex({ fts: database, semantic });
   const before = mutationCounts(database);
   const modes = {};
   for (const mode of ["fts", "semantic", "hybrid"]) {
-    modes[mode] = await evaluateMode(mode, qualityCases, service, activeVectors, encoder, keyById);
+    modes[mode] = await evaluateMode(mode, qualityCases, searchIndex, keyById);
   }
   const safety = {};
   for (const mode of ["fts", "semantic", "hybrid"]) {
-    safety[mode] = await evaluateSafety(mode, safetyCases, service, activeVectors, encoder, keyById);
+    safety[mode] = await evaluateSafety(mode, safetyCases, searchIndex, keyById);
   }
   const after = mutationCounts(database);
   const safetyGates = {
@@ -189,11 +211,11 @@ function semanticCase(label, query, expected, options = {}) {
   return { label, query, expected, group: options.group ?? "english", scope: "project:nuzo", limit: 5, includeGlobal: options.includeGlobal === true };
 }
 
-async function evaluateMode(mode, cases, service, vectors, candidate, keyById) {
+async function evaluateMode(mode, cases, searchIndex, keyById) {
   const results = [];
   for (const item of cases) {
     const started = performance.now();
-    const recalled = await retrieve(mode, item, service, vectors, candidate);
+    const recalled = await retrieve(mode, item, searchIndex);
     const latencyMs = performance.now() - started;
     const keys = recalled.map((result) => keyById.get(result.memory.id));
     const rank = keys.indexOf(item.expected) + 1;
@@ -203,10 +225,10 @@ async function evaluateMode(mode, cases, service, vectors, candidate, keyById) {
   return summarizeMode(results);
 }
 
-async function evaluateSafety(mode, cases, service, vectors, candidate, keyById) {
+async function evaluateSafety(mode, cases, searchIndex, keyById) {
   const results = [];
   for (const item of cases) {
-    const recalled = await retrieve(mode, item, service, vectors, candidate);
+    const recalled = await retrieve(mode, item, searchIndex);
     const keys = recalled.map((result) => keyById.get(result.memory.id));
     const failures = [];
     for (const excluded of item.excluded ?? []) if (keys.includes(excluded)) failures.push(`included ${excluded}`);
@@ -217,38 +239,15 @@ async function evaluateSafety(mode, cases, service, vectors, candidate, keyById)
   return { failures: results.flatMap((result) => result.failures.map((failure) => `${result.label}: ${failure}`)), results };
 }
 
-async function retrieve(mode, input, service, vectors, candidate) {
-  const fts = await service.recall({ query: input.query, scope: input.scope, includeGlobal: input.includeGlobal, limit: input.limit, recordUsage: false });
-  if (mode === "fts") return fts;
-  const semantic = semanticSearch(input, vectors, candidate);
-  if (mode === "semantic") return semantic;
-  return reciprocalRankFusion(fts, semantic, input.limit);
-}
-
-function semanticSearch(input, vectors, candidate) {
-  const queryVector = candidate.embed(input.query);
-  return vectors
-    .filter(({ memory }) => memory.scope === input.scope || (input.includeGlobal && memory.scope === "user:default"))
-    .map(({ memory, vector }) => ({ memory, score: cosine(queryVector, vector), reason: "Deterministic benchmark semantic similarity." }))
-    .filter((result) => result.score >= 0.34)
-    .sort((left, right) => right.score - left.score || left.memory.id.localeCompare(right.memory.id))
-    .slice(0, input.limit);
-}
-
-function reciprocalRankFusion(fts, semantic, limit) {
-  const fused = new Map();
-  for (const [source, results] of [["fts", fts], ["semantic", semantic]]) {
-    results.forEach((result, index) => {
-      const current = fused.get(result.memory.id) ?? { memory: result.memory, score: 0, sources: [] };
-      current.score += 1 / (60 + index + 1);
-      current.sources.push(source);
-      fused.set(result.memory.id, current);
-    });
-  }
-  return [...fused.values()]
-    .sort((left, right) => right.score - left.score || left.memory.id.localeCompare(right.memory.id))
-    .slice(0, limit)
-    .map((result) => ({ memory: result.memory, score: result.score, reason: `Hybrid reciprocal-rank fusion: ${result.sources.join("+")}.` }));
+async function retrieve(mode, input, searchIndex) {
+  return searchIndex.search({
+    query: input.query,
+    scope: input.scope,
+    includeGlobal: input.includeGlobal,
+    limit: input.limit,
+    recordUsage: false,
+    retrievalMode: mode,
+  });
 }
 
 function summarizeMode(results) {
@@ -328,12 +327,6 @@ function tokenize(text) {
 }
 
 const stopWords = new Set(["the", "and", "for", "with", "what", "which", "when", "how", "should", "does", "must", "before", "from", "that", "this", "are", "into", "uma", "qual", "como", "antes", "para", "los", "las", "que", "was", "wird", "werden", "durfen", "welche"]);
-
-function cosine(left, right) {
-  let value = 0;
-  for (let index = 0; index < left.length; index += 1) value += left[index] * right[index];
-  return value;
-}
 
 function ratio(numerator, denominator) { return denominator === 0 ? 1 : numerator / denominator; }
 function average(values) { return values.reduce((sum, value) => sum + value, 0) / values.length; }
