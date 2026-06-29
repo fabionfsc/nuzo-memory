@@ -93,6 +93,28 @@ The canonical post-release smoke is:
 6. Call `memory.recall_hook` and confirm it is read-only.
 7. Call `memory.suggest_capture` or `nuzo memory suggest-capture`.
 8. Confirm the suggestion does not write before user confirmation.
+
+Run the cross-host NUZO-37 canary before or immediately after the release:
+
+```bash
+npm run smoke:host-canary
+NUZO_HOST_CANARY_NATIVE=1 npm run smoke:host-canary
+NUZO_PLUGIN_SMOKE_PUBLISHED=1 npm run smoke:host-canary
+```
+
+The canary proves that the generated Codex and Claude Code artifacts deliver a
+shared `user:default` `autoload` instruction memory across fresh hook
+invocations while preserving the untrusted-memory boundary. It must not be
+used as proof that the host model obeys the stored instruction in every
+response. Host-native checks should record delivery separately from model
+compliance. The native canary installs the Codex artifact through a temporary
+local marketplace and validates the Claude Code artifact with the
+npm-distributed Claude Code CLI when those tools are available.
+
+Before closing the release milestone, do one general issue-hunting pass for
+post-release work only. Open focused GitHub Issues for defects, docs gaps,
+host limitations, or roadmap candidates found during validation, but do not
+expand the already-scoped release unless the finding is release-blocking.
 9. Confirm a duplicate suggestion reports the existing memory instead of
    proposing a redundant write.
 10. Confirm a new memory through `memory.confirm_capture` with
