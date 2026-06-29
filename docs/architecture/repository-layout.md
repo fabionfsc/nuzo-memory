@@ -31,6 +31,13 @@ packages, host plugin source, and release tooling.
 └── SECURITY.md
 ```
 
+`tools/` is intentionally committed to GitHub. It contains repository
+automation, benchmarks, release checks, artifact packaging, and smoke tests
+needed to reproduce public validation. It is not a runtime package surface:
+npm staging copies only package `dist/`, `README.md`, and `LICENSE` files into
+publishable artifacts, and `npm pack` validation rejects tests, local stores,
+exports, credentials, and other non-runtime files.
+
 ## Documentation Rules
 
 - Product decisions live in `docs/product/`.

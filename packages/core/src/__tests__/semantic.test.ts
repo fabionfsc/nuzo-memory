@@ -204,6 +204,14 @@ describe("optional semantic retrieval", () => {
     const path = semanticIndexPathFor(fixture.storePath);
     await rebuildSemanticIndex({ path, provider: localProvider, memories: await fixture.service.list() });
     const semantic = createSemanticSearch({ path, provider: localProvider, store: fixture.database, similarityFloor: 0.1 });
+    await expect(inspectSemanticIndex(path, embeddingProviderFingerprint(localProvider.descriptor), fixture.database, {
+      scope: "project:nuzo",
+      includeGlobal: false,
+    })).resolves.toMatchObject({ state: "ready", indexedMemories: 2, activeMemories: 2 });
+    await expect(inspectSemanticIndex(path, embeddingProviderFingerprint(localProvider.descriptor), fixture.database, {
+      scope: "project:nuzo",
+      includeGlobal: true,
+    })).resolves.toMatchObject({ state: "ready", indexedMemories: 3, activeMemories: 3 });
     await fixture.service.update({
       id: otherProject.id,
       expectedRevision: otherProject.revision,

@@ -365,7 +365,7 @@ These examples may produce drafts:
 | "I like concise status updates while work is running." | `preference` | `user:default` |
 | "This repo uses `/tmp/nuzo-git` as the git dir workaround." | `fact` | `project:<path-hash>` |
 | "When changing MCP tools, update `docs/spec/tools.md` first." | `instruction` | `project:<path-hash>` |
-| "For Cloudflare work on this host, use `/opt/docker/cloudflare`." | `instruction` | `user:default` |
+| "For Cloudflare work on this host, use `/example/workflows/cloudflare`." | `instruction` | `user:default` |
 
 ## Blocked Examples
 

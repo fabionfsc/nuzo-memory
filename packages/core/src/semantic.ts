@@ -359,10 +359,13 @@ export async function inspectSemanticIndex(
     if (metadata.provider_fingerprint !== providerFingerprint) {
       return status("incompatible", path, metadata.provider_fingerprint, metadata.indexed_memories, active.length, 0, active.length, "Provider fingerprint does not match the index.");
     }
-    const allRows = database.prepare("SELECT memory_id, revision, scope, vector FROM semantic_vectors").all() as SemanticVectorRow[];
     const rows = scopeFilter
-      ? allRows.filter((row) => row.scope === scopeFilter.scope || (scopeFilter.includeGlobal && row.scope === "user:default"))
-      : allRows;
+      ? database.prepare(`
+          SELECT memory_id, revision, scope, vector
+          FROM semantic_vectors
+          WHERE ${scopeFilter.includeGlobal ? "scope IN (@scope, 'user:default')" : "scope = @scope"}
+        `).all({ scope: scopeFilter.scope }) as SemanticVectorRow[]
+      : database.prepare("SELECT memory_id, revision, scope, vector FROM semantic_vectors").all() as SemanticVectorRow[];
     if (rows.some((row) => row.vector.length !== metadata.dimensions * Float32Array.BYTES_PER_ELEMENT)) {
       return status("error", path, metadata.provider_fingerprint, rows.length, active.length, 0, active.length, "Semantic vector dimensions do not match index metadata.");
     }

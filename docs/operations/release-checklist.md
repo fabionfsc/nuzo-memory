@@ -65,6 +65,7 @@ npm run benchmark:recall
 npm run benchmark:capture
 npm run benchmark:capture -- --expect bounded
 npm run benchmark:semantics
+npm run benchmark:semantics -- --store-size medium
 npm run package:plugins
 npm run validate:npm
 npm run smoke:cli
