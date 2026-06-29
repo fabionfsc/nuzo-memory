@@ -282,6 +282,12 @@ Tracking:
   smallest explicit local prototype justified by those gates.
 - [#145](https://github.com/fabionfsc/nuzo-memory/issues/145) records the
   FTS, semantic, and hybrid comparison and the ship-or-defer decision.
+- [#150](https://github.com/fabionfsc/nuzo-memory/issues/150) implements the
+  pinned offline provider selected by that decision,
+  [#151](https://github.com/fabionfsc/nuzo-memory/issues/151) exposes explicit
+  CLI and MCP workflows, and
+  [#152](https://github.com/fabionfsc/nuzo-memory/issues/152) collects final
+  release evidence.
 
 Deliverables:
 

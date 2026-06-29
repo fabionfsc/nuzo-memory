@@ -70,6 +70,7 @@ export interface SemanticSearch {
 export interface HybridSearchIndexOptions {
   fts: SearchIndex;
   semantic?: SemanticSearch;
+  semanticFusionLimit?: number;
 }
 
 interface SemanticMetadataRow {
@@ -261,6 +262,10 @@ export function createSemanticSearch(options: SemanticSearchOptions): SemanticSe
 }
 
 export function createHybridSearchIndex(options: HybridSearchIndexOptions): SearchIndex {
+  const semanticFusionLimit = options.semanticFusionLimit ?? 1;
+  if (!Number.isInteger(semanticFusionLimit) || semanticFusionLimit < 1 || semanticFusionLimit > 50) {
+    throw new NuzoMemoryError("SEMANTIC_FUSION_LIMIT_INVALID", "Semantic fusion limit must be between 1 and 50.");
+  }
   return {
     index(memory) {
       return options.fts.index(memory);
@@ -293,7 +298,10 @@ export function createHybridSearchIndex(options: HybridSearchIndexOptions): Sear
 
       const ftsResults = await options.fts.search(input);
       try {
-        const semanticResults = await options.semantic.search(input);
+        const semanticResults = await options.semantic.search({
+          ...input,
+          limit: Math.min(input.limit ?? 8, semanticFusionLimit),
+        });
         return fuseResults(ftsResults, semanticResults, input.limit ?? 8);
       } catch (error) {
         if (error instanceof NuzoMemoryError) return fallbackResults(ftsResults, error.code);

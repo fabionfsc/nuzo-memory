@@ -84,6 +84,29 @@ describe("optional semantic retrieval", () => {
     fixture.database.close();
   });
 
+  it("limits the default hybrid semantic contribution to the strongest candidate", async () => {
+    const fixture = await createFixture();
+    const memories = await fixture.service.list({ scope: "project:nuzo" });
+    const fts = {
+      async index() {},
+      async remove() {},
+      async search() { return []; },
+    };
+    const semantic = {
+      async status() {
+        return { state: "ready" as const, path: "test", providerFingerprint: "test", indexedMemories: 2, activeMemories: 2, staleMemories: 0, missingMemories: 0, reason: "ready" };
+      },
+      async search(input: { limit?: number }) {
+        return memories.slice(0, input.limit).map((memory, index) => ({ memory, score: 1 - index / 10, reason: "test", retrievalMode: "semantic" as const }));
+      },
+    };
+    const hybrid = createHybridSearchIndex({ fts, semantic });
+    const results = await hybrid.search({ query: "broad paraphrase", scope: "project:nuzo", limit: 8, retrievalMode: "hybrid" });
+    expect(results).toHaveLength(1);
+    expect(results[0]?.memory.id).toBe(memories[0]?.id);
+    fixture.database.close();
+  });
+
   it("detects stale canonical revisions and falls hybrid back visibly to FTS", async () => {
     const fixture = await createFixture();
     const path = semanticIndexPathFor(fixture.storePath);
