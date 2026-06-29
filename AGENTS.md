@@ -4,7 +4,7 @@ This repository is the design, implementation, and documentation home for
 Nuzo.
 
 Nuzo is a local-first, auditable memory layer for Codex, Claude Code, and
-MCP-compatible AI agents. Version `0.5.0` is the current public release.
+MCP-compatible AI agents. Version `0.6.0` is the current public release.
 
 ## Start Here
 
