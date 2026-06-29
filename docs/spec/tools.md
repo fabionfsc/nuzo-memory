@@ -36,7 +36,9 @@ scope allowlist. In restricted mode:
 - `include_global` requires `user:default` to be explicitly allowlisted;
 - update, archive, and delete require authorization for the memory's current
   scope, and updates that move a memory require authorization for the target
-  scope as well.
+  scope as well;
+- history requires authorization for the target memory's current scope and
+  fails closed when that scope cannot be established.
 
 Denied scope access returns `MEMORY_SCOPE_FORBIDDEN`. Restricted unscoped list,
 export, or bulk destructive operations return `MEMORY_SCOPE_REQUIRED`.
@@ -547,8 +549,13 @@ again instead of retrying silently.
 
 List the audit history for one memory ID.
 
-This is a read-only operation. Audit metadata remains available after hard
-deletion so users can verify that the deletion occurred.
+This is a read-only operation. The unrestricted local administrator workflow
+can inspect audit metadata after hard deletion so users can verify that the
+deletion occurred. Restricted sessions authorize history against the target
+memory's current scope before returning events. Because `memory.history` does
+not accept a scope selector, a restricted session fails closed with
+`MEMORY_SCOPE_REQUIRED` when the memory is missing or hard-deleted and its
+current scope can no longer be established.
 
 Input:
 

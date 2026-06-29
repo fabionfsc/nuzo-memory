@@ -122,6 +122,17 @@ test("npm artifact validation reuses the MCP tool contract", () => {
   assert.doesNotMatch(script, /const expectedMcpTools = \[/);
 });
 
+test("published host canary suppresses npm warnings without ignoring hook stderr", () => {
+  const script = readFileSync(
+    join(repositoryRoot, "tools", "host-nuzo37-canary.mjs"),
+    "utf8",
+  );
+
+  assert.match(script, /NUZO_PLUGIN_SMOKE_PUBLISHED === "1"/);
+  assert.match(script, /NPM_CONFIG_LOGLEVEL: "error"/);
+  assert.match(script, /result\.status !== 0 \|\| result\.stderr !== ""/);
+});
+
 test("release tooling covers public release version references", () => {
   for (const path of publicReleaseReferencePaths) {
     assert.doesNotThrow(() => readFileSync(join(repositoryRoot, path), "utf8"), path);

@@ -19,6 +19,9 @@ const generatedCodexRoot = join(repositoryRoot, "build", "plugins", "codex", "nu
 const generatedClaudeRoot = join(repositoryRoot, "build", "plugins", "claude-code", "nuzo");
 const codexPluginRoot = join(testRoot, "plugins", "codex", "nuzo");
 const claudePluginRoot = join(testRoot, "plugins", "claude-code", "nuzo");
+const publishedHookEnvironment = process.env.NUZO_PLUGIN_SMOKE_PUBLISHED === "1"
+  ? { NPM_CONFIG_LOGLEVEL: "error" }
+  : {};
 
 try {
   mkdirSync(dirname(storePath), { recursive: true });
@@ -119,6 +122,7 @@ function runHook(host, eventName, prompt) {
     encoding: "utf8",
     env: {
       ...process.env,
+      ...publishedHookEnvironment,
       NUZO_MEMORY_STORE: storePath,
     },
     input: JSON.stringify(input),
