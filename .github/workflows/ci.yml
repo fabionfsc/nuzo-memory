@@ -57,8 +57,14 @@ jobs:
       - name: Build packages
         run: npm run build
 
-      - name: Run capture intelligence benchmark
+      - name: Run canonical recall benchmark
+        run: npm run benchmark:recall
+
+      - name: Run capture intelligence baseline benchmark
         run: npm run benchmark:capture
+
+      - name: Run capture intelligence bounded benchmark
+        run: npm run benchmark:capture -- --expect bounded
 
       - name: Run optional semantics benchmark
         run: npm run benchmark:semantics

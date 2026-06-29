@@ -178,7 +178,9 @@ npm run check
 npm run release:check
 npm test
 npm run build
+npm run benchmark:recall
 npm run benchmark:capture
+npm run benchmark:capture -- --expect bounded
 npm run benchmark:semantics
 npm run package:plugins
 npm run validate:npm
@@ -209,14 +211,21 @@ capture suggestions, confirmed writes, recall, and exit codes, then confirms
 the installed MCP binary starts and supports the same suggestion-to-recall
 lifecycle over stdio. It does not publish packages or require npm credentials.
 
+The recall benchmark is a required CI gate, not only a local release check. It
+protects the canonical FTS relevance envelope before host lifecycle tests reuse
+recall results. The capture benchmark runs twice in CI: the default baseline
+profile preserves the historical exact-duplicate behavior, while
+`--expect bounded` is the current bounded relationship contract gate.
+
 The host hook continuity smoke uses an isolated SQLite store populated only
 with synthetic data. Its `0.2.1` matrix covers 75 memories and 53 scenarios,
 including global and project scopes, `autoload` bootstrap, exact topical tags,
 archived and unrelated records, bounded output, fail-open input handling,
 common preference/fact/instruction/decision workflows, and prompts in 14
-languages (English plus 14 non-English languages). Representative ephemeral Codex sessions complement this
-deterministic test before release; Claude Code remains covered by artifact and
-schema validation when its authenticated host CLI is unavailable locally.
+languages (English plus 14 non-English languages). Representative ephemeral
+Codex sessions complement this deterministic test before release; Claude Code
+remains covered by artifact and schema validation when its authenticated host
+CLI is unavailable locally.
 
 The published CLI and MCP smokes install `@nuzo/memory` into a temporary npm
 prefix and validate session continuity through separate `nuzo` and stdio server
