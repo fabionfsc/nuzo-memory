@@ -24,6 +24,7 @@ import {
   projectScopeFromPath,
   semanticIndexPathFor,
   schemaVersion,
+  type EmbeddingProvider,
   type MemoryService,
   type MemoryExportDocument,
   type MemoryScope,
@@ -60,11 +61,12 @@ export interface NuzoMcpServerOptions {
   doctorDiagnostics?: MemoryDoctorDiagnostics;
   projectPath?: string;
   semanticModelPath?: string;
+  semanticProvider?: EmbeddingProvider;
 }
 
 export interface NuzoMcpServerRuntime {
   server: McpServer;
-  close(): void;
+  close(): Promise<void>;
 }
 
 export function createNuzoMcpServer(options: NuzoMcpServerOptions = {}): McpServer {
@@ -74,7 +76,7 @@ export function createNuzoMcpServer(options: NuzoMcpServerOptions = {}): McpServ
 export function createNuzoMcpServerRuntime(options: NuzoMcpServerOptions = {}): NuzoMcpServerRuntime {
   const storePath = options.storePath ?? defaultStorePath;
   const database = openDatabase(storePath);
-  const semanticProvider = createLocalTransformersEmbeddingProvider({
+  const semanticProvider = options.semanticProvider ?? createLocalTransformersEmbeddingProvider({
     ...(options.semanticModelPath === undefined ? {} : { modelPath: options.semanticModelPath }),
   });
   const searchIndex = createHybridSearchIndex({
@@ -91,7 +93,7 @@ export function createNuzoMcpServerRuntime(options: NuzoMcpServerOptions = {}): 
     serviceOptions.authorizedScopes = options.authorizedScopes;
   }
   const service = createService(database, serviceOptions, searchIndex);
-  let closed = false;
+  let closePromise: Promise<void> | null = null;
   const server = new McpServer({
     name: "nuzo",
     version: "0.7.0",
@@ -110,12 +112,17 @@ export function createNuzoMcpServerRuntime(options: NuzoMcpServerOptions = {}): 
   });
   return {
     server,
-    close: () => {
-      if (!closed) {
-        database.close();
-        void semanticProvider.dispose?.();
-        closed = true;
+    close: async () => {
+      if (!closePromise) {
+        closePromise = (async () => {
+          try {
+            await semanticProvider.dispose?.();
+          } finally {
+            database.close();
+          }
+        })();
       }
+      await closePromise;
     },
   };
 }
@@ -566,18 +573,34 @@ if (isMainModule()) {
     options.storePath = process.env.NUZO_MEMORY_STORE;
   }
   const runtime = createNuzoMcpServerRuntime(options);
-  const closeRuntime = () => {
-    runtime.close();
+  let shuttingDown = false;
+  const closeRuntime = async (exitCode?: number) => {
+    if (shuttingDown) {
+      return;
+    }
+    shuttingDown = true;
+    try {
+      await runtime.close();
+    } catch (error) {
+      console.error(`Nuzo MCP server shutdown failed: ${errorMessage(error)}`);
+      if (exitCode === undefined) {
+        process.exitCode = 1;
+      }
+    } finally {
+      if (exitCode !== undefined) {
+        process.exit(exitCode);
+      }
+    }
   };
   process.once("SIGINT", () => {
-    closeRuntime();
-    process.exit(130);
+    void closeRuntime(130);
   });
   process.once("SIGTERM", () => {
-    closeRuntime();
-    process.exit(143);
+    void closeRuntime(143);
   });
-  process.once("beforeExit", closeRuntime);
+  process.once("beforeExit", () => {
+    void closeRuntime();
+  });
 
   await runtime.server.connect(new StdioServerTransport());
 }
@@ -666,4 +689,8 @@ function jsonErrorToolResult(error: unknown) {
     };
   }
   throw error;
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
