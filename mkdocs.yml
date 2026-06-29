@@ -96,6 +96,7 @@ nav:
   - Specification:
       - Memory Model: spec/memory-model.md
       - Capture Suggestions: spec/capture-suggestions.md
+      - Optional Semantic Retrieval: spec/semantic-retrieval.md
       - Init: spec/init.md
       - API Versioning: spec/api-versioning.md
   - Operations:
@@ -128,3 +129,4 @@ nav:
       - Host Plugin Runtime Distribution: adr/0006-host-plugin-runtime-distribution.md
       - Test Organization: adr/0007-test-organization.md
       - Opt-In Capture Relationship Evidence: adr/0008-opt-in-capture-relationship-evidence.md
+      - Optional Derived Semantic Retrieval: adr/0009-optional-derived-semantic-retrieval.md

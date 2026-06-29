@@ -43,7 +43,11 @@ The MVP storage adapter uses SQLite. The adapter boundary keeps the project open
 
 ### Search Adapter
 
-The MVP uses SQLite FTS for local full-text search. Embeddings can be added later as an optional second adapter.
+SQLite FTS remains the canonical, default full-text search adapter. Optional
+semantic retrieval uses a core-owned provider boundary and a separate derived
+sidecar. Hybrid retrieval fuses bounded FTS and semantic ranks without making
+embeddings a requirement for normal use. See
+[Optional Semantic Retrieval](../spec/semantic-retrieval.md).
 
 ### Transaction Manager
 

@@ -6,6 +6,11 @@ Nuzo has three public contracts:
 - MCP tool contract;
 - CLI behavior.
 
+The optional embedding-provider and semantic-index interfaces are also public
+library contracts once exported by `@nuzo/memory-core`. They follow package
+SemVer. Provider fingerprints separately version model compatibility and never
+replace the package version.
+
 These contracts should be versioned from the first implementation.
 
 ## Version Numbers
