@@ -113,6 +113,7 @@ SEMANTIC_INDEX_INCOMPATIBLE
 SEMANTIC_INDEX_FAILED
 MEMORY_RETRIEVAL_MODE_INVALID
 SEMANTIC_FALLBACK_INVALID
+SEMANTIC_FUSION_LIMIT_INVALID
 ```
 
 Default behavior is:
@@ -133,6 +134,12 @@ recall-usage recording.
 Semantic similarity and FTS scores are not directly comparable. Hybrid mode
 uses deterministic reciprocal-rank fusion over bounded candidate lists. The
 public result limit is applied after fusion. Tie-breaking is stable.
+
+The default hybrid profile contributes only the strongest semantic candidate.
+FTS may still contribute the full bounded result set. This conservative
+asymmetry limits semantic noise while preserving multi-result lexical recall;
+provider-specific evaluation may explicitly raise the semantic contribution
+limit only when its benchmark keeps the noise gate green.
 
 The provider, candidate limits, fusion constant, similarity floor, and result
 reason are benchmarked configuration. They may be tuned compatibly, but the

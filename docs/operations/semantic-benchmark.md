@@ -18,6 +18,20 @@ npm run benchmark:semantics -- --json
 npm run benchmark:semantics -- --keep
 ```
 
+Maintainers can evaluate an unbundled provider adapter over the same raw-text
+fixtures:
+
+```bash
+node tools/semantic-benchmark.mjs \
+  --provider-module /absolute/path/to/provider.mjs \
+  --similarity-floor 0.34
+```
+
+The module must export an `EmbeddingProvider` as its default export or an async
+`createProvider()` function. This is a development hook that executes the
+specified local JavaScript file with the maintainer's authority; it is not a
+runtime plugin loader or an end-user configuration field.
+
 The command uses only public synthetic fixtures. It builds the core package,
 creates a temporary store, runs the same queries through FTS, semantic-only,
 and hybrid retrieval, reports each mode independently, and exits non-zero if

@@ -2,8 +2,9 @@
 import { createHash } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { isAbsolute, join, resolve } from "node:path";
 import { performance } from "node:perf_hooks";
+import { pathToFileURL } from "node:url";
 
 import {
   createMemoryService,
@@ -19,6 +20,8 @@ import {
 
 const jsonOutput = process.argv.includes("--json");
 const keepStore = process.argv.includes("--keep");
+const providerModulePath = optionValue("--provider-module");
+const similarityFloor = numberOption("--similarity-floor", 0.34);
 const tmpRoot = mkdtempSync(join(tmpdir(), "nuzo-semantic-benchmark-"));
 const storePath = join(tmpRoot, "memories.sqlite");
 
@@ -115,7 +118,9 @@ class DeterministicBenchmarkEncoder {
 }
 
 async function runBenchmark() {
-  const encoder = new DeterministicBenchmarkEncoder();
+  const encoder = providerModulePath
+    ? await loadExternalProvider(providerModulePath)
+    : new DeterministicBenchmarkEncoder();
   const database = new SQLiteMemoryDatabase({ path: storePath });
   const ids = new BenchmarkIds();
 
@@ -155,7 +160,7 @@ async function runBenchmark() {
     path: semanticPath,
     provider: encoder,
     store: database,
-    similarityFloor: 0.34,
+    similarityFloor,
   });
   const searchIndex = createHybridSearchIndex({ fts: database, semantic });
   const before = mutationCounts(database);
@@ -170,7 +175,7 @@ async function runBenchmark() {
   const after = mutationCounts(database);
   const safetyGates = {
     zeroWrites: before.memories === after.memories && before.events === after.events,
-    noNetwork: encoder.networkRequests === 0,
+    noNetwork: (encoder.networkRequests ?? 0) === 0 && encoder.descriptor.network === "none",
     modes: Object.fromEntries(Object.entries(safety).map(([mode, result]) => [mode, result.failures.length === 0])),
   };
   const decision = evaluateEnvelope(modes, safetyGates);
@@ -179,6 +184,8 @@ async function runBenchmark() {
     version: 1,
     fixturePolicy: "public-synthetic-only",
     candidate: encoder.descriptor,
+    providerModule: providerModulePath ?? "benchmark-fixture",
+    similarityFloor,
     fixtures: fixtures.length,
     qualityCases: qualityCases.length,
     safetyCases: safetyCases.length,
@@ -198,6 +205,7 @@ async function runBenchmark() {
   if (!decision.passes) process.exitCode = 1;
   } finally {
     database.close();
+    await encoder.dispose?.();
     if (!keepStore) rmSync(tmpRoot, { recursive: true, force: true });
     else if (!jsonOutput) console.log(`kept benchmark store: ${storePath}`);
   }
@@ -343,6 +351,34 @@ function printReport(report) {
   console.log(`zero_writes=${report.safetyGates.zeroWrites ? "pass" : "fail"} no_network=${report.safetyGates.noNetwork ? "pass" : "fail"}`);
   console.log(`decision=${report.decision.passes ? "pass" : "fail"} top1_lift=${percent(report.decision.top1Lift)} mrr_lift=${percent(report.decision.mrrLift)}`);
   for (const failure of report.decision.failures) console.log(`  - ${failure}`);
+}
+
+async function loadExternalProvider(path) {
+  const absolutePath = isAbsolute(path) ? path : resolve(path);
+  const module = await import(pathToFileURL(absolutePath).href);
+  const provider = typeof module.createProvider === "function"
+    ? await module.createProvider()
+    : module.default;
+  if (!provider?.descriptor || typeof provider.embedDocuments !== "function" || typeof provider.embedQuery !== "function") {
+    throw new Error("--provider-module must export an embedding provider or createProvider()");
+  }
+  return provider;
+}
+
+function optionValue(name) {
+  const index = process.argv.indexOf(name);
+  if (index === -1) return undefined;
+  const value = process.argv[index + 1];
+  if (!value || value.startsWith("--")) throw new Error(`${name} requires a value`);
+  return value;
+}
+
+function numberOption(name, fallback) {
+  const value = optionValue(name);
+  if (value === undefined) return fallback;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) throw new Error(`${name} requires a finite number`);
+  return parsed;
 }
 
 await runBenchmark();
