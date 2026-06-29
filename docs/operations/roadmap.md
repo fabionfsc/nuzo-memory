@@ -75,7 +75,7 @@ Exit criteria:
 
 Goal: make memory available to agents.
 
-Status: implemented in `packages/mcp-server` with 12 tools, protocol-level SDK
+Status: implemented in `packages/mcp-server` with 14 tools, protocol-level SDK
 tests, read-only lifecycle recall, read-only capture suggestion validation, and
 runtime doctor diagnostics.
 
@@ -96,10 +96,10 @@ Exit criteria:
 
 Goal: package the MCP server for agent hosts through supported plugin workflows.
 
-Status: release layouts, host guidance, and artifact validation are
-implemented. Generated Codex and Claude Code layouts resolve the matching
-published `@nuzo/memory` runtime. Full native host validation across sessions
-is the `0.8.0` Host Reliability goal.
+Status: repository marketplaces, release layouts, host guidance, native
+installation validation, and artifact validation are implemented. Tracked and
+generated Codex and Claude Code layouts resolve the matching published
+`@nuzo/memory` runtime.
 
 The release layout is generated under `build/plugins/`. It keeps host wrappers
 thin and resolves a version-pinned `@nuzo/memory` package instead of a

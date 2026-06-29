@@ -11,18 +11,13 @@ The plugin is intentionally thin:
 - `hooks/hooks.json` injects bounded read-only recall at session start and user
   prompt submission.
 
-## Local Development
+## Runtime
 
-Build the workspace first:
-
-```bash
-npm run build
-```
-
-Then the plugin MCP config can run:
+The tracked plugin and generated release artifact run the same pinned public
+runtime:
 
 ```bash
-node packages/mcp-server/dist/index.js
+npm exec --yes --package=@nuzo/memory@0.8.1 -- nuzo-mcp-server
 ```
 
 Validate the plugin manifest:
@@ -31,7 +26,8 @@ Validate the plugin manifest:
 npm run check -w @nuzo/codex-plugin
 ```
 
-The validator also checks that `.mcp.json` exposes the `nuzo` MCP server through `node ../mcp-server/dist/index.js`.
+The validator also checks that `.mcp.json` exposes the `nuzo` MCP server
+through the exact package version declared by the plugin.
 
 Generate the release layout with:
 
@@ -61,6 +57,7 @@ The default memory store is:
 - `memory.list`
 - `memory.update`
 - `memory.history`
+- `memory.audit`
 - `memory.forget`
 - `memory.forget_many`
 - `memory.export`

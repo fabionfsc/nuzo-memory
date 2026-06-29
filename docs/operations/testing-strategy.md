@@ -190,13 +190,14 @@ npm run package:plugins
 npm run validate:npm
 npm run smoke:cli
 npm run smoke:host-hooks
-npm run smoke:host-canary
 npm run smoke:claude-code-plugin
 npm run smoke:codex-plugin
-npm run smoke:published:cli
-npm run smoke:published:mcp
-npm run smoke:published:semantics
 ```
+
+On Node.js 24, CI additionally installs the tracked repository marketplaces
+with pinned Codex and Claude Code CLIs and runs `npm run smoke:host-canary`.
+Published-package smokes remain post-release checks because they require the
+new version to exist in the npm registry.
 
 Manual dispatch can also run a release rehearsal job. It uses Node.js 24 and
 executes:
@@ -249,10 +250,11 @@ For host-native packaging confidence, run:
 NUZO_HOST_CANARY_NATIVE=1 npm run smoke:host-canary
 ```
 
-This additionally installs the generated Codex plugin through a temporary
-Codex marketplace under an isolated `CODEX_HOME` and validates the Claude Code
-plugin with the npm-distributed Claude Code CLI. It still separates plugin and
-hook delivery from LLM response compliance.
+This additionally installs the tracked Nuzo marketplace and plugin under an
+isolated `CODEX_HOME` and isolated Claude Code home. Both hosts must discover
+and enable `nuzo@nuzo-memory`; Claude Code also validates the repository
+marketplace schema. It still separates plugin and hook delivery from LLM
+response compliance.
 
 The published CLI and MCP smokes install `@nuzo/memory` into a temporary npm
 prefix and validate session continuity through separate `nuzo` and stdio server

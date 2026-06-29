@@ -121,6 +121,7 @@ nav:
       - 0.6.0 Capture Release Gates: operations/capture-release-gates-0.6.0.md
       - Coding Standards: operations/coding-standards.md
       - Testing Strategy: operations/testing-strategy.md
+      - 0.9.0 User Documentation Audit: operations/user-documentation-audit-0.9.0.md
   - Decisions:
       - Local First: adr/0001-local-first.md
       - SQLite First: adr/0002-sqlite-first.md

@@ -10,6 +10,6 @@
     "npm": ">=10"
   },
   "scripts": {
-    "check": "python3 ../../tools/validate-claude-code-plugin.py ."
+    "check": "python3 ../../tools/validate-claude-code-plugin.py --release ."
   }
 }

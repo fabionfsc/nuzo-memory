@@ -15,7 +15,7 @@
   </div>
   <p class="nuzo-progress__label"><strong>0.8.1</strong> current release</p>
   <div class="nuzo-stats" markdown>
-  <span><strong>12</strong> MCP tools</span>
+  <span><strong>14</strong> MCP tools</span>
   <span><strong>0</strong> telemetry</span>
   <span><strong>2</strong> priority hosts</span>
   </div>
@@ -24,12 +24,14 @@
 
 ## Install
 
-```bash
-npm install --global @nuzo/memory
-```
+| Interface | Install |
+| --- | --- |
+| Codex | `codex plugin marketplace add fabionfsc/nuzo-memory`, then `codex plugin add nuzo@nuzo-memory` |
+| Claude Code | `claude plugin marketplace add fabionfsc/nuzo-memory`, then `claude plugin install nuzo@nuzo-memory` |
+| CLI or generic MCP host | `npm install --global @nuzo/memory` |
 
-This installs the `nuzo` CLI, the `nuzo-mcp-server` runtime, and the
-`nuzo-memory-hook` runner used by host plugins.
+Host plugins obtain their pinned runtime themselves. They do not require a
+separate global npm installation.
 
 ## Agent Setup
 

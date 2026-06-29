@@ -24,12 +24,32 @@ python3 --version
 Other Node.js major versions are not claimed as supported until they are part
 of the CI matrix. See the [runtime support policy](../operations/runtime-support.md).
 
-## Install Without Cloning
+## Install A Host Plugin Without Cloning
 
-Most users install only:
+For Codex:
 
-```text
-@nuzo/memory
+```bash
+codex plugin marketplace add fabionfsc/nuzo-memory
+codex plugin add nuzo@nuzo-memory
+```
+
+For Claude Code:
+
+```bash
+claude plugin marketplace add fabionfsc/nuzo-memory
+claude plugin install nuzo@nuzo-memory
+```
+
+Review the installed hooks, start a new session, and follow the host-specific
+verification page. These plugins resolve `@nuzo/memory@0.8.1` on first use; do
+not install the global package redundantly.
+
+## Install The CLI Without Cloning
+
+CLI and generic MCP users install:
+
+```bash
+npm install --global @nuzo/memory
 ```
 
 It includes the CLI, MCP server, and read-only lifecycle hook runner. Use

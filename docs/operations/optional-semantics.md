@@ -1,6 +1,6 @@
 # Optional Semantics
 
-Nuzo `0.7.0` can add one local semantic candidate to normal FTS recall. It is
+Nuzo can add one local semantic candidate to normal FTS recall. It is
 an explicit, optional workflow. Existing installs, CLI calls, MCP calls, and
 host lifecycle hooks remain FTS-only.
 
@@ -11,7 +11,7 @@ provider, install its exact optional peer alongside Nuzo:
 
 ```bash
 npm install --global \
-  @nuzo/memory@0.7.0 \
+  @nuzo/memory@0.8.1 \
   @huggingface/transformers@4.2.0
 ```
 

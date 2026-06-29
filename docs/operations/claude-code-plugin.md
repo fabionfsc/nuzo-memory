@@ -6,9 +6,56 @@ It should make the same Nuzo memory tools available in Claude Code without addin
 
 Claude Code is one host package, not the product boundary. Codex and future MCP-compatible agent CLIs should use the same MCP server and core behavior.
 
+## Install
+
+Prerequisites: Node.js 22 or 24, npm 10 or newer, and a current Claude Code CLI.
+
+```bash
+claude plugin marketplace add fabionfsc/nuzo-memory
+claude plugin install nuzo@nuzo-memory --scope user
+```
+
+Run `claude plugin list --json` and confirm that `nuzo@nuzo-memory` is enabled.
+Inside Claude Code, inspect `/mcp` and `/hooks`, then start a new session. The
+plugin obtains its pinned `@nuzo/memory` runtime on first use, so a global npm
+install is not required.
+
+## Verify Cross-session Memory
+
+In a new Claude Code session, ask:
+
+```text
+Save this in Nuzo memory: My installation test marker is NUZO-CLAUDE-OK.
+```
+
+Inspect and confirm the proposed draft. Start another new session and ask:
+
+```text
+What is my Nuzo installation test marker?
+```
+
+The answer should use `NUZO-CLAUDE-OK`. If recall fails, confirm
+`nuzo@nuzo-memory` is enabled, inspect `/mcp` and `/hooks`, run
+`/reload-plugins`, and confirm both sessions use the same `NUZO_MEMORY_STORE`.
+
+## Update, Disable, Or Remove
+
+```bash
+claude plugin marketplace update nuzo-memory
+claude plugin update nuzo@nuzo-memory --scope user
+```
+
+Use `/reload-plugins` or start a new session after updating. Routine controls:
+
+```bash
+claude plugin disable nuzo@nuzo-memory
+claude plugin enable nuzo@nuzo-memory
+claude plugin uninstall nuzo@nuzo-memory --scope user
+```
+
 ## Package
 
-Development source:
+Tracked installable source:
 
 ```text
 packages/claude-code-plugin/
@@ -75,24 +122,21 @@ Nuzo keeps the plugin identifier `nuzo` and the human display name `Nuzo`.
 
 ## MCP Server
 
-The plugin points Claude Code at the Nuzo MCP server:
+The tracked plugin points Claude Code at the version-matched Nuzo MCP server:
 
 ```json
 {
   "mcpServers": {
     "nuzo": {
-      "command": "node",
-      "args": [
-        "${CLAUDE_PLUGIN_ROOT}/../mcp-server/dist/index.js"
-      ]
+      "command": "npm",
+      "args": ["exec", "--yes", "--package=@nuzo/memory@0.8.1", "--", "nuzo-mcp-server"],
+      "cwd": "${CLAUDE_PLUGIN_ROOT}"
     }
   }
 }
 ```
 
-This is the monorepo development default.
-
-The generated release artifact instead uses:
+The generated release artifact uses the same runtime command:
 
 ```json
 {
@@ -110,18 +154,13 @@ The generated release artifact instead uses:
 version. This keeps the artifact portable across supported platforms while
 allowing npm to install the correct native SQLite build.
 
-Build the monorepo before testing the MCP path:
+Claude Code sets plugin-specific environment variables for plugin-provided MCP
+servers. Nuzo uses `${CLAUDE_PLUGIN_ROOT}` as the process working directory;
+the executable itself is provided by the pinned npm runtime.
 
-```bash
-npm run build
-test -f packages/mcp-server/dist/index.js
-```
+## Contributor Validation
 
-Claude Code sets plugin-specific environment variables for plugin-provided MCP servers. Nuzo uses `${CLAUDE_PLUGIN_ROOT}` so the plugin resolves the MCP server relative to the installed plugin package.
-
-## Development Install Flow
-
-This flow validates the monorepo source package.
+This flow validates the tracked marketplace-installable source package.
 
 1. Build the monorepo:
 
@@ -203,18 +242,21 @@ Scopes should be selected intentionally:
 - project scope for team-shared repository setup;
 - local scope for machine-specific testing.
 
-Repository-level marketplace metadata can now be prepared as a separate
-distribution step. It should remain reproducible and version-pinned.
+The repository publishes `.claude-plugin/marketplace.json` under the stable
+marketplace name `nuzo-memory`. Its tracked plugin source and npm runtime move
+together at one version.
 
 ## Direct MCP Fallback
 
-For debugging the MCP server without plugin packaging, configure Claude Code directly against the built server:
+If marketplace installation is unavailable, configure Claude Code directly
+against the published runtime:
 
 ```bash
-claude mcp add --transport stdio nuzo -- node /absolute/path/to/nuzo/packages/mcp-server/dist/index.js
+claude mcp add --transport stdio nuzo -- npm exec --yes --package=@nuzo/memory@0.8.1 -- nuzo-mcp-server
 ```
 
-Use this only to isolate MCP behavior. Plugin validation should still go through the package in `packages/claude-code-plugin`.
+This exposes MCP tools but does not install the Nuzo skill or lifecycle hooks.
+Use it to isolate marketplace or plugin-loading failures.
 
 ## Validation
 
@@ -231,8 +273,8 @@ The validator checks:
 - the optional display name remains `Nuzo`;
 - the license remains `Apache-2.0`;
 - `.mcp.json` defines an MCP server named `nuzo`;
-- the `nuzo` MCP server uses `node`;
-- the development server resolves through `${CLAUDE_PLUGIN_ROOT}`;
+- the `nuzo` MCP server uses `npm exec` with an exact runtime version;
+- the runtime working directory resolves through `${CLAUDE_PLUGIN_ROOT}`;
 - host-specific skill files exist when referenced.
 
 Release validation additionally checks:

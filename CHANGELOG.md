@@ -6,6 +6,21 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+### Added
+
+- Repository marketplaces now expose the tracked Nuzo plugin as
+  `nuzo@nuzo-memory` for Codex and Claude Code without a source checkout or a
+  redundant global runtime install.
+- CI now validates native marketplace discovery and installation with pinned
+  Codex and Claude Code CLIs on Node.js 24.
+
+### Changed
+
+- Tracked host plugin sources now resolve the exact matching
+  `@nuzo/memory` runtime and remain version-aligned through release tooling.
+- README, homepage, Getting Started, clean install, CLI, and host plugin pages
+  now lead with tested user installation and cross-session verification paths.
+
 ## [0.8.1] - 2026-06-29
 
 ### Security

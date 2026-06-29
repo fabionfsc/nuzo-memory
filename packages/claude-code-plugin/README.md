@@ -20,16 +20,11 @@ This package is a thin wrapper for the supported Claude Code plugin path. It is
 not a separate memory engine and its lifecycle hooks never capture or write
 memory.
 
-The local MCP config currently assumes the monorepo has been built:
+The tracked plugin and generated release artifact use the same pinned public
+runtime:
 
 ```bash
-npm run build
-```
-
-Then the plugin MCP entry points at:
-
-```text
-packages/mcp-server/dist/index.js
+npm exec --yes --package=@nuzo/memory@0.8.1 -- nuzo-mcp-server
 ```
 
 ## Validation

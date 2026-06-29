@@ -16,9 +16,11 @@ user reviews or changes memory
 Use fake data when testing. Do not use real secrets, private customer data,
 tokens, raw logs, or private file contents.
 
-## Install
+## Choose An Interface
 
-Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
+Use the [Getting Started](index.md) host instructions for Codex or Claude Code;
+their plugins provide this flow without a separate global install. The commands
+below demonstrate the same lifecycle directly through the CLI:
 
 ```bash
 npm install --global @nuzo/memory
