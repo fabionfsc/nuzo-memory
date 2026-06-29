@@ -485,6 +485,21 @@ describe("memory MCP handlers", () => {
       supported_version: null,
       status: "not_performed",
     });
+    expect(doctor.integrity).toEqual({
+      ok: null,
+      path: null,
+      schema_version: null,
+      supported_schema_version: null,
+      integrity_check: null,
+      foreign_key_violations: null,
+      memory_count: null,
+      active_memory_count: null,
+      fts_row_count: null,
+      missing_fts_rows: null,
+      orphan_fts_rows: null,
+      errors: [],
+      status: "not_performed",
+    });
     expect(doctor.lifecycle).toEqual({
       recall_hook: "available",
       automatic_host_hooks: "verify_in_host",
@@ -506,6 +521,20 @@ describe("memory MCP handlers", () => {
           currentVersion: 1,
           supportedVersion: 2,
         },
+        integrity: {
+          ok: false,
+          path: "/tmp/nuzo-test.sqlite",
+          schemaVersion: 1,
+          supportedSchemaVersion: 2,
+          integrityCheck: "ok",
+          foreignKeyViolations: 0,
+          memoryCount: 1,
+          activeMemoryCount: 1,
+          ftsRowCount: 0,
+          missingFtsRows: 1,
+          orphanFtsRows: 0,
+          errors: ["1 active memory row(s) are missing from FTS"],
+        },
         writable: false,
       },
     });
@@ -522,7 +551,14 @@ describe("memory MCP handlers", () => {
     expect(doctor.warnings).toEqual([
       "memory store writability check failed",
       "memory store schema is older than the supported version",
+      "memory integrity: 1 active memory row(s) are missing from FTS",
     ]);
+    expect(doctor.integrity).toMatchObject({
+      ok: false,
+      status: "failed",
+      missing_fts_rows: 1,
+      errors: ["1 active memory row(s) are missing from FTS"],
+    });
   });
 
   it("previews and applies filtered bulk forget operations", async () => {
@@ -585,6 +621,7 @@ describe("memory MCP handlers", () => {
       archived_memories: null,
       total_memories: null,
     });
+    expect(doctor.integrity.status).toBe("not_performed");
     expect(doctor.warnings).toEqual([
       "memory store read check failed: simulated store failure",
     ]);

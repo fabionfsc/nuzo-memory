@@ -811,6 +811,21 @@ MCP doctor returns a read-only diagnostic summary for host agents:
     "archived_memories": 1,
     "total_memories": 5
   },
+  "integrity": {
+    "ok": true,
+    "path": "~/.nuzo/memory/memories.sqlite",
+    "schema_version": 2,
+    "supported_schema_version": 2,
+    "integrity_check": "ok",
+    "foreign_key_violations": 0,
+    "memory_count": 5,
+    "active_memory_count": 4,
+    "fts_row_count": 4,
+    "missing_fts_rows": 0,
+    "orphan_fts_rows": 0,
+    "errors": [],
+    "status": "ok"
+  },
   "lifecycle": {
     "recall_hook": "available",
     "automatic_host_hooks": "verify_in_host",
@@ -837,13 +852,16 @@ MCP doctor returns a read-only diagnostic summary for host agents:
 ```
 
 The MCP response must not include memory content, tags, sources, or export
-documents. Counts are aggregate diagnostics only.
+documents. Counts and integrity fields are aggregate metadata-only diagnostics.
+`integrity.status` is `ok`, `failed`, `missing`, or `not_performed`.
 
 Runtime checks:
 
 - schema is current;
 - store path is readable;
 - store path and parent directory are writable without creating durable memory.
+- SQLite `integrity_check`, foreign keys, schema version, memory counts, and
+  FTS row consistency are healthy when a store path is available.
 
 Lifecycle diagnostics distinguish runtime capability from host activation.
 `automatic_host_hooks: verify_in_host` means the user must still verify that

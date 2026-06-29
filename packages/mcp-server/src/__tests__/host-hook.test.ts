@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import type { MemoryRecord, MemoryService } from "@nuzo/memory-core";
-import { projectScopeFromPath } from "@nuzo/memory-core";
+import { projectScopeFromPath, SQLiteMemoryDatabase } from "@nuzo/memory-core";
 import {
   createHostHookOutput,
   hostHookLimits,
@@ -226,21 +229,70 @@ describe("host recall hooks", () => {
   it("reports shared runtime scope and restrictions in hook doctor", async () => {
     const stdout = vi.fn();
     const stderr = vi.fn();
+    const directory = mkdtempSync(join(tmpdir(), "nuzo-hook-doctor-"));
+    const storePath = join(directory, "memories.sqlite");
+    const database = new SQLiteMemoryDatabase({ path: storePath });
+    database.close();
 
-    const exitCode = await runHostHookProcess(["--doctor"], "", { stdout, stderr }, {
-      NUZO_MEMORY_STORE: "/tmp/nuzo-hook-runtime.sqlite",
-      NUZO_MEMORY_SCOPE: "project:nuzo",
-      NUZO_AUTHORIZED_SCOPES: "project:nuzo,user:default",
-    });
+    try {
+      const exitCode = await runHostHookProcess(["--doctor"], "", { stdout, stderr }, {
+        NUZO_MEMORY_STORE: storePath,
+        NUZO_MEMORY_SCOPE: "project:nuzo",
+        NUZO_AUTHORIZED_SCOPES: "project:nuzo,user:default",
+      });
 
-    expect(exitCode).toBe(0);
-    expect(stderr).not.toHaveBeenCalled();
-    expect(JSON.parse(stdout.mock.calls[0]?.[0] ?? "{}")).toMatchObject({
-      mode: "read_only",
-      store_path: "/tmp/nuzo-hook-runtime.sqlite",
-      scope: "project:nuzo",
-      authorized_scopes: ["project:nuzo", "user:default"],
-      supported_events: ["SessionStart", "UserPromptSubmit"],
-    });
+      expect(exitCode).toBe(0);
+      expect(stderr).not.toHaveBeenCalled();
+      expect(JSON.parse(stdout.mock.calls[0]?.[0] ?? "{}")).toMatchObject({
+        status: "ready",
+        mode: "read_only",
+        store_path: storePath,
+        scope: "project:nuzo",
+        authorized_scopes: ["project:nuzo", "user:default"],
+        store_exists: true,
+        integrity: {
+          ok: true,
+          status: "ok",
+          schema_version: 2,
+          supported_schema_version: 2,
+          missing_fts_rows: 0,
+          orphan_fts_rows: 0,
+          errors: [],
+        },
+        supported_events: ["SessionStart", "UserPromptSubmit"],
+      });
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("reports missing stores in hook doctor without creating them", async () => {
+    const stdout = vi.fn();
+    const stderr = vi.fn();
+    const directory = mkdtempSync(join(tmpdir(), "nuzo-hook-doctor-missing-"));
+    const storePath = join(directory, "missing.sqlite");
+
+    try {
+      const exitCode = await runHostHookProcess(["--doctor"], "", { stdout, stderr }, {
+        NUZO_MEMORY_STORE: storePath,
+      });
+
+      expect(exitCode).toBe(0);
+      expect(stderr).not.toHaveBeenCalled();
+      expect(JSON.parse(stdout.mock.calls[0]?.[0] ?? "{}")).toMatchObject({
+        status: "store_missing",
+        mode: "read_only",
+        store_path: storePath,
+        store_exists: false,
+        integrity: {
+          ok: false,
+          status: "missing",
+          integrity_check: "missing",
+          errors: ["memory store does not exist"],
+        },
+      });
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
   });
 });

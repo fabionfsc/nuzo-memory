@@ -33,9 +33,22 @@
 Host plugins obtain their pinned runtime themselves. They do not require a
 separate global npm installation.
 
+If you install the npm package first on a fresh machine, run setup explicitly.
+The npm install only adds the `nuzo` command; it does not modify Codex or
+Claude Code configuration automatically.
+
+```bash
+npm install --global @nuzo/memory
+nuzo setup --dry-run
+nuzo host install codex --yes        # Codex only
+nuzo host install claude-code --yes  # Claude Code only
+nuzo host install --all --yes        # both hosts
+```
+
 ## Agent Setup
 
-Nuzo becomes automatic after the host plugin is installed and trusted.
+Nuzo becomes available to the host after the plugin is installed, enabled, and
+trusted. Start a new agent session after changing plugin configuration.
 
 | Host | Next step |
 | --- | --- |

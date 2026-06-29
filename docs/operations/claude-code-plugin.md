@@ -335,10 +335,11 @@ Run the packaged runner diagnostic with:
 npm exec --yes --package=@nuzo/memory -- nuzo-memory-hook --doctor
 ```
 
-The report confirms runtime and store readiness. Claude Code remains the
-authority for whether plugin hooks are enabled; verify them through `/hooks`.
-The hook policy is defined in `docs/operations/lifecycle-hooks.md`, and capture
-remains governed by `docs/spec/capture-suggestions.md`.
+The report confirms runtime and store readiness, including content-free
+SQLite/FTS integrity metadata. Claude Code remains the authority for whether
+plugin hooks are enabled; verify them through `/hooks`. The hook policy is
+defined in `docs/operations/lifecycle-hooks.md`, and capture remains governed
+by `docs/spec/capture-suggestions.md`.
 
 ## Portability
 

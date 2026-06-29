@@ -42,12 +42,21 @@ describe("host bootstrap", () => {
 
     expect(formatHostBootstrapResult(plan, false)).toBe([
       "Nuzo host setup plan",
+      "Nuzo will install host plugins only after explicit confirmation. npm install does not change Codex or Claude Code configuration.",
       "Codex: detected",
       "- planned: codex plugin marketplace add fabionfsc/nuzo-memory",
+      "  Purpose: Add the Nuzo Codex marketplace.",
       "- planned: codex plugin add nuzo@nuzo-memory",
+      "  Purpose: Install the Nuzo Codex plugin.",
       "Claude Code: detected",
       "- planned: claude plugin marketplace add fabionfsc/nuzo-memory",
+      "  Purpose: Add the Nuzo Claude Code marketplace.",
       "- planned: claude plugin install nuzo@nuzo-memory --scope user",
+      "  Purpose: Install the Nuzo Claude Code plugin for the user scope.",
+      "Next: Re-run with --yes to apply this plan, or choose one host explicitly:",
+      "      Codex only: nuzo host install codex --yes",
+      "      Claude Code only: nuzo host install claude-code --yes",
+      "      Both hosts: nuzo host install --all --yes",
     ].join("\n"));
   });
 
@@ -72,6 +81,7 @@ describe("host bootstrap", () => {
       "succeeded",
       "succeeded",
     ]);
+    expect(result.dryRun).toBe(false);
   });
 
   it("requires a detected host before mutating host configuration", () => {
@@ -92,6 +102,7 @@ describe("host bootstrap", () => {
     ), true)) as {
       dry_run: boolean;
       hosts: Array<{ host: string; detected: boolean; steps: Array<{ status: string }> }>;
+      next_steps: string[];
     };
 
     expect(output).toMatchObject({
@@ -107,5 +118,6 @@ describe("host bootstrap", () => {
         },
       ],
     });
+    expect(output.next_steps).toContain("Codex only: nuzo host install codex --yes");
   });
 });

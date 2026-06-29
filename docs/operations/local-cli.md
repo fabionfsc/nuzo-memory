@@ -166,6 +166,13 @@ or internally inconsistent.
 Use `--json` with `memory integrity` or `memory doctor` when automation needs a
 stable machine-readable report.
 
+Use the CLI commands when you are administering a local store from a shell.
+Inside Codex, Claude Code, or another MCP host, call `memory.doctor` instead.
+The MCP and host hook doctor reports expose the same content-free integrity
+summary so hosted-agent troubleshooting can see schema, SQLite integrity,
+memory counts, and FTS consistency without shelling out or exposing memory
+content.
+
 ## Authorization Boundary
 
 The local CLI is an administrator workflow over the selected store. Scope

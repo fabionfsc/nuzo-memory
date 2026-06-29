@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import {
   createMemoryService,
   DefaultPolicyEngine,
+  inspectSQLiteMemoryStore,
   RandomIdGenerator,
   RegexSecretScanner,
   resolveNuzoRuntimeConfig,
@@ -15,6 +16,7 @@ import {
   hostHookLimits,
   parseHostHookInput,
 } from "./host-hook.js";
+import { formatIntegrityDiagnostics } from "./handlers.js";
 
 interface HookIO {
   stdout(message: string): void;
@@ -36,13 +38,15 @@ export async function runHostHookProcess(
   const storePath = runtimeConfig.storePath;
 
   if (args.includes("--doctor")) {
+    const integrity = formatIntegrityDiagnostics(inspectSQLiteMemoryStore(storePath));
     io.stdout(JSON.stringify({
-      status: existsSync(storePath) ? "ready" : "store_missing",
+      status: integrity.status === "ok" ? "ready" : integrity.status === "missing" ? "store_missing" : "store_unhealthy",
       mode: "read_only",
       store_path: storePath,
       scope: runtimeConfig.scope,
       authorized_scopes: runtimeConfig.authorizedScopes ?? null,
       store_exists: existsSync(storePath),
+      integrity,
       supported_events: ["SessionStart", "UserPromptSubmit"],
       host_trust: "verify_in_host",
     }, null, 2));
