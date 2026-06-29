@@ -52,6 +52,11 @@ Runtime memory is stored locally under:
 
 No telemetry, sync, embeddings, or network calls are enabled by default.
 
+Optional local hybrid retrieval is available without changing that default.
+Install `@huggingface/transformers@4.2.0` alongside Nuzo, explicitly provision
+the pinned model, and rebuild the disposable semantic sidecar. See
+https://nuzo.com.br/operations/optional-semantics/.
+
 ## Library
 
 Use `@nuzo/memory-core` only for library-level integrations.

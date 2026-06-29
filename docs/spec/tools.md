@@ -90,11 +90,18 @@ Input:
   "query": "How should I design local storage for this plugin?",
   "scope": "project:auto",
   "limit": 8,
-  "include_global": true
+  "include_global": true,
+  "retrieval_mode": "hybrid"
 }
 ```
 
 When `include_global` is true, recall should include the requested scope plus `user:default`. It should not search unrelated project, team, or agent scopes.
+
+`retrieval_mode` is optional and accepts `fts`, `semantic`, or `hybrid`.
+Omission means `fts` and preserves the `0.6.0` behavior. `semantic_fallback` is
+also optional and accepts `error` or `fts`. Strict semantic mode errors by
+default when its provider or index is unavailable. Hybrid always falls back
+read-only to FTS and reports why.
 
 Output:
 
@@ -109,9 +116,24 @@ Output:
       "scope": "user:default",
       "reason": "Matched storage and local-first terms."
     }
-  ]
+  ],
+  "retrieval": {
+    "requested_mode": "hybrid",
+    "effective_mode": "hybrid",
+    "semantic_fallback_code": null
+  }
 }
 ```
+
+`retrieval` is present when a non-FTS mode is requested. It remains present
+when `results` is empty, so clients can distinguish successful semantic or
+hybrid retrieval from FTS fallback. Fallback sets `effective_mode` to `fts`
+and supplies a stable semantic error code.
+
+The optional semantic model and derived sidecar are provisioned and rebuilt by
+the local operator. The MCP tool cannot download a model, rebuild an index, or
+turn retrieval into a write operation. `memory.recall_hook` remains FTS-only
+in `0.7.0`.
 
 ### `memory.recall_hook`
 

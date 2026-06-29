@@ -33,6 +33,8 @@ export interface RecallToolInput {
   scope: string;
   limit: number;
   include_global: boolean;
+  retrieval_mode?: "fts" | "semantic" | "hybrid";
+  semantic_fallback?: "error" | "fts";
 }
 
 export interface RecallHookToolInput {
@@ -158,6 +160,11 @@ export interface MemoryToolHandlers {
       score: number;
       reason: string;
     }>;
+    retrieval?: {
+      requested_mode: "fts" | "semantic" | "hybrid";
+      effective_mode: "fts" | "semantic" | "hybrid";
+      semantic_fallback_code: string | null;
+    };
   }>;
   recallHook(input: RecallHookToolInput): Promise<{
     mode: "read_only";
@@ -331,16 +338,26 @@ export function createMemoryToolHandlers(
     },
 
     async recall(input) {
-      const results = await service.recall({
+      const response = await service.recallDetailed({
         query: input.query,
         scope: resolveToolScope(input.scope, options.projectScope),
         limit: input.limit,
         includeGlobal: input.include_global,
+        retrievalMode: input.retrieval_mode ?? "fts",
+        ...(input.semantic_fallback === undefined ? {} : { semanticFallback: input.semantic_fallback }),
       });
 
-      return {
-        results: results.map(toRecallOutput),
+      const output: Awaited<ReturnType<MemoryToolHandlers["recall"]>> = {
+        results: response.results.map(toRecallOutput),
       };
+      if ((input.retrieval_mode ?? "fts") !== "fts") {
+        output.retrieval = {
+          requested_mode: response.diagnostics.requestedMode,
+          effective_mode: response.diagnostics.effectiveMode,
+          semantic_fallback_code: response.diagnostics.semanticFallbackCode,
+        };
+      }
+      return output;
     },
 
     async recallHook(input) {

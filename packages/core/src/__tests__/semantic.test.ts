@@ -107,6 +107,32 @@ describe("optional semantic retrieval", () => {
     fixture.database.close();
   });
 
+  it("reports machine-readable hybrid fallback even when FTS returns no results", async () => {
+    const fixture = await createFixture();
+    const hybrid = createHybridSearchIndex({ fts: fixture.database });
+    const service = createMemoryService({
+      store: fixture.database,
+      searchIndex: hybrid,
+      auditLog: fixture.database,
+      clock: new FixedClock(),
+      ids: new SequentialIdGenerator(),
+      policy: new DefaultPolicyEngine(new RegexSecretScanner()),
+      transactions: fixture.database,
+    });
+    const response = await service.recallDetailed({
+      query: "marine biology coral",
+      scope: "project:nuzo",
+      retrievalMode: "hybrid",
+    });
+    expect(response.results).toEqual([]);
+    expect(response.diagnostics).toEqual({
+      requestedMode: "hybrid",
+      effectiveMode: "fts",
+      semanticFallbackCode: "SEMANTIC_PROVIDER_MISSING",
+    });
+    fixture.database.close();
+  });
+
   it("detects stale canonical revisions and falls hybrid back visibly to FTS", async () => {
     const fixture = await createFixture();
     const path = semanticIndexPathFor(fixture.storePath);
@@ -172,12 +198,18 @@ describe("optional semantic retrieval", () => {
       content: "Archived npm provenance rule.", kind: "instruction", scope: "project:nuzo", tags: ["npm"], source: "test",
     });
     await fixture.service.forget({ id: archived.id, actor: "test", mode: "archive" });
-    await fixture.service.remember({
+    const otherProject = await fixture.service.remember({
       content: "Other project npm provenance rule.", kind: "instruction", scope: "project:other", tags: ["npm"], source: "test",
     });
     const path = semanticIndexPathFor(fixture.storePath);
     await rebuildSemanticIndex({ path, provider: localProvider, memories: await fixture.service.list() });
     const semantic = createSemanticSearch({ path, provider: localProvider, store: fixture.database, similarityFloor: 0.1 });
+    await fixture.service.update({
+      id: otherProject.id,
+      expectedRevision: otherProject.revision,
+      content: "Other project changed its npm provenance rule.",
+      actor: "test",
+    });
     const projectOnly = await semantic.search({ query: "supply chain metadata", scope: "project:nuzo", retrievalMode: "semantic" });
     expect(projectOnly.map((result) => result.memory.scope)).toEqual(["project:nuzo"]);
     const withGlobal = await semantic.search({ query: "brief answers compromises", scope: "project:nuzo", includeGlobal: true, retrievalMode: "semantic" });

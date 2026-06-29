@@ -263,3 +263,14 @@ export interface RecallMemoryResult {
   retrievalMode?: RetrievalMode;
   semanticFallbackCode?: string;
 }
+
+export interface RecallDiagnostics {
+  requestedMode: RetrievalMode;
+  effectiveMode: RetrievalMode;
+  semanticFallbackCode: string | null;
+}
+
+export interface RecallMemoriesResponse {
+  results: RecallMemoryResult[];
+  diagnostics: RecallDiagnostics;
+}

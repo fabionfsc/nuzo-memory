@@ -49,6 +49,11 @@ built-in defaults. Recall reads config defaults for result limit, global-scope
 inclusion, and optional recall-event recording. Use `--no-include-global` to
 override a config that enables global recall for one command.
 
+Recall remains FTS-only unless `--mode semantic` or `--mode hybrid` is passed.
+Use `--json` to receive results with machine-readable requested/effective mode
+and fallback diagnostics. The optional model and sidecar workflow is described
+in [Optional Semantics](optional-semantics.md).
+
 `nuzo memory suggest-capture` validates an inferred memory draft without writing
 storage, audit history, or usage metadata. Use it before asking the user to
 confirm a memory inferred from conversation context. Pass `--json` when a host,

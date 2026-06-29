@@ -12,6 +12,7 @@ import type {
 import type {
   MemoryRecord,
   RecallMemoriesInput,
+  RecallMemoriesResponse,
   RecallMemoryResult,
   RetrievalMode,
 } from "./types.js";
@@ -209,7 +210,10 @@ export function createSemanticSearch(options: SemanticSearchOptions): SemanticSe
     },
 
     async search(input) {
-      const status = await inspectSemanticIndex(options.path, fingerprint, options.store);
+      const status = await inspectSemanticIndex(options.path, fingerprint, options.store, {
+        scope: input.scope,
+        includeGlobal: input.includeGlobal === true,
+      });
       assertSemanticReady(status);
       let queryVector: readonly number[];
       try {
@@ -266,16 +270,7 @@ export function createHybridSearchIndex(options: HybridSearchIndexOptions): Sear
   if (!Number.isInteger(semanticFusionLimit) || semanticFusionLimit < 1 || semanticFusionLimit > 50) {
     throw new NuzoMemoryError("SEMANTIC_FUSION_LIMIT_INVALID", "Semantic fusion limit must be between 1 and 50.");
   }
-  return {
-    index(memory) {
-      return options.fts.index(memory);
-    },
-
-    remove(memoryId) {
-      return options.fts.remove(memoryId);
-    },
-
-    async search(input) {
+  const searchDetailed = async (input: RecallMemoriesInput): Promise<RecallMemoriesResponse> => {
       const mode = input.retrievalMode ?? "fts";
       if (!["fts", "semantic", "hybrid"].includes(mode)) {
         throw new NuzoMemoryError("MEMORY_RETRIEVAL_MODE_INVALID", "Retrieval mode is invalid.", { mode });
@@ -283,14 +278,16 @@ export function createHybridSearchIndex(options: HybridSearchIndexOptions): Sear
       if (input.semanticFallback !== undefined && !["error", "fts"].includes(input.semanticFallback)) {
         throw new NuzoMemoryError("SEMANTIC_FALLBACK_INVALID", "Semantic fallback mode is invalid.", { fallback: input.semanticFallback });
       }
-      if (mode === "fts") return options.fts.search(input);
+      if (mode === "fts") {
+        return { results: await options.fts.search(input), diagnostics: recallDiagnostics(mode, "fts", null) };
+      }
       if (!options.semantic) return handleSemanticFailure(input, options.fts, "SEMANTIC_PROVIDER_MISSING");
       if (mode === "semantic") {
         try {
-          return await options.semantic.search(input);
+          return { results: await options.semantic.search(input), diagnostics: recallDiagnostics(mode, "semantic", null) };
         } catch (error) {
           if (error instanceof NuzoMemoryError && input.semanticFallback === "fts") {
-            return fallbackResults(await options.fts.search(input), error.code);
+            return { results: fallbackResults(await options.fts.search(input), error.code), diagnostics: recallDiagnostics(mode, "fts", error.code) };
           }
           throw error;
         }
@@ -302,12 +299,28 @@ export function createHybridSearchIndex(options: HybridSearchIndexOptions): Sear
           ...input,
           limit: Math.min(input.limit ?? 8, semanticFusionLimit),
         });
-        return fuseResults(ftsResults, semanticResults, input.limit ?? 8);
+        return { results: fuseResults(ftsResults, semanticResults, input.limit ?? 8), diagnostics: recallDiagnostics(mode, "hybrid", null) };
       } catch (error) {
-        if (error instanceof NuzoMemoryError) return fallbackResults(ftsResults, error.code);
+        if (error instanceof NuzoMemoryError) {
+          return { results: fallbackResults(ftsResults, error.code), diagnostics: recallDiagnostics(mode, "fts", error.code) };
+        }
         throw error;
       }
+  };
+  return {
+    index(memory) {
+      return options.fts.index(memory);
     },
+
+    remove(memoryId) {
+      return options.fts.remove(memoryId);
+    },
+
+    async search(input) {
+      return (await searchDetailed(input)).results;
+    },
+
+    searchDetailed,
   };
 }
 
@@ -315,8 +328,16 @@ export async function inspectSemanticIndex(
   path: string,
   providerFingerprint: string,
   store: MemoryStore,
+  scopeFilter?: { scope: MemoryRecord["scope"]; includeGlobal: boolean },
 ): Promise<SemanticIndexStatus> {
-  const active = await store.list({ includeArchived: false });
+  const active = scopeFilter
+    ? [
+        ...await store.list({ scope: scopeFilter.scope, includeArchived: false }),
+        ...(scopeFilter.includeGlobal && scopeFilter.scope !== "user:default"
+          ? await store.list({ scope: "user:default", includeArchived: false })
+          : []),
+      ]
+    : await store.list({ includeArchived: false });
   if (!existsSync(path)) {
     return status("missing", path, null, 0, active.length, 0, active.length, "Semantic index does not exist.");
   }
@@ -338,7 +359,10 @@ export async function inspectSemanticIndex(
     if (metadata.provider_fingerprint !== providerFingerprint) {
       return status("incompatible", path, metadata.provider_fingerprint, metadata.indexed_memories, active.length, 0, active.length, "Provider fingerprint does not match the index.");
     }
-    const rows = database.prepare("SELECT memory_id, revision, scope, vector FROM semantic_vectors").all() as SemanticVectorRow[];
+    const allRows = database.prepare("SELECT memory_id, revision, scope, vector FROM semantic_vectors").all() as SemanticVectorRow[];
+    const rows = scopeFilter
+      ? allRows.filter((row) => row.scope === scopeFilter.scope || (scopeFilter.includeGlobal && row.scope === "user:default"))
+      : allRows;
     if (rows.some((row) => row.vector.length !== metadata.dimensions * Float32Array.BYTES_PER_ELEMENT)) {
       return status("error", path, metadata.provider_fingerprint, rows.length, active.length, 0, active.length, "Semantic vector dimensions do not match index metadata.");
     }
@@ -473,11 +497,18 @@ function fuseResults(fts: RecallMemoryResult[], semantic: RecallMemoryResult[], 
     .map((result) => ({ memory: result.memory, score: result.score, reason: `Hybrid reciprocal-rank fusion: ${[...result.sources].join("+")}.`, retrievalMode: "hybrid" }));
 }
 
-async function handleSemanticFailure(input: RecallMemoriesInput, fts: SearchIndex, code: string): Promise<RecallMemoryResult[]> {
+async function handleSemanticFailure(input: RecallMemoriesInput, fts: SearchIndex, code: string): Promise<RecallMemoriesResponse> {
   if (input.retrievalMode === "hybrid" || input.semanticFallback === "fts") {
-    return fallbackResults(await fts.search(input), code);
+    return {
+      results: fallbackResults(await fts.search(input), code),
+      diagnostics: recallDiagnostics(input.retrievalMode ?? "semantic", "fts", code),
+    };
   }
   throw new NuzoMemoryError(code, "Semantic retrieval is not configured.");
+}
+
+function recallDiagnostics(requestedMode: RetrievalMode, effectiveMode: RetrievalMode, semanticFallbackCode: string | null) {
+  return { requestedMode, effectiveMode, semanticFallbackCode };
 }
 
 function fallbackResults(results: RecallMemoryResult[], code: string): RecallMemoryResult[] {

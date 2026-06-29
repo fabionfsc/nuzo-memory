@@ -8,6 +8,9 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import {
   createMemoryService,
+  createHybridSearchIndex,
+  createLocalTransformersEmbeddingProvider,
+  createSemanticSearch,
   DefaultPolicyEngine,
   RandomIdGenerator,
   RegexSecretScanner,
@@ -19,10 +22,12 @@ import {
   memoryScopePattern,
   memoryTagPattern,
   projectScopeFromPath,
+  semanticIndexPathFor,
   schemaVersion,
   type MemoryService,
   type MemoryExportDocument,
   type MemoryScope,
+  type SearchIndex,
 } from "@nuzo/memory-core";
 import { createMemoryToolHandlers } from "./handlers.js";
 import type {
@@ -33,6 +38,7 @@ import type {
   HistoryToolInput,
   ImportToolInput,
   ListToolInput,
+  RecallToolInput,
   RecallHookToolInput,
   RememberToolInput,
   SuggestCaptureToolInput,
@@ -53,6 +59,7 @@ export interface NuzoMcpServerOptions {
   authorizedScopes?: readonly MemoryScope[];
   doctorDiagnostics?: MemoryDoctorDiagnostics;
   projectPath?: string;
+  semanticModelPath?: string;
 }
 
 export interface NuzoMcpServerRuntime {
@@ -67,11 +74,23 @@ export function createNuzoMcpServer(options: NuzoMcpServerOptions = {}): McpServ
 export function createNuzoMcpServerRuntime(options: NuzoMcpServerOptions = {}): NuzoMcpServerRuntime {
   const storePath = options.storePath ?? defaultStorePath;
   const database = openDatabase(storePath);
+  const semanticProvider = createLocalTransformersEmbeddingProvider({
+    ...(options.semanticModelPath === undefined ? {} : { modelPath: options.semanticModelPath }),
+  });
+  const searchIndex = createHybridSearchIndex({
+    fts: database,
+    semantic: createSemanticSearch({
+      path: semanticIndexPathFor(storePath),
+      provider: semanticProvider,
+      store: database,
+      similarityFloor: 0.34,
+    }),
+  });
   const serviceOptions: Pick<NuzoMcpServerOptions, "authorizedScopes"> = {};
   if (options.authorizedScopes !== undefined) {
     serviceOptions.authorizedScopes = options.authorizedScopes;
   }
-  const service = createService(database, serviceOptions);
+  const service = createService(database, serviceOptions, searchIndex);
   let closed = false;
   const server = new McpServer({
     name: "nuzo",
@@ -94,6 +113,7 @@ export function createNuzoMcpServerRuntime(options: NuzoMcpServerOptions = {}): 
     close: () => {
       if (!closed) {
         database.close();
+        void semanticProvider.dispose?.();
         closed = true;
       }
     },
@@ -154,10 +174,22 @@ export function registerMemoryTools(
         scope: scopeSchema.default("user:default"),
         limit: z.number().int().min(1).max(50).default(8),
         include_global: z.boolean().default(false),
+        retrieval_mode: z.enum(["fts", "semantic", "hybrid"]).default("fts"),
+        semantic_fallback: z.enum(["error", "fts"]).optional(),
       },
     },
     async (input) => {
-      return jsonToolResult(await handlers.recall(input));
+      const recallInput: RecallToolInput = {
+        query: input.query,
+        scope: input.scope,
+        limit: input.limit,
+        include_global: input.include_global,
+        retrieval_mode: input.retrieval_mode,
+      };
+      if (input.semantic_fallback !== undefined) {
+        recallInput.semantic_fallback = input.semantic_fallback;
+      }
+      return jsonToolResult(await handlers.recall(recallInput));
     },
   );
 
@@ -581,10 +613,11 @@ function isStoreWritable(storePath: string): boolean {
 function createService(
   database: SQLiteMemoryDatabase,
   options: Pick<NuzoMcpServerOptions, "authorizedScopes"> = {},
+  searchIndex: SearchIndex = database,
 ): MemoryService {
   return createMemoryService({
     store: database,
-    searchIndex: database,
+    searchIndex,
     auditLog: database,
     clock: new SystemClock(),
     ids: new RandomIdGenerator(),

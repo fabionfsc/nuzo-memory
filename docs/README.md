@@ -25,21 +25,22 @@ contracts, and operations documentation.
 18. `operations/codex-plugin.md`
 19. `operations/claude-code-plugin.md`
 20. `operations/lifecycle-hooks.md`
-21. `operations/issue-tracking.md`
-22. `operations/versioning.md`
-23. `operations/release-goals.md`
-24. `operations/release-version-map.md`
-25. `operations/runtime-support.md`
-26. `operations/npm-publishing.md`
-27. `operations/release-checklist.md`
-28. `operations/post-release-validation.md`
-29. `operations/recall-benchmark.md`
-30. `operations/capture-benchmark.md`
-31. `operations/semantic-benchmark.md`
-32. `operations/semantic-evaluation-0.7.0.md`
-33. `operations/capture-release-gates-0.6.0.md`
-34. `operations/spec-driven-workflow.md`
-35. `operations/roadmap.md`
+21. `operations/optional-semantics.md`
+22. `operations/issue-tracking.md`
+23. `operations/versioning.md`
+24. `operations/release-goals.md`
+25. `operations/release-version-map.md`
+26. `operations/runtime-support.md`
+27. `operations/npm-publishing.md`
+28. `operations/release-checklist.md`
+29. `operations/post-release-validation.md`
+30. `operations/recall-benchmark.md`
+31. `operations/capture-benchmark.md`
+32. `operations/semantic-benchmark.md`
+33. `operations/semantic-evaluation-0.7.0.md`
+34. `operations/capture-release-gates-0.6.0.md`
+35. `operations/spec-driven-workflow.md`
+36. `operations/roadmap.md`
 
 ## Sections
 

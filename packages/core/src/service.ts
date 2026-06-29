@@ -29,6 +29,7 @@ import type {
   MemoryRecord,
   MemoryScope,
   RecallMemoriesInput,
+  RecallMemoriesResponse,
   RecallMemoryResult,
   RememberMemoryInput,
   SuggestCaptureInput,
@@ -52,6 +53,7 @@ export interface MemoryService {
   confirmCapture(input: ConfirmCaptureInput): Promise<ConfirmCaptureResult>;
   remember(input: RememberMemoryInput): Promise<MemoryRecord>;
   recall(input: RecallMemoriesInput): Promise<RecallMemoryResult[]>;
+  recallDetailed(input: RecallMemoriesInput): Promise<RecallMemoriesResponse>;
   list(input?: ListMemoriesInput): Promise<MemoryRecord[]>;
   update(input: UpdateMemoryInput): Promise<MemoryRecord>;
   history(memoryId: string): Promise<MemoryEvent[]>;
@@ -217,6 +219,46 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
     return updated;
   }
 
+  async function recallMemories(input: RecallMemoriesInput): Promise<RecallMemoriesResponse> {
+    await policy.assertCanRecall(input);
+    const requestedMode = input.retrievalMode ?? "fts";
+    const response = searchIndex.searchDetailed
+      ? await searchIndex.searchDetailed({ ...input, limit: input.limit ?? 8 })
+      : {
+          results: await searchIndex.search({ ...input, limit: input.limit ?? 8 }),
+          diagnostics: {
+            requestedMode,
+            effectiveMode: requestedMode,
+            semanticFallbackCode: null,
+          },
+        };
+
+    if (input.recordUsage !== true) return response;
+    const now = clock.now();
+    await runTransaction(async () => {
+      for (const result of response.results) {
+        const current = await store.findById(result.memory.id);
+        if (!current || current.archivedAt !== null) continue;
+        const updated: MemoryRecord = {
+          ...current,
+          revision: current.revision + 1,
+          lastUsedAt: now,
+        };
+        const committed = await store.update(updated, current.revision);
+        assertRevisionCommitted(committed, current.id, current.revision);
+        await auditLog.append({
+          id: ids.eventId(),
+          memoryId: current.id,
+          eventType: "memory.recalled",
+          actor: "core",
+          payload: { query: input.query, score: result.score, scope: current.scope },
+          createdAt: now,
+        });
+      }
+    });
+    return response;
+  }
+
   return {
     async suggestCapture(input) {
       assertCaptureReason(input.reason);
@@ -374,44 +416,11 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
     },
 
     async recall(input) {
-      await policy.assertCanRecall(input);
+      return (await recallMemories(input)).results;
+    },
 
-      const results = await searchIndex.search({
-        ...input,
-        limit: input.limit ?? 8,
-      });
-
-      if (input.recordUsage !== true) {
-        return results;
-      }
-
-      const now = clock.now();
-      await runTransaction(async () => {
-        for (const result of results) {
-          const current = await store.findById(result.memory.id);
-          if (!current || current.archivedAt !== null) {
-            continue;
-          }
-
-          const updated: MemoryRecord = {
-            ...current,
-            revision: current.revision + 1,
-            lastUsedAt: now,
-          };
-          const committed = await store.update(updated, current.revision);
-          assertRevisionCommitted(committed, current.id, current.revision);
-          await auditLog.append({
-            id: ids.eventId(),
-            memoryId: current.id,
-            eventType: "memory.recalled",
-            actor: "core",
-            payload: { query: input.query, score: result.score, scope: current.scope },
-            createdAt: now,
-          });
-        }
-      });
-
-      return results;
+    async recallDetailed(input) {
+      return recallMemories(input);
     },
 
     async list(input = {}) {
