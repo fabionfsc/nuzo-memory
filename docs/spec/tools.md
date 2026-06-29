@@ -28,6 +28,12 @@ selector. The server resolves it to a stable `project:<path-hash>` derived from
 the active host project directory before calling core. It must never be stored
 or queried as one shared literal project scope.
 
+The published MCP runtime uses the shared Nuzo runtime resolver. Operators can
+set `NUZO_MEMORY_STORE`, `NUZO_MEMORY_SCOPE`, and `NUZO_AUTHORIZED_SCOPES`
+before launching `nuzo-mcp-server`. When `NUZO_MEMORY_SCOPE` or project config
+sets a default scope, MCP tool schemas expose that resolved scope as the
+default instead of always advertising `user:default`.
+
 Restricted MCP or host-plugin sessions can be configured with an explicit
 scope allowlist. In restricted mode:
 

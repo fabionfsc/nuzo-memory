@@ -6,6 +6,7 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import {
   createMemoryService,
   DefaultPolicyEngine,
+  projectScopeFromPath,
   RandomIdGenerator,
   RegexSecretScanner,
   SQLiteMemoryDatabase,
@@ -802,6 +803,80 @@ describe("MCP protocol contract", () => {
           },
         },
       ]);
+    } finally {
+      await client.close();
+      await runtime.close();
+    }
+  });
+
+  it("resolves published MCP runtime scope and restrictions from environment", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "nuzo-mcp-env-runtime-"));
+    tempDirectories.push(directory);
+    const storePath = join(directory, "memories.sqlite");
+    const runtime = createNuzoMcpServerRuntime({
+      projectPath: directory,
+      environment: {
+        NUZO_MEMORY_STORE: storePath,
+        NUZO_MEMORY_SCOPE: "project:auto",
+        NUZO_AUTHORIZED_SCOPES: "project:auto",
+      },
+    });
+    const client = new Client({
+      name: "nuzo-env-contract-test",
+      version: "0.0.0",
+    });
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+
+    try {
+      await Promise.all([
+        runtime.server.connect(serverTransport),
+        client.connect(clientTransport),
+      ]);
+
+      const projectScope = projectScopeFromPath(directory);
+      const tools = await client.listTools();
+      expect(tools.tools.find((tool) => tool.name === "memory.remember")?.inputSchema)
+        .toMatchObject({
+          type: "object",
+          properties: {
+            scope: {
+              default: projectScope,
+              type: "string",
+            },
+          },
+        });
+
+      const remembered = parseToolJson(await client.callTool({
+        name: "memory.remember",
+        arguments: {
+          content: "Published MCP env config writes to the resolved project scope by default.",
+          kind: "instruction",
+          source: "test:mcp-env",
+        },
+      })) as { created: boolean; id: string };
+      expect(remembered.created).toBe(true);
+
+      const listed = parseToolJson(await client.callTool({
+        name: "memory.list",
+        arguments: {
+          scope: projectScope,
+        },
+      })) as { memories: Array<{ id: string; scope: string }> };
+      expect(listed.memories).toEqual([
+        expect.objectContaining({
+          id: remembered.id,
+          scope: projectScope,
+        }),
+      ]);
+
+      await expectToolError(client.callTool({
+        name: "memory.remember",
+        arguments: {
+          content: "Published MCP env config rejects forbidden global writes.",
+          kind: "note",
+          scope: "user:default",
+        },
+      }));
     } finally {
       await client.close();
       await runtime.close();

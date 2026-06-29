@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 import { accessSync, constants, mkdirSync, realpathSync } from "node:fs";
-import { homedir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -22,6 +21,7 @@ import {
   memoryScopePattern,
   memoryTagPattern,
   projectScopeFromPath,
+  resolveNuzoRuntimeConfig,
   semanticIndexPathFor,
   schemaVersion,
   type EmbeddingProvider,
@@ -48,7 +48,6 @@ import type {
   AuditToolInput,
 } from "./handlers.js";
 
-const defaultStorePath = resolve(homedir(), ".nuzo", "memory", "memories.sqlite");
 const scopeSchema = z.string().max(memoryLimits.scopeLength).regex(memoryScopePattern);
 const tagSchema = z.string().regex(memoryTagPattern);
 const memoryIdSchema = z.string().min(1).max(memoryLimits.identifierLength);
@@ -57,11 +56,13 @@ const eventTypeSchema = z.enum(memoryEventTypes);
 
 export interface NuzoMcpServerOptions {
   storePath?: string;
+  defaultScope?: MemoryScope;
   authorizedScopes?: readonly MemoryScope[];
   doctorDiagnostics?: MemoryDoctorDiagnostics;
   projectPath?: string;
   semanticModelPath?: string;
   semanticProvider?: EmbeddingProvider;
+  environment?: Record<string, string | undefined>;
 }
 
 export interface NuzoMcpServerRuntime {
@@ -74,7 +75,12 @@ export function createNuzoMcpServer(options: NuzoMcpServerOptions = {}): McpServ
 }
 
 export function createNuzoMcpServerRuntime(options: NuzoMcpServerOptions = {}): NuzoMcpServerRuntime {
-  const storePath = options.storePath ?? defaultStorePath;
+  const runtimeConfig = resolveNuzoRuntimeConfig({
+    ...(options.storePath === undefined ? {} : { store: options.storePath }),
+    ...(options.projectPath === undefined ? {} : { cwd: options.projectPath }),
+    ...(options.environment === undefined ? {} : { environment: options.environment }),
+  });
+  const storePath = runtimeConfig.storePath;
   const database = openDatabase(storePath);
   const semanticProvider = options.semanticProvider ?? createLocalTransformersEmbeddingProvider({
     ...(options.semanticModelPath === undefined ? {} : { modelPath: options.semanticModelPath }),
@@ -89,8 +95,9 @@ export function createNuzoMcpServerRuntime(options: NuzoMcpServerOptions = {}): 
     }),
   });
   const serviceOptions: Pick<NuzoMcpServerOptions, "authorizedScopes"> = {};
-  if (options.authorizedScopes !== undefined) {
-    serviceOptions.authorizedScopes = options.authorizedScopes;
+  const authorizedScopes = options.authorizedScopes ?? runtimeConfig.authorizedScopes;
+  if (authorizedScopes !== undefined) {
+    serviceOptions.authorizedScopes = authorizedScopes;
   }
   const service = createService(database, serviceOptions, searchIndex);
   let closePromise: Promise<void> | null = null;
@@ -101,6 +108,7 @@ export function createNuzoMcpServerRuntime(options: NuzoMcpServerOptions = {}): 
 
   registerMemoryTools(server, service, {
     storePath,
+    defaultScope: runtimeConfig.scope,
     ...(options.projectPath === undefined ? {} : { projectPath: options.projectPath }),
     doctorDiagnostics: options.doctorDiagnostics ?? {
       schema: {
@@ -141,6 +149,7 @@ export function registerMemoryTools(
       ? {}
       : { doctorDiagnostics: options.doctorDiagnostics }),
   };
+  const defaultScope = options.defaultScope ?? "user:default";
   const handlers = createMemoryToolHandlers(service, handlerOptions);
 
   server.registerTool(
@@ -150,7 +159,7 @@ export function registerMemoryTools(
       inputSchema: {
         content: z.string().min(1).max(memoryLimits.contentLength),
         kind: z.enum(["preference", "project_decision", "fact", "instruction", "note"]),
-        scope: scopeSchema.default("user:default"),
+        scope: scopeSchema.default(defaultScope),
         tags: z.array(tagSchema).max(memoryLimits.tags).default([]),
         source: z.string().min(1).max(memoryLimits.sourceLength).default("nuzo:mcp"),
         confidence: z.number().min(0).max(1).optional(),
@@ -178,7 +187,7 @@ export function registerMemoryTools(
       description: "Recall relevant local Nuzo memories.",
       inputSchema: {
         query: z.string().min(1).max(memoryLimits.queryLength),
-        scope: scopeSchema.default("user:default"),
+        scope: scopeSchema.default(defaultScope),
         limit: z.number().int().min(1).max(50).default(8),
         include_global: z.boolean().default(false),
         retrieval_mode: z.enum(["fts", "semantic", "hybrid"]).default("fts"),
@@ -230,7 +239,7 @@ export function registerMemoryTools(
       inputSchema: {
         content: z.string().min(1).max(memoryLimits.contentLength),
         kind: z.enum(["preference", "project_decision", "fact", "instruction", "note"]),
-        scope: scopeSchema.default("user:default"),
+        scope: scopeSchema.default(defaultScope),
         tags: z.array(tagSchema).max(memoryLimits.tags).default([]),
         source: z.string().min(1).max(memoryLimits.sourceLength).default("nuzo:capture-suggestion"),
         confidence: z.number().min(0).max(1).optional(),

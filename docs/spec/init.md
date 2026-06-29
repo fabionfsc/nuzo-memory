@@ -94,17 +94,31 @@ Updates project `.gitignore` with:
 }
 ```
 
-## Runtime Precedence
+## Runtime Resolution
 
-The CLI resolves settings in this order:
+CLI, MCP server, and packaged host hook runtimes share the same effective
+runtime resolver. This keeps local commands, direct MCP setup, and generated
+host plugins pointed at the same store and default scope unless the operator
+overrides them intentionally.
+
+The resolver applies settings in this order:
 
 1. explicit command flags;
-2. project `.nuzo/config.json`, when present in the current project root;
-3. user `~/.nuzo/config.json`;
-4. built-in defaults.
+2. runtime environment overrides;
+3. project `.nuzo/config.json`, when present in the current project root;
+4. user `~/.nuzo/config.json`;
+5. built-in defaults.
 
 Project config is authoritative when present, so an unrelated user config is
 not read or allowed to block the project.
+
+Runtime environment overrides:
+
+| Variable | Applies to | Purpose |
+| --- | --- | --- |
+| `NUZO_MEMORY_STORE` | CLI, MCP server, host hooks | Absolute or process-resolved path to the SQLite store. |
+| `NUZO_MEMORY_SCOPE` | CLI, MCP server, host hooks | Default memory scope. `project:auto` resolves to the current project hash. |
+| `NUZO_AUTHORIZED_SCOPES` | MCP server, host hooks | Comma-separated allowlist for restricted sessions. `project:auto` is allowed and resolves before core policy runs. |
 
 `recall.limit` and `recall.include_global` provide defaults for
 `nuzo memory recall`. `--limit`, `--include-global`, and

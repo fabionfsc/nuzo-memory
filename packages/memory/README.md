@@ -50,6 +50,14 @@ Runtime memory is stored locally under:
 ~/.nuzo/memory/
 ```
 
+Runtime overrides are shared by the CLI, MCP server, and hook runner:
+
+| Variable | Purpose |
+| --- | --- |
+| `NUZO_MEMORY_STORE` | Select the SQLite store path. |
+| `NUZO_MEMORY_SCOPE` | Select the default scope; `project:auto` resolves from the active project path. |
+| `NUZO_AUTHORIZED_SCOPES` | Restrict MCP/hook access to a comma-separated scope allowlist. |
+
 No telemetry, sync, embeddings, or network calls are enabled by default.
 
 Optional local hybrid retrieval is available without changing that default.

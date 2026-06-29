@@ -14,6 +14,9 @@ Generated host plugin artifacts pin `@nuzo/memory` for reproducible installs.
 npm exec --yes --package=@nuzo/memory -- nuzo-memory-hook --doctor
 ```
 
+The MCP server and hook runner honor the shared Nuzo runtime environment:
+`NUZO_MEMORY_STORE`, `NUZO_MEMORY_SCOPE`, and `NUZO_AUTHORIZED_SCOPES`.
+
 Documentation: https://nuzo.com.br/
 
 This package remains published during the transition window for existing users

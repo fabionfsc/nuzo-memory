@@ -106,11 +106,24 @@ The MCP server uses the default local memory store:
 ~/.nuzo/memory/memories.sqlite
 ```
 
-To override the store for local testing, run the MCP server with:
+To override runtime behavior for local testing, set environment variables
+before launching the server or hook:
 
 ```bash
 NUZO_MEMORY_STORE=/absolute/path/to/memories.sqlite node packages/mcp-server/dist/index.js
 ```
+
+Supported runtime variables:
+
+| Variable | Purpose |
+| --- | --- |
+| `NUZO_MEMORY_STORE` | Select the SQLite store path. |
+| `NUZO_MEMORY_SCOPE` | Select the default scope; `project:auto` resolves from the active project path. |
+| `NUZO_AUTHORIZED_SCOPES` | Restrict MCP/hook access to a comma-separated scope allowlist, for example `project:auto,user:default`. |
+
+Use `NUZO_AUTHORIZED_SCOPES` for repository-controlled agents that should not
+enumerate or write unrelated scopes in a shared local store. Without it, the
+runtime is an unrestricted local process over the selected store.
 
 ## Development Install Flow
 

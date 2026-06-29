@@ -161,6 +161,34 @@ describe("nuzo memory cli", () => {
     expect(history.stdout.some((line) => line.includes("memory.recalled"))).toBe(true);
   });
 
+  it("applies shared runtime environment overrides", async () => {
+    const store = createStorePath();
+
+    const init = await runCli(["memory", "init"], {
+      NUZO_MEMORY_STORE: store,
+      NUZO_MEMORY_SCOPE: "project:env",
+    });
+    expect(init.stdout).toContain(`Store: ${store}`);
+    expect(init.stdout).toContain("Scope: project:env");
+
+    await runCli([
+      "memory",
+      "remember",
+      "Environment runtime config selects the default project scope.",
+      "--kind",
+      "instruction",
+    ], {
+      NUZO_MEMORY_STORE: store,
+      NUZO_MEMORY_SCOPE: "project:env",
+    });
+
+    const listed = await runCli(["memory", "list"], {
+      NUZO_MEMORY_STORE: store,
+      NUZO_MEMORY_SCOPE: "project:env",
+    });
+    expect(listed.stdout.join("\n")).toContain("scope=project:env");
+  });
+
   it("supports legacy user config defaults and home-relative storage", async () => {
     const configRoot = join(testHome, ".nuzo");
     mkdirSync(configRoot, { recursive: true });
