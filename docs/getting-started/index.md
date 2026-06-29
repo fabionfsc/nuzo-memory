@@ -30,6 +30,19 @@ Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
     npm install --global @nuzo/memory
     ```
 
+=== "CLI bootstrap (0.9.0+)"
+
+    ```bash
+    npm install --global @nuzo/memory
+    nuzo setup
+    ```
+
+    `nuzo setup` detects Codex and Claude Code CLIs in `PATH`, shows the host
+    plugin setup plan, and asks before changing host configuration. For scripts
+    or fresh VMs, use `nuzo host install codex --yes`,
+    `nuzo host install claude-code --yes`, or
+    `nuzo host install --all --yes`.
+
 Review and enable the plugin hooks, then start a new session. The first plugin
 launch may access npm to obtain the pinned runtime.
 

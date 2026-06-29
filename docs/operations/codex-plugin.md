@@ -17,6 +17,20 @@ codex plugin marketplace add fabionfsc/nuzo-memory
 codex plugin add nuzo@nuzo-memory
 ```
 
+For Nuzo `0.9.0+`, users who already installed the unified npm package can run
+the same supported Codex plugin flow through the Nuzo CLI:
+
+```bash
+npm install --global @nuzo/memory
+nuzo host install codex --yes
+```
+
+Preview it first with:
+
+```bash
+nuzo host install codex --dry-run
+```
+
 Then start Codex, open `/plugins` to confirm that `Nuzo` is installed and
 enabled, and open `/hooks` to review and trust its `SessionStart` and
 `UserPromptSubmit` command hooks. Start a new thread after installation. The

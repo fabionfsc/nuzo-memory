@@ -12,9 +12,33 @@ nuzo memory init
 nuzo memory doctor
 ```
 
+For Nuzo `0.9.0+`, the same package can also bootstrap supported host plugins
+after the global install:
+
+```bash
+nuzo setup
+```
+
+`nuzo setup` detects Codex and Claude Code CLIs in `PATH`, prints the exact
+plugin marketplace/install commands it will run, and requires explicit
+confirmation before mutating host configuration.
+
+Non-interactive setup uses the host subcommand:
+
+```bash
+nuzo host install codex --yes
+nuzo host install claude-code --yes
+nuzo host install --all --yes
+```
+
+Use `--dry-run` to inspect the plan without changing anything, or `--json` for
+machine-readable automation output.
+
 ## Common Commands
 
 ```bash
+nuzo setup --dry-run
+nuzo host install --all --dry-run --json
 nuzo memory init
 nuzo memory init --project
 nuzo memory remember "The project uses SQLite for local storage." --kind project_decision --tag storage

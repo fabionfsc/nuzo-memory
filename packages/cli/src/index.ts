@@ -62,6 +62,15 @@ import {
   type NuzoConfig,
   type NuzoRuntimeConfig,
 } from "@nuzo/memory-core";
+import {
+  defaultSetupHosts,
+  detectHostBootstrapHosts,
+  formatHostBootstrapResult,
+  parseHostBootstrapHost,
+  runHostBootstrap,
+  supportedHostBootstrapHosts,
+  type HostBootstrapHost,
+} from "./host-bootstrap.js";
 
 export interface CliIO {
   stdout(message: string): void;
@@ -115,6 +124,17 @@ interface RecallCommandOptions {
   json: boolean;
 }
 
+interface HostInstallCommandOptions {
+  all: boolean;
+  dryRun: boolean;
+  json: boolean;
+  yes: boolean;
+}
+
+interface SetupCommandOptions extends HostInstallCommandOptions {
+  host?: HostBootstrapHost[];
+}
+
 interface DoctorReport {
   storePath: string;
   storeExists: boolean;
@@ -153,6 +173,55 @@ export function createProgram(io: CliIO = defaultIO): Command {
     .name("nuzo")
     .description("Local-first, auditable memory for AI agents.")
     .version("0.8.1");
+
+  program
+    .command("setup")
+    .description("Configure Nuzo for installed agent hosts.")
+    .option("--host <host...>", "Host to configure: codex or claude-code.", parseHostList)
+    .option("--all", "Configure every supported host.", false)
+    .option("--dry-run", "Print the host setup plan without changing host configuration.", false)
+    .option("--yes", "Confirm host setup non-interactively.", false)
+    .option("--json", "Print JSON output for scripting.", false)
+    .action(withErrorHandling(io, async (commandOptions: SetupCommandOptions & { all: boolean }) => {
+      const detected = detectHostBootstrapHosts();
+      const hosts = commandOptions.host
+        ?? (commandOptions.all ? supportedHostBootstrapHosts() : defaultSetupHosts(detected));
+      const result = runHostBootstrap(hosts, commandOptions);
+      io.stdout(formatHostBootstrapResult(result, commandOptions.json));
+    }));
+
+  const host = program.command("host").description("Configure Nuzo host integrations.");
+
+  host
+    .command("install")
+    .description("Install the Nuzo plugin into one or more agent hosts.")
+    .argument("[host]", "Host to configure: codex, claude-code, or all.", parseHostInstallTarget)
+    .option("--all", "Configure every supported host.", false)
+    .option("--dry-run", "Print the host setup plan without changing host configuration.", false)
+    .option("--yes", "Confirm host setup non-interactively.", false)
+    .option("--json", "Print JSON output for scripting.", false)
+    .action(withErrorHandling(io, async (
+      target: HostBootstrapHost | "all" | undefined,
+      commandOptions: HostInstallCommandOptions,
+    ) => {
+      if (commandOptions.all && target !== undefined && target !== "all") {
+        throw new NuzoMemoryError(
+          "HOST_BOOTSTRAP_TARGET_CONFLICT",
+          "Use either a host target or --all, not both.",
+        );
+      }
+      if (!commandOptions.all && target === undefined) {
+        throw new NuzoMemoryError(
+          "HOST_BOOTSTRAP_TARGET_REQUIRED",
+          "Host install requires codex, claude-code, all, or --all.",
+        );
+      }
+      const hosts: HostBootstrapHost[] = commandOptions.all || target === "all"
+        ? supportedHostBootstrapHosts()
+        : [target as HostBootstrapHost];
+      const result = runHostBootstrap(hosts, commandOptions);
+      io.stdout(formatHostBootstrapResult(result, commandOptions.json));
+    }));
 
   const memory = program.command("memory").description("Manage local Nuzo stores.");
 
@@ -1378,6 +1447,34 @@ function parseRelationshipMode(value: string): "exact" | "bounded" {
     return value;
   }
   throw new InvalidArgumentError("Expected relationship mode to be exact or bounded.");
+}
+
+function parseHostList(
+  value: string,
+  previous: HostBootstrapHost[] = [],
+): HostBootstrapHost[] {
+  try {
+    return [...previous, parseHostBootstrapHost(value)];
+  } catch (error) {
+    if (error instanceof NuzoMemoryError) {
+      throw new InvalidArgumentError(error.message);
+    }
+    throw error;
+  }
+}
+
+function parseHostInstallTarget(value: string): HostBootstrapHost | "all" {
+  if (value === "all") {
+    return value;
+  }
+  try {
+    return parseHostBootstrapHost(value);
+  } catch (error) {
+    if (error instanceof NuzoMemoryError) {
+      throw new InvalidArgumentError("Host must be codex, claude-code, or all.");
+    }
+    throw error;
+  }
 }
 
 function parseRetrievalMode(value: string): RetrievalMode {

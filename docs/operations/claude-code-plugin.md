@@ -15,6 +15,20 @@ claude plugin marketplace add fabionfsc/nuzo-memory
 claude plugin install nuzo@nuzo-memory --scope user
 ```
 
+For Nuzo `0.9.0+`, users who already installed the unified npm package can run
+the same supported Claude Code plugin flow through the Nuzo CLI:
+
+```bash
+npm install --global @nuzo/memory
+nuzo host install claude-code --yes
+```
+
+Preview it first with:
+
+```bash
+nuzo host install claude-code --dry-run
+```
+
 Run `claude plugin list --json` and confirm that `nuzo@nuzo-memory` is enabled.
 Inside Claude Code, inspect `/mcp` and `/hooks`, then start a new session. The
 plugin obtains its pinned `@nuzo/memory` runtime on first use, so a global npm
