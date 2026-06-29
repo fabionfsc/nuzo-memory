@@ -55,6 +55,32 @@ This confirms that the published CLI, MCP runtime, generated Codex artifact,
 and generated Claude Code artifact resolve the exact public `0.6.0` packages
 and preserve the confirmed-capture session-continuity contract.
 
+## Published 0.7.0 Verification
+
+The `0.7.0` release was published from `main` at commit
+`b8c1d8287e3f24314bdcd34529411d461fc2fa39` through the GitHub Release
+[`v0.7.0`](https://github.com/fabionfsc/nuzo-memory/releases/tag/v0.7.0).
+The npm dry run passed in
+[workflow run 28354901494](https://github.com/fabionfsc/nuzo-memory/actions/runs/28354901494),
+then trusted publishing completed in
+[workflow run 28354962114](https://github.com/fabionfsc/nuzo-memory/actions/runs/28354962114).
+
+Registry metadata and npm attestations verified the exact release and
+provenance for:
+
+- `@nuzo/memory-core@0.7.0`;
+- `@nuzo/memory@0.7.0`;
+- `@nuzo/memory-cli@0.7.0`;
+- `@nuzo/mcp-server@0.7.0`.
+
+The published CLI, MCP, Codex plugin, and Claude Code plugin smokes passed.
+A clean default installation contained neither Transformers.js nor model
+files, and an explicit hybrid request reported FTS fallback with
+`SEMANTIC_INDEX_MISSING`. After installing the exact optional peer and using
+the checksum-verified pinned model, the published CLI rebuilt the derived
+index and recovered a paraphrased memory in effective `hybrid` mode without
+fallback. This validation used only fake memory content.
+
 ## Real Flow To Prove
 
 The canonical post-release smoke is:

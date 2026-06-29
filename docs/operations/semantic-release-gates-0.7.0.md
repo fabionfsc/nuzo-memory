@@ -129,6 +129,21 @@ semantic lifecycle behavior.
 - Runtime memory, model, sidecar, build, docs, credential, and local operator
   files remain ignored and excluded from release artifacts.
 
+## Publication Evidence
+
+GitHub Release [`v0.7.0`](https://github.com/fabionfsc/nuzo-memory/releases/tag/v0.7.0)
+and its tag resolve to release commit
+`b8c1d8287e3f24314bdcd34529411d461fc2fa39`.
+[The npm dry run](https://github.com/fabionfsc/nuzo-memory/actions/runs/28354901494)
+and [trusted publication](https://github.com/fabionfsc/nuzo-memory/actions/runs/28354962114)
+passed. The four public `0.7.0` packages expose npm provenance attestations.
+
+Post-publication CLI, MCP, Codex plugin, and Claude Code plugin smokes passed
+against registry packages. A separate clean-project check proved both sides
+of the optional boundary: the default installation omitted Transformers.js
+and returned visible FTS fallback, while the exact optional peer plus the
+pinned local model rebuilt the sidecar and completed hybrid paraphrase recall.
+
 ## Commands
 
 ```bash
