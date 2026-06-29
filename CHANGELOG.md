@@ -24,11 +24,15 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
   redundant global runtime install.
 - CI now validates native marketplace discovery and installation with pinned
   Codex and Claude Code CLIs on Node.js 24.
+- MCP and host hook doctor diagnostics now include the same content-free
+  SQLite integrity summary as the CLI.
 
 ### Changed
 
 - `nuzo memory doctor` now reports SQLite store integrity status and surfaces
   integrity failures as warnings.
+- Host setup output now explains why each command runs and shows explicit
+  non-interactive examples for Codex, Claude Code, and both hosts.
 - Tracked host plugin sources now resolve the exact matching
   `@nuzo/memory` runtime and remain version-aligned through release tooling.
 - README, homepage, Getting Started, clean install, CLI, and host plugin pages

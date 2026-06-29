@@ -67,18 +67,20 @@ nuzo setup
 For scripted installs, choose the host explicitly:
 
 ```bash
-# Codex
+# Codex only
 nuzo host install codex --yes
 
-# Claude Code
+# Claude Code only
 nuzo host install claude-code --yes
 
 # Both Codex and Claude Code
 nuzo host install --all --yes
 ```
 
-After a plugin install, review its hooks and start a new agent session. A
-separate global npm install is not required for Codex or Claude Code.
+Use `--dry-run` to preview the exact marketplace/plugin commands before they
+run. After a plugin install, review and trust its hooks, then start a new agent
+session. A separate global npm install is not required for Codex or Claude
+Code.
 
 Plugin setup details:
 [Codex](docs/operations/codex-plugin.md) ·

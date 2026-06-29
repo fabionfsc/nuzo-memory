@@ -16,6 +16,7 @@ import {
   SQLiteMemoryDatabase,
   SystemClock,
   NuzoMemoryError,
+  inspectSQLiteMemoryStore,
   memoryLimits,
   memoryEventTypes,
   memoryScopePattern,
@@ -118,6 +119,7 @@ export function createNuzoMcpServerRuntime(options: NuzoMcpServerOptions = {}): 
         currentVersion: database.getSchemaVersion(),
         supportedVersion: schemaVersion,
       },
+      integrity: () => inspectSQLiteMemoryStore(storePath),
       writable: isStoreWritable(storePath),
     },
   });

@@ -80,14 +80,19 @@ describe("nuzo memory cli", () => {
   it("prints host setup dry-run plans without changing host configuration", async () => {
     const codex = await runCli(["host", "install", "codex", "--dry-run"]);
     expect(codex.stderr).toEqual([]);
-    expect(codex.stdout[0]).toContain("Nuzo host setup plan\nCodex: ");
+    expect(codex.stdout[0]).toContain("Nuzo host setup plan");
+    expect(codex.stdout[0]).toMatch(/Codex: (detected|not detected)/);
     expect(codex.stdout[0]).toContain("- planned: codex plugin marketplace add fabionfsc/nuzo-memory");
     expect(codex.stdout[0]).toContain("- planned: codex plugin add nuzo@nuzo-memory");
+    expect(codex.stdout[0]).toContain("Codex only: nuzo host install codex --yes");
+    expect(codex.stdout[0]).toContain("Claude Code only: nuzo host install claude-code --yes");
+    expect(codex.stdout[0]).toContain("Both hosts: nuzo host install --all --yes");
 
     const setup = await runCli(["setup", "--host", "codex", "claude-code", "--dry-run", "--json"]);
     const output = JSON.parse(setup.stdout[0] ?? "{}") as {
       dry_run: boolean;
       hosts: Array<{ host: string; steps: Array<{ command: string; status: string }> }>;
+      next_steps: string[];
     };
     expect(output).toMatchObject({
       dry_run: true,
@@ -108,6 +113,7 @@ describe("nuzo memory cli", () => {
         },
       ],
     });
+    expect(output.next_steps).toContain("Both hosts: nuzo host install --all --yes");
 
     const all = await runCli(["host", "install", "--all", "--dry-run", "--json"]);
     expect(JSON.parse(all.stdout[0] ?? "{}")).toMatchObject({

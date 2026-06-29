@@ -14,6 +14,7 @@ import type {
   MemoryService,
   RecallMemoryResult,
   RememberMemoryInput,
+  SQLiteIntegrityReport,
   SuggestCaptureInput,
   UpdateMemoryInput,
 } from "@nuzo/memory-core";
@@ -140,6 +141,7 @@ export interface MemoryDoctorDiagnostics {
     currentVersion: number;
     supportedVersion: number;
   };
+  integrity?: SQLiteIntegrityReport | (() => SQLiteIntegrityReport);
   writable?: boolean;
 }
 
@@ -266,6 +268,7 @@ export interface MemoryToolHandlers {
       archived_memories: number | null;
       total_memories: number | null;
     };
+    integrity: MemoryDoctorIntegrityOutput;
     lifecycle: {
       recall_hook: "available";
       automatic_host_hooks: "verify_in_host";
@@ -276,6 +279,22 @@ export interface MemoryToolHandlers {
     warnings: string[];
   }>;
 }
+
+export type MemoryDoctorIntegrityOutput = {
+  ok: boolean | null;
+  path: string | null;
+  schema_version: number | null;
+  supported_schema_version: number | null;
+  integrity_check: string | null;
+  foreign_key_violations: number | null;
+  memory_count: number | null;
+  active_memory_count: number | null;
+  fts_row_count: number | null;
+  missing_fts_rows: number | null;
+  orphan_fts_rows: number | null;
+  errors: string[];
+  status: "ok" | "failed" | "missing" | "not_performed";
+};
 
 export type MemoryToolRecord = {
   id: string;
@@ -667,6 +686,13 @@ export function createMemoryToolHandlers(
       if (schema.status === "newer") {
         warnings.push("memory store schema is newer than the supported version");
       }
+      const integrity = formatIntegrityDiagnostics(resolveIntegrityDiagnostics(options.doctorDiagnostics?.integrity));
+      if (integrity.status === "failed") {
+        warnings.push(...integrity.errors.map((error) => `memory integrity: ${error}`));
+      }
+      if (integrity.status === "missing") {
+        warnings.push("memory integrity: memory store does not exist");
+      }
 
       return {
         ok: warnings.length === 0,
@@ -682,6 +708,7 @@ export function createMemoryToolHandlers(
           archived_memories: archivedMemories,
           total_memories: totalMemories,
         },
+        integrity,
         lifecycle: {
           recall_hook: "available",
           automatic_host_hooks: "verify_in_host",
@@ -693,6 +720,50 @@ export function createMemoryToolHandlers(
       };
     },
   };
+}
+
+export function formatIntegrityDiagnostics(
+  report: SQLiteIntegrityReport | undefined,
+): MemoryDoctorIntegrityOutput {
+  if (report === undefined) {
+    return {
+      ok: null,
+      path: null,
+      schema_version: null,
+      supported_schema_version: null,
+      integrity_check: null,
+      foreign_key_violations: null,
+      memory_count: null,
+      active_memory_count: null,
+      fts_row_count: null,
+      missing_fts_rows: null,
+      orphan_fts_rows: null,
+      errors: [],
+      status: "not_performed",
+    };
+  }
+
+  return {
+    ok: report.ok,
+    path: report.path,
+    schema_version: report.schemaVersion,
+    supported_schema_version: report.supportedSchemaVersion,
+    integrity_check: report.integrityCheck,
+    foreign_key_violations: report.foreignKeyViolations,
+    memory_count: report.memoryCount,
+    active_memory_count: report.activeMemoryCount,
+    fts_row_count: report.ftsRowCount,
+    missing_fts_rows: report.missingFtsRows,
+    orphan_fts_rows: report.orphanFtsRows,
+    errors: report.errors,
+    status: report.ok ? "ok" : report.integrityCheck === "missing" ? "missing" : "failed",
+  };
+}
+
+function resolveIntegrityDiagnostics(
+  integrity: MemoryDoctorDiagnostics["integrity"],
+): SQLiteIntegrityReport | undefined {
+  return typeof integrity === "function" ? integrity() : integrity;
 }
 
 function formatSchemaDiagnostics(

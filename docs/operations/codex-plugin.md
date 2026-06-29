@@ -266,6 +266,10 @@ Use it to isolate marketplace or plugin-loading failures.
 - `memory.import`
 - `memory.doctor`
 
+Use `memory.doctor` from inside Codex to inspect runtime readiness, schema
+state, and content-free SQLite/FTS integrity metadata. Use the shell CLI
+`nuzo memory integrity` when you are administering the store directly.
+
 ## Nuzo Skill
 
 The plugin ships `skills/nuzo-memory/SKILL.md` plus official `SessionStart` and

@@ -187,6 +187,21 @@ export function createProgram(io: CliIO = defaultIO): Command {
     .option("--dry-run", "Print the host setup plan without changing host configuration.", false)
     .option("--yes", "Confirm host setup non-interactively.", false)
     .option("--json", "Print JSON output for scripting.", false)
+    .addHelpText("after", `
+
+Examples:
+  # Preview detected hosts before changing anything
+  $ nuzo setup --dry-run
+
+  # Configure Codex only
+  $ nuzo host install codex --yes
+
+  # Configure Claude Code only
+  $ nuzo host install claude-code --yes
+
+  # Configure both supported hosts
+  $ nuzo host install --all --yes
+`)
     .action(withErrorHandling(io, async (commandOptions: SetupCommandOptions & { all: boolean }) => {
       const detected = detectHostBootstrapHosts();
       const hosts = commandOptions.host
@@ -205,6 +220,21 @@ export function createProgram(io: CliIO = defaultIO): Command {
     .option("--dry-run", "Print the host setup plan without changing host configuration.", false)
     .option("--yes", "Confirm host setup non-interactively.", false)
     .option("--json", "Print JSON output for scripting.", false)
+    .addHelpText("after", `
+
+Examples:
+  # For Codex
+  $ nuzo host install codex --yes
+
+  # For Claude Code
+  $ nuzo host install claude-code --yes
+
+  # For both Codex and Claude Code
+  $ nuzo host install --all --yes
+
+  # Preview the commands first
+  $ nuzo host install --all --dry-run
+`)
     .action(withErrorHandling(io, async (
       target: HostBootstrapHost | "all" | undefined,
       commandOptions: HostInstallCommandOptions,

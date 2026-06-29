@@ -90,6 +90,7 @@ export function runHostBootstrap(
   const detected = detectHostBootstrapHosts(runner);
   const selectedHosts = uniqueHosts(hosts);
   const result = createHostBootstrapPlan(selectedHosts, detected);
+  result.dryRun = options.dryRun;
 
   if (selectedHosts.length === 0) {
     throw new NuzoMemoryError(
@@ -148,18 +149,22 @@ export function formatHostBootstrapResult(
           status: step.status,
         })),
       })),
+      next_steps: hostBootstrapNextSteps(result),
     }, null, 2);
   }
 
   const lines: string[] = [
     result.dryRun ? "Nuzo host setup plan" : "Nuzo host setup completed",
+    "Nuzo will install host plugins only after explicit confirmation. npm install does not change Codex or Claude Code configuration.",
   ];
   for (const host of result.hosts) {
     lines.push(`${hostDisplayName(host.host)}: ${host.detected ? "detected" : "not detected"}`);
     for (const step of host.steps) {
       lines.push(`- ${step.status}: ${shellCommand(step)}`);
+      lines.push(`  Purpose: ${step.purpose}`);
     }
   }
+  lines.push(...hostBootstrapNextSteps(result).map((step, index) => index === 0 ? `Next: ${step}` : `      ${step}`));
   return lines.join("\n");
 }
 
@@ -197,6 +202,23 @@ function hostBootstrapCommands(host: HostBootstrapHost): HostBootstrapCommand[] 
       args: ["plugin", "install", pluginId, "--scope", "user"],
       purpose: "Install the Nuzo Claude Code plugin for the user scope.",
     },
+  ];
+}
+
+function hostBootstrapNextSteps(result: HostBootstrapResult): string[] {
+  if (result.dryRun) {
+    return [
+      "Re-run with --yes to apply this plan, or choose one host explicitly:",
+      "Codex only: nuzo host install codex --yes",
+      "Claude Code only: nuzo host install claude-code --yes",
+      "Both hosts: nuzo host install --all --yes",
+    ];
+  }
+
+  return [
+    "Review and trust the installed plugin hooks in each host.",
+    "Start a new Codex or Claude Code session so the plugin and MCP server are loaded.",
+    "Run nuzo memory doctor, or use memory.doctor from the host, to verify runtime health.",
   ];
 }
 

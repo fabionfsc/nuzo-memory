@@ -55,6 +55,17 @@ npm install --global @nuzo/memory
 It includes the CLI, MCP server, and read-only lifecycle hook runner. Use
 `@nuzo/memory-core` only for library-level integrations or Nuzo development.
 
+The npm install does not change Codex or Claude Code configuration. If you want
+the global CLI to install host plugins for you, preview the plan first and then
+choose the host explicitly:
+
+```bash
+nuzo setup --dry-run
+nuzo host install codex --yes        # Codex only
+nuzo host install claude-code --yes  # Claude Code only
+nuzo host install --all --yes        # both hosts
+```
+
 Verify the released CLI without cloning:
 
 ```bash

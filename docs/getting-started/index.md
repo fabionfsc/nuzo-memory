@@ -46,18 +46,19 @@ Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
     For scripts or fresh VMs, choose the host explicitly:
 
     ```bash
-    # Codex
+    # Codex only
     nuzo host install codex --yes
 
-    # Claude Code
+    # Claude Code only
     nuzo host install claude-code --yes
 
     # Both Codex and Claude Code
     nuzo host install --all --yes
     ```
 
-Review and enable the plugin hooks, then start a new session. The first plugin
-launch may access npm to obtain the pinned runtime.
+Use `--dry-run` to preview the exact marketplace/plugin commands before they
+run. Review and enable the plugin hooks, then start a new session. The first
+plugin launch may access npm to obtain the pinned runtime.
 
 See [Codex plugin](../operations/codex-plugin.md) and
 [Claude Code plugin](../operations/claude-code-plugin.md).
