@@ -26,6 +26,32 @@ For `0.6.0`, this loop must additionally prove read-only relationship evidence
 before confirmed create or update decisions. Optional semantic search remains
 a later goal and must not be pulled into capture classification.
 
+## Published 0.6.0 Verification
+
+The `0.6.0` release was published from `main` at commit
+`c469a3f5c69bcecd862e21eef0a27398353efaff` through the GitHub Release
+[`v0.6.0`](https://github.com/fabionfsc/nuzo-memory/releases/tag/v0.6.0).
+
+The npm trusted-publishing workflow completed successfully for:
+
+- `@nuzo/memory-core@0.6.0`;
+- `@nuzo/memory@0.6.0`;
+- `@nuzo/memory-cli@0.6.0`;
+- `@nuzo/mcp-server@0.6.0`.
+
+Post-publication validation passed with:
+
+```bash
+npm run smoke:published:cli
+npm run smoke:published:mcp
+NUZO_PLUGIN_SMOKE_PUBLISHED=1 npm run smoke:claude-code-plugin
+NUZO_PLUGIN_SMOKE_PUBLISHED=1 npm run smoke:codex-plugin
+```
+
+This confirms that the published CLI, MCP runtime, generated Codex artifact,
+and generated Claude Code artifact resolve the exact public `0.6.0` packages
+and preserve the confirmed-capture session-continuity contract.
+
 ## Real Flow To Prove
 
 The canonical post-release smoke is:

@@ -357,7 +357,7 @@ deliverables and exit criteria:
 1. `0.3.1`: trust baseline (shipped);
 2. `0.4.0`: audit and provenance (shipped);
 3. `0.5.0`: recall quality (shipped);
-4. `0.6.0`: capture intelligence;
+4. `0.6.0`: capture intelligence (shipped);
 5. `0.7.0`: optional semantics;
 6. `0.8.0`: host reliability;
 7. `0.9.0`: contract stabilization;

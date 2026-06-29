@@ -4,8 +4,8 @@ This page records the final source-tree release gates for the `0.6.0` Capture
 Intelligence milestone. It is evidence for release preparation, not the public
 release record.
 
-Publication and post-publication smokes still happen after version preparation
-and npm publishing. See [Release Checklist](release-checklist.md) and
+Publication and post-publication smokes happened after version preparation and
+npm publishing. See [Release Checklist](release-checklist.md) and
 [Post-Release Validation](post-release-validation.md).
 
 ## Scope
@@ -129,7 +129,7 @@ separate-session MCP continuity flow through the release-layout host packages.
 
 ## Post-Publication Gates
 
-After version preparation and npm publication, run:
+After version preparation and npm publication, these commands passed:
 
 ```bash
 npm run smoke:published:cli
