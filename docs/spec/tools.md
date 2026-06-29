@@ -49,6 +49,23 @@ scope allowlist. In restricted mode:
 Denied scope access returns `MEMORY_SCOPE_FORBIDDEN`. Restricted unscoped list,
 export, or bulk destructive operations return `MEMORY_SCOPE_REQUIRED`.
 
+Domain errors returned by MCP tools use a JSON text envelope:
+
+```json
+{
+  "code": "MEMORY_SCOPE_FORBIDDEN",
+  "message": "Memory scope is not authorized.",
+  "details": {
+    "scope": "project:nuzo"
+  }
+}
+```
+
+`code` is the stable machine-readable field. `message` is human-readable and
+may be clarified compatibly. `details` is optional and is omitted when including
+it could reveal unauthorized memory metadata, for example a forbidden memory's
+current scope during an ID-based history, update, or forget operation.
+
 The local CLI defaults to administrator mode for the selected local store.
 Use separate stores or a restricted MCP runtime when a repository-controlled
 agent should not enumerate unrelated memory.

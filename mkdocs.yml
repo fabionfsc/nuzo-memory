@@ -98,6 +98,7 @@ nav:
       - Memory Model: spec/memory-model.md
       - Capture Suggestions: spec/capture-suggestions.md
       - Optional Semantic Retrieval: spec/semantic-retrieval.md
+      - Memory Core API: spec/memory-core-api.md
       - Init: spec/init.md
       - API Versioning: spec/api-versioning.md
   - Operations:

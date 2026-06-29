@@ -54,6 +54,7 @@ For Nuzo, public API includes:
 
 - CLI commands and flags;
 - MCP tool names, input schemas, and output shapes;
+- `@nuzo/memory-core` root exports and documented type/value contracts;
 - memory export format;
 - package names and binary names;
 - documented runtime storage locations;

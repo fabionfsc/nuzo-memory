@@ -53,6 +53,9 @@ const tagSchema = z.string().regex(memoryTagPattern);
 const memoryIdSchema = z.string().min(1).max(memoryLimits.identifierLength);
 const exportDateSchema = z.string().max(memoryLimits.dateLength);
 const eventTypeSchema = z.enum(memoryEventTypes);
+const redactForbiddenScopeDetails: JsonErrorToolResultOptions = {
+  redactDetailsForCodes: ["MEMORY_SCOPE_FORBIDDEN"],
+};
 
 export interface NuzoMcpServerOptions {
   storePath?: string;
@@ -165,7 +168,7 @@ export function registerMemoryTools(
         confidence: z.number().min(0).max(1).optional(),
       },
     },
-    async (input) => {
+    withJsonErrorHandling(async (input) => {
       const rememberInput: RememberToolInput = {
         content: input.content,
         kind: input.kind,
@@ -178,7 +181,7 @@ export function registerMemoryTools(
       }
 
       return jsonToolResult(await handlers.remember(rememberInput));
-    },
+    }),
   );
 
   server.registerTool(
@@ -194,7 +197,7 @@ export function registerMemoryTools(
         semantic_fallback: z.enum(["error", "fts"]).optional(),
       },
     },
-    async (input) => {
+    withJsonErrorHandling(async (input) => {
       const recallInput: RecallToolInput = {
         query: input.query,
         scope: input.scope,
@@ -206,7 +209,7 @@ export function registerMemoryTools(
         recallInput.semantic_fallback = input.semantic_fallback;
       }
       return jsonToolResult(await handlers.recall(recallInput));
-    },
+    }),
   );
 
   server.registerTool(
@@ -219,7 +222,7 @@ export function registerMemoryTools(
         limit: z.number().int().min(1).max(8).default(5),
       },
     },
-    async (input) => {
+    withJsonErrorHandling(async (input) => {
       const recallHookInput: RecallHookToolInput = {
         task_context: input.task_context,
         limit: input.limit,
@@ -229,7 +232,7 @@ export function registerMemoryTools(
       }
 
       return jsonToolResult(await handlers.recallHook(recallHookInput));
-    },
+    }),
   );
 
   server.registerTool(
@@ -247,7 +250,7 @@ export function registerMemoryTools(
         relationship_mode: z.enum(["exact", "bounded"]).optional(),
       },
     },
-    async (input) => {
+    withJsonErrorHandling(async (input) => {
       const suggestInput: SuggestCaptureToolInput = {
         content: input.content,
         kind: input.kind,
@@ -264,7 +267,7 @@ export function registerMemoryTools(
       }
 
       return jsonToolResult(await handlers.suggestCapture(suggestInput));
-    },
+    }),
   );
 
   server.registerTool(
@@ -286,7 +289,7 @@ export function registerMemoryTools(
         expected_revision: z.number().int().min(1).optional(),
       },
     },
-    async (input) => {
+    withJsonErrorHandling(async (input) => {
       const confirmInput: ConfirmCaptureToolInput = {
         decision: input.decision,
         content: input.content,
@@ -307,12 +310,8 @@ export function registerMemoryTools(
       if (input.expected_revision !== undefined) {
         confirmInput.expected_revision = input.expected_revision;
       }
-      try {
-        return jsonToolResult(await handlers.confirmCapture(confirmInput));
-      } catch (error) {
-        return jsonErrorToolResult(error);
-      }
-    },
+      return jsonToolResult(await handlers.confirmCapture(confirmInput));
+    }, redactForbiddenScopeDetails),
   );
 
   server.registerTool(
@@ -325,7 +324,7 @@ export function registerMemoryTools(
         include_archived: z.boolean().default(false),
       },
     },
-    async (input) => {
+    withJsonErrorHandling(async (input) => {
       const listInput: ListToolInput = {
         tags: input.tags,
         include_archived: input.include_archived,
@@ -335,7 +334,7 @@ export function registerMemoryTools(
       }
 
       return jsonToolResult(await handlers.list(listInput));
-    },
+    }),
   );
 
   server.registerTool(
@@ -352,7 +351,7 @@ export function registerMemoryTools(
         confidence: z.number().min(0).max(1).optional(),
       },
     },
-    async (input) => {
+    withJsonErrorHandling(async (input) => {
       const updateInput: UpdateToolInput = {
         id: input.id,
       };
@@ -375,12 +374,8 @@ export function registerMemoryTools(
         updateInput.confidence = input.confidence;
       }
 
-      try {
-        return jsonToolResult(await handlers.update(updateInput));
-      } catch (error) {
-        return jsonErrorToolResult(error);
-      }
-    },
+      return jsonToolResult(await handlers.update(updateInput));
+    }, redactForbiddenScopeDetails),
   );
 
   server.registerTool(
@@ -391,12 +386,12 @@ export function registerMemoryTools(
         id: memoryIdSchema,
       },
     },
-    async (input) => {
+    withJsonErrorHandling(async (input) => {
       const historyInput: HistoryToolInput = {
         id: input.id,
       };
       return jsonToolResult(await handlers.history(historyInput));
-    },
+    }, redactForbiddenScopeDetails),
   );
 
   server.registerTool(
@@ -413,7 +408,7 @@ export function registerMemoryTools(
         limit: z.number().int().min(1).max(200).default(50),
       },
     },
-    async (input) => {
+    withJsonErrorHandling(async (input) => {
       const auditInput: AuditToolInput = {
         event_type: input.event_type,
         limit: input.limit,
@@ -435,7 +430,7 @@ export function registerMemoryTools(
       }
 
       return jsonToolResult(await handlers.audit(auditInput));
-    },
+    }),
   );
 
   server.registerTool(
@@ -450,7 +445,7 @@ export function registerMemoryTools(
         reason: z.string().max(memoryLimits.reasonLength).optional(),
       },
     },
-    async (input) => {
+    withJsonErrorHandling(async (input) => {
       const forgetInput: ForgetToolInput = {
         id: input.id,
         mode: input.mode,
@@ -464,7 +459,7 @@ export function registerMemoryTools(
       }
 
       return jsonToolResult(await handlers.forget(forgetInput));
-    },
+    }, redactForbiddenScopeDetails),
   );
 
   server.registerTool(
@@ -481,7 +476,7 @@ export function registerMemoryTools(
         reason: z.string().max(memoryLimits.reasonLength).optional(),
       },
     },
-    async (input) => {
+    withJsonErrorHandling(async (input) => {
       const forgetInput: ForgetManyToolInput = {
         tags: input.tags,
         all: input.all,
@@ -497,7 +492,7 @@ export function registerMemoryTools(
       }
 
       return jsonToolResult(await handlers.forgetMany(forgetInput));
-    },
+    }),
   );
 
   server.registerTool(
@@ -510,7 +505,7 @@ export function registerMemoryTools(
         include_archived: z.boolean().default(false),
       },
     },
-    async (input) => {
+    withJsonErrorHandling(async (input) => {
       const exportInput: ExportToolInput = {
         tags: input.tags,
         include_archived: input.include_archived,
@@ -520,7 +515,7 @@ export function registerMemoryTools(
       }
 
       return jsonToolResult(await handlers.exportMemories(exportInput));
-    },
+    }),
   );
 
   server.registerTool(
@@ -551,7 +546,7 @@ export function registerMemoryTools(
         dry_run: z.boolean().default(false),
       },
     },
-    async (input) => {
+    withJsonErrorHandling(async (input) => {
       const importInput: ImportToolInput = {
         document: input.document as MemoryExportDocument,
         dry_run: input.dry_run,
@@ -561,7 +556,7 @@ export function registerMemoryTools(
       }
 
       return jsonToolResult(await handlers.importMemories(importInput));
-    },
+    }),
   );
 
   server.registerTool(
@@ -570,9 +565,9 @@ export function registerMemoryTools(
       description: "Report the local Nuzo MCP memory environment.",
       inputSchema: {},
     },
-    async () => {
+    withJsonErrorHandling(async () => {
       return jsonToolResult(await handlers.doctor());
-    },
+    }),
   );
 }
 
@@ -681,18 +676,43 @@ function jsonToolResult(value: unknown) {
   };
 }
 
-function jsonErrorToolResult(error: unknown) {
+function withJsonErrorHandling<Input>(
+  handler: (input: Input) => Promise<ReturnType<typeof jsonToolResult>>,
+  options: JsonErrorToolResultOptions = {},
+) {
+  return async (input: Input) => {
+    try {
+      return await handler(input);
+    } catch (error) {
+      return jsonErrorToolResult(error, options);
+    }
+  };
+}
+
+interface JsonErrorToolResultOptions {
+  redactDetailsForCodes?: readonly string[];
+}
+
+function jsonErrorToolResult(error: unknown, options: JsonErrorToolResultOptions = {}) {
   if (error instanceof NuzoMemoryError) {
+    const shouldRedactDetails = options.redactDetailsForCodes?.includes(error.code) === true;
+    const output: {
+      code: string;
+      message: string;
+      details?: unknown;
+    } = {
+      code: error.code,
+      message: error.message,
+    };
+    if (!shouldRedactDetails && error.details !== undefined) {
+      output.details = error.details;
+    }
     return {
       isError: true,
       content: [
         {
           type: "text" as const,
-          text: JSON.stringify({
-            code: error.code,
-            message: error.message,
-            details: error.details,
-          }, null, 2),
+          text: JSON.stringify(output, null, 2),
         },
       ],
     };
