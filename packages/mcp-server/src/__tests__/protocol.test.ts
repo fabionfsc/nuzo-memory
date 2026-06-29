@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import type { EmbeddingProvider } from "@nuzo/memory-core";
 import { afterEach, describe, expect, it } from "vitest";
 import { createNuzoMcpServerRuntime } from "../index.js";
 import { sortedMemoryToolNames } from "../tool-contract.js";
@@ -17,6 +18,57 @@ afterEach(() => {
 });
 
 describe("MCP protocol contract", () => {
+  it("awaits semantic provider disposal when the runtime closes", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "nuzo-mcp-runtime-close-"));
+    tempDirectories.push(directory);
+    let releaseDispose!: () => void;
+    let disposeStarted = false;
+    let disposed = false;
+    const disposeBarrier = new Promise<void>((resolve) => {
+      releaseDispose = resolve;
+    });
+    const semanticProvider: EmbeddingProvider = {
+      descriptor: {
+        id: "test-provider",
+        model: "test-model",
+        revision: "test",
+        dimensions: 2,
+        network: "none",
+      },
+      async embedDocuments(texts) {
+        return texts.map(() => [1, 0]);
+      },
+      async embedQuery() {
+        return [1, 0];
+      },
+      async dispose() {
+        disposeStarted = true;
+        await disposeBarrier;
+        disposed = true;
+      },
+    };
+    const runtime = createNuzoMcpServerRuntime({
+      storePath: join(directory, "memories.sqlite"),
+      semanticProvider,
+    });
+
+    let closeResolved = false;
+    const closePromise = runtime.close().then(() => {
+      closeResolved = true;
+    });
+    await Promise.resolve();
+
+    expect(disposeStarted).toBe(true);
+    expect(closeResolved).toBe(false);
+
+    releaseDispose();
+    await closePromise;
+
+    expect(disposed).toBe(true);
+    expect(closeResolved).toBe(true);
+    await expect(runtime.close()).resolves.toBeUndefined();
+  });
+
   it("discovers and calls the public tool contract through the SDK", async () => {
     const directory = mkdtempSync(join(tmpdir(), "nuzo-mcp-protocol-"));
     tempDirectories.push(directory);
@@ -289,7 +341,7 @@ describe("MCP protocol contract", () => {
       expect([...doctor.tools].sort()).toEqual(sortedMemoryToolNames);
     } finally {
       await client.close();
-      runtime.close();
+      await runtime.close();
     }
   });
 
@@ -454,7 +506,7 @@ describe("MCP protocol contract", () => {
       await expect(protocolState(client)).resolves.toEqual(secretBefore);
     } finally {
       await client.close();
-      runtime.close();
+      await runtime.close();
     }
   });
 
@@ -610,7 +662,7 @@ describe("MCP protocol contract", () => {
       await expect(protocolState(client)).resolves.toEqual(beforeReadOnly);
     } finally {
       await client.close();
-      runtime.close();
+      await runtime.close();
     }
   });
 
@@ -704,7 +756,7 @@ describe("MCP protocol contract", () => {
       ]);
     } finally {
       await client.close();
-      runtime.close();
+      await runtime.close();
     }
   });
 
@@ -765,7 +817,7 @@ describe("MCP protocol contract", () => {
       });
     } finally {
       await client.close();
-      runtime.close();
+      await runtime.close();
     }
   });
 
@@ -803,7 +855,7 @@ describe("MCP protocol contract", () => {
       ]);
     } finally {
       await client.close();
-      runtime.close();
+      await runtime.close();
     }
   });
 
@@ -874,7 +926,7 @@ describe("MCP protocol contract", () => {
       }));
     } finally {
       await client.close();
-      runtime.close();
+      await runtime.close();
     }
   });
 });
