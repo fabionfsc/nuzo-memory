@@ -1,6 +1,6 @@
 # Nuzo Claude Code Plugin
 
-This package contains the initial Claude Code plugin metadata for Nuzo.
+This package contains the Claude Code plugin metadata for Nuzo.
 
 It is intentionally thin:
 

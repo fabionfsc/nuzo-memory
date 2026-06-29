@@ -126,8 +126,9 @@ Capture-intelligence changes should run:
 npm run benchmark:capture
 ```
 
-Until bounded relationship evidence is implemented, the default profile
-reproduces the `v0.5.0` exact-duplicate baseline. The future gate is explicit:
+The default profile preserves the `v0.5.0` exact-duplicate baseline for
+reproducibility. The current bounded relationship contract has a separate
+explicit gate:
 
 ```bash
 npm run benchmark:capture -- --expect bounded
@@ -136,7 +137,8 @@ npm run benchmark:capture -- --expect bounded
 The capture benchmark uses public synthetic data and independently reports
 English relationship quality, policy blocks, scope and archived isolation,
 candidate/evidence bounds, latency, and zero memory or audit writes. The
-bounded profile must pass before `0.6.0` release preparation.
+bounded profile shipped in `0.6.0` and remains the regression gate for that
+contract.
 
 Optional-semantics work should also run:
 

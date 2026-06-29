@@ -74,7 +74,7 @@ It is the user-owned memory layer for cases where the user wants:
 | --- | --- | --- |
 | Native host memory improves quickly. | Convenience use cases may disappear. | Stay complementary and focus on portability/control. |
 | Mem0 owns the plugin UX first. | Nuzo may look less capable. | Differentiate on local-first, no cloud dependency, and transparent storage. |
-| Semantic memory becomes table stakes. | SQLite FTS may feel weak. | Add embeddings later as optional local/provider-backed layer. |
+| Semantic memory becomes table stakes. | Optional inference may add resource and portability costs. | Keep FTS as the default and expand local semantic retrieval only behind benchmark and resource gates. |
 | Plugin APIs shift. | Host packages can break. | Keep host packages thin and MCP/core stable. |
 | Import/export duplicates or corrupts state. | Portability claim weakens. | Keep import idempotent and versioned. |
 
@@ -90,7 +90,9 @@ Nuzo should ship a tight local workflow first:
 4. Use the same store from Codex and Claude Code.
 5. Keep everything inspectable and Git-safe.
 
-Only add semantic search, graph memory, sync, or lifecycle automation when they preserve this rule.
+Only expand semantic ranking, graph memory, sync, or lifecycle automation when
+they preserve this rule. The optional local semantic path must remain derived,
+explicit, and removable without affecting canonical memory.
 
 ## Do Not Do Yet
 

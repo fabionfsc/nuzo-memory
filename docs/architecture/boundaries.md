@@ -20,6 +20,10 @@ packages/cli
 packages/mcp-server
   Owns MCP transport, tool schemas, request/response mapping.
 
+packages/memory
+  Defines metadata for the generated unified public runtime package. Published
+  staging artifacts combine built CLI/MCP output and depend on memory-core.
+
 packages/codex-plugin
   Owns Codex packaging, plugin manifest, and Codex-specific docs.
 
@@ -54,6 +58,15 @@ core -> claude-code-plugin
 mcp-server -> cli
 cli -> mcp-server
 ```
+
+Generated release artifacts follow this public distribution direction:
+
+```text
+core -> cli/mcp-server -> memory -> host plugins
+```
+
+The unified package and host artifacts do not own a second implementation of
+memory behavior.
 
 ## Core Contracts
 

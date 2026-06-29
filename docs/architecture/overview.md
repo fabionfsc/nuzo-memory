@@ -5,7 +5,7 @@ Nuzo is split into a small core and multiple interfaces.
 ```text
 Agent / User
     |
-    | MCP tools / CLI commands / optional HTTP
+    | MCP tools / CLI commands
     v
 Interface Layer
     |

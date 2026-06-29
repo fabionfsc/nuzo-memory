@@ -48,8 +48,8 @@ npm run benchmark:capture -- --expect bounded
 
 The bounded command intentionally exits non-zero on `v0.5.0`, because that
 release implements exact duplicate detection but not the opt-in relationship
-contract. Current `0.6.0` development builds must pass this profile through
-evidence-backed core behavior; they must not weaken fixture expectations to
+contract. The released bounded implementation must pass this profile through
+evidence-backed core behavior; fixture expectations must not be weakened to
 obtain a green result.
 
 ## Expectation Profiles
@@ -186,10 +186,10 @@ duplicates but returns legacy `ready` for all 27 non-exact allowed cases. It
 does not distinguish update, related, independent, or uncertain, and it does
 not claim bounded evidence. This measured gap is the justification for #127.
 
-Current development builds after #127 should report 100% target accuracy,
-100% bounded-contract coverage, 100% safety, zero memory or audit writes, and
-no scope, archived, bound, or unexpected-candidate violations under
-`--expect bounded`.
+The implementation shipped after #127 reports 100% target accuracy, 100%
+bounded-contract coverage, 100% safety, zero memory or audit writes, and no
+scope, archived, bound, or unexpected-candidate violations under `--expect
+bounded`.
 
 ## Change Control
 

@@ -15,7 +15,7 @@ The benchmark-proven local provider uses an optional peer dependency so normal
 installs do not include an inference runtime or model:
 
 ```bash
-npm install @nuzo/memory-core@0.7.0 @huggingface/transformers@4.2.0
+npm install @nuzo/memory-core @huggingface/transformers@4.2.0
 ```
 
 Model provisioning is a separate explicit operation. Provider creation and
