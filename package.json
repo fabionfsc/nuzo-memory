@@ -31,6 +31,7 @@
     "smoke:codex-plugin": "node tools/smoke-codex-plugin-artifact.mjs",
     "smoke:published:cli": "node tools/smoke-published-cli.mjs",
     "smoke:published:mcp": "node tools/smoke-published-mcp.mjs",
+    "smoke:published:semantics": "node tools/smoke-published-semantics.mjs",
     "test": "npm run test:tools && npm run test --workspaces --if-present",
     "test:tools": "node --test tools/*.test.mjs",
     "validate:npm": "npm run package:npm && node tools/validate-npm-artifacts.mjs",

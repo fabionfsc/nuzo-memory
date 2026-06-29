@@ -190,6 +190,7 @@ npm run smoke:claude-code-plugin
 npm run smoke:codex-plugin
 npm run smoke:published:cli
 npm run smoke:published:mcp
+npm run smoke:published:semantics
 ```
 
 Manual dispatch can also run a release rehearsal job. It uses Node.js 24 and
@@ -229,8 +230,13 @@ CLI is unavailable locally.
 
 The published CLI and MCP smokes install `@nuzo/memory` into a temporary npm
 prefix and validate session continuity through separate `nuzo` and stdio server
-processes. They are post-release confidence checks for the package users and
-host plugins install, not replacements for staged artifact validation before
+processes. The published optional-semantics smoke validates that a default
+install contains no Transformers.js runtime or model files, that hybrid recall
+falls back visibly without a sidecar, and, when `NUZO_SEMANTIC_MODEL_PATH` is
+set, that the published CLI can install the exact optional peer, rebuild a
+derived sidecar, and recall a paraphrased memory through semantic and hybrid
+mode. These are post-release confidence checks for package users and host
+plugin installs, not replacements for staged artifact validation before
 publication.
 
 The Codex plugin artifact smoke regenerates the release-layout plugin, verifies
