@@ -16,6 +16,7 @@ For machine-readable output or to retain the temporary SQLite store:
 ```bash
 npm run benchmark:semantics -- --json
 npm run benchmark:semantics -- --keep
+npm run benchmark:semantics -- --store-size medium
 ```
 
 Maintainers can evaluate an unbundled provider adapter over the same raw-text
@@ -45,6 +46,13 @@ The command uses only public synthetic fixtures. It builds the core package,
 creates a temporary store, runs the same queries through FTS, semantic-only,
 and hybrid retrieval, reports each mode independently, and exits non-zero if
 the acceptance envelope fails.
+
+`--store-size medium` keeps the same quality and safety cases, then adds
+synthetic active memories across `project:nuzo`, `project:other`, and
+`user:default`. It measures scoped status, missing-index fallback, cold hybrid
+recall, warm hybrid recall, peak RSS, canonical row counts, and vector row
+counts. This catches regressions where scoped semantic work accidentally scans
+or validates unrelated project vectors.
 
 ## What This Benchmark Proves
 
@@ -79,6 +87,17 @@ Each retrieval mode reports:
 - English and compatibility groups separately;
 - per-case ranks and result keys in JSON output.
 
+The medium-store profile additionally reports:
+
+- active canonical rows by scope;
+- semantic vector rows by scope;
+- authorized vector rows for `project:nuzo`;
+- authorized vector rows for `project:nuzo` plus `user:default`;
+- scoped status latency;
+- missing-index fallback latency;
+- cold and warm hybrid recall latency;
+- process peak RSS.
+
 Hybrid retrieval uses reciprocal-rank fusion over independently ranked FTS and
 semantic candidate lists. The benchmark does not tune or mutate the canonical
 FTS implementation.
@@ -108,9 +127,23 @@ memory and audit writes during evaluation = 0
 network requests by the candidate = 0
 ```
 
+The medium-store envelope is intentionally local and conservative for host
+workflow gating rather than a cloud-scale search claim:
+
+```text
+scoped semantic status <= 50 ms
+missing-index hybrid fallback <= 50 ms
+cold hybrid recall <= 100 ms
+warm hybrid recall <= 75 ms
+peak RSS <= 512 MiB
+scoped status vector count = authorized project vectors only
+include-global status vector count = project vectors + user:default vectors
+```
+
 A quality improvement cannot offset a safety failure. Machine latency is
-reported for regressions but is not a portable release threshold until a real
-provider is selected; provider model loading and hardware vary substantially.
+reported for regressions. Provider model loading and hardware vary
+substantially, so the envelope covers local index/status/search overhead and
+does not include downloading or first-time model provisioning.
 
 ## Initial Evidence
 
@@ -134,6 +167,18 @@ provider contract, derived SQLite sidecar, revision checks, cosine search, and
 hybrid fusion implementation. The provider remains benchmark-only; the
 sidecar and fusion measurements therefore validate runtime mechanics without
 claiming that a fixture concept map is a general embedding model.
+
+The `0.8.0` medium-store profile measured 1,628 synthetic memories: 824 active
+`project:nuzo` rows, 751 active `project:other` rows, 52 active
+`user:default` rows, and one archived row excluded from the sidecar. Scoped
+status reported only the 824 authorized project vectors, while
+`includeGlobal` reported 876 vectors (`project:nuzo` plus `user:default`).
+On the release-gate Linux host the deterministic profile measured
+approximately 7.5 ms scoped status, 7.4 ms missing-index fallback, 43.2 ms
+cold hybrid recall, 39.3 ms warm hybrid recall, and 87.3 MiB peak RSS. Quality
+and safety gates stayed unchanged: hybrid English top-1 and MRR remained
+93.8%, overall hybrid top-1 remained 95.0%, zero writes passed, and no network
+was used.
 
 ## Runtime Separation
 

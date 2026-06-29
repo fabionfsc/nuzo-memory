@@ -15,7 +15,7 @@ function memory(overrides: Partial<MemoryRecord> = {}): MemoryRecord {
     revision: 1,
     scope: "user:default",
     kind: "instruction",
-    content: "For Cloudflare work on this host, use /opt/docker/cloudflare.",
+    content: "For Cloudflare work on this host, use /example/workflows/cloudflare.",
     tags: ["cloudflare", "docker", "workflow"],
     source: "codex:mcp",
     confidence: 1,
@@ -29,7 +29,7 @@ function memory(overrides: Partial<MemoryRecord> = {}): MemoryRecord {
 
 describe("host recall hooks", () => {
   it("loads only bounded autoload memories at session start", async () => {
-    const projectScope = projectScopeFromPath("/opt/codex/nuzo");
+    const projectScope = projectScopeFromPath("/example/projects/nuzo");
     const global = memory({ tags: ["autoload", "preference"] });
     const project = memory({
       id: "mem_000002",
@@ -43,7 +43,7 @@ describe("host recall hooks", () => {
 
     const output = await createHostHookOutput(service, {
       hook_event_name: "SessionStart",
-      cwd: "/opt/codex/nuzo",
+      cwd: "/example/projects/nuzo",
       source: "startup",
     });
 
@@ -70,13 +70,13 @@ describe("host recall hooks", () => {
 
     const output = await createHostHookOutput(service, {
       hook_event_name: "UserPromptSubmit",
-      cwd: "/opt/codex/nuzo",
+      cwd: "/example/projects/nuzo",
       prompt: "Handle this Cloudflare demand.",
     });
 
     expect(recall).toHaveBeenCalledWith({
       query: "Handle this Cloudflare demand.",
-      scope: projectScopeFromPath("/opt/codex/nuzo"),
+      scope: projectScopeFromPath("/example/projects/nuzo"),
       limit: hostHookLimits.contextualCandidates,
       includeGlobal: true,
       recordUsage: false,
@@ -84,7 +84,7 @@ describe("host recall hooks", () => {
     expect(output).toEqual({
       hookSpecificOutput: {
         hookEventName: "UserPromptSubmit",
-        additionalContext: expect.stringContaining("/opt/docker/cloudflare"),
+        additionalContext: expect.stringContaining("/example/workflows/cloudflare"),
       },
     });
   });
@@ -105,7 +105,7 @@ describe("host recall hooks", () => {
 
     const output = await createHostHookOutput(service, {
       hook_event_name: "UserPromptSubmit",
-      cwd: "/opt/codex/nuzo",
+      cwd: "/example/projects/nuzo",
       prompt: "Which release workflow applies?",
     });
 

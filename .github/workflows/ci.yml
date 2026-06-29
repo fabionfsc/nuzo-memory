@@ -69,6 +69,9 @@ jobs:
       - name: Run optional semantics benchmark
         run: npm run benchmark:semantics
 
+      - name: Run optional semantics medium-store benchmark
+        run: npm run benchmark:semantics -- --store-size medium
+
       - name: Package host plugins
         run: npm run package:plugins
 

@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 import { performance } from "node:perf_hooks";
 import { pathToFileURL } from "node:url";
+import Database from "better-sqlite3";
 
 import {
   createMemoryService,
@@ -12,6 +13,8 @@ import {
   createSemanticSearch,
   createLocalTransformersEmbeddingProvider,
   DefaultPolicyEngine,
+  embeddingProviderFingerprint,
+  inspectSemanticIndex,
   rebuildSemanticIndex,
   RegexSecretScanner,
   SQLiteMemoryDatabase,
@@ -24,6 +27,10 @@ const keepStore = process.argv.includes("--keep");
 const providerModulePath = optionValue("--provider-module");
 const localTransformersModelPath = optionValue("--local-transformers-model");
 const similarityFloor = numberOption("--similarity-floor", 0.34);
+const storeSize = optionValue("--store-size") ?? "small";
+if (!["small", "medium"].includes(storeSize)) {
+  throw new Error("--store-size must be small or medium");
+}
 const tmpRoot = mkdtempSync(join(tmpdir(), "nuzo-semantic-benchmark-"));
 const storePath = join(tmpRoot, "memories.sqlite");
 
@@ -59,6 +66,10 @@ const fixtures = [
     ["bounded-cluster", `item-${index}`],
   )),
 ];
+
+const benchmarkFixtures = storeSize === "medium"
+  ? [...fixtures, ...mediumStoreFixtures()]
+  : fixtures;
 
 const qualityCases = [
   semanticCase("Verifiable package publishing", "How do we publish packages with verifiable supply-chain metadata?", "npm-provenance"),
@@ -142,7 +153,7 @@ async function runBenchmark() {
     transactions: database,
   });
   const memories = new Map();
-  for (const item of fixtures) {
+  for (const item of benchmarkFixtures) {
     const memory = await service.remember({
       content: item.content,
       kind: "instruction",
@@ -158,6 +169,21 @@ async function runBenchmark() {
 
   const keyById = new Map([...memories].map(([key, memory]) => [memory.id, key]));
   const semanticPath = semanticIndexPathFor(storePath);
+  const fallbackSearch = createHybridSearchIndex({
+    fts: database,
+    semantic: createSemanticSearch({
+      path: semanticPath,
+      provider: encoder,
+      store: database,
+      similarityFloor,
+    }),
+  });
+  const fallbackMeasurement = await measureDetailedRecall(() => fallbackSearch.searchDetailed({
+    query: "npm trusted publishing provenance",
+    scope: "project:nuzo",
+    limit: 5,
+    retrievalMode: "hybrid",
+  }));
   await rebuildSemanticIndex({
     path: semanticPath,
     provider: encoder,
@@ -170,6 +196,46 @@ async function runBenchmark() {
     similarityFloor,
   });
   const searchIndex = createHybridSearchIndex({ fts: database, semantic });
+  const fingerprint = embeddingProviderFingerprint(encoder.descriptor);
+  const statusAll = await measureStatus(() => semantic.status());
+  const statusProjectOnly = await measureStatus(() => inspectSemanticIndex(
+    semanticPath,
+    fingerprint,
+    database,
+    { scope: "project:nuzo", includeGlobal: false },
+  ));
+  const statusProjectWithGlobal = await measureStatus(() => inspectSemanticIndex(
+    semanticPath,
+    fingerprint,
+    database,
+    { scope: "project:nuzo", includeGlobal: true },
+  ));
+  const coldHybrid = await measureDetailedRecall(() => searchIndex.searchDetailed({
+    query: "How do we publish packages with verifiable supply-chain metadata?",
+    scope: "project:nuzo",
+    limit: 5,
+    retrievalMode: "hybrid",
+  }));
+  const warmHybrid = await measureDetailedRecall(() => searchIndex.searchDetailed({
+    query: "How do we publish packages with verifiable supply-chain metadata?",
+    scope: "project:nuzo",
+    limit: 5,
+    retrievalMode: "hybrid",
+  }));
+  const scale = {
+    storeSize,
+    scopeRows: scopeRows(database),
+    vectorRows: vectorRows(semanticPath),
+    status: {
+      all: statusAll,
+      projectOnly: statusProjectOnly,
+      projectWithGlobal: statusProjectWithGlobal,
+    },
+    fallback: fallbackMeasurement,
+    coldHybrid,
+    warmHybrid,
+    peakRssMiB: peakRssMiB(),
+  };
   const before = mutationCounts(database);
   const modes = {};
   for (const mode of ["fts", "semantic", "hybrid"]) {
@@ -185,27 +251,38 @@ async function runBenchmark() {
     noNetwork: (encoder.networkRequests ?? 0) === 0 && encoder.descriptor.network === "none",
     modes: Object.fromEntries(Object.entries(safety).map(([mode, result]) => [mode, result.failures.length === 0])),
   };
-  const decision = evaluateEnvelope(modes, safetyGates);
+  const scaleDecision = evaluateScaleEnvelope(scale);
+  const decision = evaluateEnvelope(modes, safetyGates, scaleDecision);
   const report = {
     benchmark: "nuzo-optional-semantics",
-    version: 1,
+    version: 2,
     fixturePolicy: "public-synthetic-only",
+    storeSize,
     candidate: encoder.descriptor,
     providerModule: localTransformersModelPath
       ? "core-local-transformers"
       : providerModulePath ?? "benchmark-fixture",
     similarityFloor,
-    fixtures: fixtures.length,
+    fixtures: benchmarkFixtures.length,
     qualityCases: qualityCases.length,
     safetyCases: safetyCases.length,
+    scale,
     modes,
     safety,
     safetyGates,
     envelope: {
       english: { minCases: 16, minTop1: 0.875, minMrr: 0.9, maxNoise: 0.1 },
       candidate: { minTop1Lift: 0.2, minMrrLift: 0.15 },
+      mediumStore: {
+        statusProjectOnlyMaxMs: 50,
+        fallbackMaxMs: 50,
+        coldHybridMaxMs: 100,
+        warmHybridMaxMs: 75,
+        peakRssMaxMiB: 512,
+      },
       safety: "all independent gates pass",
     },
+    scaleDecision,
     decision,
   };
 
@@ -222,6 +299,28 @@ async function runBenchmark() {
 
 function fixture(key, content, tags, scope = "project:nuzo") {
   return { key, content, tags, scope };
+}
+
+function mediumStoreFixtures() {
+  return [
+    ...Array.from({ length: 750 }, (_, index) => fixture(
+      `medium-project-${index}`,
+      `Medium project corpus filler ${index} records synthetic maintenance catalogue topic ${index}.`,
+      ["medium", "project", `mp-${index}`],
+    )),
+    ...Array.from({ length: 750 }, (_, index) => fixture(
+      `medium-other-${index}`,
+      `Other project corpus filler ${index} records synthetic unrelated catalogue topic ${index}.`,
+      ["medium", "other", `mo-${index}`],
+      "project:other",
+    )),
+    ...Array.from({ length: 50 }, (_, index) => fixture(
+      `medium-global-${index}`,
+      `Global corpus filler ${index} records synthetic user catalogue topic ${index}.`,
+      ["medium", "global", `mg-${index}`],
+      "user:default",
+    )),
+  ];
 }
 
 function semanticCase(label, query, expected, options = {}) {
@@ -284,7 +383,7 @@ function summarizeMode(results) {
   };
 }
 
-function evaluateEnvelope(modes, safety) {
+function evaluateEnvelope(modes, safety, scaleDecision) {
   const fts = modes.fts.groups.english;
   const hybrid = modes.hybrid.groups.english;
   const failures = [];
@@ -297,7 +396,24 @@ function evaluateEnvelope(modes, safety) {
   if (!safety.zeroWrites) failures.push("Recall changed canonical memory or audit rows.");
   if (!safety.noNetwork) failures.push("Candidate attempted network access.");
   for (const [mode, passed] of Object.entries(safety.modes)) if (!passed) failures.push(`${mode} safety cases failed.`);
+  failures.push(...scaleDecision.failures);
   return { passes: failures.length === 0, failures, top1Lift: hybrid.top1 - fts.top1, mrrLift: hybrid.mrr - fts.mrr };
+}
+
+function evaluateScaleEnvelope(scale) {
+  const failures = [];
+  if (scale.status.projectOnly.latencyMs > 50) failures.push("Scoped semantic status exceeded 50 ms.");
+  if (scale.fallback.latencyMs > 50) failures.push("Missing-index hybrid fallback exceeded 50 ms.");
+  if (scale.coldHybrid.latencyMs > 100) failures.push("Cold hybrid recall exceeded 100 ms.");
+  if (scale.warmHybrid.latencyMs > 75) failures.push("Warm hybrid recall exceeded 75 ms.");
+  if (scale.peakRssMiB > 512) failures.push("Peak RSS exceeded 512 MiB.");
+  if (scale.status.projectOnly.status.indexedMemories !== scale.vectorRows.projectNuzo) {
+    failures.push("Scoped semantic status did not report only project:nuzo vectors.");
+  }
+  if (scale.status.projectWithGlobal.status.indexedMemories !== scale.vectorRows.projectNuzoWithGlobal) {
+    failures.push("includeGlobal semantic status did not report project:nuzo plus user:default vectors.");
+  }
+  return { passes: failures.length === 0, failures };
 }
 
 function mutationCounts(db) {
@@ -305,6 +421,79 @@ function mutationCounts(db) {
     memories: db.database.prepare("SELECT COUNT(*) AS count FROM memories").get().count,
     events: db.database.prepare("SELECT COUNT(*) AS count FROM memory_events").get().count,
   };
+}
+
+async function measureStatus(operation) {
+  const started = performance.now();
+  const status = await operation();
+  return {
+    latencyMs: performance.now() - started,
+    status: {
+      state: status.state,
+      indexedMemories: status.indexedMemories,
+      activeMemories: status.activeMemories,
+      staleMemories: status.staleMemories,
+      missingMemories: status.missingMemories,
+    },
+  };
+}
+
+async function measureDetailedRecall(operation) {
+  const started = performance.now();
+  const response = await operation();
+  return {
+    latencyMs: performance.now() - started,
+    resultCount: response.results.length,
+    effectiveMode: response.diagnostics.effectiveMode,
+    semanticFallbackCode: response.diagnostics.semanticFallbackCode,
+  };
+}
+
+function scopeRows(db) {
+  const rows = db.database.prepare(`
+    SELECT scope, COUNT(*) AS count
+    FROM memories
+    WHERE archived_at IS NULL
+    GROUP BY scope
+    ORDER BY scope
+  `).all();
+  return scopeCounts(rows);
+}
+
+function vectorRows(path) {
+  const database = new Database(path, { readonly: true, fileMustExist: true });
+  try {
+    const byScope = scopeCounts(database.prepare(`
+      SELECT scope, COUNT(*) AS count
+      FROM semantic_vectors
+      GROUP BY scope
+      ORDER BY scope
+    `).all());
+    return {
+      ...byScope,
+      total: sumCounts(byScope),
+      projectNuzo: byScope["project:nuzo"] ?? 0,
+      userDefault: byScope["user:default"] ?? 0,
+      projectOther: byScope["project:other"] ?? 0,
+      projectNuzoWithGlobal: (byScope["project:nuzo"] ?? 0) + (byScope["user:default"] ?? 0),
+    };
+  } finally {
+    database.close();
+  }
+}
+
+function scopeCounts(rows) {
+  return Object.fromEntries(rows.map((row) => [row.scope, Number(row.count)]));
+}
+
+function sumCounts(counts) {
+  return Object.values(counts).reduce((sum, count) => sum + count, 0);
+}
+
+function peakRssMiB() {
+  const usage = process.resourceUsage?.();
+  if (usage?.maxRSS) return usage.maxRSS / 1024;
+  return process.memoryUsage().rss / 1024 / 1024;
 }
 
 class BenchmarkIds {
@@ -351,13 +540,17 @@ function percent(value) { return `${(value * 100).toFixed(1)}%`; }
 
 function printReport(report) {
   console.log("Nuzo optional semantics benchmark");
-  console.log(`fixtures=${report.fixtures} quality_cases=${report.qualityCases} safety_cases=${report.safetyCases}`);
+  console.log(`store_size=${report.storeSize} fixtures=${report.fixtures} quality_cases=${report.qualityCases} safety_cases=${report.safetyCases}`);
+  console.log(`scope_rows=${JSON.stringify(report.scale.scopeRows)} vector_rows=${JSON.stringify(report.scale.vectorRows)}`);
+  console.log(`status_all=${report.scale.status.all.latencyMs.toFixed(2)}ms status_project=${report.scale.status.projectOnly.latencyMs.toFixed(2)}ms status_project_global=${report.scale.status.projectWithGlobal.latencyMs.toFixed(2)}ms`);
+  console.log(`fallback=${report.scale.fallback.latencyMs.toFixed(2)}ms cold_hybrid=${report.scale.coldHybrid.latencyMs.toFixed(2)}ms warm_hybrid=${report.scale.warmHybrid.latencyMs.toFixed(2)}ms peak_rss=${report.scale.peakRssMiB.toFixed(1)}MiB`);
   for (const [mode, summary] of Object.entries(report.modes)) {
     const english = summary.groups.english;
     console.log(`mode=${mode}\ttop1=${percent(summary.top1)}\tmrr=${percent(summary.mrr)}\tnoise=${percent(summary.noise)}\tenglish_top1=${percent(english.top1)}\tenglish_mrr=${percent(english.mrr)}\tlatency_avg=${summary.averageLatencyMs.toFixed(2)}ms`);
   }
   for (const [mode, result] of Object.entries(report.safety)) console.log(`safety=${mode}\t${result.failures.length === 0 ? "pass" : "fail"}\t${result.failures.join("; ") || "all gates"}`);
   console.log(`zero_writes=${report.safetyGates.zeroWrites ? "pass" : "fail"} no_network=${report.safetyGates.noNetwork ? "pass" : "fail"}`);
+  console.log(`scale=${report.scaleDecision.passes ? "pass" : "fail"}`);
   console.log(`decision=${report.decision.passes ? "pass" : "fail"} top1_lift=${percent(report.decision.top1Lift)} mrr_lift=${percent(report.decision.mrrLift)}`);
   for (const failure of report.decision.failures) console.log(`  - ${failure}`);
 }

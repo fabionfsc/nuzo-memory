@@ -27,7 +27,7 @@ const scenarios = [
   {
     label: "Cloudflare workflow",
     query: "Handle the next Cloudflare routing task.",
-    content: "Cloudflare changes use the workflow under /opt/docker/cloudflare.",
+    content: "Cloudflare changes use the workflow under /example/workflows/cloudflare.",
     tags: ["cloudflare", "docker", "workflow"],
   },
   {

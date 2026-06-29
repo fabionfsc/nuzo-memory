@@ -6,10 +6,10 @@ import { projectScopeFromPath } from "../runtime.js";
 
 describe("projectScopeFromPath", () => {
   it("returns a stable project scope for an absolute path", () => {
-    const scope = projectScopeFromPath("/opt/docker/cloudflare");
+    const scope = projectScopeFromPath("/example/workflows/cloudflare");
 
     expect(scope).toMatch(/^project:[a-f0-9]{16}$/);
-    expect(projectScopeFromPath("/opt/docker/cloudflare")).toBe(scope);
+    expect(projectScopeFromPath("/example/workflows/cloudflare")).toBe(scope);
   });
 
   it("normalizes relative paths before hashing", () => {

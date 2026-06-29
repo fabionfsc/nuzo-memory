@@ -144,13 +144,16 @@ Optional-semantics work should also run:
 
 ```bash
 npm run benchmark:semantics
+npm run benchmark:semantics -- --store-size medium
 ```
 
 This benchmark compares FTS, a deterministic offline semantic candidate, and
 hybrid reciprocal-rank fusion. It reports the English quality bar separately
 from compatibility cases and treats scope isolation, archived exclusion,
 bounded output, zero writes, and no network as independent safety gates. The
-benchmark encoder is test evidence, not a bundled runtime provider.
+medium-store profile also gates scoped status, fallback, cold and warm hybrid
+recall, peak RSS, and authorized vector row counts. The benchmark encoder is
+test evidence, not a bundled runtime provider.
 
 Smoke tests may set `NUZO_DOCTOR_SKIP_GIT=1` so restricted environments do not
 warn only because Git tracking inspection is unavailable. Tests should still
@@ -182,6 +185,7 @@ npm run benchmark:recall
 npm run benchmark:capture
 npm run benchmark:capture -- --expect bounded
 npm run benchmark:semantics
+npm run benchmark:semantics -- --store-size medium
 npm run package:plugins
 npm run validate:npm
 npm run smoke:cli
