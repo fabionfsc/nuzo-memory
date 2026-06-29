@@ -79,6 +79,26 @@ npm run smoke:codex-plugin
 NUZO_HOST_CANARY_NATIVE=1 npm run smoke:host-canary
 ```
 
+For `0.9.0+`, prove local-store integrity and recovery with fake data before
+release:
+
+```bash
+nuzo memory --store /tmp/nuzo-release/memories.sqlite init
+nuzo memory --store /tmp/nuzo-release/memories.sqlite remember \
+  "Release backup validation uses fake data only." --kind note --tag release
+nuzo memory --store /tmp/nuzo-release/memories.sqlite integrity
+nuzo memory --store /tmp/nuzo-release/memories.sqlite backup \
+  --path /tmp/nuzo-release/memories.backup.sqlite --overwrite
+nuzo memory --store /tmp/nuzo-release/restored.sqlite restore \
+  /tmp/nuzo-release/memories.backup.sqlite --yes
+nuzo memory --store /tmp/nuzo-release/restored.sqlite integrity
+nuzo memory --store /tmp/nuzo-release/restored.sqlite recall "backup validation"
+```
+
+The SQLite backup step must use `nuzo memory backup` or an equivalent SQLite
+online backup API. Do not validate release recovery by copying only
+`memories.sqlite` from a WAL-mode store.
+
 For `0.7.0`, additionally provision the pinned local model in a temporary
 location and run the real-provider benchmark and staged optional install:
 
@@ -93,6 +113,9 @@ The normal `npm run validate:npm` invocation must prove that Transformers.js
 and model files are absent from a default install. The environment-enabled
 invocation must install the exact optional peer, rebuild a staged sidecar, and
 recall the expected paraphrase through the staged `@nuzo/memory` artifact.
+`nuzo memory semantic status` and `semantic provision` must not report `ready`
+or skip repair for tampered, truncated, missing, unreadable, or symlinked
+pinned model files.
 
 Before `release:prepare`, also run published/package-resolution smokes for the
 current release:

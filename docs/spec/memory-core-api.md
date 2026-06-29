@@ -97,6 +97,12 @@ injection, or runtime packaging.
 | --- | --- | --- |
 | `SQLiteMemoryDatabase` | Advanced public | SQLite adapter implementing store, search, audit, and transactions. |
 | `SQLiteMemoryDatabaseOptions` | Advanced public | SQLite adapter options. |
+| `inspectSQLiteMemoryStore` | Advanced public | Inspect a SQLite memory store for schema, integrity, count, and FTS consistency diagnostics. |
+| `backupSQLiteMemoryStore` | Advanced public | Create a WAL-safe SQLite online backup and validate the resulting snapshot. |
+| `restoreSQLiteMemoryStore` | Advanced public | Validate and restore a SQLite memory backup into a target store path. |
+| `SQLiteIntegrityReport` | Advanced public | Content-free SQLite store integrity report. |
+| `SQLiteBackupResult` | Advanced public | SQLite backup result with snapshot integrity diagnostics. |
+| `SQLiteRestoreResult` | Advanced public | SQLite restore result with target integrity diagnostics. |
 | `schemaVersion` | Advanced public | Current SQLite schema version. |
 | `migrate` | Advanced public | Apply SQLite migrations to a database handle. |
 | `MemoryStore` | Advanced public | Storage port. |

@@ -31,6 +31,12 @@ validates committed SHA-256 digests, and installs them with owner-only
 permissions. The q4 model uses approximately 53 MiB. If a complete pinned
 model is already ready, the command performs no download.
 
+`semantic status`, `semantic provision`, and semantic provider loading all
+verify the pinned model files before reporting `ready` or skipping repair.
+Manifest metadata and filenames are not sufficient: truncated files, altered
+digests, unreadable files, missing files, and symlinked model files are treated
+as invalid.
+
 Neither index rebuild nor recall can download model or runtime assets.
 
 ## Build The Derived Index

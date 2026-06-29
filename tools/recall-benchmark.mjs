@@ -101,11 +101,11 @@ const fixtures = [
     tags: ["accessibility", "frontend", "wcag"],
   },
   {
-    key: "backup-export",
-    content: "Memory backups use the Nuzo JSON export format before destructive maintenance.",
+    key: "portable-export",
+    content: "Portable memory exports use the Nuzo JSON export format before destructive maintenance.",
     kind: "instruction",
     scope: "project:nuzo",
-    tags: ["backup", "export", "maintenance"],
+    tags: ["export", "recovery", "maintenance"],
   },
   {
     key: "dependency-audit",
@@ -407,12 +407,12 @@ const cases = [
   {
     label: "Backup export English prompt",
     group: "english",
-    query: "How should memory backups be exported before maintenance?",
+    query: "How should portable memory exports be created before maintenance?",
     scope: "project:nuzo",
     limit: 5,
-    expectedTop: "backup-export",
-    expectedIncluded: ["backup-export"],
-    expectedOnly: ["backup-export"],
+    expectedTop: "portable-export",
+    expectedIncluded: ["portable-export"],
+    expectedOnly: ["portable-export"],
   },
   {
     label: "Dependency audit English prompt",

@@ -56,18 +56,24 @@ actually use; host plugins resolve the matching Nuzo runtime themselves.
 | CLI or generic MCP host | `npm install --global @nuzo/memory` |
 
 Nuzo `0.9.0+` also provides a CLI bootstrap path for users who install the
-unified package first:
+unified package first. The npm install adds the `nuzo` command; it does not
+modify Codex or Claude Code configuration automatically.
 
 ```bash
 npm install --global @nuzo/memory
 nuzo setup
 ```
 
-For non-interactive installs, use:
+For scripted installs, choose the host explicitly:
 
 ```bash
+# Codex
 nuzo host install codex --yes
+
+# Claude Code
 nuzo host install claude-code --yes
+
+# Both Codex and Claude Code
 nuzo host install --all --yes
 ```
 
@@ -87,6 +93,8 @@ nuzo memory init
 nuzo memory doctor
 nuzo memory list
 nuzo memory recall "deployment preferences"
+nuzo memory integrity
+nuzo memory backup --path ./memories.backup.sqlite
 nuzo memory export --path ./memories.memory.export.json
 ```
 

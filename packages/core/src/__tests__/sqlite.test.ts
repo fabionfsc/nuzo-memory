@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, statSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import Database from "better-sqlite3";
@@ -6,8 +6,11 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   createMemoryService,
   DefaultPolicyEngine,
+  backupSQLiteMemoryStore,
+  inspectSQLiteMemoryStore,
   type MemoryExportDocument,
   RegexSecretScanner,
+  restoreSQLiteMemoryStore,
   SQLiteMemoryDatabase,
 } from "../index.js";
 import { FixedClock, SequentialIdGenerator } from "../testing.js";
@@ -163,6 +166,127 @@ describe("SQLiteMemoryDatabase", () => {
     reopened.close();
   });
 
+  it("inspects store integrity and detects broken FTS consistency", async () => {
+    const { database, directory, service } = createTempDatabase();
+    await service.remember({
+      content: "Integrity checks must include FTS consistency.",
+      kind: "note",
+      scope: "project:nuzo",
+      tags: ["integrity"],
+      source: "test",
+    });
+    const path = join(directory, "memories.sqlite");
+
+    expect(inspectSQLiteMemoryStore(path)).toMatchObject({
+      ok: true,
+      schemaVersion: 2,
+      integrityCheck: "ok",
+      memoryCount: 1,
+      activeMemoryCount: 1,
+      ftsRowCount: 1,
+      missingFtsRows: 0,
+      orphanFtsRows: 0,
+      errors: [],
+    });
+
+    database.database.prepare("DELETE FROM memories_fts").run();
+    expect(inspectSQLiteMemoryStore(path)).toMatchObject({
+      ok: false,
+      missingFtsRows: 1,
+      errors: ["1 active memory row(s) are missing from FTS"],
+    });
+
+    database.close();
+  });
+
+  it("creates a WAL-safe SQLite backup and restores it after validation", async () => {
+    const { database, directory, service } = createTempDatabase();
+    const memory = await service.remember({
+      content: "SQLite backup must include uncheckpointed WAL memory data.",
+      kind: "project_decision",
+      scope: "project:nuzo",
+      tags: ["backup", "wal"],
+      source: "test",
+    });
+    await service.recall({
+      query: "uncheckpointed WAL",
+      scope: "project:nuzo",
+      recordUsage: true,
+    });
+    const sourcePath = join(directory, "memories.sqlite");
+    const backupPath = join(directory, "backup.sqlite");
+    const restoredPath = join(directory, "restored.sqlite");
+
+    const backup = await backupSQLiteMemoryStore({ sourcePath, backupPath });
+    expect(backup).toMatchObject({
+      sourcePath,
+      backupPath,
+      remainingPages: 0,
+      report: {
+        ok: true,
+        memoryCount: 1,
+        ftsRowCount: 1,
+      },
+    });
+    expect(backup.pages).toBeGreaterThan(0);
+    expect(existsSync(backupPath)).toBe(true);
+    expect(statSync(backupPath).mode & 0o777).toBe(0o600);
+
+    const restored = restoreSQLiteMemoryStore({ backupPath, targetPath: restoredPath });
+    expect(restored).toMatchObject({
+      backupPath,
+      targetPath: restoredPath,
+      report: {
+        ok: true,
+        memoryCount: 1,
+      },
+    });
+
+    const restoredDatabase = new SQLiteMemoryDatabase({ path: restoredPath });
+    try {
+      await expect(restoredDatabase.findById(memory.id)).resolves.toMatchObject({
+        content: "SQLite backup must include uncheckpointed WAL memory data.",
+        revision: 2,
+      });
+      await expect(restoredDatabase.list(memory.id)).resolves.toHaveLength(2);
+      await expect(restoredDatabase.search({
+        query: "backup WAL",
+        scope: "project:nuzo",
+      })).resolves.toHaveLength(1);
+    } finally {
+      restoredDatabase.close();
+      database.close();
+    }
+  });
+
+  it("requires explicit overwrite for backup and restore targets", async () => {
+    const { database, directory, service } = createTempDatabase();
+    await service.remember({
+      content: "Overwrite checks protect existing backup and restore paths.",
+      kind: "note",
+      scope: "user:default",
+      source: "test",
+    });
+    const sourcePath = join(directory, "memories.sqlite");
+    const backupPath = join(directory, "backup.sqlite");
+    const targetPath = join(directory, "target.sqlite");
+
+    await backupSQLiteMemoryStore({ sourcePath, backupPath });
+    await expect(backupSQLiteMemoryStore({ sourcePath, backupPath }))
+      .rejects.toMatchObject({ code: "MEMORY_BACKUP_EXISTS" });
+
+    const target = new SQLiteMemoryDatabase({ path: targetPath });
+    target.close();
+    expect(() => restoreSQLiteMemoryStore({ backupPath, targetPath }))
+      .toThrowError(expect.objectContaining({ code: "MEMORY_RESTORE_CONFIRMATION_REQUIRED" }));
+
+    expect(() => restoreSQLiteMemoryStore({ backupPath, targetPath, overwrite: true }))
+      .not.toThrow();
+    expect(inspectSQLiteMemoryStore(targetPath)).toMatchObject({ ok: true, memoryCount: 1 });
+
+    database.close();
+  });
+
   it("rejects a database from a newer schema version with a structured error", () => {
     const directory = mkdtempSync(join(tmpdir(), "nuzo-schema-"));
     tempDirectories.push(directory);
@@ -180,6 +304,66 @@ describe("SQLiteMemoryDatabase", () => {
         },
       }),
     );
+  });
+
+  it("opens generated 0.6.0, 0.7.0, and 0.8.0 stores for export/import compatibility", async () => {
+    for (const releasedVersion of ["0.6.0", "0.7.0", "0.8.0"]) {
+      const directory = mkdtempSync(join(tmpdir(), `nuzo-released-${releasedVersion}-`));
+      tempDirectories.push(directory);
+      const sourcePath = join(directory, "released.sqlite");
+      const sourceDatabase = new SQLiteMemoryDatabase({ path: sourcePath });
+      const sourceService = createServiceForDatabase(sourceDatabase, new PrefixedIdGenerator(releasedVersion.replaceAll(".", "_")));
+      const memory = await sourceService.remember({
+        content: `Generated ${releasedVersion} store keeps migration compatibility.`,
+        kind: "project_decision",
+        scope: "project:nuzo",
+        tags: ["migration", `v${releasedVersion.replaceAll(".", "-")}`],
+        source: `test:released:${releasedVersion}`,
+      });
+      const updated = await sourceService.update({
+        id: memory.id,
+        expectedRevision: memory.revision,
+        content: `Generated ${releasedVersion} store preserves revisions after migration.`,
+        actor: "test:released",
+      });
+      sourceDatabase.close();
+
+      const reopened = new SQLiteMemoryDatabase({ path: sourcePath });
+      const reopenedService = createServiceForDatabase(reopened, new PrefixedIdGenerator(`reopen_${releasedVersion.replaceAll(".", "_")}`));
+      const document = await reopenedService.exportMemories({
+        actor: "test:export",
+        includeArchived: true,
+      });
+      expect(document.memories).toEqual([
+        expect.objectContaining({
+          content: `Generated ${releasedVersion} store preserves revisions after migration.`,
+          source: `test:released:${releasedVersion}`,
+        }),
+      ]);
+      await expect(reopened.findById(updated.id)).resolves.toMatchObject({
+        revision: 2,
+      });
+      await expect(reopened.list(updated.id)).resolves.toHaveLength(2);
+      await expect(reopened.search({
+        query: "preserves revisions migration",
+        scope: "project:nuzo",
+      })).resolves.toHaveLength(1);
+
+      const target = new SQLiteMemoryDatabase({ path: join(directory, "imported.sqlite") });
+      const targetService = createServiceForDatabase(target, new PrefixedIdGenerator(`target_${releasedVersion.replaceAll(".", "_")}`));
+      await expect(targetService.importMemories({
+        document,
+        actor: "test:import",
+      })).resolves.toEqual({ imported: 1, skipped: 0, dryRun: false });
+      await expect(targetService.importMemories({
+        document,
+        actor: "test:import",
+      })).resolves.toEqual({ imported: 0, skipped: 1, dryRun: false });
+      await expect(targetService.list({ includeArchived: true })).resolves.toHaveLength(1);
+
+      target.close();
+      reopened.close();
+    }
   });
 
   it("persists and recalls memories with FTS", async () => {

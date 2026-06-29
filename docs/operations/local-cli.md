@@ -13,7 +13,8 @@ nuzo memory doctor
 ```
 
 For Nuzo `0.9.0+`, the same package can also bootstrap supported host plugins
-after the global install:
+after the global install. The npm install only installs the `nuzo` command; it
+does not change Codex or Claude Code configuration automatically.
 
 ```bash
 nuzo setup
@@ -23,11 +24,16 @@ nuzo setup
 plugin marketplace/install commands it will run, and requires explicit
 confirmation before mutating host configuration.
 
-Non-interactive setup uses the host subcommand:
+For scripted installs, choose the host explicitly:
 
 ```bash
+# Codex
 nuzo host install codex --yes
+
+# Claude Code
 nuzo host install claude-code --yes
+
+# Both Codex and Claude Code
 nuzo host install --all --yes
 ```
 
@@ -46,6 +52,9 @@ nuzo memory suggest-capture "The user prefers concise final answers." --kind pre
 nuzo memory recall "local storage"
 nuzo memory list --all-scopes
 nuzo memory export --path ./memories.memory.export.json
+nuzo memory integrity
+nuzo memory backup --path ./memories.backup.sqlite
+nuzo memory restore ./memories.backup.sqlite --yes
 nuzo memory history mem_01HZY
 nuzo memory audit --scope project:auto --event-type memory.exported
 nuzo memory forget-many --tag obsolete
@@ -113,6 +122,50 @@ where `memory_id` is `global` in CLI output. Filter with `--memory-id`,
 `--event-type`, `--actor`, `--scope`, `--since`, `--until`, and `--limit`.
 Audit output is metadata-only and does not include memory content.
 
+## Integrity, Backup, And Restore
+
+Use JSON or Markdown export when you need a portable memory document:
+
+```bash
+nuzo memory export --path ./memories.memory.export.json
+```
+
+Use SQLite backup when you need an operational snapshot of the selected local
+store, including audit history and SQLite indexes:
+
+```bash
+nuzo memory integrity
+nuzo memory backup --path ./memories.backup.sqlite
+```
+
+`memory backup` uses SQLite's online backup API instead of copying the
+`.sqlite` file directly. This is the supported path for WAL-mode stores because
+pending WAL pages are included consistently. Do not back up Nuzo by copying
+only `memories.sqlite` while the store may have `memories.sqlite-wal` or
+`memories.sqlite-shm` beside it.
+
+Restore validates the source backup before replacing the selected target store:
+
+```bash
+nuzo memory restore ./memories.backup.sqlite --yes
+```
+
+Without `--yes`, restore refuses to replace an existing target. After restore,
+run:
+
+```bash
+nuzo memory integrity
+nuzo memory doctor
+```
+
+The integrity check validates SQLite `integrity_check`, schema version,
+foreign-key state, memory counts, and FTS consistency. It exits with code `1`
+when the selected store is missing, corrupt, newer than the supported schema,
+or internally inconsistent.
+
+Use `--json` with `memory integrity` or `memory doctor` when automation needs a
+stable machine-readable report.
+
 ## Authorization Boundary
 
 The local CLI is an administrator workflow over the selected store. Scope
@@ -133,9 +186,15 @@ Run:
 npm run smoke:cli
 ```
 
-This builds the workspace and runs:
+This builds the workspace and runs a fake-data lifecycle:
 
 ```bash
+nuzo memory init
+nuzo memory remember "CLI smoke backup restore fake data." --kind note --tag smoke
+nuzo memory integrity
+nuzo memory backup --path /tmp/nuzo-cli-smoke/memories.backup.sqlite --overwrite
+nuzo memory restore /tmp/nuzo-cli-smoke/memories.backup.sqlite --yes
+nuzo memory integrity
 nuzo memory doctor
 ```
 

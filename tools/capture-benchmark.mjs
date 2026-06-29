@@ -36,7 +36,7 @@ const fixtures = [
   fixture("sqlite-storage", "Nuzo stores canonical memory locally in SQLite.", "project_decision", "project:nuzo", ["sqlite", "storage"]),
   fixture("docs-validation", "Run MkDocs strict validation before merging documentation changes.", "instruction", "project:nuzo", ["docs", "mkdocs", "workflow"]),
   fixture("api-errors", "API errors use structured JSON with stable machine-readable codes.", "project_decision", "project:nuzo", ["api", "errors", "json"]),
-  fixture("backup-export", "Create a JSON memory export before destructive maintenance.", "instruction", "project:nuzo", ["backup", "export", "maintenance"]),
+  fixture("portable-export", "Create a portable JSON memory export before destructive maintenance.", "instruction", "project:nuzo", ["export", "recovery", "maintenance"]),
   fixture("accessibility", "Interactive controls follow keyboard navigation and WCAG contrast guidance.", "instruction", "project:nuzo", ["accessibility", "frontend", "wcag"]),
   fixture("dependency-audit", "Dependency changes require an audit and signature verification.", "instruction", "project:nuzo", ["dependencies", "security", "workflow"]),
   fixture("cloudflare-routing", "Cloudflare routing changes use the local reverse proxy before DNS updates.", "project_decision", "project:nuzo", ["cloudflare", "routing"]),
@@ -106,8 +106,8 @@ const cases = [
   captureCase("Related response headings", "english", "Use short headings when presenting final answers.", "preference", "user:default", "related", {
     expectedPrimary: "response-concise",
   }),
-  captureCase("Related backup retention", "english", "Keep the latest three JSON memory exports for recovery.", "instruction", "project:nuzo", "related", {
-    expectedPrimary: "backup-export",
+  captureCase("Related export retention", "english", "Keep the latest three JSON memory exports for recovery.", "instruction", "project:nuzo", "related", {
+    expectedPrimary: "portable-export",
   }),
   captureCase("Related API correlation IDs", "english", "API responses include correlation IDs for operational debugging.", "project_decision", "project:nuzo", "related", {
     expectedPrimary: "api-errors",
@@ -125,7 +125,7 @@ const cases = [
     allowedCandidates: ["docs-validation", "dependency-audit", "release-branch", "pt-deploy"],
   }),
   captureCase("Ambiguous storage workflow", "english", "The project should use a different storage workflow.", "project_decision", "project:nuzo", "uncertain", {
-    allowedCandidates: ["sqlite-storage", "backup-export"],
+    allowedCandidates: ["sqlite-storage", "portable-export"],
   }),
   captureCase("Exact Portuguese deployment", "pt_unicode", "A implantação em produção exige revisão explícita antes do deploy.", "instruction", "project:nuzo", "exact_duplicate", {
     expectedPrimary: "pt-deploy",

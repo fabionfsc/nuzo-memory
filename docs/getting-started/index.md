@@ -37,11 +37,24 @@ Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
     nuzo setup
     ```
 
+    The npm install only installs the `nuzo` command. It does not change Codex
+    or Claude Code configuration automatically.
+
     `nuzo setup` detects Codex and Claude Code CLIs in `PATH`, shows the host
-    plugin setup plan, and asks before changing host configuration. For scripts
-    or fresh VMs, use `nuzo host install codex --yes`,
-    `nuzo host install claude-code --yes`, or
-    `nuzo host install --all --yes`.
+    plugin setup plan, and asks before changing host configuration.
+
+    For scripts or fresh VMs, choose the host explicitly:
+
+    ```bash
+    # Codex
+    nuzo host install codex --yes
+
+    # Claude Code
+    nuzo host install claude-code --yes
+
+    # Both Codex and Claude Code
+    nuzo host install --all --yes
+    ```
 
 Review and enable the plugin hooks, then start a new session. The first plugin
 launch may access npm to obtain the pinned runtime.
@@ -58,6 +71,8 @@ nuzo memory init
 nuzo memory doctor
 nuzo memory list
 nuzo memory recall "deployment preferences"
+nuzo memory integrity
+nuzo memory backup --path ./memories.backup.sqlite
 ```
 
 It creates:

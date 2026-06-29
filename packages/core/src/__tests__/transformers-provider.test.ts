@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -49,36 +49,45 @@ describe("local Transformers embedding provider", () => {
     expect(inspectLocalTransformersModel(modelPath)).toMatchObject({ state: "missing" });
   });
 
-  it("recognizes only the exact pinned manifest and required files", () => {
+  it("rejects a manifest-matching model directory when file checksums differ", () => {
     const modelPath = temporaryModelPath();
-    writeReadyFixture(modelPath);
-    expect(inspectLocalTransformersModel(modelPath)).toEqual({
-      state: "ready",
+    writeManifestMatchingFixture(modelPath);
+    expect(inspectLocalTransformersModel(modelPath)).toMatchObject({
+      state: "invalid",
       path: modelPath,
-      reason: "Pinned local semantic model is ready.",
+      reason: "One or more pinned semantic model files failed checksum validation.",
     });
 
     writeFileSync(join(modelPath, "nuzo-semantic-model.json"), "{}\n", "utf8");
     expect(inspectLocalTransformersModel(modelPath)).toMatchObject({ state: "invalid" });
   });
 
-  it("does not download an already provisioned model", async () => {
+  it("does not skip repair for a tampered manifest-matching model", async () => {
     const modelPath = temporaryModelPath();
-    writeReadyFixture(modelPath);
+    writeManifestMatchingFixture(modelPath);
     const fetch = vi.fn();
-    const result = await provisionLocalTransformersModel({ path: modelPath, allowNetwork: false, fetch });
-    expect(result).toMatchObject({ downloaded: false, files: localTransformersModelFiles.length });
+    await expect(provisionLocalTransformersModel({ path: modelPath, allowNetwork: false, fetch }))
+      .rejects.toMatchObject({ code: "SEMANTIC_NETWORK_OPT_IN_REQUIRED" });
     expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("rejects symlinked pinned model files", () => {
+    const modelPath = temporaryModelPath();
+    writeManifestMatchingFixture(modelPath);
+    rmSync(join(modelPath, localTransformersModelFiles[0]!.path));
+    symlinkSync("/tmp/nuzo-not-a-real-model-file", join(modelPath, localTransformersModelFiles[0]!.path));
+
+    expect(inspectLocalTransformersModel(modelPath)).toMatchObject({
+      state: "invalid",
+      reason: "Pinned semantic model file must not be a symlink.",
+    });
   });
 
   it("returns an actionable provider or model error without attempting a model download", async () => {
     const modelPath = temporaryModelPath();
-    writeReadyFixture(modelPath);
+    writeManifestMatchingFixture(modelPath);
     const provider = createLocalTransformersEmbeddingProvider({ modelPath });
-    await expect(provider.embedQuery("test")).rejects.toSatisfy((error: unknown) => {
-      return typeof error === "object" && error !== null && "code" in error &&
-        ["SEMANTIC_PROVIDER_MISSING", "SEMANTIC_PROVIDER_FAILED", "SEMANTIC_MODEL_CHECKSUM_FAILED"].includes(String(error.code));
-    });
+    await expect(provider.embedQuery("test")).rejects.toMatchObject({ code: "SEMANTIC_MODEL_INVALID" });
   });
 });
 
@@ -88,7 +97,7 @@ function temporaryModelPath(): string {
   return join(directory, "model");
 }
 
-function writeReadyFixture(modelPath: string): void {
+function writeManifestMatchingFixture(modelPath: string): void {
   mkdirSync(modelPath, { recursive: true, mode: 0o700 });
   for (const file of localTransformersModelFiles) {
     const path = join(modelPath, file.path);
