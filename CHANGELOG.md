@@ -8,6 +8,10 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ### Added
 
+- The Nuzo CLI now includes explicit host bootstrap commands:
+  `nuzo setup`, `nuzo host install codex`, `nuzo host install claude-code`, and
+  `nuzo host install --all`, with dry-run, JSON, and non-interactive
+  confirmation support.
 - Repository marketplaces now expose the tracked Nuzo plugin as
   `nuzo@nuzo-memory` for Codex and Claude Code without a source checkout or a
   redundant global runtime install.

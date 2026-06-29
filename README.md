@@ -55,6 +55,22 @@ actually use; host plugins resolve the matching Nuzo runtime themselves.
 | Claude Code | `claude plugin marketplace add fabionfsc/nuzo-memory`, then `claude plugin install nuzo@nuzo-memory` |
 | CLI or generic MCP host | `npm install --global @nuzo/memory` |
 
+Nuzo `0.9.0+` also provides a CLI bootstrap path for users who install the
+unified package first:
+
+```bash
+npm install --global @nuzo/memory
+nuzo setup
+```
+
+For non-interactive installs, use:
+
+```bash
+nuzo host install codex --yes
+nuzo host install claude-code --yes
+nuzo host install --all --yes
+```
+
 After a plugin install, review its hooks and start a new agent session. A
 separate global npm install is not required for Codex or Claude Code.
 

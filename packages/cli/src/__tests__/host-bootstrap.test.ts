@@ -1,0 +1,111 @@
+import { describe, expect, it } from "vitest";
+import {
+  createHostBootstrapPlan,
+  defaultSetupHosts,
+  detectHostBootstrapHosts,
+  formatHostBootstrapResult,
+  runHostBootstrap,
+  type HostBootstrapHost,
+} from "../host-bootstrap.js";
+
+describe("host bootstrap", () => {
+  it("detects supported host CLIs", () => {
+    const calls: string[] = [];
+    const detected = detectHostBootstrapHosts((command) => {
+      calls.push(command);
+      return { status: command === "codex" ? 0 : 1 };
+    });
+
+    expect(calls).toEqual(["codex", "claude"]);
+    expect(detected).toEqual({
+      codex: true,
+      "claude-code": false,
+    });
+  });
+
+  it("defaults setup to detected hosts", () => {
+    expect(defaultSetupHosts({
+      codex: true,
+      "claude-code": false,
+    })).toEqual(["codex"]);
+    expect(defaultSetupHosts({
+      codex: false,
+      "claude-code": false,
+    })).toEqual(["codex", "claude-code"]);
+  });
+
+  it("builds an explicit dry-run plan for Codex and Claude Code", () => {
+    const plan = createHostBootstrapPlan(["codex", "claude-code"], {
+      codex: true,
+      "claude-code": true,
+    });
+
+    expect(formatHostBootstrapResult(plan, false)).toBe([
+      "Nuzo host setup plan",
+      "Codex: detected",
+      "- planned: codex plugin marketplace add fabionfsc/nuzo-memory",
+      "- planned: codex plugin add nuzo@nuzo-memory",
+      "Claude Code: detected",
+      "- planned: claude plugin marketplace add fabionfsc/nuzo-memory",
+      "- planned: claude plugin install nuzo@nuzo-memory --scope user",
+    ].join("\n"));
+  });
+
+  it("runs selected host commands after explicit confirmation", () => {
+    const executed: Array<[string, string[]]> = [];
+    const result = runHostBootstrap(
+      ["codex"],
+      { dryRun: false, json: false, yes: true },
+      (command, args) => {
+        executed.push([command, args]);
+        return { status: 0 };
+      },
+    );
+
+    expect(executed).toEqual([
+      ["codex", ["--version"]],
+      ["claude", ["--version"]],
+      ["codex", ["plugin", "marketplace", "add", "fabionfsc/nuzo-memory"]],
+      ["codex", ["plugin", "add", "nuzo@nuzo-memory"]],
+    ]);
+    expect(result.hosts[0]?.steps.map((step) => step.status)).toEqual([
+      "succeeded",
+      "succeeded",
+    ]);
+  });
+
+  it("requires a detected host before mutating host configuration", () => {
+    expect(() => runHostBootstrap(
+      ["claude-code"],
+      { dryRun: false, json: false, yes: true },
+      (command) => ({ status: command === "codex" ? 0 : 1 }),
+    )).toThrow("Claude Code CLI was not found in PATH.");
+  });
+
+  it("formats machine-readable setup output", () => {
+    const output = JSON.parse(formatHostBootstrapResult(createHostBootstrapPlan(
+      ["codex" satisfies HostBootstrapHost],
+      {
+        codex: true,
+        "claude-code": false,
+      },
+    ), true)) as {
+      dry_run: boolean;
+      hosts: Array<{ host: string; detected: boolean; steps: Array<{ status: string }> }>;
+    };
+
+    expect(output).toMatchObject({
+      dry_run: true,
+      hosts: [
+        {
+          host: "codex",
+          detected: true,
+          steps: [
+            { status: "planned" },
+            { status: "planned" },
+          ],
+        },
+      ],
+    });
+  });
+});
