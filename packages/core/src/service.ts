@@ -434,6 +434,8 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
 
     async history(memoryId) {
       assertMemoryId(memoryId);
+      const currentMemory = await store.findById(memoryId);
+      await policy.assertCanAudit({ memoryId }, currentMemory);
       return auditLog.list(memoryId);
     },
 

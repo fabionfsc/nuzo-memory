@@ -113,6 +113,11 @@ NUZO_PLUGIN_SMOKE_PUBLISHED=1 npm run smoke:claude-code-plugin
 NUZO_PLUGIN_SMOKE_PUBLISHED=1 npm run smoke:codex-plugin
 ```
 
+The published host canary sets npm's internal log level to `error` for its
+version-pinned `npm exec` hook subprocesses. This prevents non-fatal dependency
+warnings from being mistaken for hook failures while preserving strict failure
+on a non-zero hook status or hook stderr.
+
 The `smoke:published:*` commands resolve the current target from npm and are
 expected to fail until that version is published. Run them again after
 publishing the target packages. The optional-semantics published smoke always

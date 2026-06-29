@@ -222,11 +222,22 @@ describe("memory service", () => {
     await expect(restricted.service.audit({ memoryId: forbidden.id })).rejects.toMatchObject({
       code: "MEMORY_SCOPE_FORBIDDEN",
     });
+    await expect(restricted.service.history(forbidden.id)).rejects.toMatchObject({
+      code: "MEMORY_SCOPE_FORBIDDEN",
+    });
     await expect(restricted.service.audit({ memoryId: allowed.id })).resolves.toMatchObject([
       {
         memoryId: allowed.id,
       },
     ]);
+    await expect(restricted.service.history(allowed.id)).resolves.toMatchObject([
+      {
+        memoryId: allowed.id,
+      },
+    ]);
+    await expect(restricted.service.history("mem_missing")).rejects.toMatchObject({
+      code: "MEMORY_SCOPE_REQUIRED",
+    });
     await expect(restricted.service.audit({ scope: "project:nuzo" })).resolves.toEqual(
       expect.arrayContaining([
         expect.objectContaining({

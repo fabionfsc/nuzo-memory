@@ -3,7 +3,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import type { EmbeddingProvider } from "@nuzo/memory-core";
+import {
+  createMemoryService,
+  DefaultPolicyEngine,
+  RandomIdGenerator,
+  RegexSecretScanner,
+  SQLiteMemoryDatabase,
+  SystemClock,
+  type EmbeddingProvider,
+} from "@nuzo/memory-core";
 import { afterEach, describe, expect, it } from "vitest";
 import { createNuzoMcpServerRuntime } from "../index.js";
 import { sortedMemoryToolNames } from "../tool-contract.js";
@@ -669,8 +677,26 @@ describe("MCP protocol contract", () => {
   it("enforces authorized scopes through the MCP runtime", async () => {
     const directory = mkdtempSync(join(tmpdir(), "nuzo-mcp-protocol-"));
     tempDirectories.push(directory);
+    const storePath = join(directory, "memories.sqlite");
+    const seedDatabase = new SQLiteMemoryDatabase({ path: storePath });
+    const seedService = createMemoryService({
+      store: seedDatabase,
+      searchIndex: seedDatabase,
+      auditLog: seedDatabase,
+      transactions: seedDatabase,
+      clock: new SystemClock(),
+      ids: new RandomIdGenerator(),
+      policy: new DefaultPolicyEngine(new RegexSecretScanner()),
+    });
+    const forbidden = await seedService.remember({
+      content: "Restricted protocol history must not reveal this synthetic global memory.",
+      kind: "note",
+      scope: "user:default",
+      source: "test:forbidden-history",
+    });
+    seedDatabase.close();
     const runtime = createNuzoMcpServerRuntime({
-      storePath: join(directory, "memories.sqlite"),
+      storePath,
       authorizedScopes: ["project:nuzo"],
     });
     const client = new Client({
@@ -695,6 +721,28 @@ describe("MCP protocol contract", () => {
         },
       })) as { created: boolean; id: string };
       expect(remembered.created).toBe(true);
+
+      const allowedHistory = parseToolJson(await client.callTool({
+        name: "memory.history",
+        arguments: {
+          id: remembered.id,
+        },
+      })) as { events: Array<{ memory_id: string }> };
+      expect(allowedHistory.events).toMatchObject([
+        {
+          memory_id: remembered.id,
+        },
+      ]);
+
+      const forbiddenHistory = await client.callTool({
+        name: "memory.history",
+        arguments: {
+          id: forbidden.id,
+        },
+      });
+      expect(forbiddenHistory.isError).toBe(true);
+      expect(toolText(forbiddenHistory)).not.toContain("test:forbidden-history");
+      expect(toolText(forbiddenHistory)).not.toContain("user:default");
 
       await client.callTool({
         name: "memory.export",

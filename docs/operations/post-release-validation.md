@@ -81,6 +81,45 @@ the checksum-verified pinned model, the published CLI rebuilt the derived
 index and recovered a paraphrased memory in effective `semantic` and `hybrid`
 mode without fallback. This validation used only fake memory content.
 
+## Published 0.8.0 Verification
+
+The `0.8.0` release was published from `main` at commit
+`49336cfb8b7a66c6374b1420cd0329302c696ed7` through the GitHub Release
+[`v0.8.0`](https://github.com/fabionfsc/nuzo-memory/releases/tag/v0.8.0).
+The npm trusted-publishing dry run passed in
+[workflow run 28358989616](https://github.com/fabionfsc/nuzo-memory/actions/runs/28358989616),
+then trusted publishing completed in
+[workflow run 28359043355](https://github.com/fabionfsc/nuzo-memory/actions/runs/28359043355).
+
+Registry metadata and npm provenance verified the exact release for:
+
+- `@nuzo/memory-core@0.8.0`;
+- `@nuzo/memory@0.8.0`;
+- `@nuzo/memory-cli@0.8.0`;
+- `@nuzo/mcp-server@0.8.0`.
+
+Post-publication validation passed with:
+
+```bash
+npm run smoke:published:cli
+npm run smoke:published:mcp
+npm run smoke:published:semantics
+NUZO_SEMANTIC_MODEL_PATH=/absolute/path/to/pinned-model \
+  npm run smoke:published:semantics -- --require-model
+NUZO_PLUGIN_SMOKE_PUBLISHED=1 npm run smoke:host-canary
+NUZO_PLUGIN_SMOKE_PUBLISHED=1 npm run smoke:claude-code-plugin
+NUZO_PLUGIN_SMOKE_PUBLISHED=1 npm run smoke:codex-plugin
+```
+
+The published CLI, MCP, optional-semantics, Codex, Claude Code, and NUZO-37
+host canary flows passed with fake data. The default install remained FTS-only;
+the explicit pinned local model rebuilt its derived sidecar and passed semantic
+and hybrid recall. The host canary initially treated a non-fatal npm dependency
+warning as hook stderr even though the hook succeeded and delivered the expected
+memory. [Issue #177](https://github.com/fabionfsc/nuzo-memory/issues/177)
+tracks the harness correction included in the `0.8.1` patch; it was not a
+runtime memory-delivery failure.
+
 ## Real Flow To Prove
 
 The canonical post-release smoke is:
@@ -101,6 +140,10 @@ npm run smoke:host-canary
 NUZO_HOST_CANARY_NATIVE=1 npm run smoke:host-canary
 NUZO_PLUGIN_SMOKE_PUBLISHED=1 npm run smoke:host-canary
 ```
+
+In published mode, the canary suppresses non-fatal npm warning output inside
+the spawned `npm exec` hook processes. A non-zero status or stderr emitted by
+the hook itself still fails validation.
 
 The canary proves that the generated Codex and Claude Code artifacts deliver a
 shared `user:default` `autoload` instruction memory across fresh hook

@@ -6,6 +6,27 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-06-29
+
+### Security
+
+- Restricted core and MCP sessions now authorize `memory.history` against the
+  target memory scope before returning audit metadata, matching the existing
+  `memory.audit` boundary and failing closed when no active scope can be
+  established.
+
+### Fixed
+
+- Published NUZO-37 host canaries now suppress non-fatal npm warning noise for
+  version-pinned hook subprocesses while still failing on hook errors, stderr,
+  or non-zero exit status.
+
+### Documentation
+
+- Post-release validation now records the `0.8.0` GitHub Release, trusted npm
+  publishing runs, exact package versions, published smoke commands, and the
+  resolved canary-harness caveat.
+
 ## [0.8.0] - 2026-06-29
 
 ### Added
