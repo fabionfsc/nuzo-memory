@@ -73,13 +73,13 @@ provenance for:
 - `@nuzo/memory-cli@0.7.0`;
 - `@nuzo/mcp-server@0.7.0`.
 
-The published CLI, MCP, Codex plugin, and Claude Code plugin smokes passed.
+The published CLI, MCP, optional-semantics, Codex plugin, and Claude Code plugin smokes passed.
 A clean default installation contained neither Transformers.js nor model
 files, and an explicit hybrid request reported FTS fallback with
 `SEMANTIC_INDEX_MISSING`. After installing the exact optional peer and using
 the checksum-verified pinned model, the published CLI rebuilt the derived
-index and recovered a paraphrased memory in effective `hybrid` mode without
-fallback. This validation used only fake memory content.
+index and recovered a paraphrased memory in effective `semantic` and `hybrid`
+mode without fallback. This validation used only fake memory content.
 
 ## Real Flow To Prove
 
@@ -164,6 +164,22 @@ connects through the official MCP SDK over stdio, runs separate server
 processes for session-style writes and recall, validates read-only capture
 suggestions, checks duplicate detection, and confirms `memory.doctor` does not
 expose memory content.
+
+The focused published optional-semantics smoke is:
+
+```bash
+npm run smoke:published:semantics
+```
+
+It installs the current released package into a temporary npm prefix, confirms
+the default install does not include Transformers.js or model files, and checks
+that hybrid recall falls back visibly when no sidecar exists. To require a real
+local semantic rebuild and recall through the exact published package, run:
+
+```bash
+NUZO_SEMANTIC_MODEL_PATH=/absolute/path/to/pinned-model \
+  npm run smoke:published:semantics -- --require-model
+```
 
 The generated Codex plugin artifact smoke is:
 

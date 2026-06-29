@@ -94,6 +94,7 @@ current release:
 ```bash
 npm run smoke:published:cli
 npm run smoke:published:mcp
+npm run smoke:published:semantics
 ```
 
 The plugin artifact smokes use staged npm tarballs before publication while
@@ -107,7 +108,14 @@ NUZO_PLUGIN_SMOKE_PUBLISHED=1 npm run smoke:codex-plugin
 
 The `smoke:published:*` commands resolve the current target from npm and are
 expected to fail until that version is published. Run them again after
-publishing the target packages.
+publishing the target packages. The optional-semantics published smoke always
+validates the default no-model fallback and package boundary. To require a real
+local semantic rebuild and recall against the exact published package, run:
+
+```bash
+NUZO_SEMANTIC_MODEL_PATH=/absolute/path/to/pinned-model \
+  npm run smoke:published:semantics -- --require-model
+```
 
 For `0.6.0`, keep a release-gate note with the command output or CI links that
 prove:
