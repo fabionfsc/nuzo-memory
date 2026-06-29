@@ -1,6 +1,6 @@
 # Getting Started
 
-Nuzo `0.6.0` is the current public release.
+Nuzo `0.7.0` is the current public release.
 
 Most users start with the npm package and then enable the plugin for their AI
 agent host.

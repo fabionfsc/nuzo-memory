@@ -6,6 +6,44 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-06-28
+
+### Added
+
+- Optional local semantic retrieval with an explicit embedding-provider
+  contract, a separate disposable SQLite sidecar, revision-aware status,
+  atomic rebuild/clear operations, cosine search, and deterministic hybrid
+  reciprocal-rank fusion.
+- A pinned offline Transformers.js provider profile using
+  `all-MiniLM-L6-v2-ONNX` q4 vectors, explicit checksum-verified model
+  provisioning, and local-files-only inference behind an exact optional peer.
+- CLI semantic status, provision, rebuild, clear, semantic-only recall, hybrid
+  recall, JSON diagnostics, and explicit fallback controls.
+- Additive MCP `retrieval_mode` and `semantic_fallback` inputs with
+  machine-readable requested/effective mode and fallback diagnostics, including
+  empty-result fallback.
+- Public synthetic optional-semantics benchmark, real-provider evaluation,
+  independently gated English quality and safety evidence, staged-artifact
+  validation, and release-gate documentation.
+
+### Changed
+
+- Hybrid recall conservatively contributes only the strongest semantic
+  candidate alongside the bounded FTS list, meeting the `0.7.0` quality lift
+  while keeping benchmark noise below the release envelope.
+- `@nuzo/memory-core` and `@nuzo/memory` declare
+  `@huggingface/transformers@4.2.0` as an optional peer so default installs stay
+  FTS-only and do not contain an inference runtime or model files.
+- Staged npm validation now proves both the default no-provider install and the
+  explicit real-provider rebuild/recall workflow.
+
+### Fixed
+
+- JSON import now applies file type, size, and read operations to one
+  no-follow file descriptor, closing a CodeQL-reported file-swap race.
+- Semantic freshness checks are limited to the authorized requested scopes, so
+  unrelated scope updates do not disable an otherwise current semantic query.
+
 ## [0.6.0] - 2026-06-28
 
 ### Added
