@@ -60,6 +60,9 @@ jobs:
       - name: Run capture intelligence benchmark
         run: npm run benchmark:capture
 
+      - name: Run optional semantics benchmark
+        run: npm run benchmark:semantics
+
       - name: Package host plugins
         run: npm run package:plugins
 

@@ -112,6 +112,7 @@ nav:
       - Post-Release Validation: operations/post-release-validation.md
       - Recall Benchmark: operations/recall-benchmark.md
       - Capture Intelligence Benchmark: operations/capture-benchmark.md
+      - Optional Semantics Benchmark: operations/semantic-benchmark.md
       - 0.6.0 Capture Release Gates: operations/capture-release-gates-0.6.0.md
       - Coding Standards: operations/coding-standards.md
       - Testing Strategy: operations/testing-strategy.md

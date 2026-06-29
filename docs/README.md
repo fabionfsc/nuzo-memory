@@ -34,9 +34,10 @@ contracts, and operations documentation.
 27. `operations/post-release-validation.md`
 28. `operations/recall-benchmark.md`
 29. `operations/capture-benchmark.md`
-30. `operations/capture-release-gates-0.6.0.md`
-31. `operations/spec-driven-workflow.md`
-32. `operations/roadmap.md`
+30. `operations/semantic-benchmark.md`
+31. `operations/capture-release-gates-0.6.0.md`
+32. `operations/spec-driven-workflow.md`
+33. `operations/roadmap.md`
 
 ## Sections
 
