@@ -40,9 +40,11 @@ The canonical post-release smoke is:
 8. Confirm the suggestion does not write before user confirmation.
 9. Confirm a duplicate suggestion reports the existing memory instead of
    proposing a redundant write.
-10. Confirm a new memory through `memory.remember`.
+10. Confirm a new memory through `memory.confirm_capture` with
+    `decision: "create"`.
 11. When the release supports replacement evidence, confirm updates through
-    `memory.update` with `expected_revision` and test the conflict path.
+    `memory.confirm_capture` with `decision: "update"`, `target_memory_id`,
+    and `expected_revision`, then test the conflict path.
 12. Run `memory.doctor` or `nuzo memory doctor` against the same store.
 
 Use fake memory content only.
@@ -62,8 +64,9 @@ For each host, capture evidence for:
 - `memory.doctor` works;
 - `memory.recall_hook` can read existing test memory;
 - `memory.suggest_capture` returns a read-only draft;
-- confirmed creation calls `memory.remember`;
-- confirmed replacement calls `memory.update` with the displayed revision;
+- confirmed creation calls `memory.confirm_capture` with `decision: "create"`;
+- confirmed replacement calls `memory.confirm_capture` with
+  `decision: "update"` and the displayed revision;
 - no host wrapper duplicates core memory logic.
 
 If a host cannot automate one of these checks yet, document the manual command
@@ -140,7 +143,7 @@ until the user confirms them. The validation loop must prove:
 
 - candidate detection is outside core storage;
 - `memory.suggest_capture` is read-only;
-- confirmation calls `memory.remember`;
+- confirmation calls `memory.confirm_capture`;
 - rejected drafts are not persisted;
 - duplicate suggestions do not create new active memories;
 - secrets and unsafe content are blocked by core policy.

@@ -187,7 +187,7 @@ export function registerMemoryTools(
   server.registerTool(
     "memory.suggest_capture",
     {
-      description: "Validate a proposed capture draft without creating memory. Confirmed writes still use memory.remember.",
+      description: "Validate a proposed capture draft without creating memory. Host capture writes must use memory.confirm_capture after an explicit user decision.",
       inputSchema: {
         content: z.string().min(1).max(memoryLimits.contentLength),
         kind: z.enum(["preference", "project_decision", "fact", "instruction", "note"]),

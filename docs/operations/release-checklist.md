@@ -64,6 +64,7 @@ npm test
 npm run build
 npm run benchmark:recall
 npm run benchmark:capture
+npm run benchmark:capture -- --expect bounded
 npm run package:plugins
 npm run validate:npm
 npm run smoke:cli
@@ -92,6 +93,17 @@ NUZO_PLUGIN_SMOKE_PUBLISHED=1 npm run smoke:codex-plugin
 The `smoke:published:*` commands resolve the current target from npm and are
 expected to fail until that version is published. Run them again after
 publishing the target packages.
+
+For `0.6.0`, keep a release-gate note with the command output or CI links that
+prove:
+
+- the capture benchmark records the `0.5.0` baseline profile and the bounded
+  `0.6.0` profile;
+- English relationship quality fails independently from other languages;
+- policy blocks, scope isolation, archived isolation, candidate/output bounds,
+  zero memory writes, zero audit writes, and revision conflicts pass;
+- staged CLI, MCP, Codex, and Claude Code flows all use explicit
+  `memory.confirm_capture` decisions for capture confirmation.
 
 Confirm the generated host artifacts contain no monorepo runtime paths:
 

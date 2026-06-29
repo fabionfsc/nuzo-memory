@@ -224,9 +224,10 @@ Deliverables:
   selecting one silently;
 - keep `exact_duplicate`, blocked, rejected, and unresolved `uncertain`
   outcomes write-free;
-- route confirmed independent creation through `memory.remember`;
-- route confirmed replacement through `memory.update` with the displayed
-  memory ID and `expected_revision`;
+- route confirmed independent creation through `memory.confirm_capture` with
+  `decision: "create"`;
+- route confirmed replacement through `memory.confirm_capture` with
+  `decision: "update"`, the displayed memory ID, and `expected_revision`;
 - require a fresh read and confirmation after `MEMORY_REVISION_CONFLICT`, with
   no silent retry;
 - preserve source attribution and metadata-only audit events for confirmed

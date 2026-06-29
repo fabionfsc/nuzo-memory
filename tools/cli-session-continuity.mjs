@@ -2,6 +2,8 @@ import { spawnSync } from "node:child_process";
 
 const firstMemory = "The CLI session continuity smoke stores fake memory across sessions.";
 const suggestedMemory = "The CLI session continuity smoke prefers confirmed capture drafts.";
+const rejectedMemory = "The CLI session continuity smoke rejects inferred capture drafts.";
+const updatedMemory = "The CLI session continuity smoke prefers reviewed capture draft updates.";
 const testTag = "session-continuity";
 
 export function assertCliSessionContinuity({
@@ -78,22 +80,138 @@ export function assertCliSessionContinuity({
     fail(`${label} suggest-capture wrote memory before confirmation`);
   }
 
-  runCli(
+  const rejected = runCli(
     executable,
     [
       "memory",
       "--store",
       memoryStore,
-      "remember",
+      "confirm-capture",
+      rejectedMemory,
+      "--decision",
+      "reject",
+      "--kind",
+      "note",
+      "--tag",
+      testTag,
+      "--source",
+      "test:cli-session-rejected",
+      "--reason",
+      "Validates explicit rejected capture decisions do not persist.",
+      "--json",
+    ],
+    cwd,
+  );
+  const rejectedJson = JSON.parse(rejected.stdout);
+  if (
+    rejectedJson.decision !== "reject" ||
+    rejectedJson.status !== "skipped" ||
+    rejectedJson.memory_writes !== false ||
+    rejectedJson.memory !== null
+  ) {
+    fail(`${label} rejected capture decision wrote memory: ${rejected.stdout}`);
+  }
+
+  const confirmed = runCli(
+    executable,
+    [
+      "memory",
+      "--store",
+      memoryStore,
+      "confirm-capture",
       suggestedMemory,
+      "--decision",
+      "create",
       "--kind",
       "preference",
       "--tag",
       testTag,
       "--source",
       "test:cli-session-confirmed",
+      "--reason",
+      "Validates confirmed capture creates through the CLI decision command.",
+      "--yes",
+      "--json",
     ],
     cwd,
+  );
+  const confirmedJson = JSON.parse(confirmed.stdout);
+  if (
+    confirmedJson.decision !== "create" ||
+    confirmedJson.status !== "created" ||
+    confirmedJson.memory_writes !== true ||
+    typeof confirmedJson.memory?.id !== "string" ||
+    confirmedJson.memory.revision !== 1
+  ) {
+    fail(`${label} confirmed capture did not create memory: ${confirmed.stdout}`);
+  }
+
+  const updated = runCli(
+    executable,
+    [
+      "memory",
+      "--store",
+      memoryStore,
+      "confirm-capture",
+      updatedMemory,
+      "--decision",
+      "update",
+      "--kind",
+      "preference",
+      "--tag",
+      testTag,
+      "--tag",
+      "updated",
+      "--source",
+      "test:cli-session-confirmed-update",
+      "--reason",
+      "Validates confirmed capture updates with the displayed revision.",
+      "--target-memory-id",
+      confirmedJson.memory.id,
+      "--expected-revision",
+      String(confirmedJson.memory.revision),
+      "--yes",
+      "--json",
+    ],
+    cwd,
+  );
+  const updatedJson = JSON.parse(updated.stdout);
+  if (
+    updatedJson.decision !== "update" ||
+    updatedJson.status !== "updated" ||
+    updatedJson.memory_writes !== true ||
+    updatedJson.memory?.id !== confirmedJson.memory.id ||
+    updatedJson.memory.content !== updatedMemory ||
+    updatedJson.memory.revision !== 2
+  ) {
+    fail(`${label} confirmed capture update failed: ${updated.stdout}`);
+  }
+
+  assertCliExit(
+    executable,
+    [
+      "memory",
+      "--store",
+      memoryStore,
+      "confirm-capture",
+      "This stale CLI update must not commit.",
+      "--decision",
+      "update",
+      "--kind",
+      "preference",
+      "--source",
+      "test:cli-session-stale-update",
+      "--reason",
+      "Validates stale confirmed CLI updates return conflict guidance.",
+      "--target-memory-id",
+      confirmedJson.memory.id,
+      "--expected-revision",
+      String(confirmedJson.memory.revision),
+      "--yes",
+    ],
+    cwd,
+    1,
+    "MEMORY_REVISION_CONFLICT",
   );
 
   const duplicateSuggestion = runCli(
@@ -103,7 +221,7 @@ export function assertCliSessionContinuity({
       "--store",
       memoryStore,
       "suggest-capture",
-      " the CLI session continuity smoke prefers confirmed   capture drafts. ",
+      " the CLI session continuity smoke prefers reviewed   capture draft updates. ",
       "--kind",
       "note",
       "--reason",
@@ -116,7 +234,7 @@ export function assertCliSessionContinuity({
   if (
     duplicateSuggestionJson.status !== "duplicate" ||
     !duplicateSuggestionJson.duplicate?.id ||
-    duplicateSuggestionJson.duplicate.content !== suggestedMemory
+    duplicateSuggestionJson.duplicate.content !== updatedMemory
   ) {
     fail(`${label} duplicate suggestion failed: ${duplicateSuggestion.stdout}`);
   }
@@ -134,6 +252,24 @@ export function assertCliSessionContinuity({
     if (doctor.stdout.includes(memoryContent)) {
       fail(`${label} doctor exposed memory content`);
     }
+  }
+}
+
+function assertCliExit(executable, args, cwd, expectedStatus, expectedError) {
+  const result = spawnSync(executable, args, {
+    cwd,
+    encoding: "utf8",
+  });
+  if (result.error) {
+    throw result.error;
+  }
+  if (result.status !== expectedStatus) {
+    fail(
+      `expected CLI status ${expectedStatus}, got ${result.status}; stderr=${JSON.stringify(result.stderr)}`,
+    );
+  }
+  if (!result.stderr.includes(expectedError)) {
+    fail(`expected CLI stderr to include ${expectedError}: ${JSON.stringify(result.stderr)}`);
   }
 }
 

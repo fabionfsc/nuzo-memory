@@ -224,13 +224,14 @@ audit events.
 
 The same smoke covers the inferred capture confirmation contract: a ready
 `memory.suggest_capture` draft is not visible to recall before confirmation, a
-rejected draft is never persisted, a confirmed draft is written only through
-`memory.remember`, and a later equivalent suggestion is reported as a
+rejected draft is never persisted, a confirmed draft is written through
+`memory.confirm_capture`, and a later equivalent suggestion is reported as a
 duplicate.
 
 For update safety, the smoke also updates a confirmed capture with
-`memory.update` and `expected_revision`, then verifies a stale update returns
-`MEMORY_REVISION_CONFLICT` instead of overwriting the newer memory.
+`memory.confirm_capture`, `target_memory_id`, and `expected_revision`, then
+verifies a stale update returns `MEMORY_REVISION_CONFLICT` instead of
+overwriting the newer memory.
 
 The Claude Code plugin artifact smoke performs the same release-layout
 continuity validation while also resolving the `${CLAUDE_PLUGIN_ROOT}` cwd
