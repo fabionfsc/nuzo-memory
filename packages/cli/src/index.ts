@@ -167,7 +167,7 @@ export function createProgram(io: CliIO = defaultIO): Command {
   program
     .name("nuzo")
     .description("Local-first, auditable memory for AI agents.")
-    .version("0.6.0");
+    .version("0.7.0");
 
   const memory = program.command("memory").description("Manage local Nuzo stores.");
 
