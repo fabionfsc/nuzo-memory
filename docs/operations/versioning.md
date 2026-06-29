@@ -32,7 +32,7 @@ For Nuzo before `1.0.0`:
 - bump `MINOR` for meaningful new functionality or contract changes;
 - use pre-release identifiers for unstable release candidates, for example `0.1.0-alpha.1`.
 
-The planned release goals from `0.7.0` through `1.0.0` are documented in
+The remaining planned release goals from `0.8.0` through `1.0.0` are documented in
 `docs/operations/release-goals.md`. The full three-part SemVer version is used
 in public release names as well as package metadata, plugin manifests, and Git
 tags. The stable release is named Nuzo `1.0.0`, not a separate public `1.0`

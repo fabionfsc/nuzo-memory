@@ -8,40 +8,12 @@ contracts, and operations documentation.
 1. `getting-started/index.md`
 2. `getting-started/clean-install.md`
 3. `getting-started/agent-memory-loop.md`
-4. `product/vision.md`
-5. `product/positioning.md`
-6. `product/competitive-landscape.md`
-7. `product/requirements.md`
-8. `architecture/overview.md`
-9. `architecture/boundaries.md`
-10. `architecture/memory-trust-boundary.md`
-11. `architecture/repository-layout.md`
-12. `architecture/agent-host-compatibility.md`
-13. `spec/memory-model.md`
-14. `spec/capture-suggestions.md`
-15. `spec/semantic-retrieval.md`
-16. `spec/tools.md`
-17. `operations/local-cli.md`
-18. `operations/codex-plugin.md`
-19. `operations/claude-code-plugin.md`
-20. `operations/lifecycle-hooks.md`
-21. `operations/optional-semantics.md`
-22. `operations/issue-tracking.md`
-23. `operations/versioning.md`
-24. `operations/release-goals.md`
-25. `operations/release-version-map.md`
-26. `operations/runtime-support.md`
-27. `operations/npm-publishing.md`
-28. `operations/release-checklist.md`
-29. `operations/post-release-validation.md`
-30. `operations/recall-benchmark.md`
-31. `operations/capture-benchmark.md`
-32. `operations/semantic-benchmark.md`
-33. `operations/semantic-evaluation-0.7.0.md`
-34. `operations/semantic-release-gates-0.7.0.md`
-35. `operations/capture-release-gates-0.6.0.md`
-36. `operations/spec-driven-workflow.md`
-37. `operations/roadmap.md`
+4. `operations/roadmap.md`
+5. `architecture/overview.md`
+6. `architecture/boundaries.md`
+7. `spec/tools.md`
+8. `spec/memory-model.md`
+9. `spec/capture-suggestions.md`
 
 ## Sections
 
@@ -62,19 +34,14 @@ plugin runtime distribution, and test organization.
 
 ### Operations
 
-Defines privacy, security, host plugin setup, coding standards, testing strategy, release plan, and roadmap.
+Defines privacy, security, host plugin setup, coding standards, testing
+strategy, release procedures, and roadmap.
 
 GitHub Pages setup lives in `operations/github-pages.md`.
 
 Substantial or cross-boundary changes follow
 `operations/spec-driven-workflow.md`. Public contracts still belong in
 `spec/`, durable decisions in `adr/`, and execution status in GitHub Issues.
-
-### Implementation
-
-Preserves implementation-stage notes when they still explain current behavior
-or release history. New execution work should normally live in GitHub Issues,
-not new implementation-stage pages.
 
 ### ADR
 

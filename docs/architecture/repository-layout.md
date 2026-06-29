@@ -7,28 +7,28 @@ packages, host plugin source, and release tooling.
 
 ```text
 .
+├── .github/
+├── docs/
+│   ├── adr/
+│   ├── architecture/
+│   ├── assets/
+│   ├── getting-started/
+│   ├── operations/
+│   ├── product/
+│   └── spec/
+├── packages/
+│   ├── claude-code-plugin/
+│   ├── cli/
+│   ├── codex-plugin/
+│   ├── core/
+│   ├── memory/
+│   └── mcp-server/
+├── tools/
 ├── AGENTS.md
 ├── CHANGELOG.md
 ├── CONTRIBUTING.md
 ├── README.md
-├── SECURITY.md
-docs/
-├── adr/
-├── architecture/
-├── assets/
-├── getting-started/
-├── implementation/
-├── operations/
-├── product/
-└── spec/
-packages/
-├── cli/
-├── claude-code-plugin/
-└── codex-plugin/
-├── core/
-└── mcp-server/
-scripts/
-test-support/
+└── SECURITY.md
 ```
 
 ## Documentation Rules

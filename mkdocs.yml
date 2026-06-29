@@ -120,9 +120,6 @@ nav:
       - 0.6.0 Capture Release Gates: operations/capture-release-gates-0.6.0.md
       - Coding Standards: operations/coding-standards.md
       - Testing Strategy: operations/testing-strategy.md
-      - GitHub Release Plan: operations/github-release-plan.md
-  - Implementation:
-      - Stage 1 Core: implementation/stage-1-core.md
   - Decisions:
       - Local First: adr/0001-local-first.md
       - SQLite First: adr/0002-sqlite-first.md

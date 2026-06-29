@@ -124,10 +124,10 @@ measured:
 | Hybrid | 95.0% | 93.8% | 93.8% | 5.0% |
 
 The hybrid lift was 31.3 percentage points for English top-1 and MRR. All
-safety gates passed. These numbers justify defining the optional provider and
-index boundary and building a local prototype; they do not yet authorize a
-runtime semantic implementation. Issue `#145` owns the final ship-or-defer
-decision against that prototype.
+safety gates passed. These initial numbers justified defining the optional
+provider and index boundary and building a local prototype, but did not by
+themselves authorize a runtime implementation. Issue `#145` subsequently
+recorded the real-provider comparison and ship decision.
 
 The `0.7.0` prototype now runs this fixture provider through the exported core
 provider contract, derived SQLite sidecar, revision checks, cosine search, and

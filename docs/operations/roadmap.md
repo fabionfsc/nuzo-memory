@@ -17,7 +17,7 @@ Deliverables:
 - Init specification.
 - Privacy and security model.
 - Testing strategy.
-- GitHub release plan.
+- Release, publishing, and versioning policy.
 
 Exit criteria:
 
@@ -28,8 +28,6 @@ Exit criteria:
 ## Stage 1: Core MVP
 
 Goal: implement local memory lifecycle.
-
-Detailed implementation plan: `docs/implementation/stage-1-core.md`.
 
 Status: implemented for the MVP, including audit history, transactional SQLite
 mutations, safe bulk forgetting, import preflight, migration coverage, and
@@ -98,14 +96,13 @@ Exit criteria:
 
 Goal: package the MCP server for agent hosts through supported plugin workflows.
 
-Status: release layouts, host guidance, and host-specific validation are
-implemented. Isolated official marketplace installs for Codex and Claude Code
-resolve the published `@nuzo/mcp-server@0.1.2` runtime. Claude Code reports the
-server connected, and Codex successfully calls `memory.doctor` through the
-installed plugin.
+Status: release layouts, host guidance, and artifact validation are
+implemented. Generated Codex and Claude Code layouts resolve the matching
+published `@nuzo/memory` runtime. Full native host validation across sessions
+is the `0.8.0` Host Reliability goal.
 
 The release layout is generated under `build/plugins/`. It keeps host wrappers
-thin and resolves a version-pinned `@nuzo/mcp-server` package instead of a
+thin and resolves a version-pinned `@nuzo/memory` package instead of a
 monorepo sibling path.
 
 Deliverables:
@@ -156,10 +153,10 @@ Exit criteria:
 Goal: make routine releases and host installation easier without weakening the
 local-first product boundary.
 
-Status: mostly complete for release infrastructure. Scope authorization,
+Status: complete for current release infrastructure. Scope authorization,
 optimistic concurrency, effective runtime configuration, Dependabot, CodeQL,
-branch protection, npm trusted publishing, provenance, and the `0.1.2` release
-are implemented.
+branch protection, npm trusted publishing, provenance, and public artifact
+validation are implemented.
 
 Completed:
 
@@ -172,14 +169,13 @@ Completed:
   strict required checks;
 - a manual GitHub Actions OIDC workflow for npm dry runs and publishing;
 - trusted npm publication with SLSA provenance for `@nuzo/memory-core`,
-  `@nuzo/memory-cli`, and `@nuzo/mcp-server`.
+  `@nuzo/memory`, and the legacy transition packages.
 
-Remaining:
+Moved to the `0.8.0` Host Reliability goal:
 
 - publish Codex and Claude Code marketplace listings;
-- gather installation feedback from real Codex and Claude Code workflows;
-- implement lifecycle integrations that preserve confirmed capture and
-  read-only recall defaults.
+- validate complete real Codex and Claude Code workflows across sessions;
+- gather installation feedback without telemetry.
 
 ## Stage 7: Real Workflow Hardening
 
@@ -215,6 +211,9 @@ Goal: make Nuzo easier to understand, install, and use before adding another
 large capability layer.
 
 Status: shipped in `0.1.3`.
+
+The package recommendation in this historical stage was later superseded by
+the unified `@nuzo/memory` package.
 
 This stage should reduce public complexity, not add more surface area. The
 technical package boundaries can stay clean while the public onboarding presents
@@ -358,7 +357,7 @@ deliverables and exit criteria:
 2. `0.4.0`: audit and provenance (shipped);
 3. `0.5.0`: recall quality (shipped);
 4. `0.6.0`: capture intelligence (shipped);
-5. `0.7.0`: optional semantics;
+5. `0.7.0`: optional semantics (shipped);
 6. `0.8.0`: host reliability;
 7. `0.9.0`: contract stabilization;
 8. `1.0.0`: stable release.
