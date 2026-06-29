@@ -92,6 +92,11 @@ Runtime memory defaults to:
 ~/.nuzo/memory/memories.sqlite
 ```
 
+CLI, MCP server, and host hooks share the same runtime resolver. Use
+`NUZO_MEMORY_STORE`, `NUZO_MEMORY_SCOPE`, and, for restricted MCP/hook
+sessions, `NUZO_AUTHORIZED_SCOPES` when a host needs an explicit store, default
+scope, or scope allowlist.
+
 ## Defaults
 
 - Local SQLite storage.

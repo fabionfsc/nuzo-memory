@@ -44,10 +44,21 @@ Project init creates `.nuzo/config.json`, a project-local SQLite store, and
 missing Git ignore rules. Later CLI commands run from that project root resolve
 the project store and hashed project scope automatically.
 
-Runtime precedence is explicit flags, project config, user config, then
-built-in defaults. Recall reads config defaults for result limit, global-scope
-inclusion, and optional recall-event recording. Use `--no-include-global` to
-override a config that enables global recall for one command.
+Runtime precedence is explicit flags, environment overrides, project config,
+user config, then built-in defaults. The same resolver is used by the CLI, MCP
+server, and packaged host hooks.
+
+Useful environment overrides:
+
+| Variable | Purpose |
+| --- | --- |
+| `NUZO_MEMORY_STORE` | Select a SQLite store path for CLI, MCP, or hooks. |
+| `NUZO_MEMORY_SCOPE` | Select the default scope; `project:auto` resolves to the current project hash. |
+| `NUZO_AUTHORIZED_SCOPES` | Restrict MCP/hook sessions to a comma-separated scope allowlist. The local CLI remains administrator-oriented. |
+
+Recall reads config defaults for result limit, global-scope inclusion, and
+optional recall-event recording. Use `--no-include-global` to override a config
+that enables global recall for one command.
 
 Recall remains FTS-only unless `--mode semantic` or `--mode hybrid` is passed.
 Use `--json` to receive results with machine-readable requested/effective mode

@@ -1,13 +1,12 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync, realpathSync } from "node:fs";
-import { homedir } from "node:os";
-import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   createMemoryService,
   DefaultPolicyEngine,
   RandomIdGenerator,
   RegexSecretScanner,
+  resolveNuzoRuntimeConfig,
   SQLiteMemoryDatabase,
   SystemClock,
 } from "@nuzo/memory-core";
@@ -33,13 +32,16 @@ export async function runHostHookProcess(
   io: HookIO = defaultIO,
   environment: NodeJS.ProcessEnv = process.env,
 ): Promise<number> {
-  const storePath = resolve(environment.NUZO_MEMORY_STORE ?? defaultStorePath());
+  const runtimeConfig = resolveNuzoRuntimeConfig({ environment });
+  const storePath = runtimeConfig.storePath;
 
   if (args.includes("--doctor")) {
     io.stdout(JSON.stringify({
       status: existsSync(storePath) ? "ready" : "store_missing",
       mode: "read_only",
       store_path: storePath,
+      scope: runtimeConfig.scope,
+      authorized_scopes: runtimeConfig.authorizedScopes ?? null,
       store_exists: existsSync(storePath),
       supported_events: ["SessionStart", "UserPromptSubmit"],
       host_trust: "verify_in_host",
@@ -64,7 +66,10 @@ export async function runHostHookProcess(
         auditLog: database,
         clock: new SystemClock(),
         ids: new RandomIdGenerator(),
-        policy: new DefaultPolicyEngine(new RegexSecretScanner()),
+        policy: new DefaultPolicyEngine(
+          new RegexSecretScanner(),
+          runtimeConfig.authorizedScopes === undefined ? {} : { allowedScopes: runtimeConfig.authorizedScopes },
+        ),
         transactions: database,
       });
       const output = await createHostHookOutput(service, input);
@@ -80,10 +85,6 @@ export async function runHostHookProcess(
   }
 
   return 0;
-}
-
-function defaultStorePath(): string {
-  return resolve(homedir(), ".nuzo", "memory", "memories.sqlite");
 }
 
 function isMainModule(): boolean {

@@ -168,6 +168,27 @@ The generated `0.8.1` config resolves the matching public
 npm-distributed Claude Code CLI and validates the shared NUZO-37 SessionStart
 canary without writing memory from hooks.
 
+## Runtime Configuration
+
+The plugin runtime uses the same effective Nuzo resolver as the CLI and MCP
+server. By default it reads:
+
+```text
+~/.nuzo/memory/memories.sqlite
+```
+
+Operators can override runtime behavior without editing the package:
+
+| Variable | Purpose |
+| --- | --- |
+| `NUZO_MEMORY_STORE` | Select the SQLite store path. |
+| `NUZO_MEMORY_SCOPE` | Select the default scope; `project:auto` resolves from the active project path. |
+| `NUZO_AUTHORIZED_SCOPES` | Restrict MCP/hook access to a comma-separated scope allowlist, for example `project:auto,user:default`. |
+
+Use `NUZO_AUTHORIZED_SCOPES` for repository-controlled agents that should not
+enumerate or write unrelated scopes in a shared local store. Without it, the
+runtime is an unrestricted local process over the selected store.
+
 ## Marketplace Install Direction
 
 For normal sharing, Claude Code plugins should be distributed through a marketplace and installed with:

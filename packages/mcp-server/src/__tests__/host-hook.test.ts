@@ -222,4 +222,25 @@ describe("host recall hooks", () => {
     expect(exitCode).toBe(0);
     expect(stdout).not.toHaveBeenCalled();
   });
+
+  it("reports shared runtime scope and restrictions in hook doctor", async () => {
+    const stdout = vi.fn();
+    const stderr = vi.fn();
+
+    const exitCode = await runHostHookProcess(["--doctor"], "", { stdout, stderr }, {
+      NUZO_MEMORY_STORE: "/tmp/nuzo-hook-runtime.sqlite",
+      NUZO_MEMORY_SCOPE: "project:nuzo",
+      NUZO_AUTHORIZED_SCOPES: "project:nuzo,user:default",
+    });
+
+    expect(exitCode).toBe(0);
+    expect(stderr).not.toHaveBeenCalled();
+    expect(JSON.parse(stdout.mock.calls[0]?.[0] ?? "{}")).toMatchObject({
+      mode: "read_only",
+      store_path: "/tmp/nuzo-hook-runtime.sqlite",
+      scope: "project:nuzo",
+      authorized_scopes: ["project:nuzo", "user:default"],
+      supported_events: ["SessionStart", "UserPromptSubmit"],
+    });
+  });
 });

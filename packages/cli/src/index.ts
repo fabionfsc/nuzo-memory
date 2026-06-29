@@ -11,8 +11,7 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
-import { homedir } from "node:os";
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { Command, CommanderError, InvalidArgumentError } from "commander";
@@ -36,10 +35,11 @@ import {
   semanticIndexPathFor,
   SQLiteMemoryDatabase,
   SystemClock,
-  memoryLimits,
   memoryEventTypes,
-  memoryScopePattern,
+  getDefaultStorePath,
   projectScopeFromPath,
+  resolveAutomaticScope,
+  resolveNuzoRuntimeConfig,
   type MemoryKind,
   type ListMemoriesInput,
   type ConfirmCaptureDecision,
@@ -59,6 +59,8 @@ import {
   type RetrievalMode,
   type SearchIndex,
   type SemanticFallbackMode,
+  type NuzoConfig,
+  type NuzoRuntimeConfig,
 } from "@nuzo/memory-core";
 
 export interface CliIO {
@@ -111,23 +113,6 @@ interface RecallCommandOptions {
   semanticFallback?: SemanticFallbackMode;
   modelPath?: string;
   json: boolean;
-}
-
-interface NuzoConfig {
-  version: 1;
-  default_scope: MemoryScope;
-  storage: {
-    driver: "sqlite";
-    path: string;
-  };
-  recall: {
-    limit: number;
-    include_global: boolean;
-  };
-  privacy: {
-    allow_network: false;
-    record_recall_events: boolean;
-  };
 }
 
 interface DoctorReport {
@@ -926,172 +911,8 @@ function resolveScope(options: GlobalOptions): MemoryScope {
   return resolveRuntimeConfig(options).scope;
 }
 
-function resolveRuntimeConfig(options: GlobalOptions): {
-  storePath: string;
-  scope: MemoryScope;
-  recall: {
-    limit: number;
-    includeGlobal: boolean;
-  };
-  privacy: {
-    recordRecallEvents: boolean;
-  };
-} {
-  const projectConfig = readProjectConfig();
-  const activeConfig = projectConfig ?? readUserConfig();
-
-  return {
-    storePath: options.store !== undefined
-      ? resolve(options.store)
-      : activeConfig?.storage.path ?? getDefaultStorePath(),
-    scope: resolveAutomaticScope(options.scope ?? activeConfig?.default_scope ?? "user:default"),
-    recall: {
-      limit: activeConfig?.recall.limit ?? 8,
-      includeGlobal: activeConfig?.recall.include_global ?? false,
-    },
-    privacy: {
-      recordRecallEvents: activeConfig?.privacy.record_recall_events ?? false,
-    },
-  };
-}
-
-function readUserConfig(): NuzoConfig | null {
-  const configPath = join(homedir(), ".nuzo", "config.json");
-  if (!pathExists(configPath)) {
-    return null;
-  }
-  return parseConfig(configPath, false);
-}
-
-function readProjectConfig(): NuzoConfig | null {
-  const projectRoot = realpathSync(process.cwd());
-  const configPath = join(projectRoot, ".nuzo", "config.json");
-  if (!pathExists(configPath)) {
-    return null;
-  }
-
-  const nuzoRoot = join(projectRoot, ".nuzo");
-  const storeDirectory = join(nuzoRoot, "memory");
-  const storePath = join(storeDirectory, "memories.sqlite");
-  assertProjectPathIsLocal(nuzoRoot, nuzoRoot, configPath);
-  assertProjectPathIsLocal(configPath, nuzoRoot, configPath);
-  if (pathExists(storeDirectory)) {
-    assertProjectPathIsLocal(storeDirectory, nuzoRoot, configPath);
-  }
-  if (pathExists(storePath)) {
-    assertProjectPathIsLocal(storePath, nuzoRoot, configPath);
-  }
-
-  return parseConfig(configPath, true, storePath);
-}
-
-function parseConfig(
-  configPath: string,
-  project: boolean,
-  projectStorePath?: string,
-): NuzoConfig {
-  let value: unknown;
-  try {
-    value = JSON.parse(readFileSync(configPath, "utf8"));
-  } catch {
-    throw new NuzoMemoryError(
-      "MEMORY_CONFIG_INVALID",
-      "Nuzo config is not valid JSON.",
-      { path: configPath },
-    );
-  }
-
-  if (
-    !isRecord(value) ||
-    value.version !== 1 ||
-    typeof value.default_scope !== "string" ||
-    value.default_scope.length > memoryLimits.scopeLength ||
-    !memoryScopePattern.test(value.default_scope) ||
-    !isRecord(value.storage) ||
-    value.storage.driver !== "sqlite" ||
-    typeof value.storage.path !== "string" ||
-    (project && value.storage.path !== ".nuzo/memory/memories.sqlite") ||
-    (!project &&
-      !isAbsolute(value.storage.path) &&
-      !value.storage.path.startsWith("~/"))
-  ) {
-    throwConfigShape(configPath);
-  }
-
-  const recall = value.recall === undefined
-    ? { limit: 8, include_global: false }
-    : parseRecallConfig(value.recall, configPath);
-  const privacy = value.privacy === undefined
-    ? { allow_network: false as const, record_recall_events: false }
-    : parsePrivacyConfig(value.privacy, configPath);
-
-  return {
-    version: 1,
-    default_scope: value.default_scope as MemoryScope,
-    storage: {
-      driver: "sqlite",
-      path: project ? projectStorePath! : resolveUserStoragePath(value.storage.path),
-    },
-    recall,
-    privacy,
-  };
-}
-
-function resolveUserStoragePath(path: string): string {
-  return path.startsWith("~/")
-    ? resolve(homedir(), path.slice(2))
-    : resolve(path);
-}
-
-function resolveAutomaticScope(scope: MemoryScope): MemoryScope {
-  return scope === "project:auto"
-    ? projectScopeFromPath(realpathSync(process.cwd()))
-    : scope;
-}
-
-function parseRecallConfig(
-  value: unknown,
-  configPath: string,
-): NuzoConfig["recall"] {
-  if (
-    !isRecord(value) ||
-    typeof value.limit !== "number" ||
-    !Number.isInteger(value.limit) ||
-    value.limit < 1 ||
-    value.limit > 50 ||
-    typeof value.include_global !== "boolean"
-  ) {
-    throwConfigShape(configPath);
-  }
-  return {
-    limit: value.limit,
-    include_global: value.include_global,
-  };
-}
-
-function parsePrivacyConfig(
-  value: unknown,
-  configPath: string,
-): NuzoConfig["privacy"] {
-  if (
-    !isRecord(value) ||
-    value.allow_network !== false ||
-    typeof value.record_recall_events !== "boolean"
-  ) {
-    throwConfigShape(configPath);
-  }
-  return {
-    allow_network: false,
-    record_recall_events: value.record_recall_events,
-  };
-}
-
-function throwConfigShape(configPath: string): never {
-  throw new NuzoMemoryError(
-    "MEMORY_CONFIG_INVALID",
-    "Nuzo config has an unsupported shape.",
-    { path: configPath },
-  );
+function resolveRuntimeConfig(options: GlobalOptions): NuzoRuntimeConfig {
+  return resolveNuzoRuntimeConfig(options);
 }
 
 function resolveInitContext(
@@ -1125,8 +946,9 @@ function resolveInitContext(
     };
   }
 
+  const runtimeConfig = resolveNuzoRuntimeConfig(options);
   const defaultStorePath = getDefaultStorePath();
-  const storePath = resolve(options.store ?? defaultStorePath);
+  const storePath = runtimeConfig.storePath;
   const configRoot = storePath === defaultStorePath
     ? dirname(dirname(storePath))
     : dirname(storePath);
@@ -1135,13 +957,9 @@ function resolveInitContext(
     configStorePath: storePath,
     project: false,
     projectRoot: null,
-    scope: resolveAutomaticScope(options.scope ?? "user:default"),
+    scope: runtimeConfig.scope,
     storePath,
   };
-}
-
-function getDefaultStorePath(): string {
-  return resolve(homedir(), ".nuzo", "memory", "memories.sqlite");
 }
 
 function ensureStoreDirectory(storePath: string): void {
@@ -1212,10 +1030,6 @@ function pathExists(path: string): boolean {
   } catch {
     return false;
   }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 async function createDoctorReport(options: GlobalOptions): Promise<DoctorReport> {
@@ -1614,30 +1428,4 @@ function writePrivateFile(path: string, content: string): void {
     mode: 0o600,
   });
   chmodSync(path, 0o600);
-}
-
-function assertProjectPathIsLocal(path: string, nuzoRoot: string, configPath: string): void {
-  let canonicalPath: string;
-  try {
-    canonicalPath = realpathSync(path);
-  } catch {
-    throw new NuzoMemoryError(
-      "MEMORY_CONFIG_INVALID",
-      "Project Nuzo config resolves through an invalid local path.",
-      { path: configPath },
-    );
-  }
-
-  const relativePath = relative(nuzoRoot, canonicalPath);
-  if (
-    canonicalPath !== path ||
-    relativePath.startsWith("..") ||
-    isAbsolute(relativePath)
-  ) {
-    throw new NuzoMemoryError(
-      "MEMORY_CONFIG_INVALID",
-      "Project Nuzo config must keep storage inside the project .nuzo directory.",
-      { path: configPath },
-    );
-  }
 }
