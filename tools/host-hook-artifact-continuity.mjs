@@ -89,7 +89,7 @@ export function parseGeneratedHookCommand(value, label) {
   return { command, args };
 }
 
-function parseMemoryRecords(context, label, hostHookMemoryEnvelope) {
+export function parseMemoryRecords(context, label, hostHookMemoryEnvelope) {
   const lines = context.split("\n");
   const beginIndex = lines.indexOf(hostHookMemoryEnvelope.begin);
   const endIndexes = lines

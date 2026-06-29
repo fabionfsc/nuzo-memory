@@ -10,6 +10,9 @@ Use the complete checklist for every versioned public release.
 - Confirm no `priority:p0` or release-blocking `priority:p1` issues remain open.
 - Confirm known non-blockers are documented in GitHub Issues.
 - Confirm README, roadmap, and docs describe the actual shipped state.
+- Before or immediately after publishing, run a general issue-hunting pass and
+  open focused post-release roadmap issues only. Do not expand the release
+  scope unless the finding is release-blocking.
 
 Useful commands:
 
@@ -70,8 +73,10 @@ npm run package:plugins
 npm run validate:npm
 npm run smoke:cli
 npm run smoke:host-hooks
+npm run smoke:host-canary
 npm run smoke:claude-code-plugin
 npm run smoke:codex-plugin
+NUZO_HOST_CANARY_NATIVE=1 npm run smoke:host-canary
 ```
 
 For `0.7.0`, additionally provision the pinned local model in a temporary
@@ -103,6 +108,7 @@ still validating the generated version-pinned commands. After publishing, run
 them against the exact public commands:
 
 ```bash
+NUZO_PLUGIN_SMOKE_PUBLISHED=1 npm run smoke:host-canary
 NUZO_PLUGIN_SMOKE_PUBLISHED=1 npm run smoke:claude-code-plugin
 NUZO_PLUGIN_SMOKE_PUBLISHED=1 npm run smoke:codex-plugin
 ```

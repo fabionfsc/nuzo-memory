@@ -190,6 +190,7 @@ npm run package:plugins
 npm run validate:npm
 npm run smoke:cli
 npm run smoke:host-hooks
+npm run smoke:host-canary
 npm run smoke:claude-code-plugin
 npm run smoke:codex-plugin
 npm run smoke:published:cli
@@ -231,6 +232,27 @@ languages (English plus 14 non-English languages). Representative ephemeral
 Codex sessions complement this deterministic test before release; Claude Code
 remains covered by artifact and schema validation when its authenticated host
 CLI is unavailable locally.
+
+The NUZO-37 host canary is the smallest cross-host lifecycle proof. It creates
+one fake `user:default` `instruction` memory tagged `autoload`, runs separate
+fresh `SessionStart` hook invocations through the generated Codex and Claude
+Code plugin artifacts against the same SQLite store, and asserts both hosts
+receive the same attributed record inside the untrusted-memory boundary. It
+also checks that unrelated `UserPromptSubmit` recall does not repeat the
+autoload canary and that hook execution creates no audit writes. This proves
+Nuzo delivery, not model obedience: hosts may use or ignore recalled memory
+according to their own instruction hierarchy.
+
+For host-native packaging confidence, run:
+
+```bash
+NUZO_HOST_CANARY_NATIVE=1 npm run smoke:host-canary
+```
+
+This additionally installs the generated Codex plugin through a temporary
+Codex marketplace under an isolated `CODEX_HOME` and validates the Claude Code
+plugin with the npm-distributed Claude Code CLI. It still separates plugin and
+hook delivery from LLM response compliance.
 
 The published CLI and MCP smokes install `@nuzo/memory` into a temporary npm
 prefix and validate session continuity through separate `nuzo` and stdio server
