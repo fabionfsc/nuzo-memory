@@ -166,7 +166,13 @@ export interface RecallMemoriesInput {
   limit?: number;
   includeGlobal?: boolean;
   recordUsage?: boolean;
+  retrievalMode?: RetrievalMode;
+  semanticFallback?: SemanticFallbackMode;
 }
+
+export type RetrievalMode = "fts" | "semantic" | "hybrid";
+
+export type SemanticFallbackMode = "error" | "fts";
 
 export interface ListMemoriesInput {
   scope?: MemoryScope;
@@ -254,4 +260,6 @@ export interface RecallMemoryResult {
   memory: MemoryRecord;
   score: number;
   reason: string;
+  retrievalMode?: RetrievalMode;
+  semanticFallbackCode?: string;
 }

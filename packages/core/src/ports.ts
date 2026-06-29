@@ -24,6 +24,20 @@ export interface SearchIndex {
   search(input: RecallMemoriesInput): Promise<RecallMemoryResult[]>;
 }
 
+export interface EmbeddingProviderDescriptor {
+  id: string;
+  model: string;
+  revision: string;
+  dimensions: number;
+  network: "none" | "explicit";
+}
+
+export interface EmbeddingProvider {
+  readonly descriptor: EmbeddingProviderDescriptor;
+  embedDocuments(texts: readonly string[]): Promise<readonly (readonly number[])[]>;
+  embedQuery(text: string): Promise<readonly number[]>;
+}
+
 export interface AuditLog {
   append(event: MemoryEvent): Promise<void>;
   list(memoryId: string): Promise<MemoryEvent[]>;
