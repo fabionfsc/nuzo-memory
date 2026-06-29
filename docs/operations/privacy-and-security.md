@@ -12,6 +12,17 @@ The default configuration must not:
 - sync with Git;
 - expose an HTTP server.
 
+Optional semantic retrieval does not change these defaults. A local provider
+must disable remote model and runtime-asset loading during rebuild and recall.
+A network-capable provider requires explicit provider selection and a separate
+network opt-in; selecting hybrid retrieval alone is not consent to transmit
+memory or query text.
+
+Semantic vectors are sensitive derived data. Their sidecar uses owner-only
+permissions, stays out of Git and exports, and should be deleted before a
+device or store changes trust boundaries. Remote-provider credentials must not
+be stored in Nuzo config, diagnostics, audit payloads, or index metadata.
+
 ## Git Safety
 
 The repository should include ignore rules for local runtime memory:

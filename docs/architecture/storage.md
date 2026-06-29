@@ -38,7 +38,7 @@ The response must include which scope produced each result.
 
 ## SQLite Tables
 
-The current schema version is `1`. Nuzo stores it in SQLite `user_version` and
+The current schema version is `2`. Nuzo stores it in SQLite `user_version` and
 rejects databases created by newer unsupported Nuzo versions with the
 structured `MEMORY_SCHEMA_UNSUPPORTED` error.
 
@@ -47,6 +47,7 @@ Initial schema:
 ```sql
 CREATE TABLE memories (
   id TEXT PRIMARY KEY,
+  revision INTEGER NOT NULL DEFAULT 1,
   scope TEXT NOT NULL,
   kind TEXT NOT NULL,
   content TEXT NOT NULL,
@@ -75,6 +76,23 @@ CREATE VIRTUAL TABLE memories_fts USING fts5(
   tags
 );
 ```
+
+## Optional Semantic Sidecar
+
+Optional semantic vectors are not part of the canonical schema above. They
+live in `memories.semantic.sqlite`, beside the configured canonical store.
+The sidecar contains provider fingerprint, build metadata, memory ID, canonical
+revision, scope, and derived vector data. It contains no audit log and does not
+own memory lifecycle.
+
+The sidecar is derived, disposable, and excluded from export. Deleting it is a
+safe way to disable or reset semantic retrieval. Rebuilding reads active
+canonical memory into a temporary sidecar and replaces the previous completed
+index only after validation. Canonical writes do not invoke an embedding
+provider and therefore cannot be rolled back by semantic failure.
+
+See [Optional Semantic Retrieval](../spec/semantic-retrieval.md) for provider,
+staleness, fallback, and scope contracts.
 
 ## Audit Log
 
