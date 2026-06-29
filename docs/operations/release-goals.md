@@ -143,11 +143,8 @@ Exit criteria:
 Goal: decide whether a confirmed capture should create, update, or skip memory
 without turning inference into write authority.
 
-Status: planned as two evidence-gated passes. Both passes belong to the
-`0.6.0` milestone; they are not artificial `0.5.x` patch releases. Source
-versions remain at the last public release until the final release commit. A
-prerelease such as `0.6.0-alpha.1` is used only if external evaluation is
-needed and npm prerelease distribution is explicitly made safe first.
+Status: shipped in `0.6.0` after two evidence-gated passes. Both passes belong
+to the `0.6.0` milestone; they are not artificial `0.5.x` patch releases.
 
 Tracking:
 
@@ -271,6 +268,9 @@ Exit criteria:
 
 Goal: add semantic retrieval only if local benchmarks prove enough value to
 justify its complexity.
+
+Status: shipped in `0.7.0` with FTS as the default and semantic or hybrid
+retrieval as an explicit local opt-in.
 
 Tracking:
 
