@@ -120,6 +120,30 @@ memory. [Issue #177](https://github.com/fabionfsc/nuzo-memory/issues/177)
 tracks the harness correction included in the `0.8.1` patch; it was not a
 runtime memory-delivery failure.
 
+## Published 0.8.1 Verification
+
+The `0.8.1` security patch was published from `main` at commit
+`f9147dc6311d5fb632c9f79662b7b855a13902dd` through the GitHub Release
+[`v0.8.1`](https://github.com/fabionfsc/nuzo-memory/releases/tag/v0.8.1).
+The npm trusted-publishing dry run passed in
+[workflow run 28379690179](https://github.com/fabionfsc/nuzo-memory/actions/runs/28379690179),
+then trusted publishing completed in
+[workflow run 28379760050](https://github.com/fabionfsc/nuzo-memory/actions/runs/28379760050).
+
+Registry metadata, integrity values, and npm SLSA provenance verified:
+
+- `@nuzo/memory-core@0.8.1`;
+- `@nuzo/memory@0.8.1`;
+- `@nuzo/memory-cli@0.8.1`;
+- `@nuzo/mcp-server@0.8.1`.
+
+Published CLI, MCP, optional-semantics fallback, real local-model semantic
+recall, Codex, Claude Code, and NUZO-37 host canary smokes passed against the
+exact registry packages. The published canary required no external npm log
+override and continued to reject hook errors. The restricted-history fix and
+affected package ranges are recorded in
+[GHSA-wmpf-4gjv-ww8f](https://github.com/fabionfsc/nuzo-memory/security/advisories/GHSA-wmpf-4gjv-ww8f).
+
 ## Real Flow To Prove
 
 The canonical post-release smoke is:
