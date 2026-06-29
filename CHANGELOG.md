@@ -8,6 +8,13 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ### Added
 
+- The CLI now supports local store recovery commands:
+  `nuzo memory integrity`, `nuzo memory backup --path <file>`, and
+  `nuzo memory restore <file> --yes`, including WAL-safe SQLite online backup
+  validation before restore.
+- `nuzo memory doctor --json` now exposes the same content-free store,
+  integrity, Git tracking, warning, and status diagnostics in a stable
+  machine-readable shape.
 - The Nuzo CLI now includes explicit host bootstrap commands:
   `nuzo setup`, `nuzo host install codex`, `nuzo host install claude-code`, and
   `nuzo host install --all`, with dry-run, JSON, and non-interactive
@@ -20,10 +27,20 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ### Changed
 
+- `nuzo memory doctor` now reports SQLite store integrity status and surfaces
+  integrity failures as warnings.
 - Tracked host plugin sources now resolve the exact matching
   `@nuzo/memory` runtime and remain version-aligned through release tooling.
 - README, homepage, Getting Started, clean install, CLI, and host plugin pages
   now lead with tested user installation and cross-session verification paths.
+- Benchmark fixtures now distinguish portable JSON exports from operational
+  SQLite backups.
+
+### Fixed
+
+- Semantic model inspection now verifies pinned file digests and rejects
+  missing, truncated, altered, unreadable, or symlinked model files before
+  reporting `ready` or skipping provisioning repair.
 
 ## [0.8.1] - 2026-06-29
 

@@ -50,6 +50,8 @@ nuzo memory init
 nuzo memory doctor
 nuzo memory list
 nuzo memory recall "deployment preferences"
+nuzo memory integrity
+nuzo memory backup --path ./memories.backup.sqlite
 ```
 
 ## Why

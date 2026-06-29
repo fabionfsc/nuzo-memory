@@ -104,7 +104,9 @@ Use a temporary store so the walkthrough does not touch real memory:
 NUZO_WALKTHROUGH_DIR=/tmp/nuzo-walkthrough
 NUZO_STORE="$NUZO_WALKTHROUGH_DIR/memories.sqlite"
 NUZO_EXPORT="$NUZO_WALKTHROUGH_DIR/memories.memory.export.json"
+NUZO_BACKUP="$NUZO_WALKTHROUGH_DIR/memories.backup.sqlite"
 NUZO_IMPORTED_STORE="$NUZO_WALKTHROUGH_DIR/imported.sqlite"
+NUZO_RESTORED_STORE="$NUZO_WALKTHROUGH_DIR/restored.sqlite"
 mkdir -p "$NUZO_WALKTHROUGH_DIR"
 ```
 
@@ -167,6 +169,32 @@ Confirm recall from the imported store:
 ```bash
 npm run nuzo -- memory --store "$NUZO_IMPORTED_STORE" recall "SQLite storage"
 ```
+
+## Integrity, Backup, And Restore
+
+Check the active store before operational maintenance:
+
+```bash
+npm run nuzo -- memory --store "$NUZO_STORE" integrity
+```
+
+Create a WAL-safe SQLite snapshot:
+
+```bash
+npm run nuzo -- memory --store "$NUZO_STORE" backup --path "$NUZO_BACKUP" --overwrite
+```
+
+Restore the validated backup into a separate temporary store:
+
+```bash
+npm run nuzo -- memory --store "$NUZO_RESTORED_STORE" restore "$NUZO_BACKUP" --yes
+npm run nuzo -- memory --store "$NUZO_RESTORED_STORE" integrity
+npm run nuzo -- memory --store "$NUZO_RESTORED_STORE" recall "SQLite storage"
+```
+
+For live data, prefer this SQLite backup command over copying
+`memories.sqlite` directly. Nuzo uses WAL mode, and copying only the main
+SQLite file can miss pending WAL pages.
 
 ## Cleanup
 

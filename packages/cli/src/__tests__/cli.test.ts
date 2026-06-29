@@ -1071,11 +1071,11 @@ describe("nuzo memory cli", () => {
       "--store",
       sourceStore,
       "remember",
-      "The user prefers portable memory backups.",
+      "The user prefers portable memory exports.",
       "--kind",
       "preference",
       "--tag",
-      "backup",
+      "export",
     ]);
     expect(remembered.stdout[0]).toMatch(/^mem_/);
 
@@ -1090,7 +1090,7 @@ describe("nuzo memory cli", () => {
     expect(markdownExported.stdout[0]).toContain("Exported 1 memories");
     const markdown = readFileSync(markdownExportPath, "utf8");
     expect(markdown).toContain("# Nuzo Memory Export");
-    expect(markdown).toContain("The user prefers portable memory backups.");
+    expect(markdown).toContain("The user prefers portable memory exports.");
 
     const dryRun = await runCli(["memory", "--store", targetStore, "import", exportPath, "--dry-run"]);
     expect(dryRun.stdout).toEqual(["Would import 1 memories"]);
@@ -1104,8 +1104,71 @@ describe("nuzo memory cli", () => {
     const duplicate = await runCli(["memory", "--store", targetStore, "import", exportPath]);
     expect(duplicate.stdout).toEqual(["Imported 0 memories, skipped 1"]);
 
-    const recall = await runCli(["memory", "--store", targetStore, "recall", "portable backups"]);
-    expect(recall.stdout.join("\n")).toContain("portable memory backups");
+    const recall = await runCli(["memory", "--store", targetStore, "recall", "portable exports"]);
+    expect(recall.stdout.join("\n")).toContain("portable memory exports");
+  });
+
+  it("checks integrity, creates SQLite backups, and restores validated stores", async () => {
+    const sourceStore = createStorePath();
+    const backupPath = join(mkdtempSync(join(tmpdir(), "nuzo-backup-")), "memories.backup.sqlite");
+    const backupDirectory = join(backupPath, "..");
+    const restoredStore = join(backupDirectory, "restored.sqlite");
+    tempDirectories.push(backupDirectory);
+
+    const remembered = await runCli([
+      "memory",
+      "--store",
+      sourceStore,
+      "remember",
+      "SQLite backup restore keeps memory and audit data.",
+      "--kind",
+      "note",
+      "--tag",
+      "backup",
+    ]);
+    expect(remembered.stdout[0]).toMatch(/^mem_/);
+    await runCli(["memory", "--store", sourceStore, "recall", "backup restore"]);
+
+    const integrity = await runCli(["memory", "--store", sourceStore, "integrity", "--json"]);
+    expect(JSON.parse(integrity.stdout[0] ?? "{}")).toMatchObject({
+      ok: true,
+      schema_version: 2,
+      memory_count: 1,
+      fts_row_count: 1,
+      errors: [],
+    });
+
+    const backedUp = await runCli(["memory", "--store", sourceStore, "backup", "--path", backupPath, "--json"]);
+    expect(JSON.parse(backedUp.stdout[0] ?? "{}")).toMatchObject({
+      backup_path: backupPath,
+      integrity: {
+        ok: true,
+        memory_count: 1,
+      },
+    });
+    expect(existsSync(backupPath)).toBe(true);
+    expect(statSync(backupPath).mode & 0o777).toBe(0o600);
+
+    await runCli(["memory", "--store", restoredStore, "init"]);
+    const blockedRestore = await runCli(["memory", "--store", restoredStore, "restore", backupPath]);
+    expect(blockedRestore.stderr).toEqual([
+      "MEMORY_RESTORE_CONFIRMATION_REQUIRED: Restore would replace an existing store. Re-run with --yes to confirm.",
+    ]);
+
+    const restored = await runCli(["memory", "--store", restoredStore, "restore", backupPath, "--yes", "--json"]);
+    expect(JSON.parse(restored.stdout[0] ?? "{}")).toMatchObject({
+      backup_path: backupPath,
+      target_path: restoredStore,
+      integrity: {
+        ok: true,
+        memory_count: 1,
+      },
+    });
+
+    const recall = await runCli(["memory", "--store", restoredStore, "recall", "backup restore"]);
+    expect(recall.stdout.join("\n")).toContain("keeps memory and audit data");
+    const history = await runCli(["memory", "--store", restoredStore, "history", remembered.stdout[0] ?? ""]);
+    expect(history.stdout.some((line) => line.includes("memory.created"))).toBe(true);
   });
 
   it("reports and exposes legacy literal project:auto memories for scope review", async () => {
@@ -1217,6 +1280,7 @@ describe("nuzo memory cli", () => {
     expect(text).toContain("Store directory exists: yes");
     expect(text).toContain("Git tracking:");
     expect(text).toContain("Network: disabled");
+    expect(text).toContain("Integrity: missing");
     expect(text).toContain("Status: warning");
   });
 
@@ -1230,9 +1294,27 @@ describe("nuzo memory cli", () => {
     const text = output.stdout.join("\n");
 
     expect(text).toContain("Store exists: yes");
+    expect(text).toContain("Integrity: ok");
     expect(text).toContain("Git tracking: skipped (NUZO_DOCTOR_SKIP_GIT=1)");
     expect(text).not.toContain("Warning: Git tracking check unavailable");
     expect(text).toContain("Status: ok");
+
+    const json = await runCli(["memory", "--store", store, "doctor", "--json"], {
+      NUZO_DOCTOR_SKIP_GIT: "1",
+    });
+    expect(JSON.parse(json.stdout[0] ?? "{}")).toMatchObject({
+      store_path: store,
+      store_exists: true,
+      integrity: {
+        ok: true,
+        schema_version: 2,
+      },
+      git_tracking: {
+        status: "skipped",
+      },
+      warnings: [],
+      status: "ok",
+    });
   });
 
   it("still warns about missing stores when Git tracking is skipped", async () => {
@@ -1244,6 +1326,7 @@ describe("nuzo memory cli", () => {
     const text = output.stdout.join("\n");
 
     expect(text).toContain("Store exists: no");
+    expect(text).toContain("Integrity: missing");
     expect(text).toContain("Git tracking: skipped (NUZO_DOCTOR_SKIP_GIT=1)");
     expect(text).toContain("Warning: memory store has not been initialized");
     expect(text).toContain("Status: warning");

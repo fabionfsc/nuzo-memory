@@ -22,15 +22,18 @@ import {
   createSemanticSearch,
   clearSemanticIndex,
   DefaultPolicyEngine,
+  backupSQLiteMemoryStore,
   embeddingProviderFingerprint,
   formatMemoryExportMarkdown,
   NuzoMemoryError,
   inspectLocalTransformersModel,
+  inspectSQLiteMemoryStore,
   inspectSemanticIndex,
   localTransformersProviderDescriptor,
   provisionLocalTransformersModel,
   RandomIdGenerator,
   RegexSecretScanner,
+  restoreSQLiteMemoryStore,
   rebuildSemanticIndex,
   semanticIndexPathFor,
   SQLiteMemoryDatabase,
@@ -61,6 +64,7 @@ import {
   type SemanticFallbackMode,
   type NuzoConfig,
   type NuzoRuntimeConfig,
+  type SQLiteIntegrityReport,
 } from "@nuzo/memory-core";
 import {
   defaultSetupHosts,
@@ -143,6 +147,7 @@ interface DoctorReport {
   scope: MemoryScope;
   network: "disabled";
   gitTracking: GitTrackingReport;
+  integrity: SQLiteIntegrityReport;
   warnings: string[];
 }
 
@@ -876,17 +881,99 @@ export function createProgram(io: CliIO = defaultIO): Command {
     }));
 
   memory
+    .command("integrity")
+    .description("Validate SQLite store integrity, schema, FTS, and counts without writing.")
+    .option("--json", "Print JSON output for scripting.", false)
+    .action(withErrorHandling(io, async (commandOptions: { json: boolean }) => {
+      const options = memory.opts<GlobalOptions>();
+      const report = inspectSQLiteMemoryStore(resolveStorePath(options));
+      if (commandOptions.json) {
+        io.stdout(JSON.stringify(toIntegrityOutput(report), null, 2));
+      } else {
+        io.stdout(formatIntegrityReport(report));
+      }
+      if (!report.ok) {
+        process.exitCode = cliExitCodes.operationalError;
+      }
+    }));
+
+  memory
+    .command("backup")
+    .description("Create a WAL-safe SQLite backup of the selected memory store.")
+    .requiredOption("--path <path>", "Destination SQLite backup path.")
+    .option("--overwrite", "Replace an existing backup path.", false)
+    .option("--json", "Print JSON output for scripting.", false)
+    .action(withErrorHandling(io, async (commandOptions: {
+      path: string;
+      overwrite: boolean;
+      json: boolean;
+    }) => {
+      const options = memory.opts<GlobalOptions>();
+      const result = await backupSQLiteMemoryStore({
+        sourcePath: resolveStorePath(options),
+        backupPath: resolve(commandOptions.path),
+        overwrite: commandOptions.overwrite,
+      });
+      if (commandOptions.json) {
+        io.stdout(JSON.stringify({
+          source_path: result.sourcePath,
+          backup_path: result.backupPath,
+          pages: result.pages,
+          remaining_pages: result.remainingPages,
+          integrity: toIntegrityOutput(result.report),
+        }, null, 2));
+      } else {
+        io.stdout(`Backed up ${result.report.memoryCount} memories to ${result.backupPath}`);
+        io.stdout(`Integrity: ${result.report.ok ? "ok" : "failed"}`);
+      }
+    }));
+
+  memory
+    .command("restore")
+    .description("Restore the selected memory store from a validated SQLite backup.")
+    .argument("<path>", "Source SQLite backup path.")
+    .option("--yes", "Confirm replacement of the selected memory store.", false)
+    .option("--json", "Print JSON output for scripting.", false)
+    .action(withErrorHandling(io, async (path: string, commandOptions: {
+      yes: boolean;
+      json: boolean;
+    }) => {
+      const options = memory.opts<GlobalOptions>();
+      const result = restoreSQLiteMemoryStore({
+        backupPath: resolve(path),
+        targetPath: resolveStorePath(options),
+        overwrite: commandOptions.yes,
+      });
+      if (commandOptions.json) {
+        io.stdout(JSON.stringify({
+          backup_path: result.backupPath,
+          target_path: result.targetPath,
+          integrity: toIntegrityOutput(result.report),
+        }, null, 2));
+      } else {
+        io.stdout(`Restored ${result.report.memoryCount} memories to ${result.targetPath}`);
+        io.stdout(`Integrity: ${result.report.ok ? "ok" : "failed"}`);
+      }
+    }));
+
+  memory
     .command("doctor")
     .description("Check the local memory environment.")
-    .action(withErrorHandling(io, async () => {
+    .option("--json", "Print JSON output for scripting.", false)
+    .action(withErrorHandling(io, async (commandOptions: { json: boolean }) => {
       const options = memory.opts<GlobalOptions>();
       const report = await createDoctorReport(options);
+      if (commandOptions.json) {
+        io.stdout(JSON.stringify(toDoctorOutput(report), null, 2));
+        return;
+      }
       io.stdout(`Store: ${report.storePath}`);
       io.stdout(`Store exists: ${report.storeExists ? "yes" : "no"}`);
       io.stdout(`Store directory: ${report.storeDirectory}`);
       io.stdout(`Store directory exists: ${report.storeDirectoryExists ? "yes" : "no"}`);
       io.stdout(`Scope: ${report.scope}`);
       io.stdout(`Network: ${report.network}`);
+      io.stdout(`Integrity: ${report.integrity.ok ? "ok" : report.storeExists ? "failed" : "missing"}`);
       io.stdout(formatGitTracking(report.gitTracking));
       if (report.gitTracking.status === "tracked") {
         for (const trackedFile of report.gitTracking.trackedFiles) {
@@ -1105,6 +1192,7 @@ async function createDoctorReport(options: GlobalOptions): Promise<DoctorReport>
   const storePath = resolveStorePath(options);
   const storeDirectory = dirname(storePath);
   const gitTracking = findTrackedMemoryFiles();
+  const integrity = inspectSQLiteMemoryStore(storePath);
   const warnings: string[] = [];
 
   if (!pathExists(storePath)) {
@@ -1118,6 +1206,11 @@ async function createDoctorReport(options: GlobalOptions): Promise<DoctorReport>
   }
   if (gitTracking.status === "unavailable") {
     warnings.push(`Git tracking check unavailable: ${gitTracking.reason}`);
+  }
+  if (pathExists(storePath) && !integrity.ok) {
+    for (const error of integrity.errors) {
+      warnings.push(`Memory integrity: ${error}`);
+    }
   }
   if (pathExists(storePath)) {
     const database = new SQLiteMemoryDatabase({ path: storePath });
@@ -1144,6 +1237,7 @@ async function createDoctorReport(options: GlobalOptions): Promise<DoctorReport>
     scope: resolveScope(options),
     network: "disabled",
     gitTracking,
+    integrity,
     warnings,
   };
 }
@@ -1210,6 +1304,57 @@ function formatGitTracking(report: GitTrackingReport): string {
   }
 
   return "Git tracking: clean";
+}
+
+function formatIntegrityReport(report: SQLiteIntegrityReport): string {
+  const lines = [
+    `Store: ${report.path}`,
+    `Status: ${report.ok ? "ok" : "failed"}`,
+    `Schema: ${report.schemaVersion ?? "unknown"} (supported ${report.supportedSchemaVersion})`,
+    `SQLite integrity: ${report.integrityCheck}`,
+    `Foreign key violations: ${report.foreignKeyViolations}`,
+    `Memories: ${report.memoryCount}`,
+    `Active memories: ${report.activeMemoryCount}`,
+    `FTS rows: ${report.ftsRowCount}`,
+    `Missing FTS rows: ${report.missingFtsRows}`,
+    `Orphan FTS rows: ${report.orphanFtsRows}`,
+  ];
+  for (const error of report.errors) {
+    lines.push(`Error: ${error}`);
+  }
+  return lines.join("\n");
+}
+
+function toIntegrityOutput(report: SQLiteIntegrityReport) {
+  return {
+    ok: report.ok,
+    path: report.path,
+    schema_version: report.schemaVersion,
+    supported_schema_version: report.supportedSchemaVersion,
+    integrity_check: report.integrityCheck,
+    foreign_key_violations: report.foreignKeyViolations,
+    memory_count: report.memoryCount,
+    active_memory_count: report.activeMemoryCount,
+    fts_row_count: report.ftsRowCount,
+    missing_fts_rows: report.missingFtsRows,
+    orphan_fts_rows: report.orphanFtsRows,
+    errors: report.errors,
+  };
+}
+
+function toDoctorOutput(report: DoctorReport) {
+  return {
+    store_path: report.storePath,
+    store_exists: report.storeExists,
+    store_directory: report.storeDirectory,
+    store_directory_exists: report.storeDirectoryExists,
+    scope: report.scope,
+    network: report.network,
+    integrity: toIntegrityOutput(report.integrity),
+    git_tracking: report.gitTracking,
+    warnings: report.warnings,
+    status: report.warnings.length === 0 ? "ok" : "warning",
+  };
 }
 
 function readExportDocument(path: string): MemoryExportDocument {

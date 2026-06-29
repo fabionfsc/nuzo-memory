@@ -95,6 +95,16 @@ export {
   schemaVersion,
 } from "./sqlite/schema.js";
 export {
+  backupSQLiteMemoryStore,
+  inspectSQLiteMemoryStore,
+  restoreSQLiteMemoryStore,
+} from "./sqlite/maintenance.js";
+export type {
+  SQLiteBackupResult,
+  SQLiteIntegrityReport,
+  SQLiteRestoreResult,
+} from "./sqlite/maintenance.js";
+export {
   memoryEventTypes,
   memoryKinds,
 } from "./types.js";

@@ -25,7 +25,7 @@
     "release:check": "node tools/check-release-state.mjs",
     "release:prepare": "node tools/prepare-release.mjs",
     "release:rehearse": "node tools/rehearse-release.mjs",
-    "smoke:cli": "npm run build && npm run nuzo -- memory --store /tmp/nuzo-cli-smoke/memories.sqlite init && NUZO_DOCTOR_SKIP_GIT=1 npm run nuzo -- memory --store /tmp/nuzo-cli-smoke/memories.sqlite doctor",
+    "smoke:cli": "npm run build && rm -rf /tmp/nuzo-cli-smoke && npm run nuzo -- memory --store /tmp/nuzo-cli-smoke/memories.sqlite init && npm run nuzo -- memory --store /tmp/nuzo-cli-smoke/memories.sqlite remember \"CLI smoke backup restore fake data.\" --kind note --tag smoke && npm run nuzo -- memory --store /tmp/nuzo-cli-smoke/memories.sqlite integrity && npm run nuzo -- memory --store /tmp/nuzo-cli-smoke/memories.sqlite backup --path /tmp/nuzo-cli-smoke/memories.backup.sqlite --overwrite && npm run nuzo -- memory --store /tmp/nuzo-cli-smoke/restored.sqlite restore /tmp/nuzo-cli-smoke/memories.backup.sqlite --yes && npm run nuzo -- memory --store /tmp/nuzo-cli-smoke/restored.sqlite integrity && NUZO_DOCTOR_SKIP_GIT=1 npm run nuzo -- memory --store /tmp/nuzo-cli-smoke/restored.sqlite doctor",
     "smoke:host-hooks": "npm run build && node tools/host-hook-continuity.mjs",
     "smoke:host-canary": "npm run build && node tools/host-nuzo37-canary.mjs",
     "smoke:claude-code-plugin": "node tools/smoke-claude-code-plugin-artifact.mjs",

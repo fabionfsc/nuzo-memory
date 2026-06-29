@@ -36,7 +36,7 @@ const storePath = join(tmpRoot, "memories.sqlite");
 
 const fixtures = [
   fixture("npm-provenance", "Publish npm releases through trusted publishing with SLSA provenance.", ["npm", "release", "provenance"]),
-  fixture("backup-export", "Export a Nuzo JSON backup before destructive memory maintenance.", ["backup", "export", "maintenance"]),
+  fixture("portable-export", "Create a portable Nuzo JSON memory export before destructive memory maintenance.", ["export", "recovery", "maintenance"]),
   fixture("accessibility", "Interactive controls support keyboard navigation and WCAG contrast.", ["accessibility", "keyboard", "wcag"]),
   fixture("error-cause", "Unexpected failures preserve the original cause and return a concise public error.", ["errors", "reliability", "cause"]),
   fixture("node-matrix", "Validate releases on Node.js 22 and Node.js 24.", ["nodejs", "testing", "release"]),
@@ -73,7 +73,7 @@ const benchmarkFixtures = storeSize === "medium"
 
 const qualityCases = [
   semanticCase("Verifiable package publishing", "How do we publish packages with verifiable supply-chain metadata?", "npm-provenance"),
-  semanticCase("Irreversible maintenance preparation", "What must happen before irreversible data maintenance?", "backup-export"),
+  semanticCase("Irreversible maintenance preparation", "What must happen before irreversible data maintenance?", "portable-export"),
   semanticCase("Keyboard-only interaction", "How should keyboard-only users operate interface controls?", "accessibility"),
   semanticCase("Underlying exception", "When an operation fails, should we retain the underlying exception?", "error-cause"),
   semanticCase("Supported runtimes", "Which JavaScript runtimes belong in the release compatibility matrix?", "node-matrix"),
@@ -87,7 +87,7 @@ const qualityCases = [
   semanticCase("Concise communication", "Does the user want brief responses that explain compromises?", "response-style", { includeGlobal: true }),
   semanticCase("Calendar locale", "Which regional zone applies when displaying appointments?", "timezone", { includeGlobal: true }),
   semanticCase("English lexical control", "npm trusted publishing provenance", "npm-provenance"),
-  semanticCase("English lexical backup control", "JSON backup destructive maintenance", "backup-export"),
+  semanticCase("English lexical export control", "JSON export destructive maintenance", "portable-export"),
   semanticCase("Implantação em português", "Qual aprovação é necessária antes de colocar em produção?", "pt-deploy", { group: "compatibility" }),
   semanticCase("Memória Unicode", "Como os dados lembrados ficam inspecionáveis e transportáveis?", "unicode-memory", { group: "compatibility" }),
   semanticCase("Pruebas en español", "¿Qué control automático acompaña un cambio importante?", "spanish-tests", { group: "compatibility" }),

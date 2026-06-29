@@ -1,7 +1,11 @@
 import { createHash, randomUUID } from "node:crypto";
 import {
   chmodSync,
+  closeSync,
+  constants,
+  fstatSync,
   mkdirSync,
+  openSync,
   readFileSync,
   renameSync,
   rmSync,
@@ -120,18 +124,12 @@ export function inspectLocalTransformersModel(
     return { state: "invalid", path: modelPath, reason: "Semantic model manifest does not match the pinned profile." };
   }
   try {
-    for (const file of localTransformersModelFiles) {
-      if (!statSync(join(modelPath, file.path)).isFile()) {
-        return { state: "invalid", path: modelPath, reason: `Semantic model file is invalid: ${file.path}.` };
-      }
-    }
+    verifyModelChecksums(modelPath);
   } catch (error) {
     return {
       state: "invalid",
       path: modelPath,
-      reason: isMissingFile(error)
-        ? "One or more pinned semantic model files are missing."
-        : "Semantic model files cannot be inspected.",
+      reason: semanticInspectionReason(error),
     };
   }
   return { state: "ready", path: modelPath, reason: "Pinned local semantic model is ready." };
@@ -290,17 +288,52 @@ async function loadExtractor(modelPath: string): Promise<FeatureExtractor> {
 
 function verifyModelChecksums(modelPath: string): void {
   for (const file of localTransformersModelFiles) {
-    let content: Buffer;
+    let descriptor: number | null = null;
     try {
-      content = readFileSync(join(modelPath, file.path));
+      const filePath = join(modelPath, file.path);
+      descriptor = openSync(filePath, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
+      if (!fstatSync(descriptor).isFile()) {
+        throw new NuzoMemoryError("SEMANTIC_MODEL_INVALID", "Pinned semantic model path is not a file.", { file: file.path });
+      }
+      const content = readFileSync(descriptor);
+      const digest = createHash("sha256").update(content).digest("hex");
+      if (digest !== file.sha256) {
+        throw new NuzoMemoryError("SEMANTIC_MODEL_CHECKSUM_FAILED", "Pinned semantic model checksum validation failed.", { file: file.path });
+      }
     } catch (error) {
+      if (error instanceof NuzoMemoryError) {
+        throw error;
+      }
+      if (isNoFollowSymlinkError(error)) {
+        throw new NuzoMemoryError("SEMANTIC_MODEL_INVALID", "Pinned semantic model file must not be a symlink.", { file: file.path });
+      }
       throw new NuzoMemoryError("SEMANTIC_MODEL_INVALID", "Pinned semantic model file cannot be read.", { file: file.path, cause: errorMessage(error) });
-    }
-    const digest = createHash("sha256").update(content).digest("hex");
-    if (digest !== file.sha256) {
-      throw new NuzoMemoryError("SEMANTIC_MODEL_CHECKSUM_FAILED", "Pinned semantic model checksum validation failed.", { file: file.path });
+    } finally {
+      if (descriptor !== null) {
+        closeSync(descriptor);
+      }
     }
   }
+}
+
+function isNoFollowSymlinkError(error: unknown): boolean {
+  return typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    String(error.code) === "ELOOP";
+}
+
+function semanticInspectionReason(error: unknown): string {
+  if (isMissingFile(error)) {
+    return "One or more pinned semantic model files are missing.";
+  }
+  if (error instanceof NuzoMemoryError) {
+    if (error.code === "SEMANTIC_MODEL_CHECKSUM_FAILED") {
+      return "One or more pinned semantic model files failed checksum validation.";
+    }
+    return error.message;
+  }
+  return "Semantic model files cannot be inspected.";
 }
 
 function expectedManifest(): LocalTransformersModelManifest {
