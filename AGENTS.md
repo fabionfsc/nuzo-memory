@@ -119,6 +119,7 @@ Keep these ignored:
 
 ```gitignore
 .nuzo/memory/
+.nuzo/models/
 .nuzo/**/*.sqlite
 .nuzo/**/*.sqlite-*
 *.memory.export.md

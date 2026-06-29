@@ -68,9 +68,12 @@ points over FTS. It met the English top-1, MRR, noise, and lift envelope.
 Scope isolation, archived exclusion, global opt-in, bounded output, unrelated
 query, zero-write, and no-network gates passed in all three modes.
 
-Latency is a local observation, not a portable threshold. It excludes initial
-model load and depends on CPU, ONNX Runtime, memory pressure, and query batch
-shape.
+Latency is a local observation, not a portable threshold. The per-query table
+excludes initial model load and depends on CPU, ONNX Runtime, memory pressure,
+and query batch shape. A separate cold CLI process on the release-gate Linux
+host completed one hybrid recall in 0.91 seconds with approximately 182 MiB
+peak RSS. The optional Transformers.js dependency tree occupied approximately
+660 MiB and the pinned model added approximately 53 MiB on that host.
 
 ## Why Semantic-Only Is Not The Recommended Profile
 

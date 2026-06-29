@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -19,6 +19,7 @@ const memoryTarball = join(tarballsRoot, tarballName(memoryPackage));
 const testRoot = mkdtempSync(join(tmpdir(), "nuzo-npm-artifacts-"));
 const cliStorePath = join(testRoot, "memory", "cli.sqlite");
 const mcpStorePath = join(testRoot, "memory", "mcp.sqlite");
+const semanticStorePath = join(testRoot, "memory", "semantic.sqlite");
 
 try {
   run("npm", ["init", "--yes"], testRoot);
@@ -45,12 +46,102 @@ try {
     fail("installed core and memory package versions differ");
   }
 
+  assertOptionalSemanticPackageBoundary(testRoot, installedCore, installedMemory);
+
   assertCliWorkflow(testRoot, cliStorePath);
+  assertDefaultSemanticWorkflow(testRoot, semanticStorePath);
+  if (process.env.NUZO_SEMANTIC_MODEL_PATH) {
+    assertLocalSemanticWorkflow(
+      testRoot,
+      semanticStorePath,
+      resolve(process.env.NUZO_SEMANTIC_MODEL_PATH),
+    );
+  }
   await assertMcpProtocol(testRoot, mcpStorePath);
   assertHostHookDoctor(testRoot, mcpStorePath);
   console.log(`npm artifact validation passed: ${installedMemory.version}`);
 } finally {
   rmSync(testRoot, { recursive: true, force: true });
+}
+
+function assertOptionalSemanticPackageBoundary(root, installedCore, installedMemory) {
+  for (const pkg of [installedCore, installedMemory]) {
+    if (pkg.dependencies?.["@huggingface/transformers"] !== undefined) {
+      fail(`${pkg.name} must not install Transformers.js as a normal dependency`);
+    }
+    if (
+      pkg.peerDependencies?.["@huggingface/transformers"] !== "4.2.0" ||
+      pkg.peerDependenciesMeta?.["@huggingface/transformers"]?.optional !== true
+    ) {
+      fail(`${pkg.name} must expose the exact optional Transformers.js peer`);
+    }
+  }
+  if (existsSync(join(root, "node_modules", "@huggingface", "transformers"))) {
+    fail("normal staged install unexpectedly installed the optional Transformers.js runtime");
+  }
+  const bundledModels = listFiles(join(root, "node_modules", "@nuzo"))
+    .filter((path) => /(?:\.onnx(?:_data)?|nuzo-semantic-model\.json)$/u.test(path));
+  if (bundledModels.length > 0) {
+    fail(`normal Nuzo artifacts bundled semantic model files: ${bundledModels.join(", ")}`);
+  }
+}
+
+function assertDefaultSemanticWorkflow(root, memoryStore) {
+  const executable = join(root, "node_modules", ".bin", cliExecutableName());
+  const result = run(executable, [
+    "memory", "--store", memoryStore, "--scope", "project:nuzo",
+    "recall", "semantic fallback without a model", "--mode", "hybrid", "--json",
+  ], root);
+  const output = JSON.parse(result.stdout);
+  if (
+    output.results?.length !== 0 ||
+    output.diagnostics?.requestedMode !== "hybrid" ||
+    output.diagnostics?.effectiveMode !== "fts" ||
+    output.diagnostics?.semanticFallbackCode !== "SEMANTIC_INDEX_MISSING"
+  ) {
+    fail(`default semantic fallback contract failed: ${result.stdout}`);
+  }
+}
+
+function assertLocalSemanticWorkflow(root, memoryStore, modelPath) {
+  run("npm", [
+    "install", "--ignore-scripts=false", "--no-audit", "--no-fund", "--no-save",
+    "@huggingface/transformers@4.2.0",
+  ], root);
+  const executable = join(root, "node_modules", ".bin", cliExecutableName());
+  run(executable, [
+    "memory", "--store", memoryStore, "--scope", "project:nuzo", "remember",
+    "Publish npm releases through trusted publishing with SLSA provenance.",
+    "--kind", "project_decision", "--tag", "npm", "release", "provenance",
+  ], root);
+  run(executable, [
+    "memory", "--store", memoryStore, "semantic", "rebuild",
+    "--model-path", modelPath, "--json",
+  ], root);
+  const recalled = run(executable, [
+    "memory", "--store", memoryStore, "--scope", "project:nuzo", "recall",
+    "How should verifiable supply-chain packages be shipped?", "--mode", "hybrid",
+    "--model-path", modelPath, "--json",
+  ], root);
+  const output = JSON.parse(recalled.stdout);
+  if (
+    output.results?.[0]?.memory?.content !== "Publish npm releases through trusted publishing with SLSA provenance." ||
+    output.diagnostics?.effectiveMode !== "hybrid" ||
+    output.diagnostics?.semanticFallbackCode !== null
+  ) {
+    fail(`staged local semantic workflow failed: ${recalled.stdout}`);
+  }
+}
+
+function listFiles(root) {
+  if (!existsSync(root)) return [];
+  const files = [];
+  for (const entry of readdirSync(root)) {
+    const path = join(root, entry);
+    if (statSync(path).isDirectory()) files.push(...listFiles(path));
+    else files.push(path);
+  }
+  return files;
 }
 
 function assertCliWorkflow(cwd, memoryStore) {
