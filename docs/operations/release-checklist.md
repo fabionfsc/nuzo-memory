@@ -65,6 +65,7 @@ npm run build
 npm run benchmark:recall
 npm run benchmark:capture
 npm run benchmark:capture -- --expect bounded
+npm run benchmark:semantics
 npm run package:plugins
 npm run validate:npm
 npm run smoke:cli
@@ -72,6 +73,21 @@ npm run smoke:host-hooks
 npm run smoke:claude-code-plugin
 npm run smoke:codex-plugin
 ```
+
+For `0.7.0`, additionally provision the pinned local model in a temporary
+location and run the real-provider benchmark and staged optional install:
+
+```bash
+node tools/semantic-benchmark.mjs \
+  --local-transformers-model /absolute/path/to/pinned-model \
+  --similarity-floor 0.34
+NUZO_SEMANTIC_MODEL_PATH=/absolute/path/to/pinned-model npm run validate:npm
+```
+
+The normal `npm run validate:npm` invocation must prove that Transformers.js
+and model files are absent from a default install. The environment-enabled
+invocation must install the exact optional peer, rebuild a staged sidecar, and
+recall the expected paraphrase through the staged `@nuzo/memory` artifact.
 
 Before `release:prepare`, also run published/package-resolution smokes for the
 current release:

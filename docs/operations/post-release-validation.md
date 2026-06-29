@@ -18,13 +18,16 @@ For every current release, prioritize:
 - clear rejection, ambiguity, and blocked-content messages;
 - documentation that matches commands tested against published packages.
 
-Defer features that do not strengthen this flow, including sync, embeddings,
-UI, background capture, local installer scripts, and host-specific memory
-formats.
+Defer features that do not strengthen this flow, including sync, UI,
+background capture, local installer scripts, and host-specific memory formats.
+Optional embeddings shipped in `0.7.0` remain outside host lifecycle hooks and
+must not become a default or capture dependency.
 
 For `0.6.0`, this loop must additionally prove read-only relationship evidence
-before confirmed create or update decisions. Optional semantic search remains
-a later goal and must not be pulled into capture classification.
+before confirmed create or update decisions. For `0.7.0`, post-release checks
+also prove default FTS behavior, explicit model provisioning, derived-index
+rebuild/clear, hybrid paraphrase recall, and visible FTS fallback. Semantic
+retrieval must not be pulled into capture classification.
 
 ## Published 0.6.0 Verification
 

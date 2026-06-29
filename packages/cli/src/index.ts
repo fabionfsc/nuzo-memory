@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 import {
   chmodSync,
+  closeSync,
+  constants,
+  fstatSync,
   mkdirSync,
+  openSync,
   readFileSync,
   realpathSync,
   statSync,
@@ -1326,8 +1330,10 @@ function formatGitTracking(report: GitTrackingReport): string {
 }
 
 function readExportDocument(path: string): MemoryExportDocument {
+  let descriptor: number | null = null;
   try {
-    const stats = statSync(path);
+    descriptor = openSync(path, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
+    const stats = fstatSync(descriptor);
     if (!stats.isFile()) {
       throw new NuzoMemoryError(
         "MEMORY_EXPORT_READ_FAILED",
@@ -1342,7 +1348,7 @@ function readExportDocument(path: string): MemoryExportDocument {
         { maxBytes: 10 * 1024 * 1024, path },
       );
     }
-    return JSON.parse(readFileSync(path, "utf8")) as MemoryExportDocument;
+    return JSON.parse(readFileSync(descriptor, "utf8")) as MemoryExportDocument;
   } catch (error) {
     if (error instanceof NuzoMemoryError) {
       throw error;
@@ -1355,6 +1361,8 @@ function readExportDocument(path: string): MemoryExportDocument {
     throw new NuzoMemoryError("MEMORY_EXPORT_READ_FAILED", "Memory export file could not be read.", {
       path,
     });
+  } finally {
+    if (descriptor !== null) closeSync(descriptor);
   }
 }
 

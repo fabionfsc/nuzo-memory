@@ -1120,6 +1120,22 @@ describe("nuzo memory cli", () => {
     ]);
   });
 
+  it("does not follow symlinks when importing a bounded JSON export", async () => {
+    const store = createStorePath();
+    const directory = mkdtempSync(join(tmpdir(), "nuzo-symlink-export-"));
+    tempDirectories.push(directory);
+    const target = join(directory, "target.json");
+    const link = join(directory, "linked.memory.export.json");
+    writeFileSync(target, "{}\n", "utf8");
+    symlinkSync(target, link);
+
+    const output = await runCli(["memory", "--store", store, "import", link]);
+
+    expect(output.stderr).toEqual([
+      "MEMORY_EXPORT_READ_FAILED: Memory export file could not be read.",
+    ]);
+  });
+
   it("reports doctor information", async () => {
     const store = createStorePath();
 

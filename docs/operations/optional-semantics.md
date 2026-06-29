@@ -124,4 +124,10 @@ and rebuild the sidecar.
 - Vectors are sensitive derived data with owner-only file permissions.
 - The provider uses CPU, native ONNX Runtime, approximately 53 MiB of model
   storage, and additional process memory only when semantic work is requested.
+- On the release-gate Linux host, the optional Transformers.js dependency tree
+  occupied approximately 660 MiB after installation. A cold one-memory hybrid
+  CLI process completed in 0.91 seconds with approximately 182 MiB peak RSS.
+  Package-manager layout, CPU, and platform binaries make these measurements
+  environment-specific; inspect local disk and memory constraints before
+  enabling the provider.
 - FTS remains the low-resource, inspectable default and recovery path.
