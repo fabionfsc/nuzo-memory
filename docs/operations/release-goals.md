@@ -272,6 +272,17 @@ Exit criteria:
 Goal: add semantic retrieval only if local benchmarks prove enough value to
 justify its complexity.
 
+Tracking:
+
+- [#142](https://github.com/fabionfsc/nuzo-memory/issues/142) defines the
+  benchmark and acceptance envelope.
+- [#143](https://github.com/fabionfsc/nuzo-memory/issues/143) specifies the
+  provider and derived-index boundary.
+- [#144](https://github.com/fabionfsc/nuzo-memory/issues/144) implements the
+  smallest explicit local prototype justified by those gates.
+- [#145](https://github.com/fabionfsc/nuzo-memory/issues/145) records the
+  FTS, semantic, and hybrid comparison and the ship-or-defer decision.
+
 Deliverables:
 
 - define an optional embedding-provider and semantic-index boundary;

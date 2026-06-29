@@ -138,6 +138,18 @@ English relationship quality, policy blocks, scope and archived isolation,
 candidate/evidence bounds, latency, and zero memory or audit writes. The
 bounded profile must pass before `0.6.0` release preparation.
 
+Optional-semantics work should also run:
+
+```bash
+npm run benchmark:semantics
+```
+
+This benchmark compares FTS, a deterministic offline semantic candidate, and
+hybrid reciprocal-rank fusion. It reports the English quality bar separately
+from compatibility cases and treats scope isolation, archived exclusion,
+bounded output, zero writes, and no network as independent safety gates. The
+benchmark encoder is test evidence, not a bundled runtime provider.
+
 Smoke tests may set `NUZO_DOCTOR_SKIP_GIT=1` so restricted environments do not
 warn only because Git tracking inspection is unavailable. Tests should still
 cover normal warning behavior for missing stores and tracked memory files.
@@ -165,6 +177,7 @@ npm run release:check
 npm test
 npm run build
 npm run benchmark:capture
+npm run benchmark:semantics
 npm run package:plugins
 npm run validate:npm
 npm run smoke:cli
