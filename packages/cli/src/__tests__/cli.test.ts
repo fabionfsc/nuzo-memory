@@ -77,6 +77,48 @@ async function runCli(
 }
 
 describe("nuzo memory cli", () => {
+  it("keeps FTS default and reports semantic fallback and maintenance state", async () => {
+    const store = createStorePath();
+    await runCli(["memory", "--store", store, "init"]);
+
+    const status = await runCli(["memory", "--store", store, "semantic", "status", "--json"]);
+    const statusOutput = JSON.parse(status.stdout.join("\n")) as {
+      model: { state: string };
+      index: { state: string };
+    };
+    expect(statusOutput).toMatchObject({ model: { state: "missing" }, index: { state: "missing" } });
+
+    const fallback = await runCli([
+      "memory", "--store", store, "recall", "marine biology", "--mode", "hybrid", "--json",
+    ]);
+    const fallbackOutput = JSON.parse(fallback.stdout.join("\n")) as {
+      results: unknown[];
+      diagnostics: { requestedMode: string; effectiveMode: string; semanticFallbackCode: string };
+    };
+    expect(fallbackOutput.results).toEqual([]);
+    expect(fallbackOutput.diagnostics).toEqual({
+      requestedMode: "hybrid",
+      effectiveMode: "fts",
+      semanticFallbackCode: "SEMANTIC_INDEX_MISSING",
+    });
+
+    const strict = await runCli([
+      "memory", "--store", store, "recall", "marine biology", "--mode", "semantic",
+    ]);
+    expect(strict.stderr).toEqual(["SEMANTIC_INDEX_MISSING: Semantic index does not exist."]);
+
+    const provision = await runCli(["memory", "semantic", "provision", "--yes"]);
+    expect(provision.stderr).toEqual([
+      "SEMANTIC_NETWORK_OPT_IN_REQUIRED: Provisioning the pinned semantic model requires explicit network opt-in.",
+    ]);
+    const clearWithoutConfirmation = await runCli(["memory", "--store", store, "semantic", "clear"]);
+    expect(clearWithoutConfirmation.stderr).toEqual([
+      "SEMANTIC_CLEAR_CONFIRMATION_REQUIRED: Clearing the semantic sidecar requires --yes.",
+    ]);
+    const clear = await runCli(["memory", "--store", store, "semantic", "clear", "--yes"]);
+    expect(clear.stdout).toEqual(["Semantic index already absent"]);
+  });
+
   it("applies user config scope, recall defaults, and privacy settings", async () => {
     const init = await runCli(["memory", "--scope", "user:custom", "init"]);
     expect(init.stdout.join("\n")).toContain("Scope: user:custom");

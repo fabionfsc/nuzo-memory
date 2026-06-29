@@ -184,6 +184,21 @@ function createTestHandlers(options: {
           ]
         : [];
     },
+    async recallDetailed(input) {
+      calls.recall.push(input);
+      const results = memory
+        ? [{ memory, score: 1, reason: "Matched test memory." }]
+        : [];
+      const mode = input.retrievalMode ?? "fts";
+      return {
+        results,
+        diagnostics: {
+          requestedMode: mode,
+          effectiveMode: mode,
+          semanticFallbackCode: null,
+        },
+      };
+    },
     async list(input = {}) {
       if (options.failList === true) {
         throw new Error("simulated store failure");
@@ -362,6 +377,19 @@ describe("memory MCP handlers", () => {
       kind: "preference",
       scope: "user:default",
       tags: ["mcp"],
+    });
+
+    const hybrid = await handlers.recall({
+      query: "MCP contracts",
+      scope: "user:default",
+      limit: 8,
+      include_global: false,
+      retrieval_mode: "hybrid",
+    });
+    expect(hybrid.retrieval).toEqual({
+      requested_mode: "hybrid",
+      effective_mode: "hybrid",
+      semantic_fallback_code: null,
     });
   });
 

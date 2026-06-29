@@ -14,11 +14,22 @@ import { fileURLToPath } from "node:url";
 import { Command, CommanderError, InvalidArgumentError } from "commander";
 import {
   createMemoryService,
+  createHybridSearchIndex,
+  createLocalTransformersEmbeddingProvider,
+  createSemanticSearch,
+  clearSemanticIndex,
   DefaultPolicyEngine,
+  embeddingProviderFingerprint,
   formatMemoryExportMarkdown,
   NuzoMemoryError,
+  inspectLocalTransformersModel,
+  inspectSemanticIndex,
+  localTransformersProviderDescriptor,
+  provisionLocalTransformersModel,
   RandomIdGenerator,
   RegexSecretScanner,
+  rebuildSemanticIndex,
+  semanticIndexPathFor,
   SQLiteMemoryDatabase,
   SystemClock,
   memoryLimits,
@@ -41,6 +52,9 @@ import {
   type ImportMemoriesInput,
   type AuditEventFilter,
   type MemoryEvent,
+  type RetrievalMode,
+  type SearchIndex,
+  type SemanticFallbackMode,
 } from "@nuzo/memory-core";
 
 export interface CliIO {
@@ -83,6 +97,15 @@ interface ConfirmCaptureCommandOptions {
   actor: string;
   targetMemoryId?: string;
   expectedRevision?: number;
+  json: boolean;
+}
+
+interface RecallCommandOptions {
+  limit?: number;
+  includeGlobal?: boolean;
+  mode: RetrievalMode;
+  semanticFallback?: SemanticFallbackMode;
+  modelPath?: string;
   json: boolean;
 }
 
@@ -295,29 +318,154 @@ export function createProgram(io: CliIO = defaultIO): Command {
     .option("--limit <number>", "Maximum number of results.", parsePositiveInteger)
     .option("--include-global", "Include user:default alongside the selected scope.")
     .option("--no-include-global", "Exclude user:default from the selected scope.")
+    .option("--mode <mode>", "Retrieval mode: fts, semantic, or hybrid.", parseRetrievalMode, "fts")
+    .option("--semantic-fallback <mode>", "Semantic-only fallback: error or fts.", parseSemanticFallback)
+    .option("--model-path <path>", "Pinned local semantic model directory.")
+    .option("--json", "Print results and retrieval diagnostics as JSON.", false)
     .action(withErrorHandling(io, async (
       query: string,
-      commandOptions: { limit?: number; includeGlobal?: boolean },
+      commandOptions: RecallCommandOptions,
     ) => {
       const options = memory.opts<GlobalOptions>();
       const runtime = resolveRuntimeConfig(options);
       const database = openDatabase(runtime.storePath);
+      const provider = createLocalTransformersEmbeddingProvider({
+        ...(commandOptions.modelPath === undefined ? {} : { modelPath: commandOptions.modelPath }),
+      });
       try {
-        const service = createService(database);
-        const results = await service.recall({
+        const searchIndex = createHybridSearchIndex({
+          fts: database,
+          semantic: createSemanticSearch({
+            path: semanticIndexPathFor(runtime.storePath),
+            provider,
+            store: database,
+            similarityFloor: 0.34,
+          }),
+        });
+        const service = createService(database, searchIndex);
+        const response = await service.recallDetailed({
           query,
           scope: runtime.scope,
           limit: commandOptions.limit ?? runtime.recall.limit,
           includeGlobal: commandOptions.includeGlobal ?? runtime.recall.includeGlobal,
           recordUsage: runtime.privacy.recordRecallEvents,
+          retrievalMode: commandOptions.mode,
+          ...(commandOptions.semanticFallback === undefined
+            ? {}
+            : { semanticFallback: commandOptions.semanticFallback }),
         });
 
-        for (const result of results) {
-          io.stdout(`${result.memory.id}\t${result.score.toPrecision(4)}\t${result.memory.content}`);
+        if (commandOptions.json) {
+          io.stdout(JSON.stringify(response, null, 2));
+        } else {
+          for (const result of response.results) {
+            io.stdout(`${result.memory.id}\t${result.score.toPrecision(4)}\t${result.memory.content}`);
+          }
+          if (response.diagnostics.semanticFallbackCode !== null) {
+            io.stderr(`Semantic fallback: ${response.diagnostics.semanticFallbackCode}`);
+          }
+        }
+      } finally {
+        await provider.dispose?.();
+        database.close();
+      }
+    }));
+
+  const semantic = memory.command("semantic").description("Manage the optional derived semantic index and local model.");
+
+  semantic
+    .command("status")
+    .description("Inspect model and derived-index state without loading the model.")
+    .option("--model-path <path>", "Pinned local semantic model directory.")
+    .option("--json", "Print JSON output.", false)
+    .action(withErrorHandling(io, async (commandOptions: { modelPath?: string; json: boolean }) => {
+      const options = memory.opts<GlobalOptions>();
+      const runtime = resolveRuntimeConfig(options);
+      const database = openDatabase(runtime.storePath);
+      try {
+        const model = inspectLocalTransformersModel(commandOptions.modelPath);
+        const index = await inspectSemanticIndex(
+          semanticIndexPathFor(runtime.storePath),
+          embeddingProviderFingerprint(localTransformersProviderDescriptor()),
+          database,
+        );
+        const output = { model, index };
+        if (commandOptions.json) io.stdout(JSON.stringify(output, null, 2));
+        else {
+          io.stdout(`Model: ${model.state} (${model.path})`);
+          io.stdout(`Index: ${index.state} (${index.path})`);
+          io.stdout(`Indexed: ${index.indexedMemories}/${index.activeMemories}`);
         }
       } finally {
         database.close();
       }
+    }));
+
+  semantic
+    .command("provision")
+    .description("Download and verify the pinned local model after explicit consent.")
+    .option("--model-path <path>", "Pinned local semantic model directory.")
+    .option("--allow-network", "Allow this command to download the pinned public model.", false)
+    .option("--yes", "Confirm the model download.", false)
+    .option("--json", "Print JSON output.", false)
+    .action(withErrorHandling(io, async (commandOptions: { modelPath?: string; allowNetwork: boolean; yes: boolean; json: boolean }) => {
+      if (!commandOptions.yes) {
+        throw new NuzoMemoryError("SEMANTIC_PROVISION_CONFIRMATION_REQUIRED", "Model provisioning requires --yes.");
+      }
+      const result = await provisionLocalTransformersModel({
+        ...(commandOptions.modelPath === undefined ? {} : { path: commandOptions.modelPath }),
+        allowNetwork: commandOptions.allowNetwork,
+      });
+      if (commandOptions.json) io.stdout(JSON.stringify(result, null, 2));
+      else {
+        io.stdout(result.downloaded ? "Semantic model provisioned" : "Semantic model already ready");
+        io.stdout(`Path: ${result.path}`);
+        io.stdout(`Files: ${result.files}`);
+        io.stdout(`Bytes: ${result.bytes}`);
+      }
+    }));
+
+  semantic
+    .command("rebuild")
+    .description("Rebuild the derived semantic sidecar from active canonical memory.")
+    .option("--model-path <path>", "Pinned local semantic model directory.")
+    .option("--json", "Print JSON output.", false)
+    .action(withErrorHandling(io, async (commandOptions: { modelPath?: string; json: boolean }) => {
+      const options = memory.opts<GlobalOptions>();
+      const runtime = resolveRuntimeConfig(options);
+      const database = openDatabase(runtime.storePath);
+      const provider = createLocalTransformersEmbeddingProvider({
+        ...(commandOptions.modelPath === undefined ? {} : { modelPath: commandOptions.modelPath }),
+      });
+      try {
+        const result = await rebuildSemanticIndex({
+          path: semanticIndexPathFor(runtime.storePath),
+          provider,
+          memories: await createService(database).list({ includeArchived: false }),
+        });
+        if (commandOptions.json) io.stdout(JSON.stringify(result, null, 2));
+        else {
+          io.stdout("Semantic index rebuilt");
+          io.stdout(`Path: ${result.path}`);
+          io.stdout(`Indexed memories: ${result.indexedMemories}`);
+        }
+      } finally {
+        await provider.dispose?.();
+        database.close();
+      }
+    }));
+
+  semantic
+    .command("clear")
+    .description("Delete only the derived semantic sidecar.")
+    .option("--yes", "Confirm deletion of the derived sidecar.", false)
+    .action(withErrorHandling(io, async (commandOptions: { yes: boolean }) => {
+      if (!commandOptions.yes) {
+        throw new NuzoMemoryError("SEMANTIC_CLEAR_CONFIRMATION_REQUIRED", "Clearing the semantic sidecar requires --yes.");
+      }
+      const runtime = resolveRuntimeConfig(memory.opts<GlobalOptions>());
+      const removed = clearSemanticIndex(semanticIndexPathFor(runtime.storePath));
+      io.stdout(removed ? "Semantic index cleared" : "Semantic index already absent");
     }));
 
   memory
@@ -754,10 +902,10 @@ function openDatabase(optionsOrPath: GlobalOptions | string): SQLiteMemoryDataba
   return new SQLiteMemoryDatabase({ path: storePath });
 }
 
-function createService(database: SQLiteMemoryDatabase) {
+function createService(database: SQLiteMemoryDatabase, searchIndex: SearchIndex = database) {
   return createMemoryService({
     store: database,
-    searchIndex: database,
+    searchIndex,
     auditLog: database,
     clock: new SystemClock(),
     ids: new RandomIdGenerator(),
@@ -1408,6 +1556,20 @@ function parseRelationshipMode(value: string): "exact" | "bounded" {
     return value;
   }
   throw new InvalidArgumentError("Expected relationship mode to be exact or bounded.");
+}
+
+function parseRetrievalMode(value: string): RetrievalMode {
+  if (value !== "fts" && value !== "semantic" && value !== "hybrid") {
+    throw new InvalidArgumentError("Retrieval mode must be fts, semantic, or hybrid.");
+  }
+  return value;
+}
+
+function parseSemanticFallback(value: string): SemanticFallbackMode {
+  if (value !== "error" && value !== "fts") {
+    throw new InvalidArgumentError("Semantic fallback must be error or fts.");
+  }
+  return value;
 }
 
 function parseConfirmCaptureDecision(value: string): ConfirmCaptureDecision {

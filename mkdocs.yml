@@ -80,6 +80,7 @@ nav:
       - Codex Plugin: operations/codex-plugin.md
       - Claude Code Plugin: operations/claude-code-plugin.md
       - Lifecycle Hooks: operations/lifecycle-hooks.md
+      - Optional Semantics: operations/optional-semantics.md
       - Privacy And Security: operations/privacy-and-security.md
   - Product:
       - Vision: product/vision.md

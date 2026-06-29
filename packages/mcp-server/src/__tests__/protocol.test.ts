@@ -164,6 +164,24 @@ describe("MCP protocol contract", () => {
         }),
       ]);
 
+      const hybridFallback = parseToolJson(await client.callTool({
+        name: "memory.recall",
+        arguments: {
+          query: "local auditable",
+          scope: "project:nuzo",
+          retrieval_mode: "hybrid",
+        },
+      })) as {
+        results: Array<{ id: string }>;
+        retrieval: { requested_mode: string; effective_mode: string; semantic_fallback_code: string };
+      };
+      expect(hybridFallback.results[0]?.id).toBe(remembered.id);
+      expect(hybridFallback.retrieval).toEqual({
+        requested_mode: "hybrid",
+        effective_mode: "fts",
+        semantic_fallback_code: "SEMANTIC_INDEX_MISSING",
+      });
+
       const history = parseToolJson(await client.callTool({
         name: "memory.history",
         arguments: {

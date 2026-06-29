@@ -4,6 +4,7 @@ import type {
   MemoryEvent,
   MemoryRecord,
   RecallMemoriesInput,
+  RecallMemoriesResponse,
   RecallMemoryResult,
   RememberMemoryInput,
   UpdateMemoryInput,
@@ -22,6 +23,7 @@ export interface SearchIndex {
   index(memory: MemoryRecord): Promise<void>;
   remove(memoryId: string): Promise<void>;
   search(input: RecallMemoriesInput): Promise<RecallMemoryResult[]>;
+  searchDetailed?(input: RecallMemoriesInput): Promise<RecallMemoriesResponse>;
 }
 
 export interface EmbeddingProviderDescriptor {
