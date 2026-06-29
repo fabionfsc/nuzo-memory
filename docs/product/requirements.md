@@ -33,9 +33,16 @@
 - Human-readable errors.
 - Tests for storage, search, import/export, and MCP contracts.
 
+## Optional Capabilities
+
+- Keep SQLite FTS as the default retrieval path.
+- Allow explicit local semantic or hybrid retrieval through a disposable,
+  rebuildable derived index.
+- Keep model provisioning separate from rebuild and recall, with no implicit
+  network access.
+
 ## Future Requirements
 
-- Optional embedding-backed retrieval.
 - Optional encrypted storage.
 - Optional sync provider.
 - Browser or TUI memory manager.

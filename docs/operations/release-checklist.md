@@ -2,8 +2,7 @@
 
 Use this checklist before tagging a Nuzo release.
 
-Nuzo has a public `0.1.0` MVP release. Use this checklist for every subsequent
-versioned release.
+Use the complete checklist for every versioned public release.
 
 ## Scope
 

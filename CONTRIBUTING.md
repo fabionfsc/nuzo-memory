@@ -17,9 +17,10 @@ Read:
 
 ## Contribution Rules
 
-- Keep business logic in future `packages/core`.
+- Keep business logic in `packages/core`.
 - Do not add runtime memory files to the repository.
-- Do not add real credentials, personal memory, tokens, or private data to examples.
+- Do not add real credentials, personal memory, tokens, or private data to
+  documentation, fixtures, or tests.
 - Update documentation before or alongside public behavior changes.
 - Keep MCP tool contracts stable and versioned.
 - Prefer small, focused changes.

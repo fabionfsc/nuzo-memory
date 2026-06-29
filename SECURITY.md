@@ -4,9 +4,12 @@ Nuzo is designed around local-first memory and explicit user control.
 
 ## Current Status
 
-Nuzo `0.1.0` ships a local CLI, MCP server, SQLite runtime, and host plugin
-artifacts. Security work covers runtime storage, input policy, dependency and
-release integrity, host-tool boundaries, and safe repository practices.
+The current public release ships a local CLI, MCP server, SQLite runtime, host
+plugin artifacts, restricted scope policy, and optional local semantic
+retrieval.
+Security work covers runtime storage, input policy, dependency and release
+integrity, host-tool boundaries, derived semantic data, and safe repository
+practices.
 
 ## Security Principles
 
@@ -14,7 +17,8 @@ release integrity, host-tool boundaries, and safe repository practices.
 - No network calls by default.
 - No remote embedding calls by default.
 - No runtime memory committed to Git.
-- No secrets in examples, fixtures, docs, or tests.
+- No real secrets in documentation, fixtures, or tests. Credential-shaped
+  scanner fixtures must be synthetic and clearly confined to tests.
 - Destructive memory operations must require explicit confirmation.
 - Runtime files created by Nuzo must use owner-only permissions.
 - Repository-controlled project config must not redirect storage outside the
@@ -65,5 +69,8 @@ Project-level memory should be ignored:
 <project>/.nuzo/memory/
 ```
 
-Scopes organize data but are not authorization boundaries in `0.1.x`. Use
-separate stores when projects or hosts require isolation from each other.
+Scopes are selectors, not security principals. Restricted core and MCP
+sessions enforce explicit scope allowlists, while the local CLI and
+unrestricted core remain administrator workflows over the selected store.
+Use separate stores and operating-system controls when projects, hosts, users,
+or trust levels require process-level isolation from each other.
