@@ -496,7 +496,6 @@ function scopeMatches(memory: MemoryRecord, input: RecallMemoriesInput): boolean
 }
 
 function createPrivateFile(path: string): void {
-  if (existsSync(path)) return;
   const descriptor = openSync(path, "wx", 0o600);
   closeSync(descriptor);
   chmodSync(path, 0o600);
