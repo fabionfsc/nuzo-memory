@@ -8,6 +8,61 @@ Codex is one host package, not the whole product boundary. Claude Code and futur
 
 See `docs/architecture/agent-host-compatibility.md` before changing plugin packaging.
 
+## Install
+
+Prerequisites: Node.js 22 or 24, npm 10 or newer, and a current Codex CLI.
+
+```bash
+codex plugin marketplace add fabionfsc/nuzo-memory
+codex plugin add nuzo@nuzo-memory
+```
+
+Then start Codex, open `/plugins` to confirm that `Nuzo` is installed and
+enabled, and open `/hooks` to review and trust its `SessionStart` and
+`UserPromptSubmit` command hooks. Start a new thread after installation. The
+plugin obtains its pinned `@nuzo/memory` runtime on first use, so a global npm
+install is not required.
+
+Verify the installed state:
+
+```bash
+codex plugin list --json
+```
+
+The result should contain the enabled plugin ID `nuzo@nuzo-memory`.
+
+## Verify Cross-session Memory
+
+In a new Codex thread, ask:
+
+```text
+Save this in Nuzo memory: My installation test marker is NUZO-CODEX-OK.
+```
+
+Inspect and confirm the proposed draft. Start another new thread and ask:
+
+```text
+What is my Nuzo installation test marker?
+```
+
+The answer should use `NUZO-CODEX-OK`. If recall fails, confirm the plugin is
+enabled, both hooks are trusted, the `nuzo` MCP server is connected, and both
+threads use the same `NUZO_MEMORY_STORE` configuration.
+
+## Update Or Remove
+
+```bash
+codex plugin marketplace upgrade nuzo-memory
+codex plugin add nuzo@nuzo-memory
+```
+
+Start a new thread after updating. To remove Nuzo and its marketplace:
+
+```bash
+codex plugin remove nuzo@nuzo-memory
+codex plugin marketplace remove nuzo-memory
+```
+
 ## Official Codex Shape
 
 The Codex plugin contract starts with:
@@ -25,7 +80,7 @@ Codex identifies the plugin by the manifest `name`, so Nuzo keeps the stable ide
 
 ## Package Layout
 
-Development source:
+Tracked installable source:
 
 ```text
 packages/codex-plugin/
@@ -67,14 +122,8 @@ it from a clean checkout.
 
 ## Runtime Resolution
 
-The source plugin uses the monorepo build for development:
-
-```text
-packages/mcp-server/dist/index.js
-```
-
-The generated release plugin does not rely on that sibling directory. It pins
-the published Nuzo package to the same version as the plugin:
+The tracked plugin and generated release artifact both pin the published Nuzo
+package to the same version as the plugin:
 
 ```json
 {
@@ -125,10 +174,10 @@ Use `NUZO_AUTHORIZED_SCOPES` for repository-controlled agents that should not
 enumerate or write unrelated scopes in a shared local store. Without it, the
 runtime is an unrestricted local process over the selected store.
 
-## Development Install Flow
+## Contributor Validation
 
-This flow validates the monorepo source package. It is separate from the
-generated release artifact.
+The tracked source is itself marketplace-installable. Contributor validation
+also regenerates the ignored release artifact to prove reproducibility.
 
 1. Build the monorepo:
 
@@ -148,24 +197,11 @@ npm run check -w @nuzo/codex-plugin
 npm run package:plugins
 ```
 
-4. Point a local marketplace entry at `build/plugins/codex/nuzo`. The
-marketplace entry should use `source.path` relative to the marketplace root.
+4. Add the repository root as a local marketplace and install Nuzo:
 
-Example entry:
-
-```json
-{
-  "name": "nuzo",
-  "source": {
-    "source": "local",
-    "path": "./plugins/nuzo"
-  },
-  "policy": {
-    "installation": "AVAILABLE",
-    "authentication": "ON_INSTALL"
-  },
-  "category": "Developer Tools"
-}
+```bash
+codex plugin marketplace add "$PWD"
+codex plugin add nuzo@nuzo-memory
 ```
 
 5. Restart Codex.
@@ -189,13 +225,15 @@ SessionStart canary without writing memory from hooks.
 
 ## Direct MCP Fallback
 
-For debugging the MCP server without plugin packaging, configure Codex directly against the built server:
+If marketplace installation is unavailable, configure Codex directly against
+the published runtime:
 
 ```bash
-codex mcp add nuzo -- node /absolute/path/to/nuzo/packages/mcp-server/dist/index.js
+codex mcp add nuzo -- npm exec --yes --package=@nuzo/memory@0.8.1 -- nuzo-mcp-server
 ```
 
-Use this only to isolate MCP behavior. Plugin validation should still go through the package in `packages/codex-plugin`.
+This exposes MCP tools but does not install the Nuzo skill or lifecycle hooks.
+Use it to isolate marketplace or plugin-loading failures.
 
 ## Exposed Tools
 
@@ -207,6 +245,7 @@ Use this only to isolate MCP behavior. Plugin validation should still go through
 - `memory.list`
 - `memory.update`
 - `memory.history`
+- `memory.audit`
 - `memory.forget`
 - `memory.forget_many`
 - `memory.export`
@@ -301,7 +340,7 @@ The validator checks:
 - the plugin identifier is stable kebab-case;
 - the license is `Apache-2.0`;
 - `mcpServers` points to an existing relative `.mcp.json` file;
-- source `.mcp.json` defines the development MCP server path.
+- source `.mcp.json` pins the public runtime to the plugin version.
 
 Release validation additionally checks:
 
@@ -326,8 +365,8 @@ npm run package:plugins
 
 ## Current Limits
 
-- Public marketplace listing is not yet available; repository marketplace
-  installation remains the distribution path.
+- OpenAI-curated directory listing is not controlled by this repository;
+  repository marketplace installation is the supported public path.
 - Runtime memory remains local and should not be committed to Git.
 - Codex skips plugin command hooks until the user reviews and trusts them in
   `/hooks`; installation alone does not prove automatic recall is active.

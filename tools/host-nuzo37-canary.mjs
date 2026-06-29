@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -22,6 +22,7 @@ const claudePluginRoot = join(testRoot, "plugins", "claude-code", "nuzo");
 const publishedHookEnvironment = process.env.NUZO_PLUGIN_SMOKE_PUBLISHED === "1"
   ? { NPM_CONFIG_LOGLEVEL: "error" }
   : {};
+const claudeCodePackage = "@anthropic-ai/claude-code@2.1.195";
 
 try {
   mkdirSync(dirname(storePath), { recursive: true });
@@ -85,8 +86,8 @@ try {
   }
 
   if (process.env.NUZO_HOST_CANARY_NATIVE === "1") {
-    assertCodexNativeMarketplaceInstall(codexPluginRoot);
-    assertClaudeNativePluginValidation(claudePluginRoot);
+    assertCodexNativeMarketplaceInstall();
+    assertClaudeNativeMarketplaceInstall();
   }
 
   console.log("NUZO-37 host canary passed: Codex and Claude Code artifacts delivered the same user:default autoload memory across fresh hook invocations; host response compliance remains a separate manual/host-native check.");
@@ -189,61 +190,80 @@ function run(command, args, cwd) {
   }
 }
 
-function assertCodexNativeMarketplaceInstall(pluginRoot) {
+function assertCodexNativeMarketplaceInstall() {
   if (!commandExists("codex")) {
     console.log("NUZO-37 native Codex marketplace check skipped: codex CLI not found.");
     return;
   }
   const codexHome = join(testRoot, "codex-home");
-  const marketplaceRoot = join(testRoot, "codex-marketplace");
-  mkdirSync(join(marketplaceRoot, ".agents", "plugins"), { recursive: true });
-  mkdirSync(join(marketplaceRoot, "plugins"), { recursive: true });
-  cpSync(pluginRoot, join(marketplaceRoot, "plugins", "nuzo"), { recursive: true });
-  writeFileSync(
-    join(marketplaceRoot, ".agents", "plugins", "marketplace.json"),
-    `${JSON.stringify({
-      name: "nuzo-local-canary",
-      interface: { displayName: "Nuzo local canary" },
-      plugins: [{
-        name: "nuzo",
-        source: { source: "local", path: "./plugins/nuzo" },
-        policy: {
-          installation: "AVAILABLE",
-          authentication: "ON_INSTALL",
-          products: ["CODEX"],
-        },
-        category: "Developer Tools",
-      }],
-    }, null, 2)}\n`,
-  );
   mkdirSync(codexHome, { recursive: true });
 
-  codexJson(["plugin", "marketplace", "add", marketplaceRoot, "--json"], codexHome);
+  codexJson(["plugin", "marketplace", "add", repositoryRoot, "--json"], codexHome);
   const available = codexJson(["plugin", "list", "--available", "--json"], codexHome);
-  if (!available.available?.some((plugin) => plugin.pluginId === "nuzo@nuzo-local-canary")) {
+  if (!available.available?.some((plugin) => plugin.pluginId === "nuzo@nuzo-memory")) {
     fail(`Codex native marketplace did not expose Nuzo: ${JSON.stringify(available)}`);
   }
-  const installed = codexJson(["plugin", "add", "nuzo", "--marketplace", "nuzo-local-canary", "--json"], codexHome);
-  if (installed.pluginId !== "nuzo@nuzo-local-canary") {
+  const installed = codexJson(["plugin", "add", "nuzo@nuzo-memory", "--json"], codexHome);
+  if (installed.pluginId !== "nuzo@nuzo-memory") {
     fail(`Codex native marketplace install returned unexpected plugin: ${JSON.stringify(installed)}`);
   }
   const listed = codexJson(["plugin", "list", "--json"], codexHome);
-  const nuzo = listed.installed?.find((plugin) => plugin.pluginId === "nuzo@nuzo-local-canary");
+  const nuzo = listed.installed?.find((plugin) => plugin.pluginId === "nuzo@nuzo-memory");
   if (!nuzo?.installed || !nuzo?.enabled) {
     fail(`Codex native marketplace install was not enabled: ${JSON.stringify(listed)}`);
   }
+  codexJson(["plugin", "remove", "nuzo@nuzo-memory", "--json"], codexHome);
+  const removed = codexJson(["plugin", "list", "--json"], codexHome);
+  if (removed.installed?.some((plugin) => plugin.pluginId === "nuzo@nuzo-memory")) {
+    fail(`Codex native marketplace uninstall retained Nuzo: ${JSON.stringify(removed)}`);
+  }
+  codexJson(["plugin", "add", "nuzo@nuzo-memory", "--json"], codexHome);
   console.log(`NUZO-37 native Codex marketplace check passed: ${nuzo.pluginId}@${nuzo.version}`);
 }
 
-function assertClaudeNativePluginValidation(pluginRoot) {
+function assertClaudeNativeMarketplaceInstall() {
   if (!commandExists("npm")) {
     console.log("NUZO-37 native Claude Code validation skipped: npm not found.");
     return;
   }
+  const home = join(testRoot, "claude-home");
+  mkdirSync(home, { recursive: true });
+  claude(["plugin", "validate", repositoryRoot, "--strict"], home);
+  claude(["plugin", "marketplace", "add", repositoryRoot], home);
+  claude(["plugin", "install", "nuzo@nuzo-memory", "--scope", "user"], home);
+  const listed = claude(["plugin", "list", "--json"], home);
+  const plugins = JSON.parse(listed.stdout);
+  const nuzo = plugins.find((plugin) => plugin.id === "nuzo@nuzo-memory");
+  if (!nuzo?.enabled || nuzo?.version !== readJson(join(repositoryRoot, "package.json")).version) {
+    fail(`Claude Code native marketplace install was not enabled: ${listed.stdout}`);
+  }
+  claude(["plugin", "disable", "nuzo@nuzo-memory"], home);
+  const disabled = JSON.parse(claude(["plugin", "list", "--json"], home).stdout)
+    .find((plugin) => plugin.id === "nuzo@nuzo-memory");
+  if (disabled?.enabled !== false) {
+    fail(`Claude Code native marketplace disable failed: ${JSON.stringify(disabled)}`);
+  }
+  claude(["plugin", "enable", "nuzo@nuzo-memory"], home);
+  claude(["plugin", "uninstall", "nuzo@nuzo-memory", "--scope", "user"], home);
+  const removed = JSON.parse(claude(["plugin", "list", "--json"], home).stdout);
+  if (removed.some((plugin) => plugin.id === "nuzo@nuzo-memory")) {
+    fail(`Claude Code native marketplace uninstall retained Nuzo: ${JSON.stringify(removed)}`);
+  }
+  claude(["plugin", "install", "nuzo@nuzo-memory", "--scope", "user"], home);
+  const version = claude(["--version"], home);
+  const versionText = version.status === 0 ? version.stdout.trim() : "version unavailable";
+  console.log(`NUZO-37 native Claude Code marketplace check passed: ${nuzo.id}@${nuzo.version} with ${versionText}`);
+}
+
+function claude(args, home) {
   const result = spawnSync(
     "npm",
-    ["exec", "--yes", "--package=@anthropic-ai/claude-code", "--", "claude", "plugin", "validate", pluginRoot, "--strict"],
-    { cwd: repositoryRoot, encoding: "utf8" },
+    ["exec", "--yes", `--package=${claudeCodePackage}`, "--", "claude", ...args],
+    {
+      cwd: repositoryRoot,
+      encoding: "utf8",
+      env: { ...process.env, HOME: home },
+    },
   );
   if (result.error) {
     throw result.error;
@@ -251,15 +271,9 @@ function assertClaudeNativePluginValidation(pluginRoot) {
   if (result.status !== 0) {
     process.stderr.write(result.stdout);
     process.stderr.write(result.stderr);
-    fail("Claude Code native plugin validation failed.");
+    fail(`Claude Code command failed: claude ${args.join(" ")}`);
   }
-  const version = spawnSync(
-    "npm",
-    ["exec", "--yes", "--package=@anthropic-ai/claude-code", "--", "claude", "--version"],
-    { cwd: repositoryRoot, encoding: "utf8" },
-  );
-  const versionText = version.status === 0 ? version.stdout.trim() : "version unavailable";
-  console.log(`NUZO-37 native Claude Code plugin validation passed: ${versionText}`);
+  return result;
 }
 
 function codexJson(args, codexHome) {

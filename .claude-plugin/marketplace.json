@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "nuzo-memory",
+  "owner": {
+    "name": "fabionfsc"
+  },
+  "description": "Official Nuzo plugins for local-first, auditable agent memory.",
+  "plugins": [
+    {
+      "name": "nuzo",
+      "displayName": "Nuzo",
+      "source": "./packages/claude-code-plugin",
+      "category": "development"
+    }
+  ]
+}

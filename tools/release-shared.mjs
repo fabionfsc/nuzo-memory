@@ -19,6 +19,13 @@ export const pluginManifestPaths = [
   "packages/codex-plugin/.codex-plugin/plugin.json",
 ];
 
+export const pluginRuntimeConfigPaths = [
+  "packages/claude-code-plugin/.mcp.json",
+  "packages/claude-code-plugin/hooks/hooks.json",
+  "packages/codex-plugin/.mcp.json",
+  "packages/codex-plugin/hooks/hooks.json",
+];
+
 export const publicReleaseReferencePaths = [
   "AGENTS.md",
   "README.md",
@@ -28,6 +35,7 @@ export const publicReleaseReferencePaths = [
   "docs/operations/claude-code-plugin.md",
   "docs/operations/codex-plugin.md",
   "docs/operations/npm-publishing.md",
+  "docs/operations/optional-semantics.md",
   "docs/operations/versioning.md",
 ];
 

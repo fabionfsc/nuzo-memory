@@ -1,9 +1,13 @@
 {
   "mcpServers": {
     "nuzo": {
-      "command": "node",
+      "command": "npm",
       "args": [
-        "../mcp-server/dist/index.js"
+        "exec",
+        "--yes",
+        "--package=@nuzo/memory@0.8.1",
+        "--",
+        "nuzo-mcp-server"
       ]
     }
   }

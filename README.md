@@ -46,29 +46,17 @@ context should stay inspectable and user-owned.
 
 ## Install
 
-Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
+Use Node.js 22 LTS or 24 LTS with npm 10 or newer. Choose the interface you
+actually use; host plugins resolve the matching Nuzo runtime themselves.
 
-```bash
-npm install --global @nuzo/memory
-```
-
-This installs:
-
-| Binary | Purpose |
+| Interface | Install |
 | --- | --- |
-| `nuzo` | Manage local memories. |
-| `nuzo-mcp-server` | Expose Nuzo to MCP hosts. |
-| `nuzo-memory-hook` | Run read-only host recall hooks. |
+| Codex | `codex plugin marketplace add fabionfsc/nuzo-memory`, then `codex plugin add nuzo@nuzo-memory` |
+| Claude Code | `claude plugin marketplace add fabionfsc/nuzo-memory`, then `claude plugin install nuzo@nuzo-memory` |
+| CLI or generic MCP host | `npm install --global @nuzo/memory` |
 
-## Agent Plugins
-
-The npm package is the runtime. Agent hosts still need the Nuzo plugin enabled.
-
-| Host | Setup |
-| --- | --- |
-| Codex | Install or enable the `Nuzo` plugin, then trust its hooks when prompted. |
-| Claude Code | Install or enable the `Nuzo` plugin, then verify the `nuzo` MCP server is connected. |
-| Other MCP hosts | Configure `nuzo-mcp-server` as a stdio MCP server. |
+After a plugin install, review its hooks and start a new agent session. A
+separate global npm install is not required for Codex or Claude Code.
 
 Plugin setup details:
 [Codex](docs/operations/codex-plugin.md) ·

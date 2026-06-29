@@ -5,6 +5,7 @@ import {
   fail,
   packagePaths,
   pluginManifestPaths,
+  pluginRuntimeConfigPaths,
   publicReleaseReferencePaths,
   readJson,
   readText,
@@ -28,6 +29,17 @@ for (const manifestPath of pluginManifestPaths) {
   const manifest = readJson(manifestPath);
   if (manifest.version !== version) {
     fail(`${manifestPath} has version ${manifest.version}, expected ${version}`);
+  }
+}
+
+for (const runtimeConfigPath of pluginRuntimeConfigPaths) {
+  const content = readText(runtimeConfigPath);
+  const specs = [...content.matchAll(/@nuzo\/memory@([^\s"']+)/g)].map((match) => match[1]);
+  if (specs.length === 0) {
+    fail(`${runtimeConfigPath} does not pin @nuzo/memory`);
+  }
+  if (specs.some((runtimeVersion) => runtimeVersion !== version)) {
+    fail(`${runtimeConfigPath} must pin @nuzo/memory@${version}`);
   }
 }
 

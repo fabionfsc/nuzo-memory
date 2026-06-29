@@ -2,43 +2,44 @@
 
 Nuzo's local CLI command is `nuzo`.
 
-The CLI package currently lives at `packages/cli` and exposes the `nuzo` binary from `packages/cli/dist/index.js`.
-
-## Current Monorepo Path
+## Install
 
 Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
 
-For repository development, use the root workspace wrapper:
+```bash
+npm install --global @nuzo/memory
+nuzo memory init
+nuzo memory doctor
+```
+
+## Common Commands
 
 ```bash
-npm install
+nuzo memory init
+nuzo memory init --project
+nuzo memory remember "The project uses SQLite for local storage." --kind project_decision --tag storage
+nuzo memory suggest-capture "The user prefers concise final answers." --kind preference --reason "Durable response style preference."
+nuzo memory recall "local storage"
+nuzo memory list --all-scopes
+nuzo memory export --path ./memories.memory.export.json
+nuzo memory history mem_01HZY
+nuzo memory audit --scope project:auto --event-type memory.exported
+nuzo memory forget-many --tag obsolete
+nuzo memory forget-many --scope project:auto --apply
+```
+
+## Source Development
+
+The CLI source lives at `packages/cli`. Contributors can use the workspace
+wrapper after building:
+
+```bash
+npm ci
 npm run build
 npm run nuzo -- memory doctor
 ```
 
-The wrapper runs:
-
-```bash
-node packages/cli/dist/index.js
-```
-
 Arguments after `--` are passed to the CLI.
-
-Examples:
-
-```bash
-npm run nuzo -- memory init
-npm run nuzo -- memory init --project
-npm run nuzo -- memory remember "The project uses SQLite for local storage." --kind project_decision --tag storage
-npm run nuzo -- memory suggest-capture "The user prefers concise final answers." --kind preference --reason "Durable response style preference."
-npm run nuzo -- memory recall "local storage"
-npm run nuzo -- memory list --all-scopes
-npm run nuzo -- memory export --path ./memories.memory.export.json
-npm run nuzo -- memory history mem_01HZY
-npm run nuzo -- memory audit --scope project:auto --event-type memory.exported
-npm run nuzo -- memory forget-many --tag obsolete
-npm run nuzo -- memory forget-many --scope project:auto --apply
-```
 
 Project init creates `.nuzo/config.json`, a project-local SQLite store, and
 missing Git ignore rules. Later CLI commands run from that project root resolve

@@ -4,6 +4,7 @@ import {
   fail,
   packagePaths,
   pluginManifestPaths,
+  pluginRuntimeConfigPaths,
   publicReleaseReferencePaths,
   readJson,
   readText,
@@ -36,6 +37,15 @@ for (const manifestPath of pluginManifestPaths) {
   const manifest = readJson(manifestPath);
   manifest.version = version;
   writeJson(manifestPath, manifest);
+}
+
+for (const runtimeConfigPath of pluginRuntimeConfigPaths) {
+  const content = readText(runtimeConfigPath);
+  const currentSpec = `@nuzo/memory@${currentVersion}`;
+  if (!content.includes(currentSpec)) {
+    fail(`${runtimeConfigPath} does not contain the expected runtime package ${currentSpec}`);
+  }
+  writeText(runtimeConfigPath, content.replaceAll(currentSpec, `@nuzo/memory@${version}`));
 }
 
 const lockfile = readJson("package-lock.json");

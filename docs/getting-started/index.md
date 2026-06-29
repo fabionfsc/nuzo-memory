@@ -2,29 +2,36 @@
 
 Nuzo `0.8.1` is the current public release.
 
-Most users start with the npm package and then enable the plugin for their AI
-agent host.
+Start with the interface you use. The Codex and Claude Code plugins resolve a
+version-matched Nuzo runtime, so plugin users do not need a separate global npm
+installation.
 
 ## Install
 
 Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
 
-```bash
-npm install --global @nuzo/memory
-```
+=== "Codex"
 
-This installs the local `nuzo` CLI and the MCP runtime used by host plugins.
+    ```bash
+    codex plugin marketplace add fabionfsc/nuzo-memory
+    codex plugin add nuzo@nuzo-memory
+    ```
 
-## Agent Plugins
+=== "Claude Code"
 
-The npm package does not enable Codex or Claude Code by itself. Install or
-enable the Nuzo plugin in the host after installing the runtime.
+    ```bash
+    claude plugin marketplace add fabionfsc/nuzo-memory
+    claude plugin install nuzo@nuzo-memory
+    ```
 
-| Host | Setup |
-| --- | --- |
-| Codex | Install or enable the `Nuzo` plugin, then trust its hooks when prompted. |
-| Claude Code | Install or enable the `Nuzo` plugin, then verify the `nuzo` MCP server is connected. |
-| Other MCP hosts | Configure `nuzo-mcp-server` as a stdio MCP server. |
+=== "CLI or generic MCP"
+
+    ```bash
+    npm install --global @nuzo/memory
+    ```
+
+Review and enable the plugin hooks, then start a new session. The first plugin
+launch may access npm to obtain the pinned runtime.
 
 See [Codex plugin](../operations/codex-plugin.md) and
 [Claude Code plugin](../operations/claude-code-plugin.md).

@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/../mcp-server/dist/host-hook-cli.js\"",
+            "command": "npm exec --yes --package=@nuzo/memory@0.8.1 -- nuzo-memory-hook",
             "timeout": 10
           }
         ]
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/../mcp-server/dist/host-hook-cli.js\"",
+            "command": "npm exec --yes --package=@nuzo/memory@0.8.1 -- nuzo-memory-hook",
             "timeout": 10
           }
         ]
