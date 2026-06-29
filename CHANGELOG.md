@@ -6,6 +6,43 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-06-29
+
+### Added
+
+- CI now gates the canonical recall benchmark, the historical capture baseline,
+  and the current bounded capture relationship profile on every pull request.
+- A published optional-semantics smoke validates registry-installed fallback,
+  optional peer installation, local sidecar rebuild, and semantic/hybrid recall
+  against exact published packages.
+- The optional-semantics benchmark now includes a medium-store profile with
+  scoped status, fallback, cold and warm hybrid recall, peak RSS, canonical row
+  counts, vector row counts, and authorized vector count gates.
+- The NUZO-37 host canary proves the generated Codex and Claude Code artifacts
+  deliver the same `user:default` `autoload` instruction across fresh hook
+  invocations while preserving the untrusted-memory boundary.
+- An optional native host canary installs the Codex artifact through a temporary
+  local marketplace and validates the Claude Code artifact with the npm
+  distributed Claude Code CLI.
+
+### Changed
+
+- Release validation now explicitly includes the medium-store semantic gate,
+  the NUZO-37 host canary, and a post-release issue-hunting pass for focused
+  roadmap follow-up.
+- Repository layout documentation now states that `tools/` is versioned
+  repository automation, not a runtime npm package surface.
+
+### Fixed
+
+- MCP runtime shutdown now awaits optional semantic provider disposal before
+  closing the SQLite database or exiting on signals.
+- Scoped semantic index status now queries only authorized vector scopes in SQL
+  instead of loading all sidecar vectors and filtering unrelated scopes in
+  JavaScript.
+- Host-hook fixtures now use explicit `/example/...` paths instead of
+  host-looking `/opt/...` paths.
+
 ## [0.7.0] - 2026-06-28
 
 ### Added
