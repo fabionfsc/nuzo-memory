@@ -99,14 +99,14 @@ The generated release artifact instead uses:
   "mcpServers": {
     "nuzo": {
       "command": "npm",
-      "args": ["exec", "--yes", "--package=@nuzo/memory@0.7.0", "--", "nuzo-mcp-server"],
+      "args": ["exec", "--yes", "--package=@nuzo/memory@0.8.0", "--", "nuzo-mcp-server"],
       "cwd": "${CLAUDE_PLUGIN_ROOT}"
     }
   }
 }
 ```
 
-`0.7.0` matches the current release. Future packaging pins the actual plugin
+`0.8.0` matches the current release. Future packaging pins the actual plugin
 version. This keeps the artifact portable across supported platforms while
 allowing npm to install the correct native SQLite build.
 
@@ -163,10 +163,10 @@ npm run package:plugins
 claude plugin validate build/plugins/claude-code/nuzo --strict
 ```
 
-The generated `0.7.0` config resolves the matching public
-`@nuzo/memory@0.7.0` package. It has been installed through an isolated
-Claude Code marketplace, and `claude mcp list` reports the Nuzo server as
-connected.
+The generated `0.8.0` config resolves the matching public
+`@nuzo/memory@0.8.0` package. The release gate validates the artifact with the
+npm-distributed Claude Code CLI and validates the shared NUZO-37 SessionStart
+canary without writing memory from hooks.
 
 ## Marketplace Install Direction
 
