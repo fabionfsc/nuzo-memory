@@ -6,6 +6,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-06-28
+
 ### Added
 
 - Explicit confirmed capture decisions in core, MCP, and CLI through
