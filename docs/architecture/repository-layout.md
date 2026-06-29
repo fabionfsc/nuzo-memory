@@ -1,7 +1,7 @@
 # Repository Layout
 
 This repository is a small TypeScript monorepo with documentation, runtime
-packages, host plugin source, release tooling, and examples.
+packages, host plugin source, and release tooling.
 
 ## Current Layout
 
@@ -21,7 +21,6 @@ docs/
 ├── operations/
 ├── product/
 └── spec/
-examples/
 packages/
 ├── cli/
 ├── claude-code-plugin/

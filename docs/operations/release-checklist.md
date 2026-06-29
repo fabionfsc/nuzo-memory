@@ -199,13 +199,8 @@ git status --short
 git ls-files | rg '(^site/|/dist/|^dist/|^node_modules/|\.sqlite|memory\.export|\.env)'
 ```
 
-Expected tracked match today:
-
-```text
-examples/memory.export.example.md
-```
-
-That file must remain fake/example data only.
+Expected tracked output is empty. Public documentation and test fixtures must
+continue to use fake data only.
 
 Remove generated artifacts before committing:
 
