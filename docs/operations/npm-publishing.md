@@ -122,11 +122,12 @@ The validation:
 3. installs all tarballs into a temporary project;
 4. confirms package versions match;
 5. runs the installed `nuzo` binary through init, remember, suggest-capture,
-   recall, list, duplicate detection, and doctor;
+   confirmed capture create/update/reject/conflict paths, recall, list,
+   duplicate detection, and doctor;
 6. verifies installed CLI operational, usage, and internal exit-code contracts;
 7. connects an SDK client to the installed `nuzo-mcp-server` binary over stdio;
 8. verifies the exact public tool set, calls `memory.doctor`, and exercises
-   `memory.suggest_capture`, confirmed `memory.remember`, and
+   `memory.suggest_capture`, `memory.confirm_capture`, and
    `memory.recall_hook` against a temporary store.
 
 The command does not publish anything.

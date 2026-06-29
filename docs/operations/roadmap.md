@@ -284,7 +284,7 @@ conversation
   -> candidate detection by host or agent guidance
   -> memory.suggest_capture
   -> editable user confirmation
-  -> memory.remember or memory.update
+  -> memory.confirm_capture
 later session
   -> recalled confirmed memory
 ```
@@ -303,10 +303,9 @@ Deliverables:
   reject each suggested memory;
 - exact duplicate handling before prompts, with existing memories shown instead
   of creating redundant records;
-- update/conflict handling for changed memories, preferring `memory.update`
-  with expected revisions over duplicate `memory.remember` writes;
-- confirmed writes through `memory.remember` and confirmed edits through
-  `memory.update`;
+- update/conflict handling for changed memories, preferring confirmed updates
+  with expected revisions over duplicate writes;
+- confirmed writes and confirmed edits through `memory.confirm_capture`;
 - forget/archive guidance in host workflows;
 - audit trail documentation for created, updated, archived, deleted, imported,
   exported, and optional recall events;
