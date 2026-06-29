@@ -11,6 +11,17 @@ inert unless a library caller supplies a provider, builds a derived sidecar,
 and explicitly requests semantic or hybrid retrieval. Canonical writes never
 invoke an embedding provider.
 
+The benchmark-proven local provider uses an optional peer dependency so normal
+installs do not include an inference runtime or model:
+
+```bash
+npm install @nuzo/memory-core@0.7.0 @huggingface/transformers@4.2.0
+```
+
+Model provisioning is a separate explicit operation. Provider creation and
+normal recall only accept the pinned, checksum-verified local model files and
+disable remote model loading.
+
 Most users should install the CLI or a host plugin instead of depending on the
 core package directly.
 

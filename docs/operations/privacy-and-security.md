@@ -23,6 +23,12 @@ permissions, stays out of Git and exports, and should be deleted before a
 device or store changes trust boundaries. Remote-provider credentials must not
 be stored in Nuzo config, diagnostics, audit payloads, or index metadata.
 
+The `0.7.0` local provider downloads only a pinned public model revision after
+an explicit provisioning action. Downloaded files are SHA-256 checked before
+installation and checked again before inference. Rebuild and recall load the
+absolute local model path with remote model access disabled. Nuzo does not send
+memory content or recall queries during this local profile.
+
 ## Git Safety
 
 The repository should include ignore rules for local runtime memory:

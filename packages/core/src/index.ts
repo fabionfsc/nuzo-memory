@@ -5,6 +5,7 @@ export * from "./ports.js";
 export * from "./runtime.js";
 export * from "./secrets.js";
 export * from "./semantic.js";
+export * from "./transformers-provider.js";
 export * from "./service.js";
 export * from "./sqlite/adapter.js";
 export * from "./sqlite/schema.js";
