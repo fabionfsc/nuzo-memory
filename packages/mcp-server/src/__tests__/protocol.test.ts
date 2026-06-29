@@ -944,6 +944,125 @@ describe("MCP protocol contract", () => {
     }
   });
 
+  it("returns one structured Nuzo domain-error envelope across MCP tools", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "nuzo-mcp-error-envelope-"));
+    tempDirectories.push(directory);
+    const runtime = createNuzoMcpServerRuntime({
+      storePath: join(directory, "memories.sqlite"),
+      authorizedScopes: ["project:nuzo"],
+    });
+    const client = new Client({
+      name: "nuzo-error-contract-test",
+      version: "0.0.0",
+    });
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+
+    try {
+      await Promise.all([
+        runtime.server.connect(serverTransport),
+        client.connect(clientTransport),
+      ]);
+
+      const remembered = parseToolJson(await client.callTool({
+        name: "memory.remember",
+        arguments: {
+          content: "Structured error tests use an authorized project memory.",
+          kind: "instruction",
+          scope: "project:nuzo",
+          source: "test:mcp-client",
+        },
+      })) as { id: string };
+
+      const cases = [
+        {
+          label: "policy validation from remember",
+          call: () => client.callTool({
+            name: "memory.remember",
+            arguments: {
+              content: "github token is ghp_123456789012345678901234567890123456",
+              kind: "note",
+              scope: "project:nuzo",
+            },
+          }),
+          code: "MEMORY_SECRET_DETECTED",
+          details: {
+            findings: expect.any(Array),
+          },
+        },
+        {
+          label: "authorization from list",
+          call: () => client.callTool({
+            name: "memory.list",
+            arguments: {},
+          }),
+          code: "MEMORY_SCOPE_REQUIRED",
+        },
+        {
+          label: "authorization from recall include_global",
+          call: () => client.callTool({
+            name: "memory.recall",
+            arguments: {
+              query: "authorized project memory",
+              scope: "project:nuzo",
+              include_global: true,
+            },
+          }),
+          code: "MEMORY_SCOPE_FORBIDDEN",
+          details: {
+            scope: "user:default",
+          },
+        },
+        {
+          label: "destructive confirmation from forget",
+          call: () => client.callTool({
+            name: "memory.forget",
+            arguments: {
+              id: remembered.id,
+              mode: "delete",
+            },
+          }),
+          code: "MEMORY_DELETE_CONFIRMATION_REQUIRED",
+          details: {
+            id: remembered.id,
+          },
+        },
+        {
+          label: "semantic state from recall",
+          call: () => client.callTool({
+            name: "memory.recall",
+            arguments: {
+              query: "authorized project memory",
+              scope: "project:nuzo",
+              retrieval_mode: "semantic",
+            },
+          }),
+          code: "SEMANTIC_INDEX_MISSING",
+        },
+      ];
+
+      for (const item of cases) {
+        const result = await item.call();
+        expect(result.isError, item.label).toBe(true);
+        const error = parseToolJson(result) as {
+          code: string;
+          message: string;
+          details?: Record<string, unknown>;
+        };
+        expect(error, item.label).toMatchObject({
+          code: item.code,
+          message: expect.any(String),
+        });
+        expect(error.message.length, item.label).toBeGreaterThan(0);
+        if (item.details !== undefined) {
+          expect(error.details, item.label).toMatchObject(item.details);
+        }
+      }
+    } finally {
+      await client.close();
+      await runtime.close();
+    }
+  });
+
   it("rejects invalid arguments through the registered MCP schema", async () => {
     const directory = mkdtempSync(join(tmpdir(), "nuzo-mcp-protocol-"));
     tempDirectories.push(directory);

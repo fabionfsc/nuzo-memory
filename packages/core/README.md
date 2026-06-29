@@ -36,6 +36,22 @@ Use `@nuzo/memory-core` when you are:
 Use `@nuzo/memory` for local command-line workflows, Codex, Claude Code, and
 other MCP-compatible hosts.
 
+## Public API
+
+The root entrypoint is explicit and documented. See:
+
+https://nuzo.com.br/spec/memory-core-api/
+
+Stable public exports cover the memory service, canonical memory/export types,
+runtime config helpers, default policy, local secret scanner, and domain error
+class. Lower-level SQLite, port, migration, and optional semantic/local-model
+exports are supported for advanced or experimental integrations as documented
+there.
+
+Expected domain failures throw `NuzoMemoryError`. Use its `code` for
+machine-readable handling; `message` is for humans, and `details` may be absent
+where exposing details would leak unauthorized memory metadata.
+
 ## Product Boundary
 
 Nuzo is intentionally local-first. SQLite is part of the product boundary, not
