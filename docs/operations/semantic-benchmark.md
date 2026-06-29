@@ -32,6 +32,15 @@ The module must export an `EmbeddingProvider` as its default export or an async
 specified local JavaScript file with the maintainer's authority; it is not a
 runtime plugin loader or an end-user configuration field.
 
+After installing the optional runtime peer and explicitly provisioning the
+pinned model, run the selected `0.7.0` provider directly through core:
+
+```bash
+node tools/semantic-benchmark.mjs \
+  --local-transformers-model /absolute/path/to/pinned-model \
+  --similarity-floor 0.34
+```
+
 The command uses only public synthetic fixtures. It builds the core package,
 creates a temporary store, runs the same queries through FTS, semantic-only,
 and hybrid retrieval, reports each mode independently, and exits non-zero if

@@ -67,6 +67,31 @@ separate, explicit network action, but normal startup and recall must never
 download models automatically. A local provider must refuse remote model and
 runtime-asset loading during recall and rebuild.
 
+### `0.7.0` Local Provider Profile
+
+The selected local profile is fixed so an index cannot silently mix model
+revisions:
+
+```text
+runtime peer: @huggingface/transformers 4.2.0
+model: onnx-community/all-MiniLM-L6-v2-ONNX
+revision: aff7a1dc4e8a1ea593e6ea21e95c22ef0a25966f
+dtype: q4
+pooling: mean
+normalization: L2
+dimensions: 384
+```
+
+The runtime peer is optional and is not installed or loaded for FTS use. Nuzo
+provisions five fixed model/tokenizer files from the pinned Hugging Face
+revision only after explicit network consent. Every download is checked
+against its committed SHA-256 digest before the previous local model directory
+is replaced. Provider load verifies those digests again and uses an absolute
+local path with remote model loading disabled.
+
+The model occupies approximately 53 MiB. It is provider infrastructure, not
+canonical memory, and is excluded from exports and npm artifacts.
+
 ## Derived Index Contract
 
 The semantic index is a separate sidecar database next to the canonical store:

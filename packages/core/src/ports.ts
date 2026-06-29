@@ -36,6 +36,7 @@ export interface EmbeddingProvider {
   readonly descriptor: EmbeddingProviderDescriptor;
   embedDocuments(texts: readonly string[]): Promise<readonly (readonly number[])[]>;
   embedQuery(text: string): Promise<readonly number[]>;
+  dispose?(): Promise<void>;
 }
 
 export interface AuditLog {

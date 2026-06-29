@@ -10,6 +10,7 @@ import {
   createMemoryService,
   createHybridSearchIndex,
   createSemanticSearch,
+  createLocalTransformersEmbeddingProvider,
   DefaultPolicyEngine,
   rebuildSemanticIndex,
   RegexSecretScanner,
@@ -21,6 +22,7 @@ import {
 const jsonOutput = process.argv.includes("--json");
 const keepStore = process.argv.includes("--keep");
 const providerModulePath = optionValue("--provider-module");
+const localTransformersModelPath = optionValue("--local-transformers-model");
 const similarityFloor = numberOption("--similarity-floor", 0.34);
 const tmpRoot = mkdtempSync(join(tmpdir(), "nuzo-semantic-benchmark-"));
 const storePath = join(tmpRoot, "memories.sqlite");
@@ -118,9 +120,14 @@ class DeterministicBenchmarkEncoder {
 }
 
 async function runBenchmark() {
-  const encoder = providerModulePath
-    ? await loadExternalProvider(providerModulePath)
-    : new DeterministicBenchmarkEncoder();
+  if (providerModulePath && localTransformersModelPath) {
+    throw new Error("Choose only one semantic benchmark provider option.");
+  }
+  const encoder = localTransformersModelPath
+    ? createLocalTransformersEmbeddingProvider({ modelPath: localTransformersModelPath })
+    : providerModulePath
+      ? await loadExternalProvider(providerModulePath)
+      : new DeterministicBenchmarkEncoder();
   const database = new SQLiteMemoryDatabase({ path: storePath });
   const ids = new BenchmarkIds();
 
@@ -184,7 +191,9 @@ async function runBenchmark() {
     version: 1,
     fixturePolicy: "public-synthetic-only",
     candidate: encoder.descriptor,
-    providerModule: providerModulePath ?? "benchmark-fixture",
+    providerModule: localTransformersModelPath
+      ? "core-local-transformers"
+      : providerModulePath ?? "benchmark-fixture",
     similarityFloor,
     fixtures: fixtures.length,
     qualityCases: qualityCases.length,
