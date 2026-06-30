@@ -35,6 +35,9 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Deterministic public-documentation contracts now guard release versions,
   version-gated commands, MCP tool names and count, supported Node.js lines,
   npm package guidance, and user-versus-maintainer navigation in CI and Pages.
+- Supply-chain validation now requires GitHub Actions workflow `uses:` entries
+  to be pinned to reviewed commit SHAs and release npm installation to use an
+  exact reviewed version.
 
 ### Changed
 

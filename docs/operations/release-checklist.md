@@ -229,6 +229,54 @@ Confirm repository security automation is active:
 - Required Node.js 22, Node.js 24, documentation, and CodeQL checks use strict
   current-branch validation.
 
+## Supply-Chain Inputs
+
+CI, CodeQL, Pages, and npm release workflows must not depend on mutable
+third-party action tags.
+
+Before a release branch, run:
+
+```bash
+npm run check:supply-chain
+```
+
+The gate requires:
+
+- every external `uses:` entry under `.github/workflows/` to point at a
+  40-character commit SHA;
+- every pinned action to keep a trailing reviewed version comment such as
+  `# v7`, so Dependabot and reviewers can still identify the upstream line;
+- global npm installation in release workflows to use an exact reviewed
+  version, not a range;
+- `npm exec --package=...` workflow inputs to use exact package versions.
+
+Dependabot already covers the `github-actions` ecosystem monthly in
+`.github/dependabot.yml`. Treat those PRs as supply-chain review PRs: verify
+the upstream release notes, confirm the SHA still matches the documented
+version comment, and require the full repository checks before merging.
+
+Repository Actions settings were evaluated on 2026-06-30: Actions were enabled,
+all actions were allowed, and repository-level SHA pinning enforcement was not
+enabled. Do not rely on that mutable repository setting as the only guard. The
+versioned `npm run check:supply-chain` gate is the repository contract. If
+GitHub repository-level SHA enforcement or action allowlisting is later enabled,
+first test it on a dry-run PR and confirm CI, CodeQL, Pages, and the manual npm
+release workflow still accept GitHub-owned actions pinned by SHA.
+
+Node.js `22` and `24`, Python `3.12`, and GitHub-hosted runner images remain
+documented support lanes rather than immutable supply-chain artifacts. Changes
+to those runtime lanes still require a normal reviewed pull request and passing
+CI.
+
+Emergency rollback path:
+
+1. Revert the workflow pin bump or failed supply-chain PR.
+2. Re-run `npm run check:supply-chain`, `npm run check`, docs strict, and the
+   affected workflow.
+3. If an upstream action SHA is suspected compromised, replace it with the last
+   known-good reviewed SHA in a dedicated security PR and record the evidence in
+   the PR body.
+
 ## Clean Install
 
 Run the clean install walkthrough:

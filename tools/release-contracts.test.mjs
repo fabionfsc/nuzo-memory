@@ -64,7 +64,7 @@ test("npm release workflow uses manual OIDC publishing without tokens", () => {
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /id-token: write/);
   assert.match(workflow, /environment: npm-publish/);
-  assert.match(workflow, /npm install --global "npm@\^11\.5\.1"/);
+  assert.match(workflow, /npm install --global "npm@11\.5\.1"/);
   assert.match(workflow, /PACKAGE_VERSION: \$\{\{ inputs\.package_version \}\}/);
   assert.match(workflow, /npm run release:check -- "\$PACKAGE_VERSION"/);
   assert.match(workflow, /node tools\/publish-npm-artifacts\.mjs "\$PACKAGE_VERSION" publish/);
