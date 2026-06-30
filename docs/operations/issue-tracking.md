@@ -123,8 +123,15 @@ version-number branches. A release or hotfix branch is justified only when an
 active, documented workflow requires it, and should be deleted when that work
 is integrated.
 
-The scheduled `Repository Governance` workflow verifies that `main` remains the
-default branch and automatic merged-branch deletion remains enabled.
+The scheduled `Repository Governance` workflow verifies the observable policy:
+`main` remains the default and no same-repository branch from a merged pull
+request remains. GitHub intentionally hides the administrative
+`delete_branch_on_merge` field from workflow and unauthenticated tokens, so a
+maintainer also verifies the setting during periodic issue hunting with:
+
+```bash
+gh api repos/fabionfsc/nuzo-memory --jq .delete_branch_on_merge
+```
 
 If branch protection must be relaxed for repository recovery, open or update a
 focused Issue with the reason, restore protection immediately after recovery,
