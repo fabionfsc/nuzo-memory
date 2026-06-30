@@ -14,8 +14,8 @@ nuzo setup
 ```
 
 Nuzo will detect Codex and Claude Code, show its plan, and configure only the
-hosts the user confirms. Use `nuzo host install codex --yes`, `nuzo host
-install claude-code --yes`, or `nuzo host install --all --yes` for explicit
+hosts the user confirms. Use `nuzo setup --codex --yes`,
+`nuzo setup --claude-code --yes`, or `nuzo setup --all --yes` for explicit
 non-interactive installation.
 
 Setup is run once. For later releases, update the package and its already

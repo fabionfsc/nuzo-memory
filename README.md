@@ -62,13 +62,13 @@ command, not routine maintenance. Non-interactive alternatives remain clear:
 
 ```bash
 # Codex only
-nuzo host install codex --yes
+nuzo setup --codex --yes
 
 # Claude Code only
-nuzo host install claude-code --yes
+nuzo setup --claude-code --yes
 
 # Both hosts
-nuzo host install --all --yes
+nuzo setup --all --yes
 ```
 
 Later upgrades do not require setup again:

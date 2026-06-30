@@ -72,10 +72,10 @@ npm install --global @nuzo/memory@0.9.0
 nuzo setup
 ```
 
-Automation can choose `nuzo host install codex --yes`, `nuzo host install
-claude-code --yes`, or `nuzo host install --all --yes`. Setup is not repeated
-after upgrades: `nuzo update --yes` updates only already-installed Nuzo host
-plugins.
+Automation can choose `nuzo setup --codex --yes`,
+`nuzo setup --claude-code --yes`, or `nuzo setup --all --yes`. Setup is not
+repeated after upgrades: `nuzo update --yes` updates only already-installed
+Nuzo host plugins.
 
 ## Prove It Works
 

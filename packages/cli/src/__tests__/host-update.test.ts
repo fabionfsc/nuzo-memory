@@ -57,6 +57,12 @@ describe("managed host updates", () => {
     expect(result.hosts[1]).toMatchObject({ installed: false, steps: [] });
     expect(executed.some(([, args]) => args.includes("marketplace") || args.includes("update"))).toBe(false);
     expect(formatHostUpdateResult(result, false)).toContain("Only already-installed Nuzo plugins are updated");
+    expect(formatHostUpdateResult(result, false)).toContain(
+      "Claude Code: not installed (skipped; run nuzo setup --claude-code --yes for first-time setup)",
+    );
+    expect(JSON.parse(formatHostUpdateResult(result, true)).next_steps).toContain(
+      "Claude Code is not installed; run nuzo setup --claude-code --yes for first-time setup.",
+    );
   });
 
   it("updates an installed host when another supported CLI is absent", () => {

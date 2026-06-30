@@ -29,9 +29,9 @@ test("current public entry points stay aligned with the repository release", () 
 test("user onboarding exposes host bootstrap only after its public release", () => {
   const commands = [
     "nuzo setup",
-    "nuzo host install codex",
-    "nuzo host install claude-code",
-    "nuzo host install --all",
+    "nuzo setup --codex",
+    "nuzo setup --claude-code",
+    "nuzo setup --all",
     "nuzo update",
   ];
   if (compareVersions(currentVersion, "0.9.0") < 0) {

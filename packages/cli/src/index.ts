@@ -137,6 +137,8 @@ interface HostInstallCommandOptions {
 }
 
 interface SetupCommandOptions extends HostInstallCommandOptions {
+  claudeCode: boolean;
+  codex: boolean;
   host?: HostBootstrapHost[];
 }
 
@@ -188,6 +190,8 @@ export function createProgram(io: CliIO = defaultIO): Command {
     .command("setup")
     .description("Configure Nuzo for installed agent hosts.")
     .option("--host <host...>", "Host to configure: codex or claude-code.", parseHostList)
+    .option("--codex", "Configure Codex only.", false)
+    .option("--claude-code", "Configure Claude Code only.", false)
     .option("--all", "Configure every supported host.", false)
     .option("--dry-run", "Print the host setup plan without changing host configuration.", false)
     .option("--yes", "Confirm host setup non-interactively.", false)
@@ -199,18 +203,17 @@ Examples:
   $ nuzo setup --dry-run
 
   # Configure Codex only
-  $ nuzo host install codex --yes
+  $ nuzo setup --codex --yes
 
   # Configure Claude Code only
-  $ nuzo host install claude-code --yes
+  $ nuzo setup --claude-code --yes
 
   # Configure both supported hosts
-  $ nuzo host install --all --yes
+  $ nuzo setup --all --yes
 `)
-    .action(withErrorHandling(io, async (commandOptions: SetupCommandOptions & { all: boolean }) => {
+    .action(withErrorHandling(io, async (commandOptions: SetupCommandOptions) => {
       const detected = detectHostBootstrapHosts();
-      const hosts = commandOptions.host
-        ?? (commandOptions.all ? supportedHostBootstrapHosts() : defaultSetupHosts(detected));
+      const hosts = setupHostsFromOptions(commandOptions, detected);
       const result = runHostBootstrap(hosts, commandOptions);
       io.stdout(formatHostBootstrapResult(result, commandOptions.json));
     }));
@@ -239,7 +242,7 @@ Examples:
 
   host
     .command("install")
-    .description("Install the Nuzo plugin into one or more agent hosts.")
+    .description("Compatibility alias for installing the Nuzo plugin into one or more agent hosts.")
     .argument("[host]", "Host to configure: codex, claude-code, or all.", parseHostInstallTarget)
     .option("--all", "Configure every supported host.", false)
     .option("--dry-run", "Print the host setup plan without changing host configuration.", false)
@@ -248,6 +251,9 @@ Examples:
     .addHelpText("after", `
 
 Examples:
+  # Preferred first-time setup command
+  $ nuzo setup
+
   # For Codex
   $ nuzo host install codex --yes
 
@@ -1746,6 +1752,32 @@ function parseHostInstallTarget(value: string): HostBootstrapHost | "all" {
     }
     throw error;
   }
+}
+
+function setupHostsFromOptions(
+  options: SetupCommandOptions,
+  detected: Record<HostBootstrapHost, boolean>,
+): HostBootstrapHost[] {
+  const selected: HostBootstrapHost[] = [];
+  if (options.codex) selected.push("codex");
+  if (options.claudeCode) selected.push("claude-code");
+
+  const selectionModes = [
+    options.host !== undefined,
+    options.all,
+    selected.length > 0,
+  ].filter(Boolean).length;
+  if (selectionModes > 1) {
+    throw new NuzoMemoryError(
+      "HOST_BOOTSTRAP_TARGET_CONFLICT",
+      "Use --codex, --claude-code, --all, or --host, not multiple target styles.",
+    );
+  }
+
+  if (options.host !== undefined) return options.host;
+  if (options.all) return supportedHostBootstrapHosts();
+  if (selected.length > 0) return selected;
+  return defaultSetupHosts(detected);
 }
 
 function parseRetrievalMode(value: string): RetrievalMode {
