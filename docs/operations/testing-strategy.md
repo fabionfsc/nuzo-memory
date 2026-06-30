@@ -218,6 +218,35 @@ capture suggestions, confirmed writes, recall, and exit codes, then confirms
 the installed MCP binary starts and supports the same suggestion-to-recall
 lifecycle over stdio. It does not publish packages or require npm credentials.
 
+## Documentation Drift Gates
+
+User-facing documentation is part of the release contract. CI and Pages run:
+
+```bash
+npm run docs:check
+```
+
+That command combines three bounded gates:
+
+1. `tools/docs-contracts.test.mjs` derives release versions, MCP tool names and
+   count, supported Node.js lines, current-versus-upcoming setup language, npm
+   package guidance, and primary navigation boundaries from canonical sources.
+2. `tools/docs-link-check.mjs` validates Markdown local links, anchors, and
+   deduplicated external links with a short timeout and an explicit ignore
+   policy for dynamic historical evidence such as old GitHub Actions run URLs
+   and generated badge images.
+3. `tools/docs-snippet-check.mjs` validates shell snippets with `bash -n`
+   without executing them, keeps first-use setup/update snippets aligned across
+   README, docs, and npm README entry points, and protects a small set of public
+   product terms such as `Nuzo`, `Codex`, and `Claude Code`.
+
+Use `NUZO_DOCS_LINK_CHECK_EXTERNAL=0 npm run docs:links` only for local
+diagnosis when the network is unavailable. Do not use that override in CI or as
+release evidence. If an external site is rate-limited, historical, or dynamic,
+add the narrowest ignore rule to `tools/docs-link-check.mjs` with a comment or
+surrounding code that explains the category. Do not ignore ordinary broken
+documentation links.
+
 The recall benchmark is a required CI gate, not only a local release check. It
 protects the canonical FTS relevance envelope before host lifecycle tests reuse
 recall results. The capture benchmark runs twice in CI: the default baseline
