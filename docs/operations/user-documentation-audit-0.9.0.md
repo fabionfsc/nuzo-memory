@@ -1,46 +1,80 @@
 # User Documentation Audit For 0.9.0
 
-This audit records the installation-first review completed for the `0.9.0`
-readiness cycle. User pages describe released or repository-controlled paths;
-maintainer validation remains in Operations.
+This audit records the public-onboarding correction completed while `0.8.1`
+remained the current npm and GitHub release. Its central rule is simple: normal
+installation pages document capabilities available in the current public
+artifact, not capabilities that exist only on `main`.
 
-## Reviewed Entry Points
+## Reviewed Surfaces
 
 | Surface | Audience | Result |
 | --- | --- | --- |
-| Root README and docs homepage | First-time user | Lead with Codex, Claude Code, CLI, and generic MCP choices. |
-| Getting Started and clean install | First-time user | Separate host-plugin installation from global CLI installation. |
-| Agent memory loop | Routine user | Preserve the explicit draft, confirmation, and later-session recall flow. |
-| Local CLI | CLI user | Install the public package before showing source-workspace commands. |
-| Codex plugin | Codex user | Add exact marketplace, install, trust, verify, update, remove, and fallback steps. |
-| Claude Code plugin | Claude Code user | Add exact marketplace, install, inspect, verify, update, disable, remove, and fallback steps. |
-| MCP tool contract | Integrator | Keep the 14 public tools and read/write boundaries authoritative. |
-| Lifecycle hooks | Advanced user | Keep host events, trust, fail-open behavior, and no-write guarantees explicit. |
-| Optional semantics | Advanced user | Keep the feature optional and align installation with the current release. |
-| Privacy and security | Every user | Keep local storage, scope, secret, permissions, and network defaults visible. |
+| Root README | First-time user | Separate Codex, Claude Code, CLI, and generic MCP paths; add a cross-session first-success test. |
+| Documentation homepage | First-time user | Present copyable current-release commands and lead to the memory loop. |
+| Getting Started | First-time user | Add complete host trust, verification, CLI, and MCP paths. |
+| Fresh installation | First-time user | Remove source-build prerequisites and use installed-package commands with fake data. |
+| Local CLI | CLI user | Keep public-release commands and move contributor mechanics out of the user flow. |
+| Codex and Claude Code guides | Host user | Keep direct marketplace installation, trust, verification, update, removal, and fallback steps. |
+| `@nuzo/memory` npm README | npm user | Include complete Codex, Claude Code, CLI, MCP, and cross-session verification paths. |
+| Legacy npm READMEs | Existing package user | Identify `@nuzo/memory` as the replacement and `0.9.0` as the final planned release. |
+| Runtime support | Package user | Distinguish retrying a public npm install from contributor-only `npm ci`. |
+| Site navigation | Every reader | Keep installation and use first; group release, benchmark, and historical evidence under Maintainer Guide. |
 
-## Verified Commands
+## Release Boundary
 
-The repository validation used isolated homes to verify:
+The `0.8.1` package exposes the `nuzo memory` command group, including capture,
+recall, audit, import/export, and optional semantic operations. It does not
+expose the host bootstrap or recovery commands implemented later on `main`.
 
-- Codex marketplace add, discovery, installation, enabled state, and removal
-  contract through `nuzo@nuzo-memory`;
-- Claude Code marketplace validation, add, installation, enabled state, and
-  plugin metadata through `nuzo@nuzo-memory`;
-- generated host artifacts resolving the exact `@nuzo/memory` version;
-- the NUZO-37 read-only continuity canary across fresh Codex and Claude Code
-  hook invocations;
-- strict MkDocs links and navigation.
+Therefore, current user entry points do not present these commands:
 
-The native marketplace proof runs in CI on Node.js 24. Node.js 22 continues to
-validate package, manifest, generated artifact, and lifecycle contracts.
+```text
+nuzo setup
+nuzo host install ...
+nuzo memory integrity
+nuzo memory backup
+nuzo memory restore
+```
 
-## Intentional Limits
+When release metadata reaches `0.9.0`, the documentation contract requires the
+primary entry points and npm README to add the released host-bootstrap journey.
+Until then, implementation status remains in the changelog, release goals, and
+maintainer documentation rather than the copyable current-install path.
 
-- OpenAI-curated directory inclusion and Claude community marketplace review
-  are external publication processes. The public repository marketplace is the
-  supported path controlled by Nuzo.
-- Automated hooks prove delivery of bounded memory context, not that every
-  model response will obey stored content. Memory remains untrusted data.
-- The first plugin use may access npm to install the exact pinned runtime.
-  Subsequent runtime behavior remains local-first by default.
+## Package Lifecycle
+
+`@nuzo/memory` is the only runtime package recommended for new npm installs.
+`@nuzo/memory-cli` and `@nuzo/mcp-server` receive a final aligned `0.9.0`
+release for migration compatibility. After that release passes published
+validation, every existing version of both transition packages is marked
+deprecated on npm with guidance to migrate to `@nuzo/memory`.
+
+The packaging gate rejects accidental legacy staging after `0.9.0`. The
+deprecation itself remains a post-publication npm metadata action and must not
+run during development or release rehearsal.
+
+## Automated Contracts
+
+`npm run docs:check` now validates:
+
+- release versions across public entry points;
+- absence or required presence of version-gated setup and recovery commands;
+- MCP tool count and names against the runtime tool contract;
+- unified package recommendations and legacy package migration language;
+- supported Node.js lines in first-use documentation;
+- separation of maintainer evidence from primary install navigation.
+
+CI and GitHub Pages run this check before building the MkDocs site. npm staging
+also validates that the packaged READMEs contain the intended onboarding and
+legacy lifecycle language.
+
+## Validation Evidence
+
+The audit uses an isolated installation of `@nuzo/memory@0.8.1` to inspect
+`nuzo --help` and `nuzo memory --help` without allowing a workspace binary to
+shadow the published package. Repository validation also covers strict MkDocs,
+release-state consistency, generated npm artifacts, and host plugin smokes.
+
+External-link crawling and broader prose terminology checks remain tracked by
+[#196](https://github.com/fabionfsc/nuzo-memory/issues/196). They are ongoing
+hardening, not a reason to mix unreleased commands into current onboarding.

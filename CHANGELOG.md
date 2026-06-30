@@ -26,6 +26,9 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
   Codex and Claude Code CLIs on Node.js 24.
 - MCP and host hook doctor diagnostics now include the same content-free
   SQLite integrity summary as the CLI.
+- Deterministic public-documentation contracts now guard release versions,
+  version-gated commands, MCP tool names and count, supported Node.js lines,
+  npm package guidance, and user-versus-maintainer navigation in CI and Pages.
 
 ### Changed
 
@@ -37,6 +40,11 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
   `@nuzo/memory` runtime and remain version-aligned through release tooling.
 - README, homepage, Getting Started, clean install, CLI, and host plugin pages
   now lead with tested user installation and cross-session verification paths.
+- Current `0.8.1` onboarding now excludes host-bootstrap and recovery commands
+  until those capabilities are published, while the `0.9.0` release gate
+  requires the new setup path to return to GitHub, Pages, and npm documentation.
+- `@nuzo/memory-cli` and `@nuzo/mcp-server` now identify `0.9.0` as their final
+  planned release before npm deprecation in favor of `@nuzo/memory`.
 - Benchmark fixtures now distinguish portable JSON exports from operational
   SQLite backups.
 

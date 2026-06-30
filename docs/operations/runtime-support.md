@@ -31,7 +31,6 @@ Use a supported LTS release before troubleshooting:
 ```bash
 node --version
 npm --version
-npm ci
 ```
 
 If compilation is required, install the platform toolchain:
@@ -41,14 +40,14 @@ If compilation is required, install the platform toolchain:
     ```bash
     sudo apt-get update
     sudo apt-get install -y build-essential python3
-    npm ci
+    npm install --global @nuzo/memory
     ```
 
 === "macOS"
 
     ```bash
     xcode-select --install
-    npm ci
+    npm install --global @nuzo/memory
     ```
 
 === "Windows"
@@ -57,17 +56,21 @@ If compilation is required, install the platform toolchain:
     with C++** workload, then run:
 
     ```powershell
-    npm ci
+    npm install --global @nuzo/memory
     ```
 
 If installation still fails:
 
 1. Confirm the active Node.js version is 22 LTS or 24 LTS.
-2. Remove `node_modules` without deleting `package-lock.json`.
-3. Run `npm cache verify`.
-4. Run `npm ci` again and inspect the first native build error.
+2. Run `npm cache verify`.
+3. Retry `npm install --global @nuzo/memory` and inspect the first native build
+   error.
+4. Confirm that Python, a C/C++ compiler, and the platform build tools are
+   available in the same shell.
 
-Do not regenerate or discard the lockfile as a generic troubleshooting step.
+Contributors installing from a source checkout should use `npm ci` and retain
+the committed lockfile. That is a separate workflow from public package
+installation.
 
 ## Changing The Policy
 

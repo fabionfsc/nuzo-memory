@@ -1,267 +1,151 @@
-# Clean Install Walkthrough
+# Fresh Installation Walkthrough
 
-This walkthrough starts from a clean installation path and uses fake memory data
-only.
-
-It verifies the public package first. The source checkout section is only for
-contributors.
+This walkthrough verifies the public `0.8.1` release without cloning the Nuzo
+repository. It uses fake data only.
 
 ## Prerequisites
 
-- Git.
 - Node.js 22 LTS or 24 LTS.
 - npm 10 or newer.
-- Python 3, only if building the docs site locally.
+- A current Codex or Claude Code CLI when installing a host plugin.
 
-Check:
+Check the runtime:
 
 ```bash
 node --version
 npm --version
-python3 --version
 ```
 
-Other Node.js major versions are not claimed as supported until they are part
-of the CI matrix. See the [runtime support policy](../operations/runtime-support.md).
+Git, Python, and a source checkout are not required for normal installation.
 
-## Install A Host Plugin Without Cloning
-
-For Codex:
+## Option A: Codex Plugin
 
 ```bash
 codex plugin marketplace add fabionfsc/nuzo-memory
 codex plugin add nuzo@nuzo-memory
+codex plugin list --json
 ```
 
-For Claude Code:
+Confirm that `nuzo@nuzo-memory` is enabled. Start Codex, open `/hooks`, review
+and trust the Nuzo hooks, then start a new thread.
+
+## Option B: Claude Code Plugin
 
 ```bash
 claude plugin marketplace add fabionfsc/nuzo-memory
-claude plugin install nuzo@nuzo-memory
+claude plugin install nuzo@nuzo-memory --scope user
+claude plugin list --json
 ```
 
-Review the installed hooks, start a new session, and follow the host-specific
-verification page. These plugins resolve `@nuzo/memory@0.8.1` on first use; do
-not install the global package redundantly.
+Confirm that `nuzo@nuzo-memory` is enabled. Inspect `/mcp` and `/hooks`, then
+start a new Claude Code session.
 
-## Install The CLI Without Cloning
+## Verify A Plugin Across Sessions
 
-CLI and generic MCP users install:
+In the new host session, say:
+
+```text
+Save this in Nuzo memory: My clean-install marker is NUZO-CLEAN-OK.
+```
+
+Review and confirm the draft. Close that session, start another one, and ask:
+
+```text
+What is my Nuzo clean-install marker?
+```
+
+The answer should use `NUZO-CLEAN-OK`. The plugin supplies its own pinned
+`@nuzo/memory@0.8.1` runtime, so this path does not require a global npm
+installation.
+
+If the marker is missing, follow the [Codex](../operations/codex-plugin.md) or
+[Claude Code](../operations/claude-code-plugin.md) host checks.
+
+## Option C: Shell CLI
+
+Install the public package:
 
 ```bash
-npm install --global @nuzo/memory
+npm install --global @nuzo/memory@0.8.1
+nuzo --version
 ```
 
-It includes the CLI, MCP server, and read-only lifecycle hook runner. Use
-`@nuzo/memory-core` only for library-level integrations or Nuzo development.
-
-The npm install does not change Codex or Claude Code configuration. If you want
-the global CLI to install host plugins for you, preview the plan first and then
-choose the host explicitly:
-
-```bash
-nuzo setup --dry-run
-nuzo host install codex --yes        # Codex only
-nuzo host install claude-code --yes  # Claude Code only
-nuzo host install --all --yes        # both hosts
-```
-
-Verify the released CLI without cloning:
-
-```bash
-NUZO_PUBLISHED_DIR=/tmp/nuzo-published-cli
-rm -rf "$NUZO_PUBLISHED_DIR"
-npm install --prefix "$NUZO_PUBLISHED_DIR" @nuzo/memory@0.8.1
-"$NUZO_PUBLISHED_DIR/node_modules/.bin/nuzo" memory --store /tmp/nuzo-published.sqlite init
-NUZO_DOCTOR_SKIP_GIT=1 "$NUZO_PUBLISHED_DIR/node_modules/.bin/nuzo" memory --store /tmp/nuzo-published.sqlite doctor
-rm -rf "$NUZO_PUBLISHED_DIR"
-rm -f /tmp/nuzo-published.sqlite /tmp/nuzo-published.sqlite-*
-```
-
-## Clone And Install The Source Workspace
-
-Clone the repository only when you want to contribute to Nuzo or run the full
-source validation suite:
-
-```bash
-git clone https://github.com/fabionfsc/nuzo-memory.git
-cd nuzo-memory
-npm ci
-```
-
-Use `npm install` only when intentionally changing dependencies.
-
-## Build And Validate
-
-```bash
-npm run check
-npm test
-npm run build
-```
-
-Optional docs validation:
-
-```bash
-python3 -m venv .venv-docs
-.venv-docs/bin/pip install -r requirements-docs.txt
-.venv-docs/bin/mkdocs build --strict
-```
-
-## Run The CLI
-
-Use a temporary store so the walkthrough does not touch real memory:
+Use a temporary store so this walkthrough does not touch existing memory:
 
 ```bash
 NUZO_WALKTHROUGH_DIR=/tmp/nuzo-walkthrough
 NUZO_STORE="$NUZO_WALKTHROUGH_DIR/memories.sqlite"
 NUZO_EXPORT="$NUZO_WALKTHROUGH_DIR/memories.memory.export.json"
-NUZO_BACKUP="$NUZO_WALKTHROUGH_DIR/memories.backup.sqlite"
-NUZO_IMPORTED_STORE="$NUZO_WALKTHROUGH_DIR/imported.sqlite"
-NUZO_RESTORED_STORE="$NUZO_WALKTHROUGH_DIR/restored.sqlite"
 mkdir -p "$NUZO_WALKTHROUGH_DIR"
 ```
 
-Initialize the store:
+Initialize and inspect it:
 
 ```bash
-npm run nuzo -- memory --store "$NUZO_STORE" init
+nuzo memory --store "$NUZO_STORE" init
+nuzo memory --store "$NUZO_STORE" doctor
 ```
 
-Run doctor:
+Store and recall fake project context:
 
 ```bash
-npm run nuzo -- memory --store "$NUZO_STORE" doctor
+nuzo memory --store "$NUZO_STORE" remember \
+  "The demo project uses SQLite for local storage." \
+  --kind project_decision \
+  --tag demo \
+  --tag storage
+
+nuzo memory --store "$NUZO_STORE" recall "demo storage"
+nuzo memory --store "$NUZO_STORE" list --tag demo
 ```
 
-In restricted agent sandboxes, the Git tracking check may report unavailable if the environment blocks child process execution. That should not prevent the rest of the walkthrough from working.
+## Verify Portability
 
-## Remember And Recall
-
-Store fake project context:
+Create a portable JSON export:
 
 ```bash
-npm run nuzo -- memory --store "$NUZO_STORE" remember "The demo project uses SQLite for local storage." --kind project_decision --tag demo --tag storage
+nuzo memory --store "$NUZO_STORE" export --path "$NUZO_EXPORT"
+nuzo memory --store "$NUZO_STORE" import "$NUZO_EXPORT" --dry-run
 ```
 
-Recall it:
+## Option D: Generic MCP Host
+
+Configure this process as a stdio MCP server:
 
 ```bash
-npm run nuzo -- memory --store "$NUZO_STORE" recall "local storage"
+npm exec --yes --package=@nuzo/memory@0.8.1 -- nuzo-mcp-server
 ```
 
-List stored memories:
-
-```bash
-npm run nuzo -- memory --store "$NUZO_STORE" list --tag demo
-```
-
-## Export And Import
-
-Export as JSON:
-
-```bash
-npm run nuzo -- memory --store "$NUZO_STORE" export --path "$NUZO_EXPORT"
-```
-
-Dry-run import into a separate store:
-
-```bash
-npm run nuzo -- memory --store "$NUZO_IMPORTED_STORE" import "$NUZO_EXPORT" --dry-run
-```
-
-Import for real:
-
-```bash
-npm run nuzo -- memory --store "$NUZO_IMPORTED_STORE" import "$NUZO_EXPORT"
-```
-
-Confirm recall from the imported store:
-
-```bash
-npm run nuzo -- memory --store "$NUZO_IMPORTED_STORE" recall "SQLite storage"
-```
-
-## Integrity, Backup, And Restore
-
-Check the active store before operational maintenance:
-
-```bash
-npm run nuzo -- memory --store "$NUZO_STORE" integrity
-```
-
-Create a WAL-safe SQLite snapshot:
-
-```bash
-npm run nuzo -- memory --store "$NUZO_STORE" backup --path "$NUZO_BACKUP" --overwrite
-```
-
-Restore the validated backup into a separate temporary store:
-
-```bash
-npm run nuzo -- memory --store "$NUZO_RESTORED_STORE" restore "$NUZO_BACKUP" --yes
-npm run nuzo -- memory --store "$NUZO_RESTORED_STORE" integrity
-npm run nuzo -- memory --store "$NUZO_RESTORED_STORE" recall "SQLite storage"
-```
-
-For live data, prefer this SQLite backup command over copying
-`memories.sqlite` directly. Nuzo uses WAL mode, and copying only the main
-SQLite file can miss pending WAL pages.
+The host should discover the [14 public memory tools](../spec/tools.md). Use
+`memory.doctor` for content-free runtime diagnostics.
 
 ## Cleanup
 
-Remove the temporary walkthrough store:
+When the CLI walkthrough is finished:
 
 ```bash
-rm -rf /tmp/nuzo-walkthrough
+rm -rf "$NUZO_WALKTHROUGH_DIR"
 ```
 
-Do not commit runtime memory stores or exports.
+This removes only the temporary path defined above.
 
 ## Troubleshooting
 
-### `better-sqlite3` install or build fails
+### Native SQLite installation fails
 
-Confirm that Node.js 22 LTS or 24 LTS and npm 10 or newer are active:
+Nuzo uses `better-sqlite3`. Confirm that a supported Node.js LTS release is
+active, then follow the [runtime support guide](../operations/runtime-support.md)
+for platform build tools.
 
-```bash
-node --version
-npm --version
-npm ci
-```
+### Doctor cannot inspect Git
 
-If npm cannot use a prebuilt binary, `better-sqlite3` requires a local C/C++
-build toolchain and Python. Follow the platform-specific steps in the
-[runtime support policy](../operations/runtime-support.md).
+Restricted sandboxes may block child processes. This affects only the Git
+tracking diagnostic; it does not imply that SQLite memory is unhealthy. Normal
+host and terminal environments should leave the check enabled.
 
-### `nuzo memory doctor` reports Git tracking unavailable
+### Source development
 
-This can happen in restricted sandboxes that block child processes. In a normal Git checkout, doctor should be able to inspect tracked memory files.
-
-For smoke tests or restricted hosts where Git process execution is not
-available, use:
-
-```bash
-NUZO_DOCTOR_SKIP_GIT=1 npm run nuzo -- memory --store "$NUZO_STORE" doctor
-```
-
-This skips only the Git tracking check. Missing stores, missing directories,
-and tracked memory files in normal checkouts remain warnings.
-
-### `npm run nuzo` cannot find `dist/index.js`
-
-Build first:
-
-```bash
-npm run build
-```
-
-### Export files appear in `git status`
-
-Use the ignored export suffixes:
-
-```text
-*.memory.export.json
-*.memory.export.md
-```
-
-Avoid custom export filenames that do not match those patterns.
+Repository cloning, `npm ci`, builds, tests, and documentation tooling are
+contributor workflows. Follow the
+[contribution guide](https://github.com/fabionfsc/nuzo-memory/blob/main/CONTRIBUTING.md)
+instead of mixing them into a public package installation.

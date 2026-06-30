@@ -232,6 +232,24 @@ Use fake data only.
 If `better-sqlite3` falls back to a native build, validate the documented
 platform toolchain path in `docs/operations/runtime-support.md`.
 
+## `0.9.0` Legacy Package Cutoff
+
+For the `0.9.0` release only:
+
+1. Publish and validate `@nuzo/memory-core`, `@nuzo/memory`,
+   `@nuzo/memory-cli`, and `@nuzo/mcp-server` at exactly `0.9.0`.
+2. Confirm the unified package exposes `nuzo`, `nuzo-mcp-server`, and
+   `nuzo-memory-hook` and passes the published CLI/MCP smokes.
+3. Confirm the transition-package npm READMEs identify `@nuzo/memory` as the
+   replacement and `0.9.0` as their final release.
+4. Only then apply the two npm deprecation messages documented in
+   [npm Publishing](npm-publishing.md#legacy-deprecation-after-090).
+5. Verify npm reports both transition packages as deprecated and record the
+   registry evidence in post-release validation.
+
+Deprecation is a post-publication metadata action. Do not perform it during a
+dry run, rehearsal, or before the unified `0.9.0` replacement is available.
+
 ## Security And Sanitization
 
 Before tagging, confirm no runtime memory, generated files, or credentials are staged:
