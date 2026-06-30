@@ -144,6 +144,27 @@ Inside Codex, Claude Code, or another MCP host, call `memory.doctor` instead.
 Doctor diagnostics remain content-free and report runtime readiness without
 returning stored memory text.
 
+The default doctor pass is read-only and inspects Git tracking, SQLite
+integrity, and runtime file hygiene:
+
+```bash
+nuzo memory doctor
+```
+
+Add `--scan-secrets` only when you intentionally want a full scan of active
+memory records:
+
+```bash
+nuzo memory doctor --scan-secrets --json
+```
+
+The scan reports counts and finding kinds, never memory content or matched
+fragments. Doctor reports unsafe permissions, ownership, symlinks, stale
+temporary/backup artifacts, and unexpected runtime files but does not repair or
+delete them. Review findings before changing files. `memory.doctor` provides
+the same content-free file-hygiene report to hosts and directs full secret scans
+to the local CLI.
+
 ## Authorization Boundary
 
 The local CLI is an administrator workflow over the selected store. Scope

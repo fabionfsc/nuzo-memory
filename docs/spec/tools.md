@@ -835,7 +835,14 @@ CLI checks:
 
 - memory path exists;
 - Git is not tracking local memory files;
+- known runtime paths have owner-only permissions and expected ownership where
+  POSIX semantics are meaningful;
+- stale temporary/backup artifacts and unexpected runtime files are reported;
 - network access is disabled.
+
+`nuzo memory doctor --scan-secrets` explicitly scans active records with the
+local high-confidence scanner. Output contains only counts and finding kinds.
+The default doctor pass and MCP tool do not perform a full-store secret scan.
 
 MCP doctor returns a read-only diagnostic summary for host agents:
 
@@ -889,6 +896,17 @@ The `config` and `authorization` blocks shown below join the public contract in
     "errors": [],
     "status": "ok"
   },
+  "file_safety": {
+    "permission_semantics": "posix",
+    "inspected_paths": 8,
+    "unsafe": [],
+    "stale_artifacts": [],
+    "unexpected_files": []
+  },
+  "secret_scan": {
+    "status": "not_performed",
+    "guidance": "Run nuzo memory doctor --scan-secrets locally for an explicit active-record scan."
+  },
   "lifecycle": {
     "recall_hook": "available",
     "automatic_host_hooks": "verify_in_host",
@@ -927,6 +945,9 @@ Runtime checks:
 - store path and parent directory are writable without creating durable memory.
 - SQLite `integrity_check`, foreign keys, schema version, memory counts, and
   FTS row consistency are healthy when a store path is available.
+- known local runtime files are inspected without following symlinks or
+  changing permissions;
+- file-safety findings expose paths and metadata, never stored memory content.
 
 Lifecycle diagnostics distinguish runtime capability from host activation.
 `automatic_host_hooks: verify_in_host` means the user must still verify that
@@ -934,8 +955,8 @@ the plugin hook is enabled and trusted in Codex or Claude Code. MCP cannot
 inspect or override that host-level decision.
 
 Handler-only integrations that do not provide runtime diagnostics return
-`not_performed` explicitly. Future checks may inspect exports for obvious
-secrets.
+`not_performed` explicitly. Diagnostics do not delete, chmod, or rewrite local
+files.
 
 ## CLI Commands
 
@@ -956,6 +977,7 @@ nuzo memory export --path ./memories.memory.export.json
 nuzo memory export --path ./memories.memory.export.md
 nuzo memory import ./memories.memory.export.json --dry-run
 nuzo memory doctor
+nuzo memory doctor --scan-secrets
 ```
 
 `project:auto` values written literally by versions before `0.2.1` cannot be

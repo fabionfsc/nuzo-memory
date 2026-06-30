@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { accessSync, constants, mkdirSync, realpathSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -17,6 +18,7 @@ import {
   SystemClock,
   NuzoMemoryError,
   inspectSQLiteMemoryStore,
+  inspectRuntimeFileSafety,
   memoryLimits,
   memoryEventTypes,
   memoryScopePattern,
@@ -136,6 +138,11 @@ export function createNuzoMcpServerRuntime(options: NuzoMcpServerOptions = {}): 
         supportedVersion: schemaVersion,
       },
       integrity: () => inspectSQLiteMemoryStore(storePath),
+      fileSafety: () => inspectRuntimeFileSafety({
+        storePath,
+        projectRoot: runtimeConfig.projectRoot,
+        home: options.home ?? options.environment?.HOME ?? process.env.HOME ?? homedir(),
+      }),
       writable: isStoreWritable(storePath),
       runtime: {
         projectScope: runtimeConfig.projectScope,

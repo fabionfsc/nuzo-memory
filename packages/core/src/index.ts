@@ -48,6 +48,14 @@ export {
   RegexSecretScanner,
 } from "./secrets.js";
 export {
+  inspectRuntimeFileSafety,
+} from "./safety-diagnostics.js";
+export type {
+  InspectRuntimeFileSafetyInput,
+  RuntimeFileSafetyFinding,
+  RuntimeFileSafetyReport,
+} from "./safety-diagnostics.js";
+export {
   clearSemanticIndex,
   createHybridSearchIndex,
   createSemanticSearch,

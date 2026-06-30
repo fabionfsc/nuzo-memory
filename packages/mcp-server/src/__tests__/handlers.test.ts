@@ -565,6 +565,51 @@ describe("memory MCP handlers", () => {
     });
   });
 
+  it("reports content-free runtime file safety diagnostics", async () => {
+    const unsafePath = "/tmp/nuzo-test/memories.sqlite";
+    const { handlers } = createTestHandlers({
+      doctorDiagnostics: {
+        fileSafety: {
+          permissionSemantics: "posix",
+          inspectedPaths: 3,
+          unsafe: [{
+            path: unsafePath,
+            type: "file",
+            reason: "permissions",
+            actualMode: 0o644,
+            expectedMode: 0o600,
+          }],
+          staleArtifacts: ["/tmp/nuzo-test/model.tmp"],
+          unexpectedFiles: ["/tmp/nuzo-test/unexpected.txt"],
+        },
+      },
+    });
+
+    const doctor = await handlers.doctor();
+
+    expect(doctor.file_safety).toEqual({
+      permission_semantics: "posix",
+      inspected_paths: 3,
+      unsafe: [expect.objectContaining({
+        path: unsafePath,
+        reason: "permissions",
+        actual_mode: 0o644,
+        expected_mode: 0o600,
+      })],
+      stale_artifacts: ["/tmp/nuzo-test/model.tmp"],
+      unexpected_files: ["/tmp/nuzo-test/unexpected.txt"],
+    });
+    expect(doctor.secret_scan).toEqual({
+      status: "not_performed",
+      guidance: "Run nuzo memory doctor --scan-secrets locally for an explicit active-record scan.",
+    });
+    expect(doctor.warnings).toEqual(expect.arrayContaining([
+      "1 runtime path permission, ownership, or symlink finding(s)",
+      "1 stale runtime artifact(s) require review",
+      "1 unexpected file(s) exist in Nuzo runtime directories",
+    ]));
+  });
+
   it("previews and applies filtered bulk forget operations", async () => {
     const { handlers } = createTestHandlers();
     const remembered = await handlers.remember({

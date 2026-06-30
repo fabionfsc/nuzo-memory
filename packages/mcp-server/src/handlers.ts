@@ -18,6 +18,7 @@ import type {
   RecallMemoryResult,
   RememberMemoryInput,
   SQLiteIntegrityReport,
+  RuntimeFileSafetyReport,
   SuggestCaptureInput,
   UpdateMemoryInput,
 } from "@nuzo/memory-core";
@@ -151,6 +152,7 @@ export interface MemoryDoctorDiagnostics {
     supportedVersion: number;
   };
   integrity?: SQLiteIntegrityReport | (() => SQLiteIntegrityReport);
+  fileSafety?: RuntimeFileSafetyReport | (() => RuntimeFileSafetyReport);
   writable?: boolean;
   runtime?: {
     projectScope: `project:${string}`;
@@ -310,6 +312,11 @@ export interface MemoryToolHandlers {
       total_memories: number | null;
     };
     integrity: MemoryDoctorIntegrityOutput;
+    file_safety: MemoryDoctorFileSafetyOutput;
+    secret_scan: {
+      status: "not_performed";
+      guidance: string;
+    };
     lifecycle: {
       recall_hook: "available";
       automatic_host_hooks: "verify_in_host";
@@ -335,6 +342,20 @@ export type MemoryDoctorIntegrityOutput = {
   orphan_fts_rows: number | null;
   errors: string[];
   status: "ok" | "failed" | "missing" | "not_performed";
+};
+
+export type MemoryDoctorFileSafetyOutput = {
+  permission_semantics: "posix" | "not_supported" | "not_performed";
+  inspected_paths: number;
+  unsafe: Array<{
+    path: string;
+    type: RuntimeFileSafetyReport["unsafe"][number]["type"];
+    reason: RuntimeFileSafetyReport["unsafe"][number]["reason"];
+    actual_mode: number | null;
+    expected_mode: number;
+  }>;
+  stale_artifacts: string[];
+  unexpected_files: string[];
 };
 
 export type MemoryToolRecord = {
@@ -778,6 +799,16 @@ export function createMemoryToolHandlers(
       if (integrity.status === "missing") {
         warnings.push("memory integrity: memory store does not exist");
       }
+      const fileSafety = resolveFileSafetyDiagnostics(options.doctorDiagnostics?.fileSafety);
+      if (fileSafety.unsafe.length > 0) {
+        warnings.push(`${fileSafety.unsafe.length} runtime path permission, ownership, or symlink finding(s)`);
+      }
+      if (fileSafety.stale_artifacts.length > 0) {
+        warnings.push(`${fileSafety.stale_artifacts.length} stale runtime artifact(s) require review`);
+      }
+      if (fileSafety.unexpected_files.length > 0) {
+        warnings.push(`${fileSafety.unexpected_files.length} unexpected file(s) exist in Nuzo runtime directories`);
+      }
 
       return {
         ok: warnings.length === 0,
@@ -807,6 +838,11 @@ export function createMemoryToolHandlers(
           total_memories: totalMemories,
         },
         integrity,
+        file_safety: fileSafety,
+        secret_scan: {
+          status: "not_performed",
+          guidance: "Run nuzo memory doctor --scan-secrets locally for an explicit active-record scan.",
+        },
         lifecycle: {
           recall_hook: "available",
           automatic_host_hooks: "verify_in_host",
@@ -817,6 +853,34 @@ export function createMemoryToolHandlers(
         warnings,
       };
     },
+  };
+}
+
+function resolveFileSafetyDiagnostics(
+  diagnostics: MemoryDoctorDiagnostics["fileSafety"],
+): MemoryDoctorFileSafetyOutput {
+  const report = typeof diagnostics === "function" ? diagnostics() : diagnostics;
+  if (report === undefined) {
+    return {
+      permission_semantics: "not_performed",
+      inspected_paths: 0,
+      unsafe: [],
+      stale_artifacts: [],
+      unexpected_files: [],
+    };
+  }
+  return {
+    permission_semantics: report.permissionSemantics,
+    inspected_paths: report.inspectedPaths,
+    unsafe: report.unsafe.map((finding) => ({
+      path: finding.path,
+      type: finding.type,
+      reason: finding.reason,
+      actual_mode: finding.actualMode,
+      expected_mode: finding.expectedMode,
+    })),
+    stale_artifacts: report.staleArtifacts,
+    unexpected_files: report.unexpectedFiles,
   };
 }
 

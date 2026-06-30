@@ -12,6 +12,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { homedir } from "node:os";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { Command, CommanderError, InvalidArgumentError } from "commander";
@@ -27,6 +28,7 @@ import {
   formatMemoryExportMarkdown,
   NuzoMemoryError,
   inspectLocalTransformersModel,
+  inspectRuntimeFileSafety,
   inspectSQLiteMemoryStore,
   inspectSemanticIndex,
   localTransformersProviderDescriptor,
@@ -65,6 +67,7 @@ import {
   type NuzoConfig,
   type NuzoRuntimeConfig,
   type SQLiteIntegrityReport,
+  type RuntimeFileSafetyReport,
 } from "@nuzo/memory-core";
 import {
   defaultSetupHosts,
@@ -152,8 +155,14 @@ interface DoctorReport {
   network: "disabled";
   gitTracking: GitTrackingReport;
   integrity: SQLiteIntegrityReport;
+  fileSafety: RuntimeFileSafetyReport;
+  secretScan: DoctorSecretScanReport;
   warnings: string[];
 }
+
+type DoctorSecretScanReport =
+  | { status: "not_requested"; scannedRecords: 0; flaggedRecords: 0; findingsByKind: Record<string, never> }
+  | { status: "completed"; scannedRecords: number; flaggedRecords: number; findingsByKind: Record<string, number> };
 
 type GitTrackingReport =
   | { status: "clean"; trackedFiles: string[] }
@@ -976,10 +985,11 @@ Examples:
   memory
     .command("doctor")
     .description("Check the local memory environment.")
+    .option("--scan-secrets", "Explicitly scan active memory records for high-confidence secret patterns.", false)
     .option("--json", "Print JSON output for scripting.", false)
-    .action(withErrorHandling(io, async (commandOptions: { json: boolean }) => {
+    .action(withErrorHandling(io, async (commandOptions: { json: boolean; scanSecrets: boolean }) => {
       const options = memory.opts<GlobalOptions>();
-      const report = await createDoctorReport(options);
+      const report = await createDoctorReport(options, commandOptions.scanSecrets);
       if (commandOptions.json) {
         io.stdout(JSON.stringify(toDoctorOutput(report), null, 2));
         return;
@@ -996,12 +1006,20 @@ Examples:
       io.stdout(`Scope source: ${report.provenance.scope}`);
       io.stdout(`Network: ${report.network}`);
       io.stdout(`Integrity: ${report.integrity.ok ? "ok" : report.storeExists ? "failed" : "missing"}`);
+      io.stdout(formatFileSafety(report.fileSafety));
+      io.stdout(formatSecretScan(report.secretScan));
       io.stdout(formatGitTracking(report.gitTracking));
       if (report.gitTracking.status === "tracked") {
         for (const trackedFile of report.gitTracking.trackedFiles) {
           io.stdout(`Tracked memory file: ${trackedFile}`);
         }
       }
+      for (const finding of report.fileSafety.unsafe) {
+        const mode = finding.actualMode === null ? "n/a" : finding.actualMode.toString(8).padStart(3, "0");
+        io.stdout(`Unsafe runtime path: ${finding.path} (${finding.reason}; mode ${mode})`);
+      }
+      for (const path of report.fileSafety.staleArtifacts) io.stdout(`Stale runtime artifact: ${path}`);
+      for (const path of report.fileSafety.unexpectedFiles) io.stdout(`Unexpected runtime file: ${path}`);
       for (const warning of report.warnings) {
         io.stdout(`Warning: ${warning}`);
       }
@@ -1226,12 +1244,23 @@ function pathExists(path: string): boolean {
   }
 }
 
-async function createDoctorReport(options: GlobalOptions): Promise<DoctorReport> {
+async function createDoctorReport(options: GlobalOptions, scanSecrets = false): Promise<DoctorReport> {
   const runtime = resolveRuntimeConfig(options);
   const storePath = runtime.storePath;
   const storeDirectory = dirname(storePath);
   const gitTracking = findTrackedMemoryFiles();
   const integrity = inspectSQLiteMemoryStore(storePath);
+  const fileSafety = inspectRuntimeFileSafety({
+    storePath,
+    projectRoot: runtime.projectRoot,
+    home: process.env.HOME ?? homedir(),
+  });
+  let secretScan: DoctorSecretScanReport = {
+    status: "not_requested",
+    scannedRecords: 0,
+    flaggedRecords: 0,
+    findingsByKind: {},
+  };
   const warnings: string[] = [];
 
   if (!pathExists(storePath)) {
@@ -1252,7 +1281,7 @@ async function createDoctorReport(options: GlobalOptions): Promise<DoctorReport>
     }
   }
   if (pathExists(storePath)) {
-    const database = new SQLiteMemoryDatabase({ path: storePath });
+    const database = new SQLiteMemoryDatabase({ path: storePath, readonly: true });
     try {
       const legacyProjectMemories = await database.list({
         scope: "project:auto",
@@ -1263,9 +1292,22 @@ async function createDoctorReport(options: GlobalOptions): Promise<DoctorReport>
           `${legacyProjectMemories.length} active legacy project:auto memory(s) require scope review`,
         );
       }
+      if (scanSecrets) secretScan = await scanActiveMemorySecrets(database);
     } finally {
       database.close();
     }
+  }
+  if (fileSafety.unsafe.length > 0) {
+    warnings.push(`${fileSafety.unsafe.length} runtime path permission, ownership, or symlink finding(s)`);
+  }
+  if (fileSafety.staleArtifacts.length > 0) {
+    warnings.push(`${fileSafety.staleArtifacts.length} stale runtime artifact(s) require review`);
+  }
+  if (fileSafety.unexpectedFiles.length > 0) {
+    warnings.push(`${fileSafety.unexpectedFiles.length} unexpected file(s) exist in Nuzo runtime directories`);
+  }
+  if (secretScan.status === "completed" && secretScan.flaggedRecords > 0) {
+    warnings.push(`${secretScan.flaggedRecords} active memory record(s) matched high-confidence secret patterns`);
   }
 
   return {
@@ -1281,8 +1323,25 @@ async function createDoctorReport(options: GlobalOptions): Promise<DoctorReport>
     network: "disabled",
     gitTracking,
     integrity,
+    fileSafety,
+    secretScan,
     warnings,
   };
+}
+
+async function scanActiveMemorySecrets(database: SQLiteMemoryDatabase): Promise<DoctorSecretScanReport> {
+  const memories = await database.list({ includeArchived: false });
+  const scanner = new RegexSecretScanner();
+  const findingsByKind: Record<string, number> = {};
+  let flaggedRecords = 0;
+  for (const memory of memories) {
+    const result = await scanner.scan(memory.content);
+    if (!result.ok) flaggedRecords += 1;
+    for (const finding of result.findings) {
+      findingsByKind[finding.kind] = (findingsByKind[finding.kind] ?? 0) + 1;
+    }
+  }
+  return { status: "completed", scannedRecords: memories.length, flaggedRecords, findingsByKind };
 }
 
 function findTrackedMemoryFiles(cwd = process.cwd()): GitTrackingReport {
@@ -1349,6 +1408,20 @@ function formatGitTracking(report: GitTrackingReport): string {
   return "Git tracking: clean";
 }
 
+function formatFileSafety(report: RuntimeFileSafetyReport): string {
+  if (report.permissionSemantics === "not_supported") return "File safety: permission semantics not supported on this platform";
+  const findings = report.unsafe.length + report.staleArtifacts.length + report.unexpectedFiles.length;
+  return findings === 0
+    ? `File safety: clean (${report.inspectedPaths} path(s) inspected)`
+    : `File safety: warning (${findings} finding(s))`;
+}
+
+function formatSecretScan(report: DoctorSecretScanReport): string {
+  return report.status === "not_requested"
+    ? "Secret scan: not requested (use --scan-secrets for an explicit active-record scan)"
+    : `Secret scan: ${report.flaggedRecords} flagged of ${report.scannedRecords} active record(s)`;
+}
+
 function formatIntegrityReport(report: SQLiteIntegrityReport): string {
   const lines = [
     `Store: ${report.path}`,
@@ -1407,6 +1480,25 @@ function toDoctorOutput(report: DoctorReport) {
     },
     network: report.network,
     integrity: toIntegrityOutput(report.integrity),
+    file_safety: {
+      permission_semantics: report.fileSafety.permissionSemantics,
+      inspected_paths: report.fileSafety.inspectedPaths,
+      unsafe: report.fileSafety.unsafe.map((finding) => ({
+        path: finding.path,
+        type: finding.type,
+        reason: finding.reason,
+        actual_mode: finding.actualMode,
+        expected_mode: finding.expectedMode,
+      })),
+      stale_artifacts: report.fileSafety.staleArtifacts,
+      unexpected_files: report.fileSafety.unexpectedFiles,
+    },
+    secret_scan: {
+      status: report.secretScan.status,
+      scanned_records: report.secretScan.scannedRecords,
+      flagged_records: report.secretScan.flaggedRecords,
+      findings_by_kind: report.secretScan.findingsByKind,
+    },
     git_tracking: report.gitTracking,
     warnings: report.warnings,
     status: report.warnings.length === 0 ? "ok" : "warning",
