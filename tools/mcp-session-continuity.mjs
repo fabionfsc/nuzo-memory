@@ -344,6 +344,48 @@ export async function assertMcpSessionContinuity({
       fail(`${label} confirmed duplicate create was not skipped: ${JSON.stringify(duplicateCreate)}`);
     }
 
+    const forgotten = parseToolJson(await client.callTool({
+      name: "memory.forget",
+      arguments: {
+        id: confirmed.memory.id,
+        expected_revision: updated.memory.revision,
+        mode: "archive",
+        reason: "Validates the reversible host-facing forget flow.",
+      },
+    }));
+    if (
+      forgotten.id !== confirmed.memory.id ||
+      forgotten.forgotten !== true ||
+      forgotten.mode !== "archive"
+    ) {
+      fail(`${label} host-facing forget did not archive the memory: ${JSON.stringify(forgotten)}`);
+    }
+
+    const afterForget = parseToolJson(await client.callTool({
+      name: "memory.recall_hook",
+      arguments: {
+        task_context: "confirmed capture drafts",
+        project_scope: testScope,
+        limit: 5,
+      },
+    }));
+    if (afterForget.results.some((result) => result.id === confirmed.memory.id)) {
+      fail(`${label} archived memory remained visible to recall: ${JSON.stringify(afterForget)}`);
+    }
+
+    const forgottenHistory = parseToolJson(await client.callTool({
+      name: "memory.history",
+      arguments: { id: confirmed.memory.id },
+    }));
+    const forgottenEventTypes = forgottenHistory.events?.map((event) => event.event_type) ?? [];
+    if (JSON.stringify(forgottenEventTypes) !== JSON.stringify([
+      "memory.created",
+      "memory.updated",
+      "memory.archived",
+    ])) {
+      fail(`${label} forget audit history was incomplete: ${JSON.stringify(forgottenHistory)}`);
+    }
+
     const doctor = parseToolJson(await client.callTool({
       name: "memory.doctor",
       arguments: {},

@@ -342,6 +342,20 @@ The user prefers short status updates while work is running.
 Explicit intent lowers ambiguity, but it does not bypass core policy checks,
 secret scanning, duplicate detection, or the visible draft step.
 
+### Explicit Update And Forget Flow
+
+For an update, Codex shows the existing memory and proposed replacement, then
+passes the displayed memory ID and revision to `memory.confirm_capture` only
+after confirmation. A revision conflict requires a fresh read and a new user
+decision; Codex must not retry silently.
+
+For "remove that from memory", Codex first identifies and shows the intended
+memory. Archive is the reversible default. Permanent deletion is a separate
+destructive choice and requires explicit confirmation. The call to
+`memory.forget` includes the displayed `expected_revision`; Codex reports
+success only after the tool succeeds. Bulk requests use a dry-run
+`memory.forget_many` preview before any confirmed apply.
+
 ## Validation
 
 Validate the plugin manifest with:

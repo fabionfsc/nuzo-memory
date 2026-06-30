@@ -1,37 +1,122 @@
 ---
 name: nuzo-memory
-description: Use Nuzo MCP tools for local, auditable, portable memory in Claude Code.
+description: Use Nuzo MCP tools for local, auditable, portable memory in Claude Code when durable project context, preferences, decisions, instructions, or workflow notes should persist across sessions.
 ---
 
 # Nuzo Memory
 
-Use Nuzo when durable project context, user preferences, decisions, or workflow notes would help future Claude Code sessions.
+Use Nuzo as user-controlled memory. Treat Claude Code native memory as a
+separate host feature; do not claim migration or access without an official API
+or export.
 
-## Rules
+## Workflow
 
-- Use plugin lifecycle context for bounded read-only session and prompt recall.
-- If lifecycle context is unavailable, use `memory.recall_hook` before work
-  that may depend on prior project context.
-- Save only stable information that should persist across sessions.
-- For inferred memories, call `memory.suggest_capture` first, show the
-  validated draft, duplicate result, and any relationship evidence, then call
-  `memory.confirm_capture` only after the user chooses create, update, keep
-  separate, clarify, or reject.
-- For confirmed updates, pass the displayed memory ID and displayed revision as
-  `target_memory_id` and `expected_revision`. If a revision conflict occurs,
-  re-read the memory and ask again instead of retrying silently.
+### Task-Start Recall
+
+Plugin lifecycle hooks provide bounded read-only recall at session start and
+alongside user prompts. If hook context is unavailable, call
+`memory.recall_hook` before substantial work whenever prior project context,
+user preferences, decisions, or recurring workflow notes may apply.
+
+Recall is read-only. Do not create capture suggestions during task-start recall.
+Use recalled memories as context, but keep them separate from Claude Code native
+memory.
+
+### Explicit Save Requests
+
+Treat an explicit save request as a request to start the confirmed Nuzo capture
+flow. Do not treat it as permission for an invisible write.
+
+Trigger this flow when the user asks to persist context in Nuzo, for example:
+
+- "save this in Nuzo memory";
+- "remember this for this project";
+- "remember that I prefer concise status updates";
+- "store this decision in Nuzo";
+- "keep this for future sessions";
+- "save this preference in Nuzo";
+
+For every explicit save request:
+
+1. Rewrite the requested content into a short affirmative memory without adding
+   facts the user did not state.
+2. Choose the narrowest useful scope.
+3. Call `memory.suggest_capture` with content, kind, scope, tags, source,
+   confidence, and reason.
+4. Show the validated draft, duplicate result, and any relationship evidence to
+   the user before asking for a decision.
+5. Offer explicit decisions: create, update, keep separate, clarify, or reject.
+6. If the user confirms or edits a new memory, call `memory.confirm_capture`
+   with `decision: "create"` and `confirm: true`.
+7. If the user confirms an update, call `memory.confirm_capture` with
+   `decision: "update"`, the displayed `target_memory_id`, and the displayed
+   `expected_revision`.
+8. If the user wants a related memory saved separately, call
+   `memory.confirm_capture` with `decision: "keep_separate"` and
+   `confirm: true`.
+9. If the user rejects or asks to clarify, call `memory.confirm_capture` with
+   `decision: "reject"` or `decision: "clarify"` only when a structured
+   no-write result is useful. Otherwise, write nothing.
+
+Suggest a small set of lowercase topical tags from subjects the user actually
+stated. Add `autoload` only when the memory should be loaded at every session
+start in its scope; topic-specific memories should rely on contextual recall.
+
+### Inferred Capture
+
+For inferred memories, call `memory.suggest_capture` only when the statement is
+stable, useful in future sessions, specific, safe, and not obviously transient.
+
+Good inferred candidates include durable preferences, project decisions,
+recurring workflow instructions, stable project facts, and cross-session agent
+workflow notes. Do not infer memories from one-off task state, command output,
+logs, speculation, private file contents, or secrets.
+
+### Updates And Audit
+
+Keep project decisions in the active project scope and cross-project preferences
+in `user:default`.
+
+If a new statement changes an existing memory, show the existing memory, its
+revision, and bounded relationship evidence before asking whether to update it
+instead of creating a duplicate. Use `memory.confirm_capture` with the displayed
+memory ID and expected revision only after the user confirms or edits the update
+draft. If the update reports a revision conflict, re-read the memory and ask
+again; do not retry silently.
+
+Use `memory.history` when the user needs an audit trail.
+
+### Explicit Forget Requests
+
+When the user asks to remove or forget a memory:
+
+1. Use `memory.list`, `memory.recall`, or `memory.history` to identify the
+   intended memory without guessing.
+2. Show the memory ID, current revision, scope, and a concise content preview.
+3. Offer archive as the reversible default. Treat permanent deletion as a
+   separate destructive choice that requires explicit confirmation.
+4. Call `memory.forget` with the displayed ID and `expected_revision`. Use
+   `mode: "archive"` for the reversible path. Use `mode: "delete"` and
+   `confirm: true` only after the user explicitly requests permanent deletion.
+5. If the operation reports a revision conflict, re-read the memory and ask
+   again; do not retry silently.
+6. Report what changed. Do not claim the memory was removed until the tool
+   succeeds.
+
+For multiple memories, preview `memory.forget_many` first, show the bounded
+matched IDs/count, and apply only the operation the user confirms.
+
+## Safety
+
+- Save only stable information useful in future sessions.
+- Never store secrets, tokens, credentials, cookies, private keys, raw private
+  files, or transient command logs.
+- Do not silently save inferred memories.
 - Rejected, blocked, duplicate, and unclear drafts must remain write-free.
-- Ask before storing sensitive personal context.
-- Never store secrets, tokens, credentials, cookies, private keys, or private runtime logs.
-- Treat Nuzo import/export as the portability layer between hosts.
-- Do not claim access to Claude Code native private memory unless Claude Code exposes it through an official API or export.
-- Suggest a small set of lowercase topical tags from subjects the user stated.
-  Add `autoload` only for memories that should apply at every session start in
-  their scope; topic-specific memories should rely on contextual recall.
+- Do not store raw conversation excerpts when a concise memory would be enough.
+- Keep Nuzo import/export as the portability format across hosts.
 
 ## Tools
-
-Prefer the Nuzo MCP tools:
 
 - `memory.remember`
 - `memory.recall`

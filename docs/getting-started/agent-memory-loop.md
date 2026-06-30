@@ -94,15 +94,15 @@ Codex and Claude Code plugins also bundle automatic read-only lifecycle hooks:
 
 Neither recall path creates capture suggestions or writes memory.
 
-## Direct Codex Flow
+## Direct Host Flow
 
-When a Codex user says:
+When a Codex or Claude Code user says:
 
 ```text
 Save this in Nuzo memory: I prefer concise status updates during long-running work.
 ```
 
-The Nuzo Codex skill should guide the agent through this sequence:
+The Nuzo host skill should guide the agent through this sequence:
 
 ```text
 memory.suggest_capture
@@ -138,6 +138,10 @@ If another process changed the memory first, Nuzo returns
 `MEMORY_REVISION_CONFLICT`. Re-read the memory and ask the user to confirm the
 new update. Do not retry silently.
 
+Inside Codex or Claude Code, the same rule applies to `memory.confirm_capture`:
+the host sends the displayed memory ID and revision only after the user approves
+the replacement.
+
 ## Review And Audit
 
 List active memories:
@@ -157,6 +161,11 @@ Archive a memory:
 ```bash
 nuzo memory forget mem_01HZY --expected-revision 2 --archive
 ```
+
+In a host chat, "remove that from memory" should first show the selected memory
+and offer archive as the reversible default. Permanent deletion is a separate
+choice requiring explicit confirmation. The host calls `memory.forget` with the
+revision the user reviewed and reports success only after the tool succeeds.
 
 Export for review or portability:
 
