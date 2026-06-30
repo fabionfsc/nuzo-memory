@@ -45,6 +45,9 @@ const artifacts = [
           command: "npm",
           args: ["exec", "--yes", `--package=${packageSpec}`, "--", "nuzo-mcp-server"],
           cwd: "${CLAUDE_PLUGIN_ROOT}",
+          env: {
+            NUZO_PROJECT_ROOT: "${CLAUDE_PROJECT_DIR}",
+          },
         },
       },
     },

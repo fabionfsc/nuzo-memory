@@ -85,10 +85,19 @@ but does not authorize access.
 The local CLI and an unrestricted core service are administrator workflows over
 the selected SQLite store. They may enumerate every scope in that store.
 
-A restricted core or MCP session uses an explicit scope allowlist enforced by
-core policy. Cross-scope reads, writes, exports, updates, and destructive
-operations are rejected. `project:auto` only derives a stable project scope; it
-does not grant access by itself.
+A restricted core or MCP session uses a scope allowlist enforced by core
+policy. Beginning with `0.9.0`, published MCP and lifecycle-hook entry points default to the active
+project scope plus `user:default`; the local CLI remains an administrator
+surface. Cross-scope reads, writes, exports, updates, diagnostics, and
+destructive operations are rejected. `project:auto` only derives a stable
+project scope; it does not grant access by itself.
+
+Only trusted user config, explicit runtime options, or the process environment
+can relax host authorization. Repository-controlled `.nuzo/config.json` may
+select its local store and project scope but cannot contain authorization.
+Invalid allowlists and explicit scope conflicts fail closed. Diagnostics report
+the effective mode and non-sensitive provenance without exposing config values
+or memory content.
 
 Use restricted sessions for repository-controlled agents. Use separate stores
 and operating-system controls when hosts, projects, users, machines, or trust

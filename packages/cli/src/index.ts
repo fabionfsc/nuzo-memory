@@ -75,6 +75,7 @@ import {
   supportedHostBootstrapHosts,
   type HostBootstrapHost,
 } from "./host-bootstrap.js";
+import { formatHostUpdateResult, runHostUpdate } from "./host-update.js";
 
 export interface CliIO {
   stdout(message: string): void;
@@ -145,6 +146,10 @@ interface DoctorReport {
   storeDirectory: string;
   storeDirectoryExists: boolean;
   scope: MemoryScope;
+  projectScope: `project:${string}`;
+  authorizationMode: "administrator";
+  provenance: NuzoRuntimeConfig["provenance"];
+  adjustments: NuzoRuntimeConfig["adjustments"];
   network: "disabled";
   gitTracking: GitTrackingReport;
   integrity: SQLiteIntegrityReport;
@@ -210,6 +215,26 @@ Examples:
       io.stdout(formatHostBootstrapResult(result, commandOptions.json));
     }));
 
+  program
+    .command("update")
+    .description("Update every installed Nuzo host plugin without repeating setup.")
+    .option("--dry-run", "Print the managed update plan without changing host configuration.", false)
+    .option("--yes", "Confirm the managed update non-interactively.", false)
+    .option("--json", "Print JSON output for scripting.", false)
+    .addHelpText("after", `
+
+Examples:
+  # Preview updates for installed Codex and Claude Code plugins
+  $ nuzo update --dry-run
+
+  # Update every installed Nuzo host plugin
+  $ nuzo update --yes
+`)
+    .action(withErrorHandling(io, async (commandOptions: HostInstallCommandOptions) => {
+      const result = runHostUpdate(supportedHostBootstrapHosts(), commandOptions);
+      io.stdout(formatHostUpdateResult(result, commandOptions.json));
+    }));
+
   const host = program.command("host").description("Configure Nuzo host integrations.");
 
   host
@@ -258,6 +283,37 @@ Examples:
       io.stdout(formatHostBootstrapResult(result, commandOptions.json));
     }));
 
+  host
+    .command("update")
+    .description("Update an already-installed Nuzo plugin in one or more hosts.")
+    .argument("[host]", "Host to update: codex, claude-code, or all.", parseHostInstallTarget)
+    .option("--all", "Update every supported installed host plugin.", false)
+    .option("--dry-run", "Print the managed update plan without changing host configuration.", false)
+    .option("--yes", "Confirm the managed update non-interactively.", false)
+    .option("--json", "Print JSON output for scripting.", false)
+    .action(withErrorHandling(io, async (
+      target: HostBootstrapHost | "all" | undefined,
+      commandOptions: HostInstallCommandOptions,
+    ) => {
+      if (commandOptions.all && target !== undefined && target !== "all") {
+        throw new NuzoMemoryError(
+          "HOST_UPDATE_TARGET_CONFLICT",
+          "Use either a host target or --all, not both.",
+        );
+      }
+      if (!commandOptions.all && target === undefined) {
+        throw new NuzoMemoryError(
+          "HOST_UPDATE_TARGET_REQUIRED",
+          "Host update requires codex, claude-code, all, or --all.",
+        );
+      }
+      const hosts: HostBootstrapHost[] = commandOptions.all || target === "all"
+        ? supportedHostBootstrapHosts()
+        : [target as HostBootstrapHost];
+      const result = runHostUpdate(hosts, commandOptions);
+      io.stdout(formatHostUpdateResult(result, commandOptions.json));
+    }));
+
   const memory = program.command("memory").description("Manage local Nuzo stores.");
 
   memory
@@ -280,6 +336,7 @@ Examples:
         init.configPath,
         init.configStorePath,
         init.scope,
+        init.project,
       );
       if (init.projectRoot !== null) {
         ensureProjectGitIgnore(init.projectRoot);
@@ -1002,6 +1059,11 @@ Examples:
       io.stdout(`Store directory: ${report.storeDirectory}`);
       io.stdout(`Store directory exists: ${report.storeDirectoryExists ? "yes" : "no"}`);
       io.stdout(`Scope: ${report.scope}`);
+      io.stdout(`Project scope: ${report.projectScope}`);
+      io.stdout("Authorization: administrator (local CLI)");
+      io.stdout(`Config source: ${report.provenance.config}`);
+      io.stdout(`Store source: ${report.provenance.store}`);
+      io.stdout(`Scope source: ${report.provenance.scope}`);
       io.stdout(`Network: ${report.network}`);
       io.stdout(`Integrity: ${report.integrity.ok ? "ok" : report.storeExists ? "failed" : "missing"}`);
       io.stdout(formatGitTracking(report.gitTracking));
@@ -1098,7 +1160,10 @@ function resolveScope(options: GlobalOptions): MemoryScope {
 }
 
 function resolveRuntimeConfig(options: GlobalOptions): NuzoRuntimeConfig {
-  return resolveNuzoRuntimeConfig(options);
+  return resolveNuzoRuntimeConfig({
+    ...options,
+    authorizationMode: "administrator",
+  });
 }
 
 function resolveInitContext(
@@ -1132,7 +1197,7 @@ function resolveInitContext(
     };
   }
 
-  const runtimeConfig = resolveNuzoRuntimeConfig(options);
+  const runtimeConfig = resolveRuntimeConfig(options);
   const defaultStorePath = getDefaultStorePath();
   const storePath = runtimeConfig.storePath;
   const configRoot = storePath === defaultStorePath
@@ -1164,6 +1229,7 @@ function writeConfigIfMissing(
   configPath: string,
   configStorePath: string,
   scope: MemoryScope,
+  project: boolean,
 ): void {
   if (pathExists(configPath)) {
     return;
@@ -1187,6 +1253,18 @@ function writeConfigIfMissing(
         allow_network: false,
         record_recall_events: false,
       },
+      ...(project
+        ? {}
+        : {
+            authorization: {
+              mode: "restricted",
+              allowed_scopes: [
+                "project:auto",
+                scope,
+                ...(scope === "user:default" ? [] : ["user:default"]),
+              ],
+            },
+          }),
     }, null, 2)}\n`,
   );
 }
@@ -1219,7 +1297,8 @@ function pathExists(path: string): boolean {
 }
 
 async function createDoctorReport(options: GlobalOptions): Promise<DoctorReport> {
-  const storePath = resolveStorePath(options);
+  const runtime = resolveRuntimeConfig(options);
+  const storePath = runtime.storePath;
   const storeDirectory = dirname(storePath);
   const gitTracking = findTrackedMemoryFiles();
   const integrity = inspectSQLiteMemoryStore(storePath);
@@ -1264,7 +1343,11 @@ async function createDoctorReport(options: GlobalOptions): Promise<DoctorReport>
     storeExists: pathExists(storePath),
     storeDirectory,
     storeDirectoryExists: pathExists(storeDirectory),
-    scope: resolveScope(options),
+    scope: runtime.scope,
+    projectScope: runtime.projectScope,
+    authorizationMode: "administrator",
+    provenance: runtime.provenance,
+    adjustments: runtime.adjustments,
     network: "disabled",
     gitTracking,
     integrity,
@@ -1379,6 +1462,19 @@ function toDoctorOutput(report: DoctorReport) {
     store_directory: report.storeDirectory,
     store_directory_exists: report.storeDirectoryExists,
     scope: report.scope,
+    project_scope: report.projectScope,
+    authorization: {
+      mode: report.authorizationMode,
+      source: "local_cli",
+      allowed_scopes: null,
+    },
+    config: {
+      project_root_source: report.provenance.projectRoot,
+      config_source: report.provenance.config,
+      store_source: report.provenance.store,
+      scope_source: report.provenance.scope,
+      adjustments: report.adjustments,
+    },
     network: report.network,
     integrity: toIntegrityOutput(report.integrity),
     git_tracking: report.gitTracking,

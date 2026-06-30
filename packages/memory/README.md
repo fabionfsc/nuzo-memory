@@ -4,6 +4,31 @@ The official Nuzo package for local, inspectable agent memory. It includes the
 `nuzo` CLI, the MCP server, and the read-only lifecycle hook runner used by
 Codex and Claude Code plugins.
 
+## Upcoming In 0.9.0: One-Time Setup
+
+This workflow is **not available in the current 0.8.1 release**. Starting with
+`0.9.0`, install the package once and let Nuzo configure the hosts you approve:
+
+```bash
+npm install --global @nuzo/memory@0.9.0
+nuzo setup
+```
+
+For automation, configure Codex with `nuzo host install codex --yes`, Claude
+Code with `nuzo host install claude-code --yes`, or both with
+`nuzo host install --all --yes`.
+
+Future package upgrades do not repeat setup:
+
+```bash
+npm install --global @nuzo/memory@latest
+nuzo update --yes
+```
+
+The update command changes only Nuzo plugins that are already installed and
+preserves the existing Claude Code install scope. npm install does not silently
+change Codex or Claude Code configuration.
+
 ## Codex
 
 Normal Codex users should install the Nuzo plugin, which obtains its matching
@@ -83,6 +108,8 @@ and hook runner share these optional overrides:
 | --- | --- |
 | `NUZO_MEMORY_STORE` | Select the SQLite store path. |
 | `NUZO_MEMORY_SCOPE` | Select the default scope; `project:auto` resolves from the active project path. |
+| `NUZO_PROJECT_ROOT` | Select the active project root; otherwise Nuzo discovers the nearest ancestor project config. |
+| `NUZO_AUTHORIZATION_MODE` | Select `restricted` or `administrator` host authorization. |
 | `NUZO_AUTHORIZED_SCOPES` | Restrict MCP/hook access to a comma-separated scope allowlist. |
 
 Nuzo does not enable telemetry or remote embeddings by default. Suggested

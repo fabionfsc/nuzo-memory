@@ -19,6 +19,12 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
   `nuzo setup`, `nuzo host install codex`, `nuzo host install claude-code`, and
   `nuzo host install --all`, with dry-run, JSON, and non-interactive
   confirmation support.
+- `nuzo update` and targeted `nuzo host update` commands now update only
+  already-installed Codex and Claude Code plugins, preserve the Claude Code
+  install scope, and avoid repeating first-time setup.
+- The shared runtime resolver now discovers ancestor project configuration,
+  resolves canonical project roots, enforces trusted host authorization, and
+  reports non-sensitive configuration provenance.
 - Repository marketplaces now expose the tracked Nuzo plugin as
   `nuzo@nuzo-memory` for Codex and Claude Code without a source checkout or a
   redundant global runtime install.
@@ -36,6 +42,12 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
   integrity failures as warnings.
 - Host setup output now explains why each command runs and shows explicit
   non-interactive examples for Codex, Claude Code, and both hosts.
+- Published MCP and lifecycle-hook paths now default to the active project and
+  user scopes in restricted mode, while the local CLI remains an explicit
+  administrator workflow.
+- Public GitHub, npm, getting-started, CLI, and host documentation now define
+  setup as a one-time operation and managed update as the routine upgrade path
+  planned for `0.9.0`.
 - Tracked host plugin sources now resolve the exact matching
   `@nuzo/memory` runtime and remain version-aligned through release tooling.
 - README, homepage, Getting Started, clean install, CLI, and host plugin pages

@@ -9,7 +9,10 @@
         "--",
         "nuzo-mcp-server"
       ],
-      "cwd": "${CLAUDE_PLUGIN_ROOT}"
+      "cwd": "${CLAUDE_PLUGIN_ROOT}",
+      "env": {
+        "NUZO_PROJECT_ROOT": "${CLAUDE_PROJECT_DIR}"
+      }
     }
   }
 }

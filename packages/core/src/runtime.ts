@@ -1,11 +1,18 @@
 import { createHash, randomUUID } from "node:crypto";
-import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { NuzoMemoryError } from "./errors.js";
 import type { Clock, IdGenerator } from "./ports.js";
 import { memoryLimits, memoryScopePattern } from "./policy.js";
 import type { MemoryScope } from "./types.js";
+
+export type NuzoAuthorizationMode = "administrator" | "restricted";
+
+export interface NuzoAuthorizationConfig {
+  mode: NuzoAuthorizationMode;
+  allowed_scopes?: readonly MemoryScope[];
+}
 
 export interface NuzoConfig {
   version: 1;
@@ -22,19 +29,37 @@ export interface NuzoConfig {
     allow_network: false;
     record_recall_events: boolean;
   };
+  authorization?: NuzoAuthorizationConfig;
 }
 
 export interface NuzoRuntimeConfigOptions {
   store?: string;
   scope?: MemoryScope;
   cwd?: string;
+  projectRoot?: string;
   home?: string;
   environment?: Record<string, string | undefined>;
+  authorizationMode?: NuzoAuthorizationMode;
+  authorizedScopes?: readonly MemoryScope[];
+  defaultAuthorizationMode?: NuzoAuthorizationMode;
 }
+
+export interface NuzoRuntimeConfigProvenance {
+  projectRoot: "option" | "environment" | "discovered" | "cwd";
+  config: "project" | "user" | "defaults";
+  store: "option" | "environment" | "project" | "user" | "default";
+  scope: "option" | "environment" | "project" | "user" | "default" | "authorization";
+  authorization: "option" | "environment" | "user" | "default";
+}
+
+export type NuzoRuntimeAdjustment = "include_global_disabled_by_authorization";
 
 export interface NuzoRuntimeConfig {
   storePath: string;
   scope: MemoryScope;
+  projectRoot: string;
+  projectScope: `project:${string}`;
+  authorizationMode: NuzoAuthorizationMode;
   authorizedScopes?: readonly MemoryScope[];
   recall: {
     limit: number;
@@ -43,7 +68,22 @@ export interface NuzoRuntimeConfig {
   privacy: {
     recordRecallEvents: boolean;
   };
+  provenance: NuzoRuntimeConfigProvenance;
+  adjustments: readonly NuzoRuntimeAdjustment[];
 }
+
+interface ProjectContext {
+  root: string;
+  source: NuzoRuntimeConfigProvenance["projectRoot"];
+}
+
+interface AuthorizationResolution {
+  mode: NuzoAuthorizationMode;
+  allowedScopes?: readonly MemoryScope[];
+  source: NuzoRuntimeConfigProvenance["authorization"];
+}
+
+const defaultRestrictedScopes: readonly MemoryScope[] = ["project:auto", "user:default"];
 
 export function getDefaultStorePath(home: string = homedir()): string {
   return resolve(home, ".nuzo", "memory", "memories.sqlite");
@@ -51,37 +91,85 @@ export function getDefaultStorePath(home: string = homedir()): string {
 
 export function resolveNuzoRuntimeConfig(options: NuzoRuntimeConfigOptions = {}): NuzoRuntimeConfig {
   const home = options.home ?? homedir();
-  const cwd = options.cwd ?? process.cwd();
   const environment = options.environment ?? process.env;
-  const projectConfig = readProjectConfig(cwd);
-  const activeConfig = projectConfig ?? readUserConfig(home);
-  const storeOption = options.store ?? environment.NUZO_MEMORY_STORE;
-  const scopeOption = options.scope ?? readEnvironmentScope(environment);
-  const authorizedScopes = readEnvironmentAuthorizedScopes(environment);
+  const cwd = canonicalDirectory(options.cwd ?? process.cwd(), "working directory");
+  const project = resolveProjectContext(options, environment, cwd);
+  const projectConfig = readProjectConfig(project.root);
+  const userConfig = projectConfig === null ? readUserConfig(home) : null;
+  const activeConfig = projectConfig ?? userConfig;
+  const configSource: NuzoRuntimeConfigProvenance["config"] = projectConfig !== null
+    ? "project"
+    : userConfig !== null
+      ? "user"
+      : "defaults";
+
+  const storeResolution = resolveStorePath(options.store, environment, activeConfig, configSource, home);
+  const scopeResolution = resolveScope(options.scope, environment, activeConfig, configSource);
+  const userAuthorization = options.defaultAuthorizationMode === undefined
+    ? undefined
+    : projectConfig?.authorization ?? userConfig?.authorization ?? readUserAuthorization(home);
+  const authorization = resolveAuthorization(options, environment, userAuthorization, project.root);
+  let scope = resolveAutomaticScope(scopeResolution.scope, project.root);
+  let scopeSource = scopeResolution.source;
+
+  if (
+    authorization.mode === "restricted" &&
+    !authorization.allowedScopes?.includes(scope)
+  ) {
+    if (scopeSource !== "default") {
+      throw new NuzoMemoryError(
+        "MEMORY_CONFIG_INVALID",
+        "The effective default scope is not included in the restricted authorization allowlist.",
+        { scope },
+      );
+    }
+    scope = authorization.allowedScopes?.[0] as MemoryScope;
+    scopeSource = "authorization";
+  }
+
+  const recallDefaults = activeConfig?.recall ?? { limit: 8, include_global: false };
+  const adjustments: NuzoRuntimeAdjustment[] = [];
+  let includeGlobal = recallDefaults.include_global;
+  if (
+    authorization.mode === "restricted" &&
+    includeGlobal &&
+    !authorization.allowedScopes?.includes("user:default")
+  ) {
+    includeGlobal = false;
+    adjustments.push("include_global_disabled_by_authorization");
+  }
+
   const config: NuzoRuntimeConfig = {
-    storePath: storeOption !== undefined
-      ? resolve(storeOption)
-      : activeConfig?.storage.path ?? getDefaultStorePath(home),
-    scope: resolveAutomaticScope(scopeOption ?? activeConfig?.default_scope ?? "user:default", cwd),
+    storePath: storeResolution.path,
+    scope,
+    projectRoot: project.root,
+    projectScope: projectScopeFromPath(project.root),
+    authorizationMode: authorization.mode,
     recall: {
-      limit: activeConfig?.recall.limit ?? 8,
-      includeGlobal: activeConfig?.recall.include_global ?? false,
+      limit: recallDefaults.limit,
+      includeGlobal,
     },
     privacy: {
       recordRecallEvents: activeConfig?.privacy.record_recall_events ?? false,
     },
+    provenance: {
+      projectRoot: project.source,
+      config: configSource,
+      store: storeResolution.source,
+      scope: scopeSource,
+      authorization: authorization.source,
+    },
+    adjustments,
   };
-  if (authorizedScopes !== undefined) {
-    config.authorizedScopes = [
-      ...new Set(authorizedScopes.map((scope) => resolveAutomaticScope(scope, cwd))),
-    ];
+  if (authorization.allowedScopes !== undefined) {
+    config.authorizedScopes = authorization.allowedScopes;
   }
   return config;
 }
 
-export function resolveAutomaticScope(scope: MemoryScope, cwd: string = process.cwd()): MemoryScope {
+export function resolveAutomaticScope(scope: MemoryScope, projectRoot: string = process.cwd()): MemoryScope {
   return scope === "project:auto"
-    ? projectScopeFromPath(realpathSync(cwd))
+    ? projectScopeFromPath(projectRoot)
     : scope;
 }
 
@@ -97,26 +185,225 @@ export function projectScopeFromPath(path: string): `project:${string}` {
   return `project:${digest}`;
 }
 
-function readEnvironmentScope(environment: Record<string, string | undefined>): MemoryScope | undefined {
-  const scope = environment.NUZO_MEMORY_SCOPE;
-  if (scope === undefined || scope.trim().length === 0) {
+function resolveProjectContext(
+  options: NuzoRuntimeConfigOptions,
+  environment: Record<string, string | undefined>,
+  cwd: string,
+): ProjectContext {
+  if (options.projectRoot !== undefined) {
+    return {
+      root: canonicalDirectory(options.projectRoot, "project root"),
+      source: "option",
+    };
+  }
+  if (environment.NUZO_PROJECT_ROOT !== undefined) {
+    if (environment.NUZO_PROJECT_ROOT.trim().length === 0) {
+      throw new NuzoMemoryError(
+        "MEMORY_CONFIG_INVALID",
+        "NUZO_PROJECT_ROOT must not be empty.",
+      );
+    }
+    return {
+      root: canonicalDirectory(environment.NUZO_PROJECT_ROOT, "NUZO_PROJECT_ROOT"),
+      source: "environment",
+    };
+  }
+
+  const discovered = discoverProjectRoot(cwd);
+  return discovered === null
+    ? { root: cwd, source: "cwd" }
+    : { root: discovered, source: "discovered" };
+}
+
+function discoverProjectRoot(cwd: string): string | null {
+  let candidate = cwd;
+  while (true) {
+    if (existsSync(join(candidate, ".nuzo", "config.json"))) {
+      return candidate;
+    }
+    const parent = dirname(candidate);
+    if (parent === candidate) {
+      return null;
+    }
+    candidate = parent;
+  }
+}
+
+function canonicalDirectory(path: string, source: string): string {
+  try {
+    const canonical = realpathSync(path);
+    if (!statSync(canonical).isDirectory()) {
+      throw new Error("not a directory");
+    }
+    return canonical;
+  } catch {
+    throw new NuzoMemoryError(
+      "MEMORY_CONFIG_INVALID",
+      `${source} must resolve to an existing directory.`,
+      { path },
+    );
+  }
+}
+
+function resolveStorePath(
+  option: string | undefined,
+  environment: Record<string, string | undefined>,
+  activeConfig: NuzoConfig | null,
+  configSource: NuzoRuntimeConfigProvenance["config"],
+  home: string,
+): { path: string; source: NuzoRuntimeConfigProvenance["store"] } {
+  if (option !== undefined) {
+    return { path: resolveNonEmptyPath(option, "store option"), source: "option" };
+  }
+  if (environment.NUZO_MEMORY_STORE !== undefined) {
+    return {
+      path: resolveNonEmptyPath(environment.NUZO_MEMORY_STORE, "NUZO_MEMORY_STORE"),
+      source: "environment",
+    };
+  }
+  if (activeConfig !== null) {
+    return {
+      path: activeConfig.storage.path,
+      source: configSource as "project" | "user",
+    };
+  }
+  return { path: getDefaultStorePath(home), source: "default" };
+}
+
+function resolveNonEmptyPath(path: string, source: string): string {
+  if (path.trim().length === 0) {
+    throw new NuzoMemoryError("MEMORY_CONFIG_INVALID", `${source} must not be empty.`);
+  }
+  return resolve(path);
+}
+
+function resolveScope(
+  option: MemoryScope | undefined,
+  environment: Record<string, string | undefined>,
+  activeConfig: NuzoConfig | null,
+  configSource: NuzoRuntimeConfigProvenance["config"],
+): { scope: MemoryScope; source: NuzoRuntimeConfigProvenance["scope"] } {
+  if (option !== undefined) {
+    assertScope(option, "scope option");
+    return { scope: option, source: "option" };
+  }
+  if (environment.NUZO_MEMORY_SCOPE !== undefined) {
+    const scope = environment.NUZO_MEMORY_SCOPE;
+    assertScope(scope, "NUZO_MEMORY_SCOPE");
+    return { scope: scope as MemoryScope, source: "environment" };
+  }
+  if (activeConfig !== null) {
+    return {
+      scope: activeConfig.default_scope,
+      source: configSource as "project" | "user",
+    };
+  }
+  return { scope: "user:default", source: "default" };
+}
+
+function resolveAuthorization(
+  options: NuzoRuntimeConfigOptions,
+  environment: Record<string, string | undefined>,
+  userAuthorization: NuzoAuthorizationConfig | undefined,
+  projectRoot: string,
+): AuthorizationResolution {
+  if (options.authorizationMode !== undefined || options.authorizedScopes !== undefined) {
+    const mode = options.authorizationMode ?? "restricted";
+    return createAuthorizationResolution(mode, options.authorizedScopes, "option", projectRoot);
+  }
+
+  const environmentMode = readEnvironmentAuthorizationMode(environment);
+  const environmentScopes = readEnvironmentAuthorizedScopes(environment);
+  if (environmentMode !== undefined || environmentScopes !== undefined) {
+    return createAuthorizationResolution(
+      environmentMode ?? "restricted",
+      environmentScopes,
+      "environment",
+      projectRoot,
+    );
+  }
+
+  if (userAuthorization !== undefined) {
+    return createAuthorizationResolution(
+      userAuthorization.mode,
+      userAuthorization.allowed_scopes,
+      "user",
+      projectRoot,
+    );
+  }
+
+  return createAuthorizationResolution(
+    options.defaultAuthorizationMode ?? "administrator",
+    undefined,
+    "default",
+    projectRoot,
+  );
+}
+
+function createAuthorizationResolution(
+  mode: NuzoAuthorizationMode,
+  scopes: readonly MemoryScope[] | undefined,
+  source: NuzoRuntimeConfigProvenance["authorization"],
+  projectRoot: string,
+): AuthorizationResolution {
+  if (mode === "administrator") {
+    if (scopes !== undefined) {
+      throw new NuzoMemoryError(
+        "MEMORY_CONFIG_INVALID",
+        "Administrator authorization cannot define an allowed scope list.",
+      );
+    }
+    return { mode, source };
+  }
+
+  const requestedScopes = scopes ?? defaultRestrictedScopes;
+  if (requestedScopes.length === 0) {
+    throw new NuzoMemoryError(
+      "MEMORY_CONFIG_INVALID",
+      "Restricted authorization requires at least one allowed scope.",
+    );
+  }
+  const allowedScopes = requestedScopes.map((scope) => {
+    assertScope(scope, "authorized scope");
+    return resolveAutomaticScope(scope, projectRoot);
+  });
+  return {
+    mode,
+    allowedScopes: [...new Set(allowedScopes)],
+    source,
+  };
+}
+
+function readEnvironmentAuthorizationMode(
+  environment: Record<string, string | undefined>,
+): NuzoAuthorizationMode | undefined {
+  const mode = environment.NUZO_AUTHORIZATION_MODE;
+  if (mode === undefined) {
     return undefined;
   }
-  assertScope(scope, "NUZO_MEMORY_SCOPE");
-  return scope as MemoryScope;
+  if (mode !== "administrator" && mode !== "restricted") {
+    throw new NuzoMemoryError(
+      "MEMORY_CONFIG_INVALID",
+      "NUZO_AUTHORIZATION_MODE must be administrator or restricted.",
+    );
+  }
+  return mode;
 }
 
 function readEnvironmentAuthorizedScopes(
   environment: Record<string, string | undefined>,
 ): readonly MemoryScope[] | undefined {
   const raw = environment.NUZO_AUTHORIZED_SCOPES;
-  if (raw === undefined || raw.trim().length === 0) {
+  if (raw === undefined) {
     return undefined;
   }
-  const scopes = raw.split(",").map((scope) => scope.trim()).filter((scope) => scope.length > 0);
-  if (scopes.length === 0) {
-    return undefined;
+  if (raw.trim().length === 0) {
+    throw new NuzoMemoryError(
+      "MEMORY_CONFIG_INVALID",
+      "NUZO_AUTHORIZED_SCOPES must not be empty when it is defined.",
+    );
   }
+  const scopes = raw.split(",").map((scope) => scope.trim()).filter(Boolean);
   for (const scope of scopes) {
     assertScope(scope, "NUZO_AUTHORIZED_SCOPES");
   }
@@ -124,7 +411,11 @@ function readEnvironmentAuthorizedScopes(
 }
 
 function assertScope(scope: string, source: string): void {
-  if (scope.length > memoryLimits.scopeLength || !memoryScopePattern.test(scope)) {
+  if (
+    scope.trim().length === 0 ||
+    scope.length > memoryLimits.scopeLength ||
+    !memoryScopePattern.test(scope)
+  ) {
     throw new NuzoMemoryError(
       "MEMORY_CONFIG_INVALID",
       `${source} contains an invalid Nuzo memory scope.`,
@@ -141,8 +432,29 @@ function readUserConfig(home: string): NuzoConfig | null {
   return parseConfig(configPath, false, home);
 }
 
-function readProjectConfig(cwd: string): NuzoConfig | null {
-  const projectRoot = realpathSync(cwd);
+function readUserAuthorization(home: string): NuzoAuthorizationConfig | undefined {
+  const configPath = join(home, ".nuzo", "config.json");
+  if (!existsSync(configPath)) {
+    return undefined;
+  }
+  try {
+    const value = JSON.parse(readFileSync(configPath, "utf8"));
+    if (!isRecord(value)) {
+      return undefined;
+    }
+    return parseAuthorizationConfig(value.authorization, configPath, false);
+  } catch (error) {
+    if (error instanceof NuzoMemoryError) {
+      throw error;
+    }
+    // Project data configuration remains independent from malformed unrelated
+    // user settings. Host defaults remain restricted when no trusted policy can
+    // be read.
+    return undefined;
+  }
+}
+
+function readProjectConfig(projectRoot: string): NuzoConfig | null {
   const configPath = join(projectRoot, ".nuzo", "config.json");
   if (!existsSync(configPath)) {
     return null;
@@ -151,7 +463,7 @@ function readProjectConfig(cwd: string): NuzoConfig | null {
   const nuzoRoot = join(projectRoot, ".nuzo");
   const storeDirectory = join(nuzoRoot, "memory");
   const storePath = join(storeDirectory, "memories.sqlite");
-  assertProjectPathIsLocal(nuzoRoot, nuzoRoot, configPath);
+  assertProjectNuzoRoot(nuzoRoot, projectRoot, configPath);
   assertProjectPathIsLocal(configPath, nuzoRoot, configPath);
   if (existsSync(storeDirectory)) {
     assertProjectPathIsLocal(storeDirectory, nuzoRoot, configPath);
@@ -192,7 +504,8 @@ function parseConfig(
     (project && value.storage.path !== ".nuzo/memory/memories.sqlite") ||
     (!project &&
       !isAbsolute(value.storage.path) &&
-      !value.storage.path.startsWith("~/"))
+      !value.storage.path.startsWith("~/")) ||
+    (project && value.authorization !== undefined)
   ) {
     throwConfigShape(configPath);
   }
@@ -203,6 +516,7 @@ function parseConfig(
   const privacy = value.privacy === undefined
     ? { allow_network: false as const, record_recall_events: false }
     : parsePrivacyConfig(value.privacy, configPath);
+  const authorization = parseAuthorizationConfig(value.authorization, configPath, project);
 
   return {
     version: 1,
@@ -213,6 +527,41 @@ function parseConfig(
     },
     recall,
     privacy,
+    ...(authorization === undefined ? {} : { authorization }),
+  };
+}
+
+function parseAuthorizationConfig(
+  value: unknown,
+  configPath: string,
+  project: boolean,
+): NuzoAuthorizationConfig | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (project || !isRecord(value)) {
+    throwConfigShape(configPath);
+  }
+  if (value.mode === "administrator") {
+    if (value.allowed_scopes !== undefined) {
+      throwConfigShape(configPath);
+    }
+    return { mode: "administrator" };
+  }
+  if (
+    value.mode !== "restricted" ||
+    !Array.isArray(value.allowed_scopes) ||
+    value.allowed_scopes.length === 0 ||
+    !value.allowed_scopes.every((scope) => typeof scope === "string")
+  ) {
+    throwConfigShape(configPath);
+  }
+  for (const scope of value.allowed_scopes) {
+    assertScope(scope, "authorization.allowed_scopes");
+  }
+  return {
+    mode: "restricted",
+    allowed_scopes: [...new Set(value.allowed_scopes)] as MemoryScope[],
   };
 }
 
@@ -265,6 +614,20 @@ function throwConfigShape(configPath: string): never {
     "Nuzo config has an unsupported shape.",
     { path: configPath },
   );
+}
+
+function assertProjectNuzoRoot(nuzoRoot: string, projectRoot: string, configPath: string): void {
+  try {
+    if (realpathSync(nuzoRoot) !== join(realpathSync(projectRoot), ".nuzo")) {
+      throw new Error("symlinked .nuzo root");
+    }
+  } catch {
+    throw new NuzoMemoryError(
+      "MEMORY_CONFIG_INVALID",
+      "Project .nuzo must be a real directory inside the project root.",
+      { path: configPath },
+    );
+  }
 }
 
 function assertProjectPathIsLocal(path: string, nuzoRoot: string, configPath: string): void {

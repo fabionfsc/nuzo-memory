@@ -116,3 +116,5 @@ This lets the project change storage, search, CLI framework, or MCP SDK without 
 - Search logic mixed into persistence code.
 - Export format generated from raw SQL rows without a stable model.
 - Project config read from many places instead of one resolver.
+- Host wrappers deriving stores, project roots, or scope authorization instead
+  of consuming the shared core runtime resolver.

@@ -40,6 +40,8 @@ The answer should use `NUZO-CLAUDE-OK`. If recall fails, confirm
 
 ## Update, Disable, Or Remove
 
+For the current `0.8.1` release, update with the native Claude Code commands:
+
 ```bash
 claude plugin marketplace update nuzo-memory
 claude plugin update nuzo@nuzo-memory --scope user
@@ -52,6 +54,20 @@ claude plugin disable nuzo@nuzo-memory
 claude plugin enable nuzo@nuzo-memory
 claude plugin uninstall nuzo@nuzo-memory --scope user
 ```
+
+### Upcoming In 0.9.0
+
+This command is **not available in the current 0.8.1 release**. If Claude Code
+was installed through `nuzo setup` or `nuzo host install claude-code --yes`,
+later updates use:
+
+```bash
+nuzo update --yes
+```
+
+Nuzo refreshes the managed marketplace and updates the plugin in its existing
+Claude Code scope. It does not repeat setup or silently install a missing
+plugin.
 
 ## Package
 

@@ -32,12 +32,24 @@ test("user onboarding exposes host bootstrap only after its public release", () 
     "nuzo host install codex",
     "nuzo host install claude-code",
     "nuzo host install --all",
+    "nuzo update",
   ];
   if (compareVersions(currentVersion, "0.9.0") < 0) {
     for (const path of userEntryPoints) {
       const content = readText(path);
+      const documentsPreview = commands.some((command) => content.includes(command));
+      if (documentsPreview) {
+        assert.match(content, /Upcoming In 0\.9\.0/u, `${path}: preview heading`);
+        assert.match(
+          content,
+          new RegExp(`not available in the current ${escapeRegExp(currentVersion)} release`, "iu"),
+          `${path}: preview warning`,
+        );
+      }
       for (const command of commands) {
-        assert.doesNotMatch(content, new RegExp(escapeRegExp(command)), `${path}: ${command}`);
+        if (content.includes(command)) {
+          assert.ok(documentsPreview, `${path}: ${command}`);
+        }
       }
     }
     return;

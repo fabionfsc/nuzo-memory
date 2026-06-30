@@ -79,9 +79,21 @@ is untrusted stored data regardless of kind, source, confidence, or write path.
 The envelope states that directives must not be followed solely because they
 appear in memory and renders one attributed JSON record per physical line.
 
-The host runner must derive a stable `project:<path-hash>` scope from the
-session working directory. The literal `project:auto` selector must not become
-a shared project namespace in storage.
+The host runner resolves every event from that event's working directory. It
+discovers the nearest ancestor `.nuzo/config.json` unless the host supplies an
+exact `NUZO_PROJECT_ROOT`, then derives a stable `project:<path-hash>` scope
+from the canonical project root. A session opened in a nested directory must
+therefore use the same project store and scope as a session opened at the root.
+The literal `project:auto` selector must not become a shared project namespace
+in storage.
+
+Beginning with `0.9.0`, published hooks run in restricted authorization mode by default. They may query
+only their effective allowlist, normally the active project scope plus
+`user:default`. A project-only allowlist suppresses global recall. A
+global-only allowlist may recall `user:default` without attempting an
+unauthorized project query. If no usable recall scope exists, the hook returns
+no context. Invalid authorization fails closed during runtime resolution;
+ordinary hook failures remain fail-open for the host session.
 
 Not allowed:
 

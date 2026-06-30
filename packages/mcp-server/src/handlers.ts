@@ -12,6 +12,9 @@ import type {
   MemoryRecord,
   MemoryScope,
   MemoryService,
+  NuzoAuthorizationMode,
+  NuzoRuntimeAdjustment,
+  NuzoRuntimeConfigProvenance,
   RecallMemoryResult,
   RememberMemoryInput,
   SQLiteIntegrityReport,
@@ -143,6 +146,14 @@ export interface MemoryDoctorDiagnostics {
   };
   integrity?: SQLiteIntegrityReport | (() => SQLiteIntegrityReport);
   writable?: boolean;
+  runtime?: {
+    projectScope: `project:${string}`;
+    authorizationMode: NuzoAuthorizationMode;
+    authorizedScopes?: readonly MemoryScope[];
+    provenance: NuzoRuntimeConfigProvenance;
+    adjustments: readonly NuzoRuntimeAdjustment[];
+  };
+  diagnosticScopes?: readonly MemoryScope[];
 }
 
 export interface MemoryToolHandlers {
@@ -257,6 +268,19 @@ export interface MemoryToolHandlers {
       path: string | null;
       readable: boolean;
       writable_check: "writable" | "not_writable" | "not_performed";
+    };
+    config: {
+      project_scope: string | null;
+      project_root_source: NuzoRuntimeConfigProvenance["projectRoot"] | null;
+      config_source: NuzoRuntimeConfigProvenance["config"] | null;
+      store_source: NuzoRuntimeConfigProvenance["store"] | null;
+      scope_source: NuzoRuntimeConfigProvenance["scope"] | null;
+      adjustments: readonly NuzoRuntimeAdjustment[];
+    };
+    authorization: {
+      mode: NuzoAuthorizationMode | "unknown";
+      source: NuzoRuntimeConfigProvenance["authorization"] | null;
+      allowed_scopes: readonly MemoryScope[] | null;
     };
     schema: {
       current_version: number | null;
@@ -659,8 +683,8 @@ export function createMemoryToolHandlers(
 
       try {
         const [active, all] = await Promise.all([
-          service.list({ includeArchived: false }),
-          service.list({ includeArchived: true }),
+          listDiagnosticMemories(service, options.doctorDiagnostics?.diagnosticScopes, false),
+          listDiagnosticMemories(service, options.doctorDiagnostics?.diagnosticScopes, true),
         ]);
         activeMemories = active.length;
         totalMemories = all.length;
@@ -702,6 +726,19 @@ export function createMemoryToolHandlers(
           readable,
           writable_check: writableCheck,
         },
+        config: {
+          project_scope: options.doctorDiagnostics?.runtime?.projectScope ?? null,
+          project_root_source: options.doctorDiagnostics?.runtime?.provenance.projectRoot ?? null,
+          config_source: options.doctorDiagnostics?.runtime?.provenance.config ?? null,
+          store_source: options.doctorDiagnostics?.runtime?.provenance.store ?? null,
+          scope_source: options.doctorDiagnostics?.runtime?.provenance.scope ?? null,
+          adjustments: options.doctorDiagnostics?.runtime?.adjustments ?? [],
+        },
+        authorization: {
+          mode: options.doctorDiagnostics?.runtime?.authorizationMode ?? "unknown",
+          source: options.doctorDiagnostics?.runtime?.provenance.authorization ?? null,
+          allowed_scopes: options.doctorDiagnostics?.runtime?.authorizedScopes ?? null,
+        },
         schema,
         counts: {
           active_memories: activeMemories,
@@ -720,6 +757,20 @@ export function createMemoryToolHandlers(
       };
     },
   };
+}
+
+async function listDiagnosticMemories(
+  service: MemoryService,
+  scopes: readonly MemoryScope[] | undefined,
+  includeArchived: boolean,
+): Promise<MemoryRecord[]> {
+  if (scopes === undefined) {
+    return service.list({ includeArchived });
+  }
+  const scoped = await Promise.all(
+    scopes.map((scope) => service.list({ scope, includeArchived })),
+  );
+  return [...new Map(scoped.flat().map((memory) => [memory.id, memory])).values()];
 }
 
 export function formatIntegrityDiagnostics(

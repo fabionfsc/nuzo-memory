@@ -230,7 +230,7 @@ function validateStagedReadme(root, pkg) {
         fail(`${pkg.name} staged README is missing user onboarding: ${requiredText}`);
       }
     }
-    const hostBootstrapCommands = ["nuzo setup", "nuzo host install"];
+    const hostBootstrapCommands = ["nuzo setup", "nuzo host install", "nuzo update"];
     if (isAtLeastVersion(pkg.version, "0.9.0")) {
       for (const command of hostBootstrapCommands) {
         if (!readme.includes(command)) {
@@ -238,7 +238,12 @@ function validateStagedReadme(root, pkg) {
         }
       }
     } else if (hostBootstrapCommands.some((command) => readme.includes(command))) {
-      fail(`${pkg.name}@${pkg.version} README documents an unreleased host bootstrap command`);
+      if (
+        !readme.includes("Upcoming In 0.9.0") ||
+        !readme.includes(`not available in the current ${pkg.version} release`)
+      ) {
+        fail(`${pkg.name}@${pkg.version} README must clearly mark preview host commands as unreleased`);
+      }
     }
   }
   if (["@nuzo/memory-cli", "@nuzo/mcp-server"].includes(pkg.name)) {

@@ -1,9 +1,17 @@
 import { describe, expect, it, vi } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { MemoryRecord, MemoryService } from "@nuzo/memory-core";
-import { projectScopeFromPath, SQLiteMemoryDatabase } from "@nuzo/memory-core";
+import {
+  createMemoryService,
+  DefaultPolicyEngine,
+  projectScopeFromPath,
+  RandomIdGenerator,
+  RegexSecretScanner,
+  SQLiteMemoryDatabase,
+  SystemClock,
+} from "@nuzo/memory-core";
 import {
   createHostHookOutput,
   hostHookLimits,
@@ -90,6 +98,73 @@ describe("host recall hooks", () => {
         additionalContext: expect.stringContaining("/example/workflows/cloudflare"),
       },
     });
+  });
+
+  it("queries only scopes allowed by the restricted host runtime", async () => {
+    const projectRoot = "/example/projects/nuzo";
+    const projectScope = projectScopeFromPath(projectRoot);
+    const project = memory({
+      scope: projectScope,
+      tags: ["autoload", "project"],
+    });
+    const list = vi.fn(async () => [project]);
+    const service = { list } as unknown as MemoryService;
+
+    const output = await createHostHookOutput(service, {
+      hook_event_name: "SessionStart",
+      cwd: projectRoot,
+    }, {
+      projectScope,
+      authorizedScopes: [projectScope],
+    });
+
+    expect(list).toHaveBeenCalledTimes(1);
+    expect(list).toHaveBeenCalledWith({
+      scope: projectScope,
+      tags: ["autoload"],
+      includeArchived: false,
+    });
+    expect(output?.hookSpecificOutput.additionalContext).toContain(project.content);
+  });
+
+  it("falls back to authorized global recall when project access is absent", async () => {
+    const recalled = memory();
+    const recall = vi.fn(async () => [{
+      memory: recalled,
+      score: 1,
+      reason: "global test",
+    }]);
+    const service = { recall } as unknown as MemoryService;
+
+    await createHostHookOutput(service, {
+      hook_event_name: "UserPromptSubmit",
+      cwd: "/example/projects/nuzo",
+      prompt: "global preference",
+    }, {
+      authorizedScopes: ["user:default"],
+    });
+
+    expect(recall).toHaveBeenCalledWith({
+      query: "global preference",
+      scope: "user:default",
+      limit: hostHookLimits.contextualCandidates,
+      includeGlobal: false,
+      recordUsage: false,
+    });
+  });
+
+  it("returns no hook context when no recall scope is authorized", async () => {
+    const recall = vi.fn();
+    const service = { recall } as unknown as MemoryService;
+
+    await expect(createHostHookOutput(service, {
+      hook_event_name: "UserPromptSubmit",
+      cwd: "/example/projects/nuzo",
+      prompt: "restricted task",
+    }, {
+      authorizedScopes: ["agent:other"],
+    })).resolves.toBeNull();
+    expect(recall).not.toHaveBeenCalled();
   });
 
   it("does not repeat session autoload memories during contextual recall", async () => {
@@ -226,6 +301,73 @@ describe("host recall hooks", () => {
     expect(stdout).not.toHaveBeenCalled();
   });
 
+  it("discovers project config from a nested hook working directory", async () => {
+    const projectRoot = mkdtempSync(join(tmpdir(), "nuzo-hook-project-"));
+    const nested = join(projectRoot, "packages", "app", "src");
+    const storePath = join(projectRoot, ".nuzo", "memory", "memories.sqlite");
+    mkdirSync(nested, { recursive: true });
+    mkdirSync(join(projectRoot, ".nuzo", "memory"), { recursive: true });
+    writeFileSync(join(projectRoot, ".nuzo", "config.json"), JSON.stringify({
+      version: 1,
+      default_scope: "project:auto",
+      storage: { driver: "sqlite", path: ".nuzo/memory/memories.sqlite" },
+      recall: { limit: 8, include_global: false },
+      privacy: { allow_network: false, record_recall_events: false },
+    }));
+    const database = new SQLiteMemoryDatabase({ path: storePath });
+    const service = createMemoryService({
+      store: database,
+      searchIndex: database,
+      auditLog: database,
+      transactions: database,
+      clock: new SystemClock(),
+      ids: new RandomIdGenerator(),
+      policy: new DefaultPolicyEngine(new RegexSecretScanner()),
+    });
+    await service.remember({
+      content: "Nested host sessions use their root project memory.",
+      kind: "project_decision",
+      scope: projectScopeFromPath(projectRoot),
+      tags: ["autoload"],
+      source: "test:nested-hook",
+    });
+    await service.remember({
+      content: "Nested contextual recall uses the root project store.",
+      kind: "instruction",
+      scope: projectScopeFromPath(projectRoot),
+      tags: ["nested", "contextual"],
+      source: "test:nested-hook",
+    });
+    database.close();
+    const stdout = vi.fn();
+    const stderr = vi.fn();
+
+    try {
+      const exitCode = await runHostHookProcess([], JSON.stringify({
+        hook_event_name: "SessionStart",
+        cwd: nested,
+      }), { stdout, stderr }, {
+        NUZO_AUTHORIZED_SCOPES: "project:auto",
+      });
+
+      expect(exitCode).toBe(0);
+      expect(stderr).not.toHaveBeenCalled();
+      expect(stdout).toHaveBeenCalledWith(expect.stringContaining("Nested host sessions use their root project memory."));
+
+      const promptExitCode = await runHostHookProcess([], JSON.stringify({
+        hook_event_name: "UserPromptSubmit",
+        cwd: nested,
+        prompt: "Where does nested contextual recall read from?",
+      }), { stdout, stderr }, {
+        NUZO_AUTHORIZED_SCOPES: "project:auto",
+      });
+      expect(promptExitCode).toBe(0);
+      expect(stdout).toHaveBeenCalledWith(expect.stringContaining("Nested contextual recall uses the root project store."));
+    } finally {
+      rmSync(projectRoot, { recursive: true, force: true });
+    }
+  });
+
   it("reports shared runtime scope and restrictions in hook doctor", async () => {
     const stdout = vi.fn();
     const stderr = vi.fn();
@@ -248,6 +390,16 @@ describe("host recall hooks", () => {
         mode: "read_only",
         store_path: storePath,
         scope: "project:nuzo",
+        project_scope: expect.stringMatching(/^project:[a-f0-9]{16}$/),
+        authorization: {
+          mode: "restricted",
+          source: "environment",
+          allowed_scopes: ["project:nuzo", "user:default"],
+        },
+        config: {
+          store_source: "environment",
+          scope_source: "environment",
+        },
         authorized_scopes: ["project:nuzo", "user:default"],
         store_exists: true,
         integrity: {

@@ -1,5 +1,8 @@
 # Init Specification
 
+The effective authorization and ancestor-discovery additions in this document
+target `0.9.0`; `0.8.1` remains the current public release.
+
 `nuzo memory init` prepares a local memory store.
 
 ## Goals
@@ -90,9 +93,18 @@ Updates project `.gitignore` with:
   "privacy": {
     "allow_network": false,
     "record_recall_events": false
+  },
+  "authorization": {
+    "mode": "restricted",
+    "allowed_scopes": ["project:auto", "user:default"]
   }
 }
 ```
+
+`authorization` is accepted only in the trusted user config. A project config
+cannot grant its host broader access. The local CLI is always an administrator
+workflow; the authorization block controls published MCP and lifecycle-hook
+host paths.
 
 ## Runtime Resolution
 
@@ -105,12 +117,26 @@ The resolver applies settings in this order:
 
 1. explicit command flags;
 2. runtime environment overrides;
-3. project `.nuzo/config.json`, when present in the current project root;
+3. project `.nuzo/config.json`, discovered from the current directory through
+   its ancestors;
 4. user `~/.nuzo/config.json`;
 5. built-in defaults.
 
 Project config is authoritative when present, so an unrelated user config is
-not read or allowed to block the project.
+not allowed to change its store, scope, recall, or privacy settings. A host may
+still read the user config's authorization block because project-controlled
+configuration is not a trusted source of access grants.
+
+Project-root precedence is:
+
+1. explicit runtime `projectRoot` option;
+2. `NUZO_PROJECT_ROOT`;
+3. nearest ancestor containing `.nuzo/config.json`;
+4. the canonical current working directory.
+
+The project root must be an existing directory. Nuzo derives `project:<hash>`
+from its canonical path, so a nested session and a root session use the same
+project scope.
 
 Runtime environment overrides:
 
@@ -118,6 +144,33 @@ Runtime environment overrides:
 | --- | --- | --- |
 | `NUZO_MEMORY_STORE` | CLI, MCP server, host hooks | Absolute or process-resolved path to the SQLite store. |
 | `NUZO_MEMORY_SCOPE` | CLI, MCP server, host hooks | Default memory scope. `project:auto` resolves to the current project hash. |
+| `NUZO_PROJECT_ROOT` | CLI, MCP server, host hooks | Exact existing project root; otherwise Nuzo discovers an ancestor project config. |
+| `NUZO_AUTHORIZATION_MODE` | MCP server, host hooks | `restricted` or `administrator`. Published host entry points default to `restricted`. |
+| `NUZO_AUTHORIZED_SCOPES` | MCP server, host hooks | Comma-separated allowlist. `project:auto` resolves against the effective project root. |
+
+## Effective Authorization
+
+Published MCP and hook entry points default to restricted access to the active
+`project:<hash>` scope and `user:default`. The local CLI remains an explicit
+administrator surface for inspecting and repairing the selected store.
+
+Authorization precedence is:
+
+1. explicit runtime options;
+2. authorization environment variables;
+3. trusted user `authorization` config;
+4. the entry point's default mode.
+
+Restricted mode requires at least one valid allowed scope. An explicitly
+configured default scope outside the allowlist is rejected. If only the
+built-in default conflicts, Nuzo selects the first authorized scope and reports
+that adjustment through diagnostics. Global recall is disabled when
+`user:default` is not authorized. Invalid or empty authorization input fails
+closed.
+
+`memory.doctor` and hook doctor report paths, effective scopes, authorization
+mode, allowed scopes, and non-sensitive provenance. They never return config
+file contents, credentials, environment values, or memory content.
 | `NUZO_AUTHORIZED_SCOPES` | MCP server, host hooks | Comma-separated allowlist for restricted sessions. `project:auto` is allowed and resolves before core policy runs. |
 
 `recall.limit` and `recall.include_global` provide defaults for
