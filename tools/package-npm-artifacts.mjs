@@ -215,7 +215,8 @@ function validateStagedPackage(root, pkg) {
 
 function validateStagedReadme(root, pkg) {
   const readme = readFileSync(join(root, "README.md"), "utf8");
-  if (!readme.includes("https://nuzo.com.br/")) {
+  const readmeLines = readme.split(/\r?\n/u);
+  if (!readmeLines.includes("Documentation: https://nuzo.com.br/")) {
     fail(`${pkg.name} staged README must link to the public documentation`);
   }
   if (pkg.name === "@nuzo/memory") {
