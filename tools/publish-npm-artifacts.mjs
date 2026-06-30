@@ -1,8 +1,12 @@
 #!/usr/bin/env node
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { assertReleaseVersion, fail } from "./release-shared.mjs";
+import {
+  publishableNpmPackagesForVersion,
+  retiredLegacyNpmPackagesForVersion,
+} from "./npm-package-policy.mjs";
 
 const version = process.argv[2];
 const mode = process.argv[3] ?? "publish";
@@ -12,12 +16,15 @@ if (!["dry-run", "publish"].includes(mode)) {
   fail(`unsupported npm publish mode: ${mode}`);
 }
 
-const publishPackages = [
-  ["@nuzo/memory-core", "memory-core"],
-  ["@nuzo/memory", "memory"],
-  ["@nuzo/memory-cli", "memory-cli"],
-  ["@nuzo/mcp-server", "mcp-server"],
-];
+const publishPackages = publishableNpmPackagesForVersion(version)
+  .map((definition) => [definition.name, definition.output]);
+
+for (const definition of retiredLegacyNpmPackagesForVersion(version)) {
+  const retiredPackageJson = join("build", "npm", "packages", definition.output, "package.json");
+  if (existsSync(retiredPackageJson)) {
+    fail(`retired legacy npm package must not be staged after 0.9.0: ${definition.name}`);
+  }
+}
 
 let published = 0;
 let skipped = 0;

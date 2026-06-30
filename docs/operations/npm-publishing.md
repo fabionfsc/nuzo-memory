@@ -41,6 +41,12 @@ Deprecation changes npm metadata; it does not remove an existing version or
 break an installed dependency. Ending public transition-package publication
 does not merge the internal CLI, MCP, or core source boundaries.
 
+Release tooling derives staging, target checks, and publishing order from
+`tools/npm-package-policy.mjs`. The policy intentionally includes all four
+packages through `0.9.0`, then omits the two transition packages for every
+version after `0.9.0`. Post-`0.9.0` publish checks fail if a retired transition
+package is still present in `build/npm/packages/`.
+
 ## Current Release
 
 Version `0.8.1` is the current release:
@@ -121,7 +127,18 @@ build/npm/
 ├── packages/
 │   ├── memory-core/
 │   ├── memory-cli/
+│   ├── memory/
 │   └── mcp-server/
+└── tarballs/
+```
+
+For `1.0.0` and later, generated staging must contain only:
+
+```text
+build/npm/
+├── packages/
+│   ├── memory-core/
+│   └── memory/
 └── tarballs/
 ```
 
@@ -173,13 +190,23 @@ The workflow is manual-only, runs from `main`, uses the GitHub environment
 `npm-publish`, and requests `id-token: write` for npm trusted publishing. It
 does not use `NODE_AUTH_TOKEN`.
 
-Configure a trusted publisher for each published package on npmjs.com:
+Configure a trusted publisher for each package that the target release will
+publish on npmjs.com.
+
+For `0.9.0`, that is:
 
 ```text
 @nuzo/memory-core
 @nuzo/memory
 @nuzo/memory-cli
 @nuzo/mcp-server
+```
+
+For `1.0.0` and later routine releases, that is:
+
+```text
+@nuzo/memory-core
+@nuzo/memory
 ```
 
 Use these settings for every package:
@@ -196,11 +223,15 @@ Allowed action: npm publish
 The workflow installs npm `11.5.1` or newer because trusted publishing requires
 OIDC-capable npm. It validates the source release state for one explicit
 SemVer input, builds the publish staging packages, rejects already-published
-versions, and publishes in dependency order:
+versions, rejects retired legacy staging after `0.9.0`, and publishes in
+dependency order:
 
 ```text
 @nuzo/memory-core -> @nuzo/memory -> legacy transition packages
 ```
+
+The legacy transition suffix applies only through `0.9.0`; for `1.0.0` and
+later the order is `@nuzo/memory-core -> @nuzo/memory`.
 
 Run it first with `publish` set to `false`. That dry run proves the workflow
 selects the intended version and package set without publishing.
@@ -236,6 +267,10 @@ npm publish --access public
 cd ../mcp-server
 npm publish --access public
 ```
+
+This manual first-publication sequence is historical and applies only to the
+pre-`1.0.0` transition set. Do not use it as the package list for `1.0.0` or
+later releases.
 
 Verify before distributing host plugins:
 

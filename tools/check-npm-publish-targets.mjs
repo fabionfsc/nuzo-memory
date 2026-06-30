@@ -1,16 +1,23 @@
 #!/usr/bin/env node
+import { existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { assertReleaseVersion, fail, readJson } from "./release-shared.mjs";
+import {
+  publishableNpmPackagesForVersion,
+  retiredLegacyNpmPackagesForVersion,
+} from "./npm-package-policy.mjs";
 
 const version = process.argv[2];
 assertReleaseVersion(version);
 
-const publishPackages = [
-  ["@nuzo/memory-core", "build/npm/packages/memory-core/package.json"],
-  ["@nuzo/memory", "build/npm/packages/memory/package.json"],
-  ["@nuzo/memory-cli", "build/npm/packages/memory-cli/package.json"],
-  ["@nuzo/mcp-server", "build/npm/packages/mcp-server/package.json"],
-];
+const publishPackages = publishableNpmPackagesForVersion(version)
+  .map((definition) => [definition.name, definition.packageJson]);
+
+for (const definition of retiredLegacyNpmPackagesForVersion(version)) {
+  if (existsSync(definition.packageJson)) {
+    fail(`retired legacy npm package must not be staged after 0.9.0: ${definition.name}`);
+  }
+}
 
 let unpublishedCount = 0;
 let publishedCount = 0;
