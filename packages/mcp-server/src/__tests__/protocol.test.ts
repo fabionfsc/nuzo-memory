@@ -1169,6 +1169,137 @@ describe("MCP protocol contract", () => {
     }
   });
 
+  it("paginates list, history, and export MCP responses with deterministic cursors", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "nuzo-mcp-pagination-"));
+    tempDirectories.push(directory);
+    const runtime = createNuzoMcpServerRuntime({
+      storePath: join(directory, "memories.sqlite"),
+    });
+    const client = new Client({
+      name: "nuzo-contract-test",
+      version: "0.0.0",
+    });
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+
+    try {
+      await Promise.all([
+        runtime.server.connect(serverTransport),
+        client.connect(clientTransport),
+      ]);
+
+      const first = await rememberProtocolMemory(client, {
+        content: "Pagination memory alpha.",
+        kind: "note",
+        scope: "project:nuzo",
+        tags: ["paging"],
+      });
+      await rememberProtocolMemory(client, {
+        content: "Pagination memory beta.",
+        kind: "note",
+        scope: "project:nuzo",
+        tags: ["paging"],
+      });
+      await rememberProtocolMemory(client, {
+        content: "Pagination memory gamma.",
+        kind: "note",
+        scope: "project:nuzo",
+        tags: ["paging"],
+      });
+
+      const firstListPage = parseToolJson(await client.callTool({
+        name: "memory.list",
+        arguments: {
+          scope: "project:nuzo",
+          tags: ["paging"],
+          limit: 2,
+        },
+      })) as { memories: Array<{ id: string }>; next_cursor: string | null; truncated: boolean; limit: number };
+      expect(firstListPage.memories).toHaveLength(2);
+      expect(firstListPage.next_cursor).toEqual(expect.any(String));
+      expect(firstListPage.truncated).toBe(true);
+      expect(firstListPage.limit).toBe(2);
+
+      const secondListPage = parseToolJson(await client.callTool({
+        name: "memory.list",
+        arguments: {
+          scope: "project:nuzo",
+          tags: ["paging"],
+          limit: 2,
+          cursor: firstListPage.next_cursor,
+        },
+      })) as { memories: Array<{ id: string }>; next_cursor: string | null; truncated: boolean };
+      expect(secondListPage.memories).toHaveLength(1);
+      expect(secondListPage.next_cursor).toBeNull();
+      expect(secondListPage.truncated).toBe(false);
+      expect(new Set([
+        ...firstListPage.memories.map((memory) => memory.id),
+        ...secondListPage.memories.map((memory) => memory.id),
+      ]).size).toBe(3);
+
+      await client.callTool({
+        name: "memory.update",
+        arguments: {
+          id: first.id,
+          content: "Pagination memory alpha updated.",
+        },
+      });
+      const firstHistoryPage = parseToolJson(await client.callTool({
+        name: "memory.history",
+        arguments: {
+          id: first.id,
+          limit: 1,
+        },
+      })) as { events: Array<{ id: string; event_type: string }>; next_cursor: string | null; truncated: boolean };
+      expect(firstHistoryPage.events).toHaveLength(1);
+      expect(firstHistoryPage.next_cursor).toEqual(expect.any(String));
+      expect(firstHistoryPage.truncated).toBe(true);
+
+      const secondHistoryPage = parseToolJson(await client.callTool({
+        name: "memory.history",
+        arguments: {
+          id: first.id,
+          limit: 1,
+          cursor: firstHistoryPage.next_cursor,
+        },
+      })) as { events: Array<{ id: string; event_type: string }>; next_cursor: string | null; truncated: boolean };
+      expect(secondHistoryPage.events).toHaveLength(1);
+      expect(secondHistoryPage.next_cursor).toBeNull();
+      expect(secondHistoryPage.truncated).toBe(false);
+      expect([
+        firstHistoryPage.events[0]?.event_type,
+        secondHistoryPage.events[0]?.event_type,
+      ]).toEqual(["memory.created", "memory.updated"]);
+
+      const firstExportPage = parseToolJson(await client.callTool({
+        name: "memory.export",
+        arguments: {
+          scope: "project:nuzo",
+          tags: ["paging"],
+          limit: 2,
+        },
+      })) as { document: { memories: unknown[] }; next_cursor: string | null; truncated: boolean };
+      expect(firstExportPage.document.memories).toHaveLength(2);
+      expect(firstExportPage.next_cursor).toEqual(expect.any(String));
+      expect(firstExportPage.truncated).toBe(true);
+
+      const secondExportPage = parseToolJson(await client.callTool({
+        name: "memory.export",
+        arguments: {
+          scope: "project:nuzo",
+          tags: ["paging"],
+          limit: 2,
+          cursor: firstExportPage.next_cursor,
+        },
+      })) as { document: { memories: unknown[] }; next_cursor: string | null; truncated: boolean };
+      expect(secondExportPage.document.memories).toHaveLength(1);
+      expect(secondExportPage.next_cursor).toBeNull();
+      expect(secondExportPage.truncated).toBe(false);
+    } finally {
+      await client.close();
+      await runtime.close();
+    }
+  });
+
   it("rejects invalid scope and tag shapes through the registered MCP schema", async () => {
     const directory = mkdtempSync(join(tmpdir(), "nuzo-mcp-protocol-"));
     tempDirectories.push(directory);

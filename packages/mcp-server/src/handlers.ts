@@ -77,6 +77,8 @@ export interface ListToolInput {
   scope?: string;
   tags: string[];
   include_archived: boolean;
+  limit: number;
+  cursor?: string;
 }
 
 export interface UpdateToolInput {
@@ -91,6 +93,8 @@ export interface UpdateToolInput {
 
 export interface HistoryToolInput {
   id: string;
+  limit: number;
+  cursor?: string;
 }
 
 export interface AuditToolInput {
@@ -125,6 +129,8 @@ export interface ExportToolInput {
   scope?: string;
   tags: string[];
   include_archived: boolean;
+  limit: number;
+  cursor?: string;
 }
 
 export interface ImportToolInput {
@@ -233,12 +239,18 @@ export interface MemoryToolHandlers {
   }>;
   list(input: ListToolInput): Promise<{
     memories: MemoryToolRecord[];
+    next_cursor: string | null;
+    limit: number;
+    truncated: boolean;
   }>;
   update(input: UpdateToolInput): Promise<{
     memory: MemoryToolRecord;
   }>;
   history(input: HistoryToolInput): Promise<{
     events: MemoryToolEvent[];
+    next_cursor: string | null;
+    limit: number;
+    truncated: boolean;
   }>;
   audit(input: AuditToolInput): Promise<{
     events: MemoryToolEvent[];
@@ -255,7 +267,12 @@ export interface MemoryToolHandlers {
     dry_run: boolean;
     ids: string[];
   }>;
-  exportMemories(input: ExportToolInput): Promise<MemoryExportDocument>;
+  exportMemories(input: ExportToolInput): Promise<{
+    document: MemoryExportDocument;
+    next_cursor: string | null;
+    limit: number;
+    truncated: boolean;
+  }>;
   importMemories(input: ImportToolInput): Promise<{
     imported: number;
     skipped: number;
@@ -513,6 +530,7 @@ export function createMemoryToolHandlers(
     async list(input) {
       const listInput: ListMemoriesInput = {
         includeArchived: input.include_archived,
+        limit: input.limit + 1,
       };
       if (input.scope !== undefined) {
         listInput.scope = resolveToolScope(input.scope, options.projectScope);
@@ -520,10 +538,19 @@ export function createMemoryToolHandlers(
       if (input.tags.length > 0) {
         listInput.tags = input.tags;
       }
+      if (input.cursor !== undefined) {
+        listInput.cursor = input.cursor;
+      }
 
       const memories = await service.list(listInput);
+      const page = memories.slice(0, input.limit);
       return {
-        memories: memories.map(toToolRecord),
+        memories: page.map(toToolRecord),
+        next_cursor: memories.length > input.limit && page.length > 0
+          ? encodeMemoryListCursor(page[page.length - 1]!)
+          : null,
+        limit: input.limit,
+        truncated: memories.length > input.limit,
       };
     },
 
@@ -558,9 +585,21 @@ export function createMemoryToolHandlers(
     },
 
     async history(input) {
-      const events = await service.history(input.id);
+      const historyInput = {
+        limit: input.limit + 1,
+      };
+      if (input.cursor !== undefined) {
+        Object.assign(historyInput, { cursor: input.cursor });
+      }
+      const events = await service.history(input.id, historyInput);
+      const page = events.slice(0, input.limit);
       return {
-        events: events.map(toToolEvent),
+        events: page.map(toToolEvent),
+        next_cursor: events.length > input.limit && page.length > 0
+          ? encodeMemoryEventCursor(page[page.length - 1]!)
+          : null,
+        limit: input.limit,
+        truncated: events.length > input.limit,
       };
     },
 
@@ -645,6 +684,7 @@ export function createMemoryToolHandlers(
       const exportInput: ListMemoriesInput & { actor: string } = {
         actor: "nuzo:mcp",
         includeArchived: input.include_archived,
+        limit: input.limit,
       };
       if (input.scope !== undefined) {
         exportInput.scope = resolveToolScope(input.scope, options.projectScope);
@@ -652,8 +692,29 @@ export function createMemoryToolHandlers(
       if (input.tags.length > 0) {
         exportInput.tags = input.tags;
       }
+      if (input.cursor !== undefined) {
+        exportInput.cursor = input.cursor;
+      }
 
-      return service.exportMemories(exportInput);
+      const records = await service.list({
+        ...exportInput,
+        limit: input.limit + 1,
+      });
+      const document = await service.exportMemories(exportInput);
+      const page = document.memories.slice(0, input.limit);
+      const lastRecord = records.slice(0, input.limit).at(-1);
+      const nextCursor = records.length > input.limit && lastRecord !== undefined
+        ? encodeMemoryListCursor(lastRecord)
+        : null;
+      return {
+        document: {
+          ...document,
+          memories: page,
+        },
+        next_cursor: nextCursor,
+        limit: input.limit,
+        truncated: records.length > input.limit,
+      };
     },
 
     async importMemories(input) {
@@ -911,6 +972,21 @@ function toToolRecord(memory: MemoryRecord): MemoryToolRecord {
     last_used_at: memory.lastUsedAt?.toISOString() ?? null,
     archived_at: memory.archivedAt?.toISOString() ?? null,
   };
+}
+
+function encodeMemoryListCursor(memory: MemoryRecord): string {
+  return Buffer.from(JSON.stringify({
+    updated_at: memory.updatedAt.toISOString(),
+    created_at: memory.createdAt.toISOString(),
+    id: memory.id,
+  }), "utf8").toString("base64url");
+}
+
+function encodeMemoryEventCursor(event: { id: string; createdAt: Date }): string {
+  return Buffer.from(JSON.stringify({
+    created_at: event.createdAt.toISOString(),
+    id: event.id,
+  }), "utf8").toString("base64url");
 }
 
 function toToolEvent(event: {

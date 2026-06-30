@@ -23,6 +23,7 @@ import type {
   ImportMemoriesInput,
   ImportMemoriesResult,
   ListMemoriesInput,
+  MemoryHistoryInput,
   MemoryExportDocument,
   MemoryExportItem,
   MemoryEvent,
@@ -56,7 +57,7 @@ export interface MemoryService {
   recallDetailed(input: RecallMemoriesInput): Promise<RecallMemoriesResponse>;
   list(input?: ListMemoriesInput): Promise<MemoryRecord[]>;
   update(input: UpdateMemoryInput): Promise<MemoryRecord>;
-  history(memoryId: string): Promise<MemoryEvent[]>;
+  history(memoryId: string, input?: MemoryHistoryInput): Promise<MemoryEvent[]>;
   audit(input?: AuditEventFilter): Promise<MemoryEvent[]>;
   exportMemories(input: ExportMemoriesInput): Promise<MemoryExportDocument>;
   importMemories(input: ImportMemoriesInput): Promise<ImportMemoriesResult>;
@@ -432,11 +433,12 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       return updateMemory(input);
     },
 
-    async history(memoryId) {
+    async history(memoryId, input = {}) {
       assertMemoryId(memoryId);
+      assertPageInput(input);
       const currentMemory = await store.findById(memoryId);
       await policy.assertCanAudit({ memoryId }, currentMemory);
-      return auditLog.list(memoryId);
+      return auditLog.list(memoryId, input);
     },
 
     async audit(input = {}) {
@@ -722,6 +724,20 @@ function assertReason(reason: string | undefined): void {
     throw new NuzoMemoryError("MEMORY_REASON_TOO_LONG", "Memory reason is too long.", {
       maxLength: memoryLimits.reasonLength,
     });
+  }
+}
+
+function assertPageInput(input: MemoryHistoryInput): void {
+  if (input.limit !== undefined && (input.limit <= 0 || input.limit > 1000)) {
+    throw new NuzoMemoryError("MEMORY_HISTORY_LIMIT_INVALID", "History limit must be 1-1000.", {
+      limit: input.limit,
+    });
+  }
+  if (input.cursor !== undefined && input.cursor.trim().length === 0) {
+    throw new NuzoMemoryError("MEMORY_CURSOR_INVALID", "Memory pagination cursor is invalid.");
+  }
+  if (input.cursor !== undefined && input.cursor.length > memoryLimits.identifierLength * 4) {
+    throw new NuzoMemoryError("MEMORY_CURSOR_INVALID", "Memory pagination cursor is invalid.");
   }
 }
 

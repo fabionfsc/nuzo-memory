@@ -1,6 +1,7 @@
 import type {
   AuditEventFilter,
   ListMemoriesInput,
+  MemoryHistoryInput,
   MemoryEvent,
   MemoryRecord,
   RecallMemoriesInput,
@@ -43,7 +44,7 @@ export interface EmbeddingProvider {
 
 export interface AuditLog {
   append(event: MemoryEvent): Promise<void>;
-  list(memoryId: string): Promise<MemoryEvent[]>;
+  list(memoryId: string, input?: MemoryHistoryInput): Promise<MemoryEvent[]>;
   query(filter: AuditEventFilter): Promise<MemoryEvent[]>;
 }
 

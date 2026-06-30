@@ -55,6 +55,7 @@ const tagSchema = z.string().regex(memoryTagPattern);
 const memoryIdSchema = z.string().min(1).max(memoryLimits.identifierLength);
 const exportDateSchema = z.string().max(memoryLimits.dateLength);
 const eventTypeSchema = z.enum(memoryEventTypes);
+const paginationCursorSchema = z.string().min(1).max(memoryLimits.identifierLength * 4);
 const redactForbiddenScopeDetails: JsonErrorToolResultOptions = {
   redactDetailsForCodes: ["MEMORY_SCOPE_FORBIDDEN"],
 };
@@ -350,15 +351,21 @@ export function registerMemoryTools(
         scope: scopeSchema.optional(),
         tags: z.array(tagSchema).max(memoryLimits.tags).default([]),
         include_archived: z.boolean().default(false),
+        limit: z.number().int().min(1).max(200).default(50),
+        cursor: paginationCursorSchema.optional(),
       },
     },
     withJsonErrorHandling(async (input) => {
       const listInput: ListToolInput = {
         tags: input.tags,
         include_archived: input.include_archived,
+        limit: input.limit,
       };
       if (input.scope !== undefined) {
         listInput.scope = input.scope;
+      }
+      if (input.cursor !== undefined) {
+        listInput.cursor = input.cursor;
       }
 
       return jsonToolResult(await handlers.list(listInput));
@@ -412,12 +419,18 @@ export function registerMemoryTools(
       description: "List audit events for one Nuzo memory ID.",
       inputSchema: {
         id: memoryIdSchema,
+        limit: z.number().int().min(1).max(200).default(50),
+        cursor: paginationCursorSchema.optional(),
       },
     },
     withJsonErrorHandling(async (input) => {
       const historyInput: HistoryToolInput = {
         id: input.id,
+        limit: input.limit,
       };
+      if (input.cursor !== undefined) {
+        historyInput.cursor = input.cursor;
+      }
       return jsonToolResult(await handlers.history(historyInput));
     }, redactForbiddenScopeDetails),
   );
@@ -531,15 +544,21 @@ export function registerMemoryTools(
         scope: scopeSchema.optional(),
         tags: z.array(tagSchema).max(memoryLimits.tags).default([]),
         include_archived: z.boolean().default(false),
+        limit: z.number().int().min(1).max(200).default(100),
+        cursor: paginationCursorSchema.optional(),
       },
     },
     withJsonErrorHandling(async (input) => {
       const exportInput: ExportToolInput = {
         tags: input.tags,
         include_archived: input.include_archived,
+        limit: input.limit,
       };
       if (input.scope !== undefined) {
         exportInput.scope = input.scope;
+      }
+      if (input.cursor !== undefined) {
+        exportInput.cursor = input.cursor;
       }
 
       return jsonToolResult(await handlers.exportMemories(exportInput));

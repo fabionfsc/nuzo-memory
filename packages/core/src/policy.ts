@@ -155,6 +155,15 @@ export class DefaultPolicyEngine implements PolicyEngine {
     for (const tag of tags) {
       assertTag(tag);
     }
+    if (input.limit !== undefined) {
+      invariant(input.limit > 0 && input.limit <= 1000, "MEMORY_LIST_LIMIT_INVALID", "List limit must be 1-1000.", {
+        limit: input.limit,
+      });
+    }
+    if (input.cursor !== undefined) {
+      invariant(input.cursor.trim().length > 0, "MEMORY_CURSOR_INVALID", "Memory pagination cursor is invalid.");
+      invariant(input.cursor.length <= memoryLimits.identifierLength * 4, "MEMORY_CURSOR_INVALID", "Memory pagination cursor is invalid.");
+    }
   }
 
   async assertCanAudit(input: AuditEventFilter, currentMemory?: MemoryRecord | null): Promise<void> {

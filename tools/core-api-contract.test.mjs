@@ -78,6 +78,7 @@ const typeExports = [
   "MemoryEventType",
   "MemoryExportDocument",
   "MemoryExportItem",
+  "MemoryHistoryInput",
   "MemoryKind",
   "MemoryRecord",
   "MemoryScope",

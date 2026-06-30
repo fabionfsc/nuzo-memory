@@ -130,6 +130,7 @@ export type {
   ImportMemoriesInput,
   ImportMemoriesResult,
   ListMemoriesInput,
+  MemoryHistoryInput,
   MemoryEvent,
   MemoryEventType,
   MemoryExportDocument,
