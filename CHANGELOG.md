@@ -57,6 +57,10 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
   requires the new setup path to return to GitHub, Pages, and npm documentation.
 - `@nuzo/memory-cli` and `@nuzo/mcp-server` now identify `0.9.0` as their final
   planned release before npm deprecation in favor of `@nuzo/memory`.
+- npm staging, publish-target checks, and publish automation now derive from a
+  shared package policy: `0.9.0` still includes the two legacy transition
+  packages, while later versions publish only `@nuzo/memory-core` and
+  `@nuzo/memory` and reject retired legacy staging.
 - Benchmark fixtures now distinguish portable JSON exports from operational
   SQLite backups.
 - MCP `memory.list`, `memory.history`, and `memory.export` responses are now

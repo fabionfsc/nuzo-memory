@@ -179,13 +179,23 @@ Follow `docs/operations/npm-publishing.md`. Confirm the `@nuzo` organization
 scope and maintainer access before changing source package privacy or running
 any publish command.
 
-Confirm npm trusted publishing is configured for each publishable package:
+Confirm npm trusted publishing is configured for each package that the target
+release will publish.
+
+For `0.9.0`, confirm:
 
 ```text
 @nuzo/memory-core
 @nuzo/memory
 @nuzo/memory-cli
 @nuzo/mcp-server
+```
+
+For `1.0.0` and later routine releases, confirm:
+
+```text
+@nuzo/memory-core
+@nuzo/memory
 ```
 
 All package settings must point to GitHub Actions, repository
@@ -249,6 +259,14 @@ For the `0.9.0` release only:
 
 Deprecation is a post-publication metadata action. Do not perform it during a
 dry run, rehearsal, or before the unified `0.9.0` replacement is available.
+
+For `1.0.0` and later:
+
+1. Confirm `npm run package:npm`, `npm run validate:npm`, and the npm release
+   workflow stage only `@nuzo/memory-core` and `@nuzo/memory`.
+2. Confirm `build/npm/packages/memory-cli/package.json` and
+   `build/npm/packages/mcp-server/package.json` are absent.
+3. Treat any retired transition package in staging as a release blocker.
 
 ## Security And Sanitization
 

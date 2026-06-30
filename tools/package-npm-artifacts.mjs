@@ -12,8 +12,10 @@ import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { isLocalDependencyReference } from "./release-shared.mjs";
 import {
-  isAfterLegacyPackageCutoff,
   isAtLeastVersion,
+  npmPackageDefinitions,
+  publishableNpmPackagesForVersion,
+  retiredLegacyNpmPackagesForVersion,
 } from "./npm-package-policy.mjs";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -21,37 +23,12 @@ const outputRoot = join(repositoryRoot, "build", "npm");
 const packagesRoot = join(outputRoot, "packages");
 const tarballsRoot = join(outputRoot, "tarballs");
 
-const definitions = [
-  {
-    source: "packages/core",
-    output: "memory-core",
-    kind: "source",
-  },
-  {
-    source: "packages/cli",
-    output: "memory-cli",
-    kind: "source",
-    legacy: true,
-  },
-  {
-    source: "packages/memory",
-    output: "memory",
-    kind: "unified",
-  },
-  {
-    source: "packages/mcp-server",
-    output: "mcp-server",
-    kind: "source",
-    legacy: true,
-  },
-];
-
 rmSync(outputRoot, { recursive: true, force: true });
 mkdirSync(packagesRoot, { recursive: true });
 mkdirSync(tarballsRoot, { recursive: true });
 
 const sourcePackages = new Map(
-  definitions.map((definition) => {
+  npmPackageDefinitions.map((definition) => {
     const sourceRoot = join(repositoryRoot, definition.source);
     return [definition.output, readJson(join(sourceRoot, "package.json"))];
   }),
@@ -62,13 +39,15 @@ if (versions.size !== 1) {
   fail("publishable Nuzo packages must use the same version");
 }
 const [packageVersion] = versions;
-if (
-  isAfterLegacyPackageCutoff(packageVersion) &&
-  definitions.some((definition) => definition.legacy)
-) {
-  fail(
-    `legacy transition packages must not be staged after 0.9.0; update the publish set for ${packageVersion}`,
-  );
+const definitions = publishableNpmPackagesForVersion(packageVersion);
+const retiredLegacyDefinitions = retiredLegacyNpmPackagesForVersion(packageVersion);
+if (retiredLegacyDefinitions.length > 0) {
+  for (const definition of retiredLegacyDefinitions) {
+    const retiredPath = join(packagesRoot, definition.output);
+    if (existsSync(retiredPath)) {
+      fail(`retired legacy package must not be staged after 0.9.0: ${definition.name}`);
+    }
+  }
 }
 
 for (const definition of definitions) {
