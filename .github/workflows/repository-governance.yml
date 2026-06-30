@@ -19,5 +19,20 @@ jobs:
         shell: bash
         run: |
           settings="$(gh api "repos/${GITHUB_REPOSITORY}")"
-          jq '{default_branch, delete_branch_on_merge}' <<<"${settings}"
-          jq -e '.default_branch == "main" and .delete_branch_on_merge == true' <<<"${settings}" >/dev/null
+          jq -e '.default_branch == "main"' <<<"${settings}" >/dev/null
+
+          owner="${GITHUB_REPOSITORY%%/*}"
+          stale=0
+          mapfile -t branches < <(gh api --paginate "repos/${GITHUB_REPOSITORY}/branches" --jq '.[].name')
+          for branch in "${branches[@]}"; do
+            if [[ "${branch}" == "main" ]]; then
+              continue
+            fi
+            pulls="$(gh api -X GET "repos/${GITHUB_REPOSITORY}/pulls" \
+              -f state=closed -f "head=${owner}:${branch}" -f per_page=100)"
+            if jq -e 'any(.[]; .merged_at != null)' <<<"${pulls}" >/dev/null; then
+              echo "Merged branch still exists: ${branch}" >&2
+              stale=1
+            fi
+          done
+          test "${stale}" -eq 0
