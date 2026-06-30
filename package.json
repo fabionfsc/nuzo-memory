@@ -37,7 +37,8 @@
     "test:tools": "node --test tools/*.test.mjs",
     "validate:marketplaces": "node tools/validate-marketplaces.mjs",
     "validate:npm": "npm run package:npm && node tools/validate-npm-artifacts.mjs",
-    "docs:build": "mkdocs build --strict"
+    "docs:build": "mkdocs build --strict",
+    "docs:check": "node --test tools/docs-contracts.test.mjs"
   },
   "devDependencies": {
     "typescript": "^6.0.3",

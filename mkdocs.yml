@@ -73,14 +73,14 @@ nav:
   - Home: index.md
   - Install And Use:
       - Overview: getting-started/index.md
-      - Clean Install Walkthrough: getting-started/clean-install.md
+      - Fresh Installation: getting-started/clean-install.md
       - Agent Memory Loop: getting-started/agent-memory-loop.md
-      - Local CLI: operations/local-cli.md
-      - MCP Tools: spec/tools.md
       - Codex Plugin: operations/codex-plugin.md
       - Claude Code Plugin: operations/claude-code-plugin.md
-      - Lifecycle Hooks: operations/lifecycle-hooks.md
+      - Local CLI: operations/local-cli.md
+      - Generic MCP Hosts: spec/tools.md
       - Optional Semantics: operations/optional-semantics.md
+      - Runtime Support: operations/runtime-support.md
       - Privacy And Security: operations/privacy-and-security.md
   - Product:
       - Vision: product/vision.md
@@ -97,31 +97,35 @@ nav:
   - Specification:
       - Memory Model: spec/memory-model.md
       - Capture Suggestions: spec/capture-suggestions.md
+      - Lifecycle Hooks: operations/lifecycle-hooks.md
       - Optional Semantic Retrieval: spec/semantic-retrieval.md
       - Memory Core API: spec/memory-core-api.md
       - Init: spec/init.md
       - API Versioning: spec/api-versioning.md
-  - Operations:
-      - Roadmap: operations/roadmap.md
-      - Release Goals: operations/release-goals.md
-      - GitHub Pages: operations/github-pages.md
-      - Issue Tracking: operations/issue-tracking.md
-      - Specification-Driven Workflow: operations/spec-driven-workflow.md
-      - Versioning: operations/versioning.md
-      - Release Version Map: operations/release-version-map.md
-      - Runtime Support: operations/runtime-support.md
-      - npm Publishing: operations/npm-publishing.md
-      - Release Checklist: operations/release-checklist.md
-      - Post-Release Validation: operations/post-release-validation.md
-      - Recall Benchmark: operations/recall-benchmark.md
-      - Capture Intelligence Benchmark: operations/capture-benchmark.md
-      - Optional Semantics Benchmark: operations/semantic-benchmark.md
-      - 0.7.0 Optional Semantics Evaluation: operations/semantic-evaluation-0.7.0.md
-      - 0.7.0 Optional Semantics Release Gates: operations/semantic-release-gates-0.7.0.md
-      - 0.6.0 Capture Release Gates: operations/capture-release-gates-0.6.0.md
-      - Coding Standards: operations/coding-standards.md
-      - Testing Strategy: operations/testing-strategy.md
-      - 0.9.0 User Documentation Audit: operations/user-documentation-audit-0.9.0.md
+  - Maintainer Guide:
+      - Planning:
+          - Roadmap: operations/roadmap.md
+          - Release Goals: operations/release-goals.md
+          - Issue Tracking: operations/issue-tracking.md
+          - Specification-Driven Workflow: operations/spec-driven-workflow.md
+      - Release Process:
+          - Versioning: operations/versioning.md
+          - Release Version Map: operations/release-version-map.md
+          - npm Publishing: operations/npm-publishing.md
+          - Release Checklist: operations/release-checklist.md
+          - Post-Release Validation: operations/post-release-validation.md
+          - GitHub Pages: operations/github-pages.md
+      - Engineering Quality:
+          - Coding Standards: operations/coding-standards.md
+          - Testing Strategy: operations/testing-strategy.md
+          - Recall Benchmark: operations/recall-benchmark.md
+          - Capture Intelligence Benchmark: operations/capture-benchmark.md
+          - Optional Semantics Benchmark: operations/semantic-benchmark.md
+          - 0.9.0 User Documentation Audit: operations/user-documentation-audit-0.9.0.md
+      - Historical Release Evidence:
+          - 0.7.0 Optional Semantics Evaluation: operations/semantic-evaluation-0.7.0.md
+          - 0.7.0 Optional Semantics Release Gates: operations/semantic-release-gates-0.7.0.md
+          - 0.6.0 Capture Release Gates: operations/capture-release-gates-0.6.0.md
   - Decisions:
       - Local First: adr/0001-local-first.md
       - SQLite First: adr/0002-sqlite-first.md

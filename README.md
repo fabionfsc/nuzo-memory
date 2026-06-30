@@ -29,103 +29,110 @@
 </p>
 
 <p align="center">
-  <a href="https://nuzo.com.br">Docs</a>
+  <a href="https://nuzo.com.br/getting-started/">Get started</a>
   ·
-  <a href="docs/getting-started/index.md">Start</a>
+  <a href="https://nuzo.com.br/operations/codex-plugin/">Codex</a>
   ·
-  <a href="docs/spec/tools.md">Tools</a>
+  <a href="https://nuzo.com.br/operations/claude-code-plugin/">Claude Code</a>
   ·
-  <a href="docs/operations/roadmap.md">Roadmap</a>
+  <a href="https://nuzo.com.br/spec/tools/">MCP tools</a>
 </p>
 
 ---
 
-Nuzo gives AI agents durable local memory without making that memory hidden. It
-is designed for Codex, Claude Code, and MCP-compatible hosts where useful
-context should stay inspectable and user-owned.
+Nuzo gives Codex, Claude Code, and other MCP-compatible agents durable memory
+without turning that memory into hidden state. Memories stay in a local SQLite
+store that you can inspect, edit, export, or delete.
 
-## Install
+`0.8.1` is the current public release.
 
-Use Node.js 22 LTS or 24 LTS with npm 10 or newer. Choose the interface you
-actually use; host plugins resolve the matching Nuzo runtime themselves.
+## Install For Your Agent
 
-| Interface | Install |
-| --- | --- |
-| Codex | `codex plugin marketplace add fabionfsc/nuzo-memory`, then `codex plugin add nuzo@nuzo-memory` |
-| Claude Code | `claude plugin marketplace add fabionfsc/nuzo-memory`, then `claude plugin install nuzo@nuzo-memory` |
-| CLI or generic MCP host | `npm install --global @nuzo/memory` |
+Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
 
-Nuzo `0.9.0+` also provides a CLI bootstrap path for users who install the
-unified package first. The npm install adds the `nuzo` command; it does not
-modify Codex or Claude Code configuration automatically.
+### Codex
 
 ```bash
-npm install --global @nuzo/memory
-nuzo setup
+codex plugin marketplace add fabionfsc/nuzo-memory
+codex plugin add nuzo@nuzo-memory
 ```
 
-For scripted installs, choose the host explicitly:
+Open `/plugins` to confirm Nuzo is enabled, then open `/hooks` and trust the
+Nuzo hooks. Start a new thread after installation.
+
+### Claude Code
 
 ```bash
-# Codex only
-nuzo host install codex --yes
-
-# Claude Code only
-nuzo host install claude-code --yes
-
-# Both Codex and Claude Code
-nuzo host install --all --yes
+claude plugin marketplace add fabionfsc/nuzo-memory
+claude plugin install nuzo@nuzo-memory --scope user
 ```
 
-Use `--dry-run` to preview the exact marketplace/plugin commands before they
-run. After a plugin install, review and trust its hooks, then start a new agent
-session. A separate global npm install is not required for Codex or Claude
-Code.
+Run `claude plugin list --json`, inspect `/mcp` and `/hooks`, then start a new
+session.
 
-Plugin setup details:
-[Codex](docs/operations/codex-plugin.md) ·
-[Claude Code](docs/operations/claude-code-plugin.md)
+The plugins obtain their version-matched Nuzo runtime themselves. Do not also
+install the global npm package unless you want the shell CLI.
 
-## Manage Memory
+## Verify Memory Across Sessions
 
-Use the CLI when you want to inspect, edit, export, or remove memory directly.
-
-```bash
-nuzo memory init
-nuzo memory doctor
-nuzo memory list
-nuzo memory recall "deployment preferences"
-nuzo memory integrity
-nuzo memory backup --path ./memories.backup.sqlite
-nuzo memory export --path ./memories.memory.export.json
-```
-
-Runtime memory defaults to:
+In a new Codex thread or Claude Code session, say:
 
 ```text
-~/.nuzo/memory/memories.sqlite
+Save this in Nuzo memory: My installation test marker is NUZO-OK.
 ```
 
-CLI, MCP server, and host hooks share the same runtime resolver. Use
-`NUZO_MEMORY_STORE`, `NUZO_MEMORY_SCOPE`, and, for restricted MCP/hook
-sessions, `NUZO_AUTHORIZED_SCOPES` when a host needs an explicit store, default
-scope, or scope allowlist.
+Review and confirm the proposed memory. Start another new session and ask:
 
-## Defaults
+```text
+What is my Nuzo installation test marker?
+```
 
-- Local SQLite storage.
-- No telemetry by default.
-- No remote embeddings by default.
-- No hidden inferred writes.
+The answer should use `NUZO-OK`. If it does not, follow the
+[Codex](docs/operations/codex-plugin.md) or
+[Claude Code](docs/operations/claude-code-plugin.md) troubleshooting path.
+
+## Use The CLI
+
+Install the CLI when you want to manage memory from a shell or connect a
+generic MCP host:
+
+```bash
+npm install --global @nuzo/memory@0.8.1
+nuzo memory init
+nuzo memory doctor
+```
+
+Try a local write and recall:
+
+```bash
+nuzo memory remember "The demo project uses SQLite." --kind project_decision --tag demo
+nuzo memory recall "demo storage"
+```
+
+The CLI also supports list, update, forget, audit, export, import, and optional
+local semantic retrieval. See the [CLI guide](docs/operations/local-cli.md).
+
+For a generic MCP host, run Nuzo as a stdio server:
+
+```bash
+npm exec --yes --package=@nuzo/memory@0.8.1 -- nuzo-mcp-server
+```
+
+## Safe Defaults
+
+- Local SQLite storage under `~/.nuzo/memory/`.
+- No telemetry or remote embeddings by default.
+- No hidden inferred writes; suggested memories require confirmation.
+- Recalled memory remains untrusted data, not agent instructions.
 - Runtime memory files stay out of Git.
 
 ## Documentation
 
-- Primary site: https://nuzo.com.br
-- Getting started: [docs/getting-started/index.md](docs/getting-started/index.md)
-- Codex plugin: [docs/operations/codex-plugin.md](docs/operations/codex-plugin.md)
-- Claude Code plugin: [docs/operations/claude-code-plugin.md](docs/operations/claude-code-plugin.md)
-- Tool contract: [docs/spec/tools.md](docs/spec/tools.md)
+- [Getting started](docs/getting-started/index.md)
+- [Clean install walkthrough](docs/getting-started/clean-install.md)
+- [Privacy and security](docs/operations/privacy-and-security.md)
+- [MCP tool contract](docs/spec/tools.md)
+- [Roadmap](docs/operations/roadmap.md)
 
 ## Contributing
 

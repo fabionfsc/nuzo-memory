@@ -7,44 +7,18 @@ Nuzo's local CLI command is `nuzo`.
 Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
 
 ```bash
-npm install --global @nuzo/memory
+npm install --global @nuzo/memory@0.8.1
 nuzo memory init
 nuzo memory doctor
 ```
 
-For Nuzo `0.9.0+`, the same package can also bootstrap supported host plugins
-after the global install. The npm install only installs the `nuzo` command; it
-does not change Codex or Claude Code configuration automatically.
-
-```bash
-nuzo setup
-```
-
-`nuzo setup` detects Codex and Claude Code CLIs in `PATH`, prints the exact
-plugin marketplace/install commands it will run, and requires explicit
-confirmation before mutating host configuration.
-
-For scripted installs, choose the host explicitly:
-
-```bash
-# Codex
-nuzo host install codex --yes
-
-# Claude Code
-nuzo host install claude-code --yes
-
-# Both Codex and Claude Code
-nuzo host install --all --yes
-```
-
-Use `--dry-run` to inspect the plan without changing anything, or `--json` for
-machine-readable automation output.
+This installs the shell CLI. Codex and Claude Code users should follow their
+host plugin guides instead; those plugins obtain a version-matched runtime and
+do not require this global package.
 
 ## Common Commands
 
 ```bash
-nuzo setup --dry-run
-nuzo host install --all --dry-run --json
 nuzo memory init
 nuzo memory init --project
 nuzo memory remember "The project uses SQLite for local storage." --kind project_decision --tag storage
@@ -52,27 +26,13 @@ nuzo memory suggest-capture "The user prefers concise final answers." --kind pre
 nuzo memory recall "local storage"
 nuzo memory list --all-scopes
 nuzo memory export --path ./memories.memory.export.json
-nuzo memory integrity
-nuzo memory backup --path ./memories.backup.sqlite
-nuzo memory restore ./memories.backup.sqlite --yes
 nuzo memory history mem_01HZY
 nuzo memory audit --scope project:auto --event-type memory.exported
 nuzo memory forget-many --tag obsolete
 nuzo memory forget-many --scope project:auto --apply
 ```
 
-## Source Development
-
-The CLI source lives at `packages/cli`. Contributors can use the workspace
-wrapper after building:
-
-```bash
-npm ci
-npm run build
-npm run nuzo -- memory doctor
-```
-
-Arguments after `--` are passed to the CLI.
+## Runtime Configuration
 
 Project init creates `.nuzo/config.json`, a project-local SQLite store, and
 missing Git ignore rules. Later CLI commands run from that project root resolve
@@ -122,7 +82,7 @@ where `memory_id` is `global` in CLI output. Filter with `--memory-id`,
 `--event-type`, `--actor`, `--scope`, `--since`, `--until`, and `--limit`.
 Audit output is metadata-only and does not include memory content.
 
-## Integrity, Backup, And Restore
+## Export And Import
 
 Use JSON or Markdown export when you need a portable memory document:
 
@@ -130,48 +90,22 @@ Use JSON or Markdown export when you need a portable memory document:
 nuzo memory export --path ./memories.memory.export.json
 ```
 
-Use SQLite backup when you need an operational snapshot of the selected local
-store, including audit history and SQLite indexes:
+Preview an import before writing:
 
 ```bash
-nuzo memory integrity
-nuzo memory backup --path ./memories.backup.sqlite
+nuzo memory import ./memories.memory.export.json --dry-run
 ```
 
-`memory backup` uses SQLite's online backup API instead of copying the
-`.sqlite` file directly. This is the supported path for WAL-mode stores because
-pending WAL pages are included consistently. Do not back up Nuzo by copying
-only `memories.sqlite` while the store may have `memories.sqlite-wal` or
-`memories.sqlite-shm` beside it.
-
-Restore validates the source backup before replacing the selected target store:
+Apply the import only after reviewing the preflight output:
 
 ```bash
-nuzo memory restore ./memories.backup.sqlite --yes
+nuzo memory import ./memories.memory.export.json
 ```
-
-Without `--yes`, restore refuses to replace an existing target. After restore,
-run:
-
-```bash
-nuzo memory integrity
-nuzo memory doctor
-```
-
-The integrity check validates SQLite `integrity_check`, schema version,
-foreign-key state, memory counts, and FTS consistency. It exits with code `1`
-when the selected store is missing, corrupt, newer than the supported schema,
-or internally inconsistent.
-
-Use `--json` with `memory integrity` or `memory doctor` when automation needs a
-stable machine-readable report.
 
 Use the CLI commands when you are administering a local store from a shell.
 Inside Codex, Claude Code, or another MCP host, call `memory.doctor` instead.
-The MCP and host hook doctor reports expose the same content-free integrity
-summary so hosted-agent troubleshooting can see schema, SQLite integrity,
-memory counts, and FTS consistency without shelling out or exposing memory
-content.
+Doctor diagnostics remain content-free and report runtime readiness without
+returning stored memory text.
 
 ## Authorization Boundary
 
@@ -184,64 +118,6 @@ Repository-controlled agents should use a restricted MCP session with an
 explicit core-policy allowlist instead of treating a project scope as an access
 control boundary. Use separate stores and operating-system permissions when
 process-level isolation is required.
-
-## Smoke Test
-
-Run:
-
-```bash
-npm run smoke:cli
-```
-
-This builds the workspace and runs a fake-data lifecycle:
-
-```bash
-nuzo memory init
-nuzo memory remember "CLI smoke backup restore fake data." --kind note --tag smoke
-nuzo memory integrity
-nuzo memory backup --path /tmp/nuzo-cli-smoke/memories.backup.sqlite --overwrite
-nuzo memory restore /tmp/nuzo-cli-smoke/memories.backup.sqlite --yes
-nuzo memory integrity
-nuzo memory doctor
-```
-
-against a temporary store path under `/tmp`.
-
-The smoke script sets:
-
-```bash
-NUZO_DOCTOR_SKIP_GIT=1
-```
-
-This keeps restricted agent environments from turning an otherwise healthy
-temporary store into a warning only because Git process execution is
-unavailable. Normal `nuzo memory doctor` runs still check for tracked memory
-files by default.
-
-For a fuller clean install and import/export walkthrough, see `docs/getting-started/clean-install.md`.
-
-## Package Direction
-
-The public command should remain:
-
-```bash
-nuzo
-```
-
-The memory commands should remain grouped under:
-
-```bash
-nuzo memory
-```
-
-The released user package is `@nuzo/memory`; the user-facing command stays
-`nuzo`.
-
-## Boundaries
-
-The CLI must call `packages/core` use cases.
-
-Do not add memory business logic, storage rules, import/export rules, or policy checks directly in the CLI.
 
 ## Exit Codes
 

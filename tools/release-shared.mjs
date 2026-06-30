@@ -34,6 +34,7 @@ export const publicReleaseReferencePaths = [
   "docs/index.md",
   "docs/operations/claude-code-plugin.md",
   "docs/operations/codex-plugin.md",
+  "docs/operations/local-cli.md",
   "docs/operations/npm-publishing.md",
   "docs/operations/optional-semantics.md",
   "docs/operations/versioning.md",

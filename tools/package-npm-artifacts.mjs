@@ -11,6 +11,10 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { isLocalDependencyReference } from "./release-shared.mjs";
+import {
+  isAfterLegacyPackageCutoff,
+  isAtLeastVersion,
+} from "./npm-package-policy.mjs";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const outputRoot = join(repositoryRoot, "build", "npm");
@@ -56,6 +60,15 @@ const sourcePackages = new Map(
 const versions = new Set([...sourcePackages.values()].map((pkg) => pkg.version));
 if (versions.size !== 1) {
   fail("publishable Nuzo packages must use the same version");
+}
+const [packageVersion] = versions;
+if (
+  isAfterLegacyPackageCutoff(packageVersion) &&
+  definitions.some((definition) => definition.legacy)
+) {
+  fail(
+    `legacy transition packages must not be staged after 0.9.0; update the publish set for ${packageVersion}`,
+  );
 }
 
 for (const definition of definitions) {
@@ -195,6 +208,45 @@ function validateStagedPackage(root, pkg) {
   for (const requiredPath of requiredPaths) {
     if (!existsSync(join(root, requiredPath))) {
       fail(`${pkg.name} staged package is missing ${requiredPath}`);
+    }
+  }
+  validateStagedReadme(root, pkg);
+}
+
+function validateStagedReadme(root, pkg) {
+  const readme = readFileSync(join(root, "README.md"), "utf8");
+  const readmeLines = readme.split(/\r?\n/u);
+  if (!readmeLines.includes("Documentation: https://nuzo.com.br/")) {
+    fail(`${pkg.name} staged README must link to the public documentation`);
+  }
+  if (pkg.name === "@nuzo/memory") {
+    for (const requiredText of [
+      "codex plugin marketplace add fabionfsc/nuzo-memory",
+      "claude plugin marketplace add fabionfsc/nuzo-memory",
+      "npm install --global @nuzo/memory",
+      "Verify Memory Across Sessions",
+    ]) {
+      if (!readme.includes(requiredText)) {
+        fail(`${pkg.name} staged README is missing user onboarding: ${requiredText}`);
+      }
+    }
+    const hostBootstrapCommands = ["nuzo setup", "nuzo host install"];
+    if (isAtLeastVersion(pkg.version, "0.9.0")) {
+      for (const command of hostBootstrapCommands) {
+        if (!readme.includes(command)) {
+          fail(`${pkg.name}@${pkg.version} README must document released command: ${command}`);
+        }
+      }
+    } else if (hostBootstrapCommands.some((command) => readme.includes(command))) {
+      fail(`${pkg.name}@${pkg.version} README documents an unreleased host bootstrap command`);
+    }
+  }
+  if (["@nuzo/memory-cli", "@nuzo/mcp-server"].includes(pkg.name)) {
+    if (
+      !readme.includes("New installs should use `@nuzo/memory`") ||
+      !readme.includes("Version `0.9.0` is the planned final release")
+    ) {
+      fail(`${pkg.name} staged README must document its replacement and final release`);
     }
   }
 }
