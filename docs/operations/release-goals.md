@@ -366,6 +366,14 @@ Exit criteria:
 
 Goal: make the first stable compatibility and migration commitment for Nuzo.
 
+The stable release also commits to a CLI-only developer experience target:
+Nuzo should install through npm, configure Codex and Claude Code through an
+explicit `nuzo setup`, recall relevant memory in new host sessions, support
+confirmed remember/update/delete flows through the hosts, update installed host
+plugins without repeating setup, and keep memory management available through
+the local `nuzo` CLI. The detailed target contract is maintained in
+[1.0.0 Developer Experience Contract](developer-experience-1.0.0.md).
+
 Required state:
 
 - local-first, inspectable, user-controlled memory remains the default;
@@ -377,9 +385,9 @@ Required state:
 - upgrade and recovery guidance is complete;
 - the release checklist passes against the exact published artifacts.
 
-`1.0.0` does not require cloud sync, a dashboard, graph memory, mandatory
-embeddings, or automatic inferred writes. Stability and trust in the supported
-core are the release boundary.
+`1.0.0` does not require cloud sync, a dashboard or browser UI, graph memory,
+mandatory embeddings, or automatic inferred writes. Stability, trust, and a
+proven CLI-first host workflow are the release boundary.
 
 ## Execution Tracking
 

@@ -106,6 +106,7 @@ nav:
       - Planning:
           - Roadmap: operations/roadmap.md
           - Release Goals: operations/release-goals.md
+          - 1.0.0 Developer Experience Contract: operations/developer-experience-1.0.0.md
           - Issue Tracking: operations/issue-tracking.md
           - Specification-Driven Workflow: operations/spec-driven-workflow.md
       - Release Process:

@@ -45,6 +45,9 @@
 
 - Optional encrypted storage.
 - Optional sync provider.
-- Browser or TUI memory manager.
+- CLI-only interactive memory manager for users who want to review, edit,
+  archive, delete, export, import, and inspect audit history without composing
+  every command manually.
+- Browser memory manager only after the stable CLI-first workflow is proven.
 - Agent-specific policies.
 - Team-level memory stores.
