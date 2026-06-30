@@ -79,6 +79,22 @@ npm run smoke:codex-plugin
 NUZO_HOST_CANARY_NATIVE=1 npm run smoke:host-canary
 ```
 
+Before tagging, confirm the CI job `Installed artifacts` passed for every
+supported OS/Node lane documented in [Runtime Support](runtime-support.md):
+
+```text
+ubuntu-latest / Node 22
+ubuntu-latest / Node 24
+macos-15-intel / Node 22
+macos-15-intel / Node 24
+windows-latest / Node 22
+windows-latest / Node 24
+```
+
+Do not claim a new OS, architecture, or Node combination in release notes until
+that combination is represented in CI or explicitly called out as untested and
+unsupported.
+
 For `0.9.0+`, prove local-store integrity and recovery with fake data before
 release:
 

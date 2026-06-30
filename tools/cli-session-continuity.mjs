@@ -256,7 +256,8 @@ export function assertCliSessionContinuity({
 }
 
 function assertCliExit(executable, args, cwd, expectedStatus, expectedError) {
-  const result = spawnSync(executable, args, {
+  const invocation = commandInvocation(executable, args);
+  const result = spawnSync(invocation.command, invocation.args, {
     cwd,
     encoding: "utf8",
   });
@@ -274,7 +275,8 @@ function assertCliExit(executable, args, cwd, expectedStatus, expectedError) {
 }
 
 export function runCli(command, args, cwd, env = {}) {
-  const result = spawnSync(command, args, {
+  const invocation = commandInvocation(command, args);
+  const result = spawnSync(invocation.command, invocation.args, {
     cwd,
     encoding: "utf8",
     env: {
@@ -291,6 +293,16 @@ export function runCli(command, args, cwd, env = {}) {
     process.exit(result.status ?? 1);
   }
   return result;
+}
+
+function commandInvocation(command, args) {
+  if (typeof command === "string") {
+    return { command, args };
+  }
+  return {
+    command: command.command,
+    args: [...command.args, ...args],
+  };
 }
 
 function fail(message) {

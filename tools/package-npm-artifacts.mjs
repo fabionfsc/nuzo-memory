@@ -242,6 +242,7 @@ function pack(packageRoot) {
     {
       cwd: packageRoot,
       encoding: "utf8",
+      shell: process.platform === "win32",
     },
   );
   if (result.error) {

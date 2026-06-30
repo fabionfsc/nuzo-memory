@@ -41,6 +41,9 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Documentation CI now validates Markdown links, anchors, bounded external
   links, shell snippet syntax, setup/update command drift, and core public
   terminology across user-facing entry points.
+- CI now validates staged npm and generated plugin artifacts across the
+  supported Linux x64, macOS x64, and Windows x64 runtime matrix on Node.js 22
+  LTS and 24 LTS.
 
 ### Changed
 

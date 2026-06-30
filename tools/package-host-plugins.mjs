@@ -109,15 +109,18 @@ function readJson(path) {
 }
 
 function runValidator(script, pluginRoot) {
-  const result = spawnSync(
-    "python3",
-    [join(repositoryRoot, "tools", script), "--release", pluginRoot],
-    {
+  let result = spawnSync("python3", [join(repositoryRoot, "tools", script), "--release", pluginRoot], {
+    cwd: repositoryRoot,
+    encoding: "utf8",
+    stdio: "inherit",
+  });
+  if (result.error?.code === "ENOENT") {
+    result = spawnSync("python", [join(repositoryRoot, "tools", script), "--release", pluginRoot], {
       cwd: repositoryRoot,
       encoding: "utf8",
       stdio: "inherit",
-    },
-  );
+    });
+  }
   if (result.error) {
     throw result.error;
   }

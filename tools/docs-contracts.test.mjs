@@ -121,6 +121,19 @@ test("supported Node lines stay visible in first-use documentation", () => {
   }
 });
 
+test("supported OS artifact matrix stays visible in CI and runtime docs", () => {
+  const workflow = readText(".github/workflows/ci.yml");
+  const runtimeSupport = readText("docs/operations/runtime-support.md");
+  for (const os of ["ubuntu-latest", "macos-15-intel", "windows-latest"]) {
+    assert.match(workflow, new RegExp(`- ${escapeRegExp(os)}`), `CI OS ${os}`);
+  }
+  for (const label of ["Linux x64", "macOS x64", "Windows x64"]) {
+    assert.match(runtimeSupport, new RegExp(escapeRegExp(label)), `runtime support ${label}`);
+  }
+  assert.match(workflow, /npm run smoke:os-artifacts/u);
+  assert.match(readText("docs/operations/testing-strategy.md"), /npm run smoke:os-artifacts/u);
+});
+
 test("primary install navigation excludes maintainer and historical evidence", () => {
   const navigation = readText("mkdocs.yml");
   const start = navigation.indexOf("  - Install And Use:");
