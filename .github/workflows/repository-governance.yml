@@ -18,5 +18,6 @@ jobs:
       - name: Verify short-lived branch policy
         shell: bash
         run: |
-          test "$(gh api "repos/${GITHUB_REPOSITORY}" --jq '.default_branch')" = "main"
-          test "$(gh api "repos/${GITHUB_REPOSITORY}" --jq '.delete_branch_on_merge')" = "true"
+          settings="$(gh api "repos/${GITHUB_REPOSITORY}")"
+          jq '{default_branch, delete_branch_on_merge}' <<<"${settings}"
+          jq -e '.default_branch == "main" and .delete_branch_on_merge == true' <<<"${settings}" >/dev/null
