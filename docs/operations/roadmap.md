@@ -363,5 +363,7 @@ deliverables and exit criteria:
 8. `1.0.0`: stable release.
 
 See [Release Goals](release-goals.md) for the scope, non-goals, and exit
-criteria of each release. GitHub milestones mirror those release boundaries,
-while focused GitHub Issues remain the execution tracker for current work.
+criteria of each release. The stable user-experience target is defined in the
+[1.0.0 Developer Experience Contract](developer-experience-1.0.0.md). GitHub
+milestones mirror those release boundaries, while focused GitHub Issues remain
+the execution tracker for current work.
