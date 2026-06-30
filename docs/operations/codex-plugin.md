@@ -68,8 +68,7 @@ codex plugin marketplace remove nuzo-memory
 ### Upcoming In 0.9.0
 
 This command is **not available in the current 0.8.1 release**. If Codex was
-installed through `nuzo setup` or `nuzo host install codex --yes`, later
-updates use:
+installed through `nuzo setup`, later updates use:
 
 ```bash
 nuzo update --yes

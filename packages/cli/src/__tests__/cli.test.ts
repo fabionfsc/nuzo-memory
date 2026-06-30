@@ -78,7 +78,7 @@ async function runCli(
 
 describe("nuzo memory cli", () => {
   it("prints host setup dry-run plans without changing host configuration", async () => {
-    const codex = await runCli(["host", "install", "codex", "--dry-run"]);
+    const codex = await runCli(["setup", "--codex", "--dry-run"]);
     expect(codex.stderr).toEqual([]);
     expect(codex.stdout[0]).toContain("Nuzo host setup plan");
     expect(codex.stdout[0]).toMatch(/Codex: (detected|not detected)/);
@@ -124,21 +124,27 @@ describe("nuzo memory cli", () => {
       ],
     });
 
-    const alias = await runCli(["host", "install", "--all", "--dry-run", "--json"]);
-    expect(JSON.parse(alias.stdout[0] ?? "{}")).toMatchObject({
-      dry_run: true,
-      hosts: [
-        { host: "codex" },
-        { host: "claude-code" },
-      ],
-    });
   });
 
   it("rejects ambiguous setup target styles", async () => {
-    const result = await runCli(["setup", "--codex", "--host", "claude-code", "--dry-run"]);
+    const result = await runCli(["setup", "--codex", "--all", "--dry-run"]);
     expect(result.stdout).toEqual([]);
     expect(result.stderr.join("\n")).toContain(
-      "Use --codex, --claude-code, --all, or --host, not multiple target styles.",
+      "Use --codex, --claude-code, or --all, not multiple target styles.",
+    );
+  });
+
+  it("rejects ambiguous update target styles", async () => {
+    const result = await runCli(["update", "--codex", "--all", "--dry-run"]);
+    expect(result.stdout).toEqual([]);
+    expect(result.stderr.join("\n")).toContain(
+      "Use --codex, --claude-code, or --all, not multiple target styles.",
+    );
+  });
+
+  it("does not expose the removed host install namespace", async () => {
+    await expect(runCli(["host", "install", "codex", "--dry-run"])).rejects.toThrow(
+      "unknown command 'host'",
     );
   });
 

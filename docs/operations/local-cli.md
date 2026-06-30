@@ -38,9 +38,6 @@ nuzo setup --claude-code --yes
 nuzo setup --all --yes
 ```
 
-Compatibility aliases remain available under `nuzo host install`, but `nuzo
-setup` is the primary first-time user path.
-
 Do not rerun setup after an upgrade. Update the global package, then refresh
 every already-installed Nuzo host plugin with one explicit command:
 
@@ -49,8 +46,9 @@ npm install --global @nuzo/memory@latest
 nuzo update --yes
 ```
 
-Use `nuzo update --dry-run` to inspect the plan or `nuzo host update <host>
---yes` to target one host. Missing plugins are not installed by an update.
+Use `nuzo update --dry-run` to inspect the plan. Use
+`nuzo update --codex --yes` or `nuzo update --claude-code --yes` to target one
+host. Missing plugins are not installed by an update.
 
 ## Common Commands
 

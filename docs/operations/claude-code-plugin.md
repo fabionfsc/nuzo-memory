@@ -58,8 +58,7 @@ claude plugin uninstall nuzo@nuzo-memory --scope user
 ### Upcoming In 0.9.0
 
 This command is **not available in the current 0.8.1 release**. If Claude Code
-was installed through `nuzo setup` or `nuzo host install claude-code --yes`,
-later updates use:
+was installed through `nuzo setup`, later updates use:
 
 ```bash
 nuzo update --yes

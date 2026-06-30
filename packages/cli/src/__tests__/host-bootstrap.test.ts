@@ -57,7 +57,6 @@ describe("host bootstrap", () => {
       "      Codex only: nuzo setup --codex --yes",
       "      Claude Code only: nuzo setup --claude-code --yes",
       "      Both hosts: nuzo setup --all --yes",
-      "      Compatibility aliases remain available under nuzo host install.",
     ].join("\n"));
   });
 

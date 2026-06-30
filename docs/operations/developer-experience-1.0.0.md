@@ -51,8 +51,8 @@ nuzo setup --claude-code --yes
 nuzo setup --all --yes
 ```
 
-Compatibility aliases such as `nuzo host install codex --yes` may remain, but
-the first-class product story should be one setup command.
+Do not keep a second public host-install path. The first-class product story
+should be one setup command.
 
 ## Target Host Activation Flow
 
