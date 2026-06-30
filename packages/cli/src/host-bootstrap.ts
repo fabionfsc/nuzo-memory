@@ -42,16 +42,6 @@ const marketplaceSource = "fabionfsc/nuzo-memory";
 const pluginId = "nuzo@nuzo-memory";
 const supportedHosts: HostBootstrapHost[] = ["codex", "claude-code"];
 
-export function parseHostBootstrapHost(value: string): HostBootstrapHost {
-  if (value === "codex" || value === "claude-code") {
-    return value;
-  }
-  throw new NuzoMemoryError(
-    "HOST_BOOTSTRAP_UNKNOWN_HOST",
-    "Host must be codex or claude-code.",
-  );
-}
-
 export function supportedHostBootstrapHosts(): HostBootstrapHost[] {
   return [...supportedHosts];
 }

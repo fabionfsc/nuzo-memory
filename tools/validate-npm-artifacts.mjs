@@ -155,6 +155,28 @@ function assertCliWorkflow(cwd, memoryStore) {
 
   assertCliExit(
     executable,
+    ["host", "install", "codex", "--dry-run"],
+    cwd,
+    2,
+    "unknown command 'host'",
+  );
+  assertCliExit(
+    executable,
+    ["setup", "--host", "codex", "--dry-run"],
+    cwd,
+    2,
+    "unknown option '--host'",
+  );
+  assertCliExit(
+    executable,
+    ["update", "--host", "codex", "--dry-run"],
+    cwd,
+    2,
+    "unknown option '--host'",
+  );
+
+  assertCliExit(
+    executable,
     [
       "memory",
       "--store",

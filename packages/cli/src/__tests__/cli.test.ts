@@ -142,9 +142,15 @@ describe("nuzo memory cli", () => {
     );
   });
 
-  it("does not expose the removed host install namespace", async () => {
+  it("does not expose removed host command compatibility paths", async () => {
     await expect(runCli(["host", "install", "codex", "--dry-run"])).rejects.toThrow(
       "unknown command 'host'",
+    );
+    await expect(runCli(["setup", "--host", "codex", "--dry-run"])).rejects.toThrow(
+      "unknown option '--host'",
+    );
+    await expect(runCli(["update", "--host", "codex", "--dry-run"])).rejects.toThrow(
+      "unknown option '--host'",
     );
   });
 
