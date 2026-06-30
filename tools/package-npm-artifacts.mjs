@@ -209,7 +209,7 @@ function validateStagedReadme(root, pkg) {
         fail(`${pkg.name} staged README is missing user onboarding: ${requiredText}`);
       }
     }
-    const hostBootstrapCommands = ["nuzo setup", "nuzo host install", "nuzo update"];
+    const hostBootstrapCommands = ["nuzo setup", "nuzo update"];
     if (isAtLeastVersion(pkg.version, "0.9.0")) {
       for (const command of hostBootstrapCommands) {
         if (!readme.includes(command)) {

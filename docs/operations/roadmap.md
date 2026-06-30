@@ -258,7 +258,7 @@ Non-goals for this stage:
 - merging the published npm packages only to reduce their count;
 - adding cloud sync, embeddings, or automatic write hooks;
 - replacing `CONTRIBUTING.md` with agent-specific instructions;
-- adding local installer scripts before official host install paths are clear.
+- adding local installer scripts before official setup and update paths are clear.
 
 ## Stage 9: Agent Memory Lifecycle
 

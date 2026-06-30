@@ -70,7 +70,6 @@ import {
   defaultSetupHosts,
   detectHostBootstrapHosts,
   formatHostBootstrapResult,
-  parseHostBootstrapHost,
   runHostBootstrap,
   supportedHostBootstrapHosts,
   type HostBootstrapHost,
@@ -129,18 +128,16 @@ interface RecallCommandOptions {
   json: boolean;
 }
 
-interface HostInstallCommandOptions {
+interface HostTargetCommandOptions {
   all: boolean;
+  claudeCode: boolean;
+  codex: boolean;
   dryRun: boolean;
   json: boolean;
   yes: boolean;
 }
 
-interface SetupCommandOptions extends HostInstallCommandOptions {
-  claudeCode: boolean;
-  codex: boolean;
-  host?: HostBootstrapHost[];
-}
+type SetupCommandOptions = HostTargetCommandOptions;
 
 interface DoctorReport {
   storePath: string;
@@ -189,7 +186,6 @@ export function createProgram(io: CliIO = defaultIO): Command {
   program
     .command("setup")
     .description("Configure Nuzo for installed agent hosts.")
-    .option("--host <host...>", "Host to configure: codex or claude-code.", parseHostList)
     .option("--codex", "Configure Codex only.", false)
     .option("--claude-code", "Configure Claude Code only.", false)
     .option("--all", "Configure every supported host.", false)
@@ -221,6 +217,9 @@ Examples:
   program
     .command("update")
     .description("Update every installed Nuzo host plugin without repeating setup.")
+    .option("--codex", "Update the installed Codex plugin only.", false)
+    .option("--claude-code", "Update the installed Claude Code plugin only.", false)
+    .option("--all", "Update every supported installed host plugin.", false)
     .option("--dry-run", "Print the managed update plan without changing host configuration.", false)
     .option("--yes", "Confirm the managed update non-interactively.", false)
     .option("--json", "Print JSON output for scripting.", false)
@@ -232,90 +231,15 @@ Examples:
 
   # Update every installed Nuzo host plugin
   $ nuzo update --yes
+
+  # Update the installed Codex plugin only
+  $ nuzo update --codex --yes
+
+  # Update the installed Claude Code plugin only
+  $ nuzo update --claude-code --yes
 `)
-    .action(withErrorHandling(io, async (commandOptions: HostInstallCommandOptions) => {
-      const result = runHostUpdate(supportedHostBootstrapHosts(), commandOptions);
-      io.stdout(formatHostUpdateResult(result, commandOptions.json));
-    }));
-
-  const host = program.command("host").description("Configure Nuzo host integrations.");
-
-  host
-    .command("install")
-    .description("Compatibility alias for installing the Nuzo plugin into one or more agent hosts.")
-    .argument("[host]", "Host to configure: codex, claude-code, or all.", parseHostInstallTarget)
-    .option("--all", "Configure every supported host.", false)
-    .option("--dry-run", "Print the host setup plan without changing host configuration.", false)
-    .option("--yes", "Confirm host setup non-interactively.", false)
-    .option("--json", "Print JSON output for scripting.", false)
-    .addHelpText("after", `
-
-Examples:
-  # Preferred first-time setup command
-  $ nuzo setup
-
-  # For Codex
-  $ nuzo host install codex --yes
-
-  # For Claude Code
-  $ nuzo host install claude-code --yes
-
-  # For both Codex and Claude Code
-  $ nuzo host install --all --yes
-
-  # Preview the commands first
-  $ nuzo host install --all --dry-run
-`)
-    .action(withErrorHandling(io, async (
-      target: HostBootstrapHost | "all" | undefined,
-      commandOptions: HostInstallCommandOptions,
-    ) => {
-      if (commandOptions.all && target !== undefined && target !== "all") {
-        throw new NuzoMemoryError(
-          "HOST_BOOTSTRAP_TARGET_CONFLICT",
-          "Use either a host target or --all, not both.",
-        );
-      }
-      if (!commandOptions.all && target === undefined) {
-        throw new NuzoMemoryError(
-          "HOST_BOOTSTRAP_TARGET_REQUIRED",
-          "Host install requires codex, claude-code, all, or --all.",
-        );
-      }
-      const hosts: HostBootstrapHost[] = commandOptions.all || target === "all"
-        ? supportedHostBootstrapHosts()
-        : [target as HostBootstrapHost];
-      const result = runHostBootstrap(hosts, commandOptions);
-      io.stdout(formatHostBootstrapResult(result, commandOptions.json));
-    }));
-
-  host
-    .command("update")
-    .description("Update an already-installed Nuzo plugin in one or more hosts.")
-    .argument("[host]", "Host to update: codex, claude-code, or all.", parseHostInstallTarget)
-    .option("--all", "Update every supported installed host plugin.", false)
-    .option("--dry-run", "Print the managed update plan without changing host configuration.", false)
-    .option("--yes", "Confirm the managed update non-interactively.", false)
-    .option("--json", "Print JSON output for scripting.", false)
-    .action(withErrorHandling(io, async (
-      target: HostBootstrapHost | "all" | undefined,
-      commandOptions: HostInstallCommandOptions,
-    ) => {
-      if (commandOptions.all && target !== undefined && target !== "all") {
-        throw new NuzoMemoryError(
-          "HOST_UPDATE_TARGET_CONFLICT",
-          "Use either a host target or --all, not both.",
-        );
-      }
-      if (!commandOptions.all && target === undefined) {
-        throw new NuzoMemoryError(
-          "HOST_UPDATE_TARGET_REQUIRED",
-          "Host update requires codex, claude-code, all, or --all.",
-        );
-      }
-      const hosts: HostBootstrapHost[] = commandOptions.all || target === "all"
-        ? supportedHostBootstrapHosts()
-        : [target as HostBootstrapHost];
+    .action(withErrorHandling(io, async (commandOptions: HostTargetCommandOptions) => {
+      const hosts = updateHostsFromOptions(commandOptions);
       const result = runHostUpdate(hosts, commandOptions);
       io.stdout(formatHostUpdateResult(result, commandOptions.json));
     }));
@@ -1726,58 +1650,36 @@ function parseRelationshipMode(value: string): "exact" | "bounded" {
   throw new InvalidArgumentError("Expected relationship mode to be exact or bounded.");
 }
 
-function parseHostList(
-  value: string,
-  previous: HostBootstrapHost[] = [],
-): HostBootstrapHost[] {
-  try {
-    return [...previous, parseHostBootstrapHost(value)];
-  } catch (error) {
-    if (error instanceof NuzoMemoryError) {
-      throw new InvalidArgumentError(error.message);
-    }
-    throw error;
-  }
-}
-
-function parseHostInstallTarget(value: string): HostBootstrapHost | "all" {
-  if (value === "all") {
-    return value;
-  }
-  try {
-    return parseHostBootstrapHost(value);
-  } catch (error) {
-    if (error instanceof NuzoMemoryError) {
-      throw new InvalidArgumentError("Host must be codex, claude-code, or all.");
-    }
-    throw error;
-  }
-}
-
 function setupHostsFromOptions(
   options: SetupCommandOptions,
   detected: Record<HostBootstrapHost, boolean>,
+): HostBootstrapHost[] {
+  const hosts = hostsFromTargetOptions(options, "HOST_BOOTSTRAP_TARGET_CONFLICT");
+  return hosts.length > 0 ? hosts : defaultSetupHosts(detected);
+}
+
+function updateHostsFromOptions(options: HostTargetCommandOptions): HostBootstrapHost[] {
+  const hosts = hostsFromTargetOptions(options, "HOST_UPDATE_TARGET_CONFLICT");
+  return hosts.length > 0 ? hosts : supportedHostBootstrapHosts();
+}
+
+function hostsFromTargetOptions(
+  options: Pick<HostTargetCommandOptions, "all" | "claudeCode" | "codex">,
+  conflictCode: string,
 ): HostBootstrapHost[] {
   const selected: HostBootstrapHost[] = [];
   if (options.codex) selected.push("codex");
   if (options.claudeCode) selected.push("claude-code");
 
-  const selectionModes = [
-    options.host !== undefined,
-    options.all,
-    selected.length > 0,
-  ].filter(Boolean).length;
-  if (selectionModes > 1) {
+  if (options.all && selected.length > 0) {
     throw new NuzoMemoryError(
-      "HOST_BOOTSTRAP_TARGET_CONFLICT",
-      "Use --codex, --claude-code, --all, or --host, not multiple target styles.",
+      conflictCode,
+      "Use --codex, --claude-code, or --all, not multiple target styles.",
     );
   }
 
-  if (options.host !== undefined) return options.host;
   if (options.all) return supportedHostBootstrapHosts();
-  if (selected.length > 0) return selected;
-  return defaultSetupHosts(detected);
+  return selected;
 }
 
 function parseRetrievalMode(value: string): RetrievalMode {

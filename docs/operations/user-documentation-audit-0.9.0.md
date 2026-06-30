@@ -30,7 +30,7 @@ Therefore, current user entry points do not present these commands:
 
 ```text
 nuzo setup
-nuzo host install ...
+nuzo update
 nuzo memory integrity
 nuzo memory backup
 nuzo memory restore
