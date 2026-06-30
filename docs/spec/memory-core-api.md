@@ -62,6 +62,7 @@ directly instead of depending on internal assertion helpers.
 | `RecallMemoryResult` | Individual recall result. |
 | `RecallDiagnostics` | Retrieval-mode diagnostics. |
 | `ListMemoriesInput` | List/filter input. |
+| `MemoryHistoryInput` | Per-memory audit history pagination input. |
 | `UpdateMemoryInput` | Update input. |
 | `ForgetMemoryInput` | Single-memory archive/delete input. |
 | `ForgetMemoriesInput` | Bulk archive/delete input. |

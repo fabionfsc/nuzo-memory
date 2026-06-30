@@ -1,7 +1,9 @@
 import type { AuditLog, Clock, IdGenerator, MemoryStore, SearchIndex } from "../ports.js";
+import { decodeMemoryEventCursor, decodeMemoryListCursor } from "../pagination.js";
 import type {
   AuditEventFilter,
   ListMemoriesInput,
+  MemoryHistoryInput,
   MemoryEvent,
   MemoryRecord,
   RecallMemoriesInput,
@@ -61,6 +63,22 @@ export class InMemoryStore implements MemoryStore {
       .filter((memory) => filter.includeArchived === true || memory.archivedAt === null)
       .filter((memory) => !filter.scope || memory.scope === filter.scope)
       .filter((memory) => !filter.tags || filter.tags.every((tag) => memory.tags.includes(tag)))
+      .sort((left, right) =>
+        right.updatedAt.getTime() - left.updatedAt.getTime() ||
+        right.createdAt.getTime() - left.createdAt.getTime() ||
+        right.id.localeCompare(left.id))
+      .filter((memory) => {
+        if (filter.cursor === undefined) {
+          return true;
+        }
+        const cursor = decodeMemoryListCursor(filter.cursor);
+        const updatedAt = memory.updatedAt.toISOString();
+        const createdAt = memory.createdAt.toISOString();
+        return updatedAt < cursor.updated_at ||
+          (updatedAt === cursor.updated_at && createdAt < cursor.created_at) ||
+          (updatedAt === cursor.updated_at && createdAt === cursor.created_at && memory.id < cursor.id);
+      })
+      .slice(0, filter.limit)
       .map(cloneMemory);
   }
 
@@ -144,8 +162,20 @@ export class InMemoryAuditLog implements AuditLog {
     this.events.push(cloneEvent(event));
   }
 
-  async list(memoryId: string): Promise<MemoryEvent[]> {
-    return this.events.filter((event) => event.memoryId === memoryId).map(cloneEvent);
+  async list(memoryId: string, input: MemoryHistoryInput = {}): Promise<MemoryEvent[]> {
+    return this.events
+      .filter((event) => event.memoryId === memoryId)
+      .sort((left, right) => left.createdAt.getTime() - right.createdAt.getTime() || left.id.localeCompare(right.id))
+      .filter((event) => {
+        if (input.cursor === undefined) {
+          return true;
+        }
+        const cursor = decodeMemoryEventCursor(input.cursor);
+        const createdAt = event.createdAt.toISOString();
+        return createdAt > cursor.created_at || (createdAt === cursor.created_at && event.id > cursor.id);
+      })
+      .slice(0, input.limit)
+      .map(cloneEvent);
   }
 
   async query(filter: AuditEventFilter): Promise<MemoryEvent[]> {

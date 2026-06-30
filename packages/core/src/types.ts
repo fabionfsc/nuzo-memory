@@ -178,6 +178,13 @@ export interface ListMemoriesInput {
   scope?: MemoryScope;
   tags?: string[];
   includeArchived?: boolean;
+  limit?: number;
+  cursor?: string;
+}
+
+export interface MemoryHistoryInput {
+  limit?: number;
+  cursor?: string;
 }
 
 export interface ForgetMemoryInput {

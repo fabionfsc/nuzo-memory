@@ -1,10 +1,12 @@
 import Database from "better-sqlite3";
 import { chmodSync, closeSync, existsSync, openSync } from "node:fs";
 import { NuzoMemoryError } from "../errors.js";
+import { decodeMemoryEventCursor, decodeMemoryListCursor } from "../pagination.js";
 import type { AuditLog, MemoryStore, SearchIndex, TransactionManager } from "../ports.js";
 import type {
   AuditEventFilter,
   ListMemoriesInput,
+  MemoryHistoryInput,
   MemoryEvent,
   MemoryKind,
   MemoryRecord,
@@ -272,15 +274,37 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
   }
 
   async list(filter: ListMemoriesInput): Promise<MemoryRecord[]>;
-  async list(memoryId: string): Promise<MemoryEvent[]>;
-  async list(memoryIdOrFilter: string | ListMemoriesInput): Promise<MemoryEvent[] | MemoryRecord[]> {
+  async list(memoryId: string, input?: MemoryHistoryInput): Promise<MemoryEvent[]>;
+  async list(memoryIdOrFilter: string | ListMemoriesInput, input: MemoryHistoryInput = {}): Promise<MemoryEvent[] | MemoryRecord[]> {
     if (typeof memoryIdOrFilter !== "string") {
       return this.listMemories(memoryIdOrFilter);
     }
 
-    const rows = this.database
-      .prepare("SELECT * FROM memory_events WHERE memory_id = ? ORDER BY created_at ASC")
-      .all(memoryIdOrFilter) as MemoryEventRow[];
+    const where = ["memory_id = @memory_id"];
+    const params: Record<string, unknown> = {
+      memory_id: memoryIdOrFilter,
+    };
+
+    if (input.cursor !== undefined) {
+      const cursor = decodeMemoryEventCursor(input.cursor);
+      where.push("(created_at > @cursor_created_at OR (created_at = @cursor_created_at AND id > @cursor_id))");
+      params.cursor_created_at = cursor.created_at;
+      params.cursor_id = cursor.id;
+    }
+
+    if (input.limit !== undefined) {
+      params.limit = input.limit;
+    }
+
+    const sql = `
+      SELECT *
+      FROM memory_events
+      WHERE ${where.join(" AND ")}
+      ORDER BY created_at ASC, id ASC
+      ${input.limit !== undefined ? "LIMIT @limit" : ""}
+    `;
+
+    const rows = this.database.prepare(sql).all(params) as MemoryEventRow[];
     return rows.map(fromEventRow);
   }
 
@@ -341,25 +365,46 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
     const params: Record<string, unknown> = {};
 
     if (filter.scope) {
-      where.push("scope = @scope");
+      where.push("m.scope = @scope");
       params.scope = filter.scope;
     }
 
     if (filter.includeArchived !== true) {
-      where.push("archived_at IS NULL");
+      where.push("m.archived_at IS NULL");
+    }
+
+    for (const [index, tag] of (filter.tags ?? []).entries()) {
+      const parameterName = `tag_${index}`;
+      where.push(`EXISTS (SELECT 1 FROM json_each(m.tags) WHERE value = @${parameterName})`);
+      params[parameterName] = tag;
+    }
+
+    if (filter.cursor !== undefined) {
+      const cursor = decodeMemoryListCursor(filter.cursor);
+      where.push(`(
+        m.updated_at < @cursor_updated_at OR
+        (m.updated_at = @cursor_updated_at AND m.created_at < @cursor_created_at) OR
+        (m.updated_at = @cursor_updated_at AND m.created_at = @cursor_created_at AND m.id < @cursor_id)
+      )`);
+      params.cursor_updated_at = cursor.updated_at;
+      params.cursor_created_at = cursor.created_at;
+      params.cursor_id = cursor.id;
+    }
+
+    if (filter.limit !== undefined) {
+      params.limit = filter.limit;
     }
 
     const sql = `
-      SELECT *
-      FROM memories
+      SELECT m.*
+      FROM memories m
       ${where.length > 0 ? `WHERE ${where.join(" AND ")}` : ""}
-      ORDER BY updated_at DESC, created_at DESC
+      ORDER BY m.updated_at DESC, m.created_at DESC, m.id DESC
+      ${filter.limit !== undefined ? "LIMIT @limit" : ""}
     `;
 
     const rows = this.database.prepare(sql).all(params) as MemoryRow[];
-    return rows
-      .map(fromMemoryRow)
-      .filter((memory) => !filter.tags || filter.tags.every((tag) => memory.tags.includes(tag)));
+    return rows.map(fromMemoryRow);
   }
 }
 

@@ -59,6 +59,9 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
   planned release before npm deprecation in favor of `@nuzo/memory`.
 - Benchmark fixtures now distinguish portable JSON exports from operational
   SQLite backups.
+- MCP `memory.list`, `memory.history`, and `memory.export` responses are now
+  bounded with explicit `limit`, `next_cursor`, and `truncated` pagination
+  fields. The local CLI keeps full export as an explicit administrator action.
 
 ### Fixed
 

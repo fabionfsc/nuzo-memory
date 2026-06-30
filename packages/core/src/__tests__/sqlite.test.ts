@@ -13,6 +13,7 @@ import {
   restoreSQLiteMemoryStore,
   SQLiteMemoryDatabase,
 } from "../index.js";
+import { encodeMemoryListCursor } from "../pagination.js";
 import { FixedClock, SequentialIdGenerator } from "../testing.js";
 import type { IdGenerator } from "../ports.js";
 
@@ -850,6 +851,52 @@ describe("SQLiteMemoryDatabase", () => {
 
     await expect(service.list()).resolves.toHaveLength(0);
     await expect(service.recall({ query: "SQLite", scope: "user:default" })).resolves.toHaveLength(0);
+
+    database.close();
+  });
+
+  it("pushes list tag filtering, ordering, limits, and cursors into SQLite results", async () => {
+    const { database, service } = createTempDatabase();
+
+    await service.remember({
+      content: "First tagged SQLite page item.",
+      kind: "note",
+      scope: "project:nuzo",
+      tags: ["page"],
+      source: "test",
+    });
+    await service.remember({
+      content: "Second tagged SQLite page item.",
+      kind: "note",
+      scope: "project:nuzo",
+      tags: ["page"],
+      source: "test",
+    });
+    await service.remember({
+      content: "Untagged SQLite page item.",
+      kind: "note",
+      scope: "project:nuzo",
+      tags: ["other"],
+      source: "test",
+    });
+
+    const firstPage = await service.list({
+      scope: "project:nuzo",
+      tags: ["page"],
+      limit: 1,
+    });
+    expect(firstPage).toHaveLength(1);
+    expect(firstPage[0]?.tags).toContain("page");
+
+    const secondPage = await service.list({
+      scope: "project:nuzo",
+      tags: ["page"],
+      cursor: encodeMemoryListCursor(firstPage[0]!),
+      limit: 1,
+    });
+    expect(secondPage).toHaveLength(1);
+    expect(secondPage[0]?.tags).toContain("page");
+    expect(secondPage[0]?.id).not.toBe(firstPage[0]?.id);
 
     database.close();
   });

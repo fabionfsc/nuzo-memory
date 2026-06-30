@@ -406,6 +406,7 @@ describe("memory MCP handlers", () => {
     const listed = await handlers.list({
       tags: [],
       include_archived: false,
+      limit: 50,
     });
     expect(listed.memories[0]?.id).toBe(remembered.id);
 
@@ -419,7 +420,7 @@ describe("memory MCP handlers", () => {
       tags: ["mcp", "contracts"],
     });
 
-    const history = await handlers.history({ id: remembered.id });
+    const history = await handlers.history({ id: remembered.id, limit: 50 });
     expect(history.events).toEqual([
       {
         id: "evt_000001",
@@ -438,11 +439,13 @@ describe("memory MCP handlers", () => {
     const exported = await handlers.exportMemories({
       tags: [],
       include_archived: false,
+      limit: 100,
     });
-    expect(exported.memories).toHaveLength(1);
+    expect(exported.document.memories).toHaveLength(1);
+    expect(exported.next_cursor).toBeNull();
 
     const imported = await handlers.importMemories({
-      document: exported,
+      document: exported.document,
       dry_run: true,
     });
     expect(imported).toEqual({
@@ -465,6 +468,7 @@ describe("memory MCP handlers", () => {
     const visible = await handlers.list({
       tags: [],
       include_archived: false,
+      limit: 50,
     });
     expect(visible.memories).toEqual([]);
 
@@ -684,6 +688,7 @@ describe("memory MCP handlers", () => {
       scope: "project:auto",
       tags: [],
       include_archived: false,
+      limit: 50,
     });
 
     const result = await handlers.recallHook({

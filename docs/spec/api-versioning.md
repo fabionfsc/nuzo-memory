@@ -58,6 +58,8 @@ Stable:
 - tool names listed in [Tool Contract](tools.md);
 - input field names, validation ranges, defaults, and destructive confirmation
   requirements;
+- bounded pagination fields for `memory.list`, `memory.history`, and
+  `memory.export`;
 - JSON output field names documented in [Tool Contract](tools.md);
 - domain-error `code` values and the `{ code, message, details? }` envelope;
 - FTS as the omitted/default retrieval mode.

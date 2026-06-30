@@ -520,13 +520,30 @@ and ask the user to confirm again before calling `memory.confirm_capture` or
 
 List memories by filters.
 
+MCP list responses are bounded. `limit` defaults to `50` and must be between
+`1` and `200`. If more records match, `next_cursor` is an opaque string that
+the caller can pass back as `cursor`. Cursors are only valid for the same
+filter, ordering, and store state.
+
 Input:
 
 ```json
 {
   "scope": "user:default",
   "tags": ["architecture"],
-  "include_archived": false
+  "include_archived": false,
+  "limit": 50
+}
+```
+
+Output:
+
+```json
+{
+  "memories": [],
+  "next_cursor": null,
+  "limit": 50,
+  "truncated": false
 }
 ```
 
@@ -584,9 +601,13 @@ Input:
 
 ```json
 {
-  "id": "mem_01HZY..."
+  "id": "mem_01HZY...",
+  "limit": 50
 }
 ```
+
+`limit` defaults to `50` and must be between `1` and `200`. If more events
+exist for the memory, `next_cursor` is an opaque cursor for the next page.
 
 Output:
 
@@ -605,7 +626,10 @@ Output:
       },
       "created_at": "2026-06-19T00:00:00.000Z"
     }
-  ]
+  ],
+  "next_cursor": null,
+  "limit": 50,
+  "truncated": false
 }
 ```
 
@@ -742,13 +766,36 @@ The MCP tool returns JSON only. The CLI can also render the same document as
 Markdown for human review based on the output path extension. Markdown exports
 are not import inputs.
 
+MCP exports are paginated to protect protocol payload size and agent context.
+`limit` defaults to `100` and must be between `1` and `200`. When
+`truncated` is true, pass `next_cursor` as `cursor` with the same filters to
+retrieve the next export page. The CLI remains the explicit local
+administrator path for full file exports.
+
 Input:
 
 ```json
 {
   "scope": "user:default",
   "tags": [],
-  "include_archived": false
+  "include_archived": false,
+  "limit": 100
+}
+```
+
+Output:
+
+```json
+{
+  "document": {
+    "format": "nuzo-memory-export",
+    "version": 1,
+    "exported_at": "2026-06-19T00:00:00.000Z",
+    "memories": []
+  },
+  "next_cursor": null,
+  "limit": 100,
+  "truncated": false
 }
 ```
 
