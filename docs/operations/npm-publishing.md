@@ -220,11 +220,12 @@ Environment name: npm-publish
 Allowed action: npm publish
 ```
 
-The workflow installs npm `11.5.1` or newer because trusted publishing requires
-OIDC-capable npm. It validates the source release state for one explicit
-SemVer input, builds the publish staging packages, rejects already-published
-versions, rejects retired legacy staging after `0.9.0`, and publishes in
-dependency order:
+The workflow installs the reviewed exact npm version `11.5.1` because trusted
+publishing requires OIDC-capable npm. Bump that version only through a reviewed
+pull request that keeps `npm run check:supply-chain` green. The workflow
+validates the source release state for one explicit SemVer input, builds the
+publish staging packages, rejects already-published versions, rejects retired
+legacy staging after `0.9.0`, and publishes in dependency order:
 
 ```text
 @nuzo/memory-core -> @nuzo/memory -> legacy transition packages
