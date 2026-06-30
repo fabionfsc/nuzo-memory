@@ -174,7 +174,12 @@ describe("nuzo memory cli", () => {
     const config = JSON.parse(readFileSync(configPath, "utf8")) as {
       recall: { include_global: boolean; limit: number };
       privacy: { allow_network: boolean; record_recall_events: boolean };
+      authorization: { mode: string; allowed_scopes: string[] };
     };
+    expect(config.authorization).toEqual({
+      mode: "restricted",
+      allowed_scopes: ["project:auto", "user:custom", "user:default"],
+    });
     config.recall.limit = 1;
     config.recall.include_global = false;
     config.privacy.record_recall_events = true;
@@ -812,11 +817,13 @@ describe("nuzo memory cli", () => {
       expect(first.stdout.join("\n")).toMatch(/Scope: project:[a-f0-9]{16}/);
       expect(existsSync(configPath)).toBe(true);
       expect(existsSync(storePath)).toBe(true);
-      expect(JSON.parse(readFileSync(configPath, "utf8"))).toMatchObject({
+      const projectConfig = JSON.parse(readFileSync(configPath, "utf8")) as Record<string, unknown>;
+      expect(projectConfig).toMatchObject({
         storage: {
           path: ".nuzo/memory/memories.sqlite",
         },
       });
+      expect(projectConfig).not.toHaveProperty("authorization");
 
       const remembered = await runCli([
         "memory",
@@ -1284,6 +1291,9 @@ describe("nuzo memory cli", () => {
     expect(text).toContain(`Store: ${store}`);
     expect(text).toContain("Store exists: no");
     expect(text).toContain("Store directory exists: yes");
+    expect(text).toContain("Authorization: administrator (local CLI)");
+    expect(text).toContain("Config source:");
+    expect(text).toContain("Store source: option");
     expect(text).toContain("Git tracking:");
     expect(text).toContain("Network: disabled");
     expect(text).toContain("Integrity: missing");
@@ -1317,6 +1327,13 @@ describe("nuzo memory cli", () => {
       },
       git_tracking: {
         status: "skipped",
+      },
+      authorization: {
+        mode: "administrator",
+        source: "local_cli",
+      },
+      config: {
+        store_source: "option",
       },
       warnings: [],
       status: "ok",

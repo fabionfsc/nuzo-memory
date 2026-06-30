@@ -62,6 +62,21 @@ Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
 Codex and Claude Code plugins obtain their pinned runtime themselves. A global
 npm installation is only needed for the shell CLI or a direct MCP setup.
 
+## Upcoming In 0.9.0: One-Time Host Setup
+
+These commands are **not available in the current 0.8.1 release**. In `0.9.0`,
+the primary path becomes:
+
+```bash
+npm install --global @nuzo/memory@0.9.0
+nuzo setup
+```
+
+Automation can choose `nuzo host install codex --yes`, `nuzo host install
+claude-code --yes`, or `nuzo host install --all --yes`. Setup is not repeated
+after upgrades: `nuzo update --yes` updates only already-installed Nuzo host
+plugins.
+
 ## Prove It Works
 
 In a new Codex or Claude Code session, say:

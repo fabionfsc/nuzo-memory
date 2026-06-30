@@ -1,4 +1,4 @@
-import type { MemoryRecord, MemoryService, RecallMemoryResult } from "@nuzo/memory-core";
+import type { MemoryRecord, MemoryScope, MemoryService, RecallMemoryResult } from "@nuzo/memory-core";
 import { memoryLimits, projectScopeFromPath } from "@nuzo/memory-core";
 
 export const hostHookLimits = {
@@ -28,14 +28,29 @@ export interface HostHookOutput {
   };
 }
 
+export interface HostHookRuntimeOptions {
+  projectScope?: `project:${string}`;
+  authorizedScopes?: readonly MemoryScope[];
+}
+
 export async function createHostHookOutput(
   service: MemoryService,
   input: HostHookInput,
+  options: HostHookRuntimeOptions = {},
 ): Promise<HostHookOutput | null> {
-  const projectScope = projectScopeFromPath(input.cwd);
+  const projectScope = options.projectScope ?? projectScopeFromPath(input.cwd);
+  const projectAllowed = options.authorizedScopes === undefined ||
+    options.authorizedScopes.includes(projectScope);
+  const globalAllowed = options.authorizedScopes === undefined ||
+    options.authorizedScopes.includes("user:default");
   const memories = input.hook_event_name === "SessionStart"
-    ? await recallAutoloadMemories(service, projectScope)
-    : await recallPromptMemories(service, projectScope, input.prompt ?? "");
+    ? await recallAutoloadMemories(service, projectAllowed ? projectScope : null, globalAllowed)
+    : await recallPromptMemories(
+        service,
+        projectAllowed ? projectScope : null,
+        globalAllowed,
+        input.prompt ?? "",
+      );
 
   if (memories.length === 0) {
     return null;
@@ -73,21 +88,27 @@ export function parseHostHookInput(value: unknown): HostHookInput {
 
 async function recallAutoloadMemories(
   service: MemoryService,
-  projectScope: `project:${string}`,
+  projectScope: `project:${string}` | null,
+  includeGlobal: boolean,
 ): Promise<MemoryRecord[]> {
-  const [projectMemories, globalMemories] = await Promise.all([
-    service.list({ scope: projectScope, tags: ["autoload"], includeArchived: false }),
-    service.list({ scope: "user:default", tags: ["autoload"], includeArchived: false }),
-  ]);
+  const requests: Array<Promise<MemoryRecord[]>> = [];
+  if (projectScope !== null) {
+    requests.push(service.list({ scope: projectScope, tags: ["autoload"], includeArchived: false }));
+  }
+  if (includeGlobal) {
+    requests.push(service.list({ scope: "user:default", tags: ["autoload"], includeArchived: false }));
+  }
+  const memories = (await Promise.all(requests)).flat();
 
-  return deduplicateMemories([...projectMemories, ...globalMemories])
+  return deduplicateMemories(memories)
     .sort((left, right) => right.updatedAt.getTime() - left.updatedAt.getTime())
     .slice(0, hostHookLimits.memories);
 }
 
 async function recallPromptMemories(
   service: MemoryService,
-  projectScope: `project:${string}`,
+  projectScope: `project:${string}` | null,
+  includeGlobal: boolean,
   prompt: string,
 ): Promise<MemoryRecord[]> {
   const query = prompt.trim().replace(/\s+/g, " ").slice(0, memoryLimits.queryLength);
@@ -95,11 +116,14 @@ async function recallPromptMemories(
     return [];
   }
 
+  if (projectScope === null && !includeGlobal) {
+    return [];
+  }
   const results = await service.recall({
     query,
-    scope: projectScope,
+    scope: projectScope ?? "user:default",
     limit: hostHookLimits.contextualCandidates,
-    includeGlobal: true,
+    includeGlobal: projectScope !== null && includeGlobal,
     recordUsage: false,
   });
   return deduplicateMemories(results.map((result: RecallMemoryResult) => result.memory))

@@ -108,6 +108,8 @@ def validate_nuzo_server(server: dict, version: str, release: bool) -> None:
             fail("release nuzo MCP server must pin @nuzo/memory to the plugin version and explicit binary")
         if server.get("cwd") != "${CLAUDE_PLUGIN_ROOT}":
             fail("release nuzo MCP server cwd must resolve through ${CLAUDE_PLUGIN_ROOT}")
+        if server.get("env") != {"NUZO_PROJECT_ROOT": "${CLAUDE_PROJECT_DIR}"}:
+            fail("release nuzo MCP server must pass ${CLAUDE_PROJECT_DIR} as NUZO_PROJECT_ROOT")
         if any(".." in arg or "/mcp-server/" in arg for arg in args):
             fail("release nuzo MCP server must not reference monorepo paths")
         return

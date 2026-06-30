@@ -198,7 +198,7 @@ function assertCodexNativeMarketplaceInstall() {
   const codexHome = join(testRoot, "codex-home");
   mkdirSync(codexHome, { recursive: true });
 
-  codexJson(["plugin", "marketplace", "add", repositoryRoot, "--json"], codexHome);
+  codexJson(["plugin", "marketplace", "add", "fabionfsc/nuzo-memory", "--json"], codexHome);
   const available = codexJson(["plugin", "list", "--available", "--json"], codexHome);
   if (!available.available?.some((plugin) => plugin.pluginId === "nuzo@nuzo-memory")) {
     fail(`Codex native marketplace did not expose Nuzo: ${JSON.stringify(available)}`);
@@ -212,6 +212,8 @@ function assertCodexNativeMarketplaceInstall() {
   if (!nuzo?.installed || !nuzo?.enabled) {
     fail(`Codex native marketplace install was not enabled: ${JSON.stringify(listed)}`);
   }
+  codexJson(["plugin", "marketplace", "upgrade", "nuzo-memory", "--json"], codexHome);
+  codexJson(["plugin", "add", "nuzo@nuzo-memory", "--json"], codexHome);
   codexJson(["plugin", "remove", "nuzo@nuzo-memory", "--json"], codexHome);
   const removed = codexJson(["plugin", "list", "--json"], codexHome);
   if (removed.installed?.some((plugin) => plugin.pluginId === "nuzo@nuzo-memory")) {
@@ -229,7 +231,7 @@ function assertClaudeNativeMarketplaceInstall() {
   const home = join(testRoot, "claude-home");
   mkdirSync(home, { recursive: true });
   claude(["plugin", "validate", repositoryRoot, "--strict"], home);
-  claude(["plugin", "marketplace", "add", repositoryRoot], home);
+  claude(["plugin", "marketplace", "add", "fabionfsc/nuzo-memory"], home);
   claude(["plugin", "install", "nuzo@nuzo-memory", "--scope", "user"], home);
   const listed = claude(["plugin", "list", "--json"], home);
   const plugins = JSON.parse(listed.stdout);
@@ -237,6 +239,8 @@ function assertClaudeNativeMarketplaceInstall() {
   if (!nuzo?.enabled || nuzo?.version !== readJson(join(repositoryRoot, "package.json")).version) {
     fail(`Claude Code native marketplace install was not enabled: ${listed.stdout}`);
   }
+  claude(["plugin", "marketplace", "update", "nuzo-memory"], home);
+  claude(["plugin", "update", "nuzo@nuzo-memory", "--scope", "user"], home);
   claude(["plugin", "disable", "nuzo@nuzo-memory"], home);
   const disabled = JSON.parse(claude(["plugin", "list", "--json"], home).stdout)
     .find((plugin) => plugin.id === "nuzo@nuzo-memory");

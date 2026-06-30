@@ -792,6 +792,9 @@ CLI checks:
 
 MCP doctor returns a read-only diagnostic summary for host agents:
 
+The `config` and `authorization` blocks shown below join the public contract in
+`0.9.0`; `0.8.1` remains the current public release.
+
 ```json
 {
   "ok": true,
@@ -800,6 +803,19 @@ MCP doctor returns a read-only diagnostic summary for host agents:
     "path": "~/.nuzo/memory/memories.sqlite",
     "readable": true,
     "writable_check": "writable"
+  },
+  "config": {
+    "project_scope": "project:0123456789abcdef",
+    "project_root_source": "discovered",
+    "config_source": "project",
+    "store_source": "project",
+    "scope_source": "project",
+    "adjustments": []
+  },
+  "authorization": {
+    "mode": "restricted",
+    "source": "user",
+    "allowed_scopes": ["project:0123456789abcdef", "user:default"]
   },
   "schema": {
     "current_version": 1,
@@ -851,9 +867,11 @@ MCP doctor returns a read-only diagnostic summary for host agents:
 }
 ```
 
-The MCP response must not include memory content, tags, sources, or export
-documents. Counts and integrity fields are aggregate metadata-only diagnostics.
-`integrity.status` is `ok`, `failed`, `missing`, or `not_performed`.
+The MCP response must not include memory content, tags, sources, export
+documents, configuration values, or environment values. Config provenance,
+effective authorization, counts, and integrity fields are metadata-only
+diagnostics. Counts cover only diagnostic scopes authorized for the current
+runtime. `integrity.status` is `ok`, `failed`, `missing`, or `not_performed`.
 
 Runtime checks:
 

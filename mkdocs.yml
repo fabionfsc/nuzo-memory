@@ -136,3 +136,4 @@ nav:
       - Test Organization: adr/0007-test-organization.md
       - Opt-In Capture Relationship Evidence: adr/0008-opt-in-capture-relationship-evidence.md
       - Optional Derived Semantic Retrieval: adr/0009-optional-derived-semantic-retrieval.md
+      - Effective Runtime And Host Authorization: adr/0010-effective-runtime-and-host-authorization.md

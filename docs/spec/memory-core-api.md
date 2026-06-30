@@ -84,9 +84,13 @@ directly instead of depending on internal assertion helpers.
 | `CaptureRelationshipEvidence` | Bounded relationship evidence. |
 | `RetrievalMode` | Recall retrieval mode union. |
 | `SemanticFallbackMode` | Semantic fallback mode union. |
+| `NuzoAuthorizationMode` | Effective `administrator` or `restricted` runtime mode. |
+| `NuzoAuthorizationConfig` | Trusted user authorization config shape. |
 | `NuzoConfig` | Versioned runtime config shape. |
 | `NuzoRuntimeConfig` | Effective runtime config. |
 | `NuzoRuntimeConfigOptions` | Runtime resolver options. |
+| `NuzoRuntimeConfigProvenance` | Non-sensitive source metadata for effective runtime fields. |
+| `NuzoRuntimeAdjustment` | Safe runtime adjustments caused by authorization constraints. |
 
 ## Advanced Public Exports
 

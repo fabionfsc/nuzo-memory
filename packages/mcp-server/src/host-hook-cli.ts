@@ -34,10 +34,12 @@ export async function runHostHookProcess(
   io: HookIO = defaultIO,
   environment: NodeJS.ProcessEnv = process.env,
 ): Promise<number> {
-  const runtimeConfig = resolveNuzoRuntimeConfig({ environment });
-  const storePath = runtimeConfig.storePath;
-
   if (args.includes("--doctor")) {
+    const runtimeConfig = resolveNuzoRuntimeConfig({
+      environment,
+      defaultAuthorizationMode: "restricted",
+    });
+    const storePath = runtimeConfig.storePath;
     const integrity = formatIntegrityDiagnostics(inspectSQLiteMemoryStore(storePath));
     io.stdout(JSON.stringify({
       status: integrity.status === "ok" ? "ready" : integrity.status === "missing" ? "store_missing" : "store_unhealthy",
@@ -45,6 +47,19 @@ export async function runHostHookProcess(
       store_path: storePath,
       scope: runtimeConfig.scope,
       authorized_scopes: runtimeConfig.authorizedScopes ?? null,
+      project_scope: runtimeConfig.projectScope,
+      authorization: {
+        mode: runtimeConfig.authorizationMode,
+        source: runtimeConfig.provenance.authorization,
+        allowed_scopes: runtimeConfig.authorizedScopes ?? null,
+      },
+      config: {
+        project_root_source: runtimeConfig.provenance.projectRoot,
+        config_source: runtimeConfig.provenance.config,
+        store_source: runtimeConfig.provenance.store,
+        scope_source: runtimeConfig.provenance.scope,
+        adjustments: runtimeConfig.adjustments,
+      },
       store_exists: existsSync(storePath),
       integrity,
       supported_events: ["SessionStart", "UserPromptSubmit"],
@@ -53,15 +68,20 @@ export async function runHostHookProcess(
     return 0;
   }
 
-  if (!existsSync(storePath)) {
-    return 0;
-  }
-
   try {
     if (inputText.length > hostHookLimits.inputCharacters) {
       throw new Error("Hook input exceeds the supported size.");
     }
     const input = parseHostHookInput(JSON.parse(inputText));
+    const runtimeConfig = resolveNuzoRuntimeConfig({
+      environment,
+      cwd: input.cwd,
+      defaultAuthorizationMode: "restricted",
+    });
+    const storePath = runtimeConfig.storePath;
+    if (!existsSync(storePath)) {
+      return 0;
+    }
     const database = new SQLiteMemoryDatabase({ path: storePath });
     try {
       const service = createMemoryService({
@@ -76,7 +96,12 @@ export async function runHostHookProcess(
         ),
         transactions: database,
       });
-      const output = await createHostHookOutput(service, input);
+      const output = await createHostHookOutput(service, input, {
+        projectScope: runtimeConfig.projectScope,
+        ...(runtimeConfig.authorizedScopes === undefined
+          ? {}
+          : { authorizedScopes: runtimeConfig.authorizedScopes }),
+      });
       if (output !== null) {
         io.stdout(JSON.stringify(output));
       }

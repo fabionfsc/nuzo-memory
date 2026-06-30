@@ -29,6 +29,7 @@ import {
   type MemoryService,
   type MemoryExportDocument,
   type MemoryScope,
+  type NuzoAuthorizationMode,
   type SearchIndex,
 } from "@nuzo/memory-core";
 import { createMemoryToolHandlers } from "./handlers.js";
@@ -62,11 +63,18 @@ export interface NuzoMcpServerOptions {
   storePath?: string;
   defaultScope?: MemoryScope;
   authorizedScopes?: readonly MemoryScope[];
+  authorizationMode?: NuzoAuthorizationMode;
+  defaultAuthorizationMode?: NuzoAuthorizationMode;
   doctorDiagnostics?: MemoryDoctorDiagnostics;
   projectPath?: string;
+  home?: string;
   semanticModelPath?: string;
   semanticProvider?: EmbeddingProvider;
   environment?: Record<string, string | undefined>;
+  recallDefaults?: {
+    limit: number;
+    includeGlobal: boolean;
+  };
 }
 
 export interface NuzoMcpServerRuntime {
@@ -81,8 +89,15 @@ export function createNuzoMcpServer(options: NuzoMcpServerOptions = {}): McpServ
 export function createNuzoMcpServerRuntime(options: NuzoMcpServerOptions = {}): NuzoMcpServerRuntime {
   const runtimeConfig = resolveNuzoRuntimeConfig({
     ...(options.storePath === undefined ? {} : { store: options.storePath }),
-    ...(options.projectPath === undefined ? {} : { cwd: options.projectPath }),
+    ...(options.defaultScope === undefined ? {} : { scope: options.defaultScope }),
+    ...(options.projectPath === undefined ? {} : { projectRoot: options.projectPath }),
+    ...(options.home === undefined ? {} : { home: options.home }),
     ...(options.environment === undefined ? {} : { environment: options.environment }),
+    ...(options.authorizationMode === undefined ? {} : { authorizationMode: options.authorizationMode }),
+    ...(options.authorizedScopes === undefined ? {} : { authorizedScopes: options.authorizedScopes }),
+    ...(options.defaultAuthorizationMode === undefined
+      ? {}
+      : { defaultAuthorizationMode: options.defaultAuthorizationMode }),
   });
   const storePath = runtimeConfig.storePath;
   const database = openDatabase(storePath);
@@ -99,9 +114,8 @@ export function createNuzoMcpServerRuntime(options: NuzoMcpServerOptions = {}): 
     }),
   });
   const serviceOptions: Pick<NuzoMcpServerOptions, "authorizedScopes"> = {};
-  const authorizedScopes = options.authorizedScopes ?? runtimeConfig.authorizedScopes;
-  if (authorizedScopes !== undefined) {
-    serviceOptions.authorizedScopes = authorizedScopes;
+  if (runtimeConfig.authorizedScopes !== undefined) {
+    serviceOptions.authorizedScopes = runtimeConfig.authorizedScopes;
   }
   const service = createService(database, serviceOptions, searchIndex);
   let closePromise: Promise<void> | null = null;
@@ -113,7 +127,8 @@ export function createNuzoMcpServerRuntime(options: NuzoMcpServerOptions = {}): 
   registerMemoryTools(server, service, {
     storePath,
     defaultScope: runtimeConfig.scope,
-    ...(options.projectPath === undefined ? {} : { projectPath: options.projectPath }),
+    projectPath: runtimeConfig.projectRoot,
+    recallDefaults: options.recallDefaults ?? runtimeConfig.recall,
     doctorDiagnostics: options.doctorDiagnostics ?? {
       schema: {
         currentVersion: database.getSchemaVersion(),
@@ -121,6 +136,18 @@ export function createNuzoMcpServerRuntime(options: NuzoMcpServerOptions = {}): 
       },
       integrity: () => inspectSQLiteMemoryStore(storePath),
       writable: isStoreWritable(storePath),
+      runtime: {
+        projectScope: runtimeConfig.projectScope,
+        authorizationMode: runtimeConfig.authorizationMode,
+        ...(runtimeConfig.authorizedScopes === undefined
+          ? {}
+          : { authorizedScopes: runtimeConfig.authorizedScopes }),
+        provenance: runtimeConfig.provenance,
+        adjustments: runtimeConfig.adjustments,
+      },
+      ...(runtimeConfig.authorizedScopes === undefined
+        ? {}
+        : { diagnosticScopes: runtimeConfig.authorizedScopes }),
     },
   });
   return {
@@ -147,14 +174,13 @@ export function registerMemoryTools(
 ): void {
   const handlerOptions = {
     ...(options.storePath === undefined ? {} : { storePath: options.storePath }),
-    projectScope: projectScopeFromPath(
-      options.projectPath ?? process.env.CLAUDE_PROJECT_DIR ?? process.cwd(),
-    ),
+    projectScope: projectScopeFromPath(options.projectPath ?? process.cwd()),
     ...(options.doctorDiagnostics === undefined
       ? {}
       : { doctorDiagnostics: options.doctorDiagnostics }),
   };
   const defaultScope = options.defaultScope ?? "user:default";
+  const recallDefaults = options.recallDefaults ?? { limit: 8, includeGlobal: false };
   const handlers = createMemoryToolHandlers(service, handlerOptions);
 
   server.registerTool(
@@ -193,8 +219,8 @@ export function registerMemoryTools(
       inputSchema: {
         query: z.string().min(1).max(memoryLimits.queryLength),
         scope: scopeSchema.default(defaultScope),
-        limit: z.number().int().min(1).max(50).default(8),
-        include_global: z.boolean().default(false),
+        limit: z.number().int().min(1).max(50).default(recallDefaults.limit),
+        include_global: z.boolean().default(recallDefaults.includeGlobal),
         retrieval_mode: z.enum(["fts", "semantic", "hybrid"]).default("fts"),
         semantic_fallback: z.enum(["error", "fts"]).optional(),
       },
@@ -574,11 +600,9 @@ export function registerMemoryTools(
 }
 
 if (isMainModule()) {
-  const options: NuzoMcpServerOptions = {};
-  if (process.env.NUZO_MEMORY_STORE !== undefined) {
-    options.storePath = process.env.NUZO_MEMORY_STORE;
-  }
-  const runtime = createNuzoMcpServerRuntime(options);
+  const runtime = createNuzoMcpServerRuntime({
+    defaultAuthorizationMode: "restricted",
+  });
   let shuttingDown = false;
   const closeRuntime = async (exitCode?: number) => {
     if (shuttingDown) {

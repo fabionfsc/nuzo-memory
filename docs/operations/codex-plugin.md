@@ -51,6 +51,8 @@ threads use the same `NUZO_MEMORY_STORE` configuration.
 
 ## Update Or Remove
 
+For the current `0.8.1` release, update with the native Codex commands:
+
 ```bash
 codex plugin marketplace upgrade nuzo-memory
 codex plugin add nuzo@nuzo-memory
@@ -62,6 +64,19 @@ Start a new thread after updating. To remove Nuzo and its marketplace:
 codex plugin remove nuzo@nuzo-memory
 codex plugin marketplace remove nuzo-memory
 ```
+
+### Upcoming In 0.9.0
+
+This command is **not available in the current 0.8.1 release**. If Codex was
+installed through `nuzo setup` or `nuzo host install codex --yes`, later
+updates use:
+
+```bash
+nuzo update --yes
+```
+
+Nuzo refreshes the managed marketplace and activates the latest plugin. It
+does not repeat setup or silently install Codex when the plugin is absent.
 
 ## Official Codex Shape
 

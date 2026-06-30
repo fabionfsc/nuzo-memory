@@ -338,6 +338,12 @@ Goal: stop expanding the product surface and prove readiness for `1.0.0`.
 
 Deliverables:
 
+- make `nuzo setup` the one-time Codex/Claude Code installation path and
+  provide managed in-place updates without repeating setup;
+- use one effective runtime resolver across CLI, MCP, hooks, and host plugins,
+  with nested-project discovery and content-free provenance diagnostics;
+- default published host paths to fail-closed restricted scope access while
+  preserving the local CLI as an administrator surface;
 - audit CLI commands, MCP schemas, export format, package/binary names, plugin
   manifests, runtime paths, and SQLite migrations;
 - test upgrades and migrations from every supported public schema and export

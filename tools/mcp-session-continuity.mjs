@@ -22,6 +22,36 @@ export async function assertMcpSessionContinuity({
 }) {
   let rememberedMemoryId;
 
+  await withMcpSession({
+    cwd,
+    command,
+    args,
+    memoryStore,
+    label,
+    authorizationMode: null,
+  }, async (client) => {
+    const doctor = parseToolJson(await client.callTool({
+      name: "memory.doctor",
+      arguments: {},
+    }));
+    if (
+      doctor.authorization?.mode !== "restricted" ||
+      doctor.authorization?.source !== "default" ||
+      !doctor.authorization?.allowed_scopes?.includes("user:default")
+    ) {
+      fail(`${label} did not start with restricted published defaults: ${JSON.stringify(doctor.authorization)}`);
+    }
+    await expectToolError(client.callTool({
+      name: "memory.remember",
+      arguments: {
+        content: "This unrelated scope must remain inaccessible to a default host runtime.",
+        kind: "note",
+        scope: "project:unrelated-smoke",
+        source: "test:restricted-default",
+      },
+    }), ["MEMORY_SCOPE_FORBIDDEN"], label);
+  });
+
   await withMcpSession({ cwd, command, args, memoryStore, label }, async (client) => {
     if (expectedToolNames !== undefined) {
       const tools = await client.listTools();
@@ -330,19 +360,32 @@ export async function assertMcpSessionContinuity({
   });
 }
 
-async function withMcpSession({ cwd, command, args, memoryStore, label }, callback) {
+async function withMcpSession({
+  cwd,
+  command,
+  args,
+  memoryStore,
+  label,
+  authorizationMode = "administrator",
+}, callback) {
   const client = new Client({
     name: "nuzo-mcp-session-continuity",
     version: "0.0.0",
   });
+  const environment = {
+    ...getDefaultEnvironment(),
+    NUZO_MEMORY_STORE: memoryStore,
+  };
+  delete environment.NUZO_AUTHORIZATION_MODE;
+  delete environment.NUZO_AUTHORIZED_SCOPES;
+  if (authorizationMode !== null) {
+    environment.NUZO_AUTHORIZATION_MODE = authorizationMode;
+  }
   const transport = new StdioClientTransport({
     command,
     args,
     cwd,
-    env: {
-      ...getDefaultEnvironment(),
-      NUZO_MEMORY_STORE: memoryStore,
-    },
+    env: environment,
     stderr: "pipe",
   });
   let stderr = "";

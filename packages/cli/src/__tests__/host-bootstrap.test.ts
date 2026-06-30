@@ -82,6 +82,9 @@ describe("host bootstrap", () => {
       "succeeded",
     ]);
     expect(result.dryRun).toBe(false);
+    expect(formatHostBootstrapResult(result, false)).toContain(
+      "For future upgrades, run nuzo update --yes; do not repeat setup.",
+    );
   });
 
   it("requires a detected host before mutating host configuration", () => {

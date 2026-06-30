@@ -16,6 +16,39 @@ This installs the shell CLI. Codex and Claude Code users should follow their
 host plugin guides instead; those plugins obtain a version-matched runtime and
 do not require this global package.
 
+## Upcoming In 0.9.0: Setup And Managed Updates
+
+These commands are **not available in the current 0.8.1 release**. `0.9.0`
+adds one-time host setup after the global package installation:
+
+```bash
+nuzo setup
+```
+
+For non-interactive use:
+
+```bash
+# Codex
+nuzo host install codex --yes
+
+# Claude Code
+nuzo host install claude-code --yes
+
+# Both
+nuzo host install --all --yes
+```
+
+Do not rerun setup after an upgrade. Update the global package, then refresh
+every already-installed Nuzo host plugin with one explicit command:
+
+```bash
+npm install --global @nuzo/memory@latest
+nuzo update --yes
+```
+
+Use `nuzo update --dry-run` to inspect the plan or `nuzo host update <host>
+--yes` to target one host. Missing plugins are not installed by an update.
+
 ## Common Commands
 
 ```bash
@@ -35,8 +68,9 @@ nuzo memory forget-many --scope project:auto --apply
 ## Runtime Configuration
 
 Project init creates `.nuzo/config.json`, a project-local SQLite store, and
-missing Git ignore rules. Later CLI commands run from that project root resolve
-the project store and hashed project scope automatically.
+missing Git ignore rules. Later CLI commands run from the project root or any
+nested directory discover that config and resolve the same store and hashed
+project scope automatically.
 
 Runtime precedence is explicit flags, environment overrides, project config,
 user config, then built-in defaults. The same resolver is used by the CLI, MCP
@@ -48,6 +82,8 @@ Useful environment overrides:
 | --- | --- |
 | `NUZO_MEMORY_STORE` | Select a SQLite store path for CLI, MCP, or hooks. |
 | `NUZO_MEMORY_SCOPE` | Select the default scope; `project:auto` resolves to the current project hash. |
+| `NUZO_PROJECT_ROOT` | Set an exact existing project root instead of ancestor discovery. |
+| `NUZO_AUTHORIZATION_MODE` | Set host authorization to `restricted` or `administrator`. The local CLI remains administrator-oriented. |
 | `NUZO_AUTHORIZED_SCOPES` | Restrict MCP/hook sessions to a comma-separated scope allowlist. The local CLI remains administrator-oriented. |
 
 Recall reads config defaults for result limit, global-scope inclusion, and

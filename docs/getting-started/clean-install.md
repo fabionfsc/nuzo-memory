@@ -18,6 +18,21 @@ npm --version
 
 Git, Python, and a source checkout are not required for normal installation.
 
+## Upcoming In 0.9.0
+
+This path is **not available in the current 0.8.1 release**. The `0.9.0`
+clean-install flow replaces the separate host command sequences with:
+
+```bash
+npm install --global @nuzo/memory@0.9.0
+nuzo setup
+```
+
+For unattended environments, use `nuzo host install codex --yes`, `nuzo host
+install claude-code --yes`, or `nuzo host install --all --yes`. Setup is
+one-time; after a package upgrade, `nuzo update --yes` refreshes installed host
+plugins without reinstalling them.
+
 ## Option A: Codex Plugin
 
 ```bash

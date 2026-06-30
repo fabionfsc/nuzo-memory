@@ -2,6 +2,10 @@
 
 This package contains the Claude Code plugin metadata for Nuzo.
 
+User installation, one-time setup, managed updates, and troubleshooting are
+documented in the [Claude Code guide](../../docs/operations/claude-code-plugin.md).
+This package README describes the maintainer-facing wrapper contract.
+
 It is intentionally thin:
 
 - `.claude-plugin/plugin.json` declares the plugin package.

@@ -899,6 +899,58 @@ describe("MCP protocol contract", () => {
     }
   });
 
+  it("defaults published host paths to project and user restricted scopes", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "nuzo-mcp-default-restricted-"));
+    tempDirectories.push(directory);
+    const storePath = join(directory, "memories.sqlite");
+    const runtime = createNuzoMcpServerRuntime({
+      storePath,
+      projectPath: directory,
+      defaultAuthorizationMode: "restricted",
+    });
+    const client = new Client({ name: "nuzo-restricted-default-test", version: "0.0.0" });
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+
+    try {
+      await Promise.all([
+        runtime.server.connect(serverTransport),
+        client.connect(clientTransport),
+      ]);
+      const projectScope = projectScopeFromPath(directory);
+      const doctor = parseToolJson(await client.callTool({
+        name: "memory.doctor",
+        arguments: {},
+      })) as {
+        config: { project_scope: string; project_root_source: string };
+        authorization: { mode: string; source: string; allowed_scopes: string[] };
+      };
+      expect(doctor).toMatchObject({
+        config: {
+          project_scope: projectScope,
+          project_root_source: "option",
+        },
+        authorization: {
+          mode: "restricted",
+          source: "default",
+          allowed_scopes: [projectScope, "user:default"],
+        },
+      });
+
+      await expectToolError(client.callTool({
+        name: "memory.remember",
+        arguments: {
+          content: "A restricted host must reject unrelated project scopes.",
+          kind: "note",
+          scope: "project:unrelated",
+          source: "test:restricted-default",
+        },
+      }));
+    } finally {
+      await client.close();
+      await runtime.close();
+    }
+  });
+
   it("returns structured update revision conflicts through the SDK", async () => {
     const directory = mkdtempSync(join(tmpdir(), "nuzo-mcp-protocol-"));
     tempDirectories.push(directory);

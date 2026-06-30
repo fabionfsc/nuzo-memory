@@ -2,6 +2,10 @@
 
 This package wraps the Nuzo MCP server for Codex.
 
+User installation, one-time setup, managed updates, and troubleshooting are
+documented in the [Codex guide](../../docs/operations/codex-plugin.md). This
+package README describes the maintainer-facing wrapper contract.
+
 The plugin is intentionally thin:
 
 - memory behavior lives in `packages/core`;

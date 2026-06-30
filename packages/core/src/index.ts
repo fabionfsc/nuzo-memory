@@ -36,9 +36,13 @@ export {
   SystemClock,
 } from "./runtime.js";
 export type {
+  NuzoAuthorizationConfig,
+  NuzoAuthorizationMode,
   NuzoConfig,
+  NuzoRuntimeAdjustment,
   NuzoRuntimeConfig,
   NuzoRuntimeConfigOptions,
+  NuzoRuntimeConfigProvenance,
 } from "./runtime.js";
 export {
   RegexSecretScanner,
