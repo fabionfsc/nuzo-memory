@@ -18,6 +18,36 @@ The `engines` fields express the minimum runtime requirement. They do not replac
 the tested-version policy above. A newer or non-LTS major may satisfy `>=22`
 without being part of the supported CI matrix.
 
+## Operating System And Architecture Matrix
+
+The Node.js policy above is separate from the operating-system policy. For
+`0.9.0`, Nuzo claims support only for the OS/architecture combinations that CI
+tests with staged npm artifacts:
+
+| Platform | Architecture | CI runner | Node.js lines | Support |
+| --- | --- | --- | --- | --- |
+| Linux x64 | x64 | `ubuntu-latest` | 22 LTS, 24 LTS | Supported and tested for staged npm artifacts. |
+| macOS x64 | x64 | `macos-15-intel` | 22 LTS, 24 LTS | Supported and tested for staged npm artifacts. |
+| Windows x64 | x64 | `windows-latest` | 22 LTS, 24 LTS | Supported and tested for staged npm artifacts. |
+
+The staged artifact smoke installs generated `@nuzo/memory-core` and
+`@nuzo/memory` tarballs, exercises the installed `nuzo` CLI, validates MCP
+stdio session continuity through the installed `nuzo-mcp-server` binary,
+checks the installed `nuzo-memory-hook --doctor` path, and validates generated
+Codex and Claude Code plugin command forms.
+
+Other combinations are not claimed as supported until they are added to the
+matrix. In particular:
+
+- Linux arm64 and macOS arm64 are expected to work when `better-sqlite3` has a
+  compatible prebuild or the local source-build toolchain is available, but
+  they are not release-blocking support lanes yet.
+- Linux musl distributions such as Alpine are not claimed as supported for
+  `0.9.0`; use glibc-based Linux or validate the native SQLite build path
+  locally.
+- Windows arm64 is not claimed as supported until CI or release validation
+  covers it.
+
 ## Native SQLite Dependency
 
 Nuzo uses `better-sqlite3`, which includes a native Node.js module.

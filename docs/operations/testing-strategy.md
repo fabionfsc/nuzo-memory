@@ -199,6 +199,29 @@ with pinned Codex and Claude Code CLIs and runs `npm run smoke:host-canary`.
 Published-package smokes remain post-release checks because they require the
 new version to exist in the npm registry.
 
+Installed artifact validation also runs a cost-conscious OS/architecture
+matrix on Node.js 22 LTS and 24 LTS:
+
+```text
+ubuntu-latest
+macos-15-intel
+windows-latest
+```
+
+Each matrix lane runs:
+
+```bash
+npm ci
+npm run smoke:os-artifacts
+```
+
+`smoke:os-artifacts` builds staged npm tarballs, installs the staged
+`@nuzo/memory-core` and `@nuzo/memory` packages into a temporary project,
+exercises CLI session continuity, MCP stdio session continuity, installed host
+hook doctor diagnostics, and generated Codex and Claude Code plugin command
+forms. This is the release-blocking OS matrix documented in
+[Runtime Support](runtime-support.md).
+
 Manual dispatch can also run a release rehearsal job. It uses Node.js 24 and
 executes:
 

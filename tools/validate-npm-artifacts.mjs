@@ -2,14 +2,14 @@
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
 import { assertCliSessionContinuity } from "./cli-session-continuity.mjs";
 import { assertMcpSessionContinuity } from "./mcp-session-continuity.mjs";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const { sortedMemoryToolNames: expectedMcpTools } = await import(
-  join(repositoryRoot, "packages", "mcp-server", "dist", "tool-contract.js")
+  pathToFileURL(join(repositoryRoot, "packages", "mcp-server", "dist", "tool-contract.js")).href
 );
 const tarballsRoot = join(repositoryRoot, "build", "npm", "tarballs");
 const corePackage = readJson(join(repositoryRoot, "packages", "core", "package.json"));
@@ -87,7 +87,7 @@ function assertOptionalSemanticPackageBoundary(root, installedCore, installedMem
 }
 
 function assertDefaultSemanticWorkflow(root, memoryStore) {
-  const executable = join(root, "node_modules", ".bin", cliExecutableName());
+  const executable = installedCliInvocation(root);
   const result = run(executable, [
     "memory", "--store", memoryStore, "--scope", "project:nuzo",
     "recall", "semantic fallback without a model", "--mode", "hybrid", "--json",
@@ -108,7 +108,7 @@ function assertLocalSemanticWorkflow(root, memoryStore, modelPath) {
     "install", "--ignore-scripts=false", "--no-audit", "--no-fund", "--no-save",
     "@huggingface/transformers@4.2.0",
   ], root);
-  const executable = join(root, "node_modules", ".bin", cliExecutableName());
+  const executable = installedCliInvocation(root);
   run(executable, [
     "memory", "--store", memoryStore, "--scope", "project:nuzo", "remember",
     "Publish npm releases through trusted publishing with SLSA provenance.",
@@ -145,7 +145,7 @@ function listFiles(root) {
 }
 
 function assertCliWorkflow(cwd, memoryStore) {
-  const executable = join(cwd, "node_modules", ".bin", cliExecutableName());
+  const executable = installedCliInvocation(cwd);
   assertCliSessionContinuity({
     cwd,
     executable,
@@ -185,7 +185,8 @@ function assertCliWorkflow(cwd, memoryStore) {
 }
 
 function assertCliExit(executable, args, cwd, expectedStatus, expectedError) {
-  const result = spawnSync(executable, args, {
+  const invocation = commandInvocation(executable, args);
+  const result = spawnSync(invocation.command, invocation.args, {
     cwd,
     encoding: "utf8",
   });
@@ -205,9 +206,11 @@ function assertCliExit(executable, args, cwd, expectedStatus, expectedError) {
 }
 
 async function assertMcpProtocol(cwd, memoryStore) {
+  const invocation = installedMcpInvocation(cwd);
   await assertMcpSessionContinuity({
     cwd,
-    command: join(cwd, "node_modules", ".bin", executableName()),
+    command: invocation.command,
+    args: invocation.args,
     memoryStore,
     label: "installed MCP",
     expectedToolNames: expectedMcpTools,
@@ -223,13 +226,9 @@ function executableName() {
 }
 
 function assertHostHookDoctor(cwd, memoryStore) {
-  const executable = join(
-    cwd,
-    "node_modules",
-    ".bin",
-    process.platform === "win32" ? "nuzo-memory-hook.cmd" : "nuzo-memory-hook",
-  );
-  const result = spawnSync(executable, ["--doctor"], {
+  const executable = installedHostHookInvocation(cwd);
+  const invocation = commandInvocation(executable, ["--doctor"]);
+  const result = spawnSync(invocation.command, invocation.args, {
     cwd,
     encoding: "utf8",
     env: { ...process.env, NUZO_MEMORY_STORE: memoryStore },
@@ -256,9 +255,11 @@ function tarballName(pkg) {
 }
 
 function run(command, args, cwd, env = {}) {
-  const result = spawnSync(command, args, {
+  const invocation = commandInvocation(command, args);
+  const result = spawnSync(invocation.command, invocation.args, {
     cwd,
     encoding: "utf8",
+    shell: typeof command === "string" && process.platform === "win32",
     env: {
       ...process.env,
       ...env,
@@ -273,6 +274,51 @@ function run(command, args, cwd, env = {}) {
     process.exit(result.status ?? 1);
   }
   return result;
+}
+
+function installedCliInvocation(root) {
+  if (process.platform !== "win32") {
+    return join(root, "node_modules", ".bin", cliExecutableName());
+  }
+  return {
+    command: process.execPath,
+    args: [join(root, "node_modules", "@nuzo", "memory", "dist", "cli", "index.js")],
+  };
+}
+
+function installedMcpInvocation(root) {
+  if (process.platform !== "win32") {
+    return {
+      command: join(root, "node_modules", ".bin", executableName()),
+      args: [],
+    };
+  }
+  return {
+    command: process.execPath,
+    args: [join(root, "node_modules", "@nuzo", "memory", "dist", "mcp-server", "index.js")],
+  };
+}
+
+function installedHostHookInvocation(root) {
+  if (process.platform !== "win32") {
+    return join(root, "node_modules", ".bin", "nuzo-memory-hook");
+  }
+  return {
+    command: process.execPath,
+    args: [
+      join(root, "node_modules", "@nuzo", "memory", "dist", "mcp-server", "host-hook-cli.js"),
+    ],
+  };
+}
+
+function commandInvocation(command, args) {
+  if (typeof command === "string") {
+    return { command, args };
+  }
+  return {
+    command: command.command,
+    args: [...command.args, ...args],
+  };
 }
 
 function readJson(path) {
