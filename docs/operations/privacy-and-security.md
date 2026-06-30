@@ -68,6 +68,24 @@ memory tools.
 The scanner includes npm access-token prefixes in addition to the provider
 patterns above.
 
+Run an explicit local scan of active records with:
+
+```bash
+nuzo memory doctor --scan-secrets
+```
+
+The report returns only record counts and finding categories. It never prints
+memory content, matching fragments, or reversible fingerprints. The scan is
+opt-in because a complete local-store pass can be expensive or surprising.
+Archived records are excluded; export and backup review remains the operator's
+responsibility.
+
+A finding is not proof of credential validity. Inspect the affected store
+locally using normal list/history controls, remove or sanitize a real secret,
+and rotate the credential outside Nuzo. For a false positive, rewrite the
+memory using a clearly redacted placeholder. Do not paste the suspected value
+into an issue or diagnostic log.
+
 ## Local File Protection
 
 Nuzo-created databases, SQLite sidecars, config files, and exports are
@@ -76,6 +94,14 @@ directories use `0700`.
 
 Project `.nuzo/config.json` cannot redirect storage to an absolute path,
 traverse outside the project, or resolve through a symlinked `.nuzo` path.
+
+`nuzo memory doctor` and `memory.doctor` report unsafe POSIX ownership or
+group/other permission bits for known config, SQLite/WAL/SHM, export, log,
+semantic-sidecar, and model paths. They also report symlinks, stale temporary or
+backup semantic artifacts, and unexpected top-level files in Nuzo runtime
+directories. Windows reports permission semantics as unsupported instead of
+pretending POSIX modes are meaningful. Diagnostics never delete or chmod a
+path; remediation is an explicit operator action after review.
 
 ## Scope Isolation
 

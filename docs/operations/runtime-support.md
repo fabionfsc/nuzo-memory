@@ -56,6 +56,31 @@ On common supported platforms, npm should download a prebuilt binary. If no
 compatible prebuild is available, installation falls back to compiling the
 module locally.
 
+### Accepted `prebuild-install` Warning At The `0.9.0` Freeze
+
+As of 2026-06-30, `better-sqlite3@12.11.1` is the latest supported upstream
+release and still depends on deprecated `prebuild-install@7.1.3`. Upstream is
+tracking replacement work in
+[`better-sqlite3#655`](https://github.com/WiseLibs/better-sqlite3/issues/655)
+and the current warning in
+[`better-sqlite3#1463`](https://github.com/WiseLibs/better-sqlite3/issues/1463).
+
+Nuzo accepts this transitive deprecation warning for the `0.9.0` contract
+freeze because:
+
+- npm reports no known vulnerability in the current dependency tree;
+- no newer `better-sqlite3` release removes the dependency;
+- replacing or downgrading the SQLite driver would add data and platform risk
+  without removing a known vulnerability;
+- staged clean installs and native SQLite workflows are tested on Node.js 22
+  and 24 across Linux x64, macOS x64, and Windows x64.
+
+This is a bounded upstream dependency acceptance, not a suppression. Recheck
+the latest upstream release and `npm audit` at every release gate. Upgrade when
+the supported driver adopts a maintained prebuild path and the full artifact
+matrix passes. Do not add an override for a native installer the parent package
+was not designed to use.
+
 Use a supported LTS release before troubleshooting:
 
 ```bash

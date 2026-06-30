@@ -1,4 +1,5 @@
 import {
+  chmodSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -11,6 +12,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { SQLiteMemoryDatabase } from "@nuzo/memory-core";
 import { createProgram, type CliIO } from "../index.js";
 
 let tempDirectories: string[] = [];
@@ -1382,5 +1384,69 @@ describe("nuzo memory cli", () => {
     expect(text).toContain("Git tracking: skipped (NUZO_DOCTOR_SKIP_GIT=1)");
     expect(text).toContain("Warning: memory store has not been initialized");
     expect(text).toContain("Status: warning");
+  });
+
+  it.skipIf(process.platform === "win32")("reports unsafe runtime permissions without changing them", async () => {
+    const store = createStorePath();
+    await runCli(["memory", "--store", store, "init"]);
+    chmodSync(store, 0o644);
+
+    const output = await runCli(["memory", "--store", store, "doctor", "--json"], {
+      NUZO_DOCTOR_SKIP_GIT: "1",
+    });
+    const report = JSON.parse(output.stdout[0] ?? "{}") as {
+      file_safety: { unsafe: Array<{ path: string; reason: string; actual_mode: number }> };
+      warnings: string[];
+    };
+
+    expect(report.file_safety.unsafe).toContainEqual(expect.objectContaining({
+      path: store,
+      reason: "permissions",
+      actual_mode: 0o644,
+    }));
+    expect(report.warnings.some((warning) => warning.includes("runtime path permission, ownership, or symlink finding(s)"))).toBe(true);
+    expect(statSync(store).mode & 0o777).toBe(0o644);
+  });
+
+  it("scans active records only after explicit opt-in without exposing content", async () => {
+    const store = createStorePath();
+    const database = new SQLiteMemoryDatabase({ path: store });
+    const secretContent = "Accidentally retained token ghp_abcdefghijklmnopqrstuvwxyz123456";
+    const now = new Date("2026-06-30T00:00:00.000Z");
+    await database.create({
+      id: "mem_secret_diagnostic",
+      revision: 1,
+      scope: "user:default",
+      kind: "note",
+      content: secretContent,
+      tags: [],
+      source: "test:doctor",
+      confidence: 1,
+      createdAt: now,
+      updatedAt: now,
+      lastUsedAt: null,
+      archivedAt: null,
+    });
+    database.close();
+
+    const defaultReport = await runCli(["memory", "--store", store, "doctor", "--json"], {
+      NUZO_DOCTOR_SKIP_GIT: "1",
+    });
+    expect(JSON.parse(defaultReport.stdout[0] ?? "{}").secret_scan).toMatchObject({
+      status: "not_requested",
+      scanned_records: 0,
+    });
+
+    const scanned = await runCli(["memory", "--store", store, "doctor", "--scan-secrets", "--json"], {
+      NUZO_DOCTOR_SKIP_GIT: "1",
+    });
+    const serialized = scanned.stdout[0] ?? "";
+    expect(serialized).not.toContain(secretContent);
+    expect(JSON.parse(serialized).secret_scan).toEqual({
+      status: "completed",
+      scanned_records: 1,
+      flagged_records: 1,
+      findings_by_kind: { github_token: 1 },
+    });
   });
 });

@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, rmSync, statSync } from "node:fs";
+import { chmodSync, existsSync, mkdtempSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import Database from "better-sqlite3";
@@ -123,6 +123,20 @@ describe("SQLiteMemoryDatabase", () => {
     } finally {
       process.umask(previousUmask);
     }
+  });
+
+  it.skipIf(process.platform === "win32")("opens diagnostics read-only without repairing permissions", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "nuzo-readonly-"));
+    tempDirectories.push(directory);
+    const path = join(directory, "memories.sqlite");
+    new SQLiteMemoryDatabase({ path }).close();
+    chmodSync(path, 0o644);
+
+    const database = new SQLiteMemoryDatabase({ path, readonly: true });
+    await expect(database.list({ includeArchived: false })).resolves.toEqual([]);
+    database.close();
+
+    expect(statSync(path).mode & 0o777).toBe(0o644);
   });
 
   it("reopens idempotently without losing memory or audit data", async () => {

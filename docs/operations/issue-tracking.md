@@ -116,6 +116,16 @@ Nuzo does not require approving reviews while the repository has one primary
 maintainer. The pull request still provides a reviewable diff, check history,
 discussion surface, and atomic squash-merge boundary.
 
+Same-repository topic branches are short-lived. GitHub automatically deletes a
+head branch after its pull request is merged; protected branches and branches
+with open pull requests are unaffected. Nuzo does not keep permanent
+version-number branches. A release or hotfix branch is justified only when an
+active, documented workflow requires it, and should be deleted when that work
+is integrated.
+
+The scheduled `Repository Governance` workflow verifies that `main` remains the
+default branch and automatic merged-branch deletion remains enabled.
+
 If branch protection must be relaxed for repository recovery, open or update a
 focused Issue with the reason, restore protection immediately after recovery,
 and attach validation evidence for the resulting `main`.

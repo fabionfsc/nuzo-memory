@@ -46,13 +46,20 @@ interface SearchRow extends MemoryRow {
 
 export interface SQLiteMemoryDatabaseOptions {
   path: string;
+  readonly?: boolean;
 }
 
 export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog, TransactionManager {
   readonly database: Database.Database;
+  private readonly readonly: boolean;
   private transactionQueue: Promise<void> = Promise.resolve();
 
   constructor(options: SQLiteMemoryDatabaseOptions) {
+    this.readonly = options.readonly === true;
+    if (this.readonly) {
+      this.database = new Database(options.path, { readonly: true, fileMustExist: true });
+      return;
+    }
     createPrivateDatabaseFile(options.path);
     this.database = new Database(options.path);
     try {
@@ -67,7 +74,7 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
 
   close(): void {
     this.database.close();
-    protectDatabaseFiles(this.database.name);
+    if (!this.readonly) protectDatabaseFiles(this.database.name);
   }
 
   getSchemaVersion(): number {

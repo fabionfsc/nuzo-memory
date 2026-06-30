@@ -103,6 +103,10 @@ injection, or runtime packaging.
 | `SQLiteMemoryDatabase` | Advanced public | SQLite adapter implementing store, search, audit, and transactions. |
 | `SQLiteMemoryDatabaseOptions` | Advanced public | SQLite adapter options. |
 | `inspectSQLiteMemoryStore` | Advanced public | Inspect a SQLite memory store for schema, integrity, count, and FTS consistency diagnostics. |
+| `inspectRuntimeFileSafety` | Advanced public | Inspect known Nuzo runtime paths for unsafe modes, ownership, symlinks, stale artifacts, and unexpected files without changing them. |
+| `InspectRuntimeFileSafetyInput` | Advanced public | Store, project, and home roots selected for file-safety inspection. |
+| `RuntimeFileSafetyFinding` | Advanced public | Content-free unsafe-path finding. |
+| `RuntimeFileSafetyReport` | Advanced public | Content-free file-safety summary shared by CLI and MCP diagnostics. |
 | `backupSQLiteMemoryStore` | Advanced public | Create a WAL-safe SQLite online backup and validate the resulting snapshot. |
 | `restoreSQLiteMemoryStore` | Advanced public | Validate and restore a SQLite memory backup into a target store path. |
 | `SQLiteIntegrityReport` | Advanced public | Content-free SQLite store integrity report. |
