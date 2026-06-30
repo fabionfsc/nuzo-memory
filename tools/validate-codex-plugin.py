@@ -132,6 +132,10 @@ def validate_nuzo_skill(path: pathlib.Path) -> None:
         "Never store secrets",
         "Codex built-in generated memories",
         "memory.recall_hook",
+        "Explicit Forget Requests",
+        "Offer archive as the reversible default.",
+        "expected_revision",
+        "mode: \"delete\"",
         "memory.forget_many",
     ]
     for guidance in required_guidance:

@@ -93,7 +93,47 @@ def main() -> None:
 
     validate_nuzo_hooks(root / "hooks" / "hooks.json", manifest["version"], release)
 
+    validate_nuzo_skill(root / "skills" / "nuzo-memory" / "SKILL.md")
+
     print(f"claude code plugin validation passed: {root}")
+
+
+def validate_nuzo_skill(path: pathlib.Path) -> None:
+    if not path.exists():
+        fail("skills/nuzo-memory/SKILL.md is missing")
+
+    content = path.read_text(encoding="utf-8")
+    frontmatter = re.match(r"\A---\n(.*?)\n---\n", content, re.DOTALL)
+    if not frontmatter:
+        fail("Nuzo skill must contain YAML frontmatter")
+    metadata = frontmatter.group(1)
+    if not re.search(r"^name:\s*nuzo-memory$", metadata, re.MULTILINE):
+        fail("Nuzo skill name must be nuzo-memory")
+    if not re.search(r"^description:\s*\S.+$", metadata, re.MULTILINE):
+        fail("Nuzo skill must contain a non-empty description")
+    if "[TODO:" in content:
+        fail("Nuzo skill contains a TODO placeholder")
+
+    required_guidance = [
+        "only after the user confirms or",
+        "Explicit Save Requests",
+        "memory.suggest_capture` with content, kind, scope, tags, source",
+        "memory.confirm_capture",
+        "If the user rejects or asks to clarify",
+        "store this decision in Nuzo",
+        "Do not silently save inferred memories.",
+        "Never store secrets",
+        "Claude Code native memory",
+        "memory.recall_hook",
+        "Explicit Forget Requests",
+        "Offer archive as the reversible default.",
+        "expected_revision",
+        "mode: \"delete\"",
+        "memory.forget_many",
+    ]
+    for guidance in required_guidance:
+        if guidance not in content:
+            fail(f"Nuzo skill missing required guidance: {guidance}")
 
 
 def validate_nuzo_server(server: dict, version: str, release: bool) -> None:

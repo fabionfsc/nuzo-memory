@@ -342,6 +342,31 @@ remains the authority for whether plugin hooks are enabled; verify them through
 defined in `docs/operations/lifecycle-hooks.md`, and capture remains governed
 by `docs/spec/capture-suggestions.md`.
 
+## Chat Memory Lifecycle
+
+The `nuzo-memory` skill guides Claude Code through the same user-controlled MCP
+flow as Codex:
+
+```text
+user asks to remember something
+  -> memory.suggest_capture validates a visible draft
+  -> user chooses create, update, keep separate, clarify, or reject
+  -> memory.confirm_capture applies only the explicit decision
+user asks to update a memory
+  -> show the current memory, proposed replacement, ID, and revision
+  -> confirmed update uses target_memory_id and expected_revision
+user asks to remove a memory
+  -> identify and show the intended memory
+  -> archive by default, or permanently delete only after explicit confirmation
+  -> memory.forget uses the displayed expected_revision
+```
+
+Revision conflicts require Claude Code to re-read the memory and ask again; it
+must not retry silently. Multiple-memory removal starts with a bounded dry-run
+`memory.forget_many` preview. Rejected, blocked, duplicate, unclear, and merely
+inferred drafts remain write-free. The lifecycle hooks themselves stay
+read-only and never perform these mutations.
+
 ## Portability
 
 Export/import remains a Nuzo feature:

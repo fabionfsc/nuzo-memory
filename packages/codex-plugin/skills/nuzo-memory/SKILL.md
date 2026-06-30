@@ -96,6 +96,26 @@ not retry silently.
 Use `memory.history` when the user needs an audit trail. Preview
 `memory.forget_many` before applying bulk archive or deletion.
 
+### Explicit Forget Requests
+
+When the user asks to remove or forget a memory:
+
+1. Use `memory.list`, `memory.recall`, or `memory.history` to identify the
+   intended memory without guessing.
+2. Show the memory ID, current revision, scope, and a concise content preview.
+3. Offer archive as the reversible default. Treat permanent deletion as a
+   separate destructive choice that requires explicit confirmation.
+4. Call `memory.forget` with the displayed ID and `expected_revision`. Use
+   `mode: "archive"` for the reversible path. Use `mode: "delete"` and
+   `confirm: true` only after the user explicitly requests permanent deletion.
+5. If the operation reports a revision conflict, re-read the memory and ask
+   again; do not retry silently.
+6. Report what changed. Do not claim the memory was removed until the tool
+   succeeds.
+
+For multiple memories, preview `memory.forget_many` first, show the bounded
+matched IDs/count, and apply only the operation the user confirms.
+
 ## Safety
 
 - Save only stable information useful in future sessions.
