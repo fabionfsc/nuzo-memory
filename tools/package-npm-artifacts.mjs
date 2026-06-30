@@ -67,6 +67,9 @@ for (const definition of definitions) {
   } else {
     cpSync(join(sourceRoot, "dist"), join(destination, "dist"), { recursive: true });
   }
+  if (definition.name === "@nuzo/memory") {
+    cpSync(join(sourceRoot, "postinstall.mjs"), join(destination, "postinstall.mjs"));
+  }
   cpSync(join(sourceRoot, "README.md"), join(destination, "README.md"));
   cpSync(join(repositoryRoot, "LICENSE"), join(destination, "LICENSE"));
   writeFileSync(
@@ -107,6 +110,12 @@ function createPublishPackage(sourcePackage) {
 
   if (publishPackage.dependencies?.["@nuzo/memory-core"]) {
     publishPackage.dependencies["@nuzo/memory-core"] = sourcePackage.version;
+  }
+  if (publishPackage.name === "@nuzo/memory") {
+    publishPackage.files.push("postinstall.mjs");
+    publishPackage.scripts = {
+      postinstall: "node postinstall.mjs",
+    };
   }
   rejectLocalDependencyReferences(publishPackage);
 
@@ -171,6 +180,9 @@ function validateStagedPackage(root, pkg) {
     if (pkg.bin?.["nuzo-memory-hook"] !== "dist/mcp-server/host-hook-cli.js") {
       fail("@nuzo/memory must expose the nuzo-memory-hook binary");
     }
+    if (pkg.scripts?.postinstall !== "node postinstall.mjs") {
+      fail("@nuzo/memory must expose the postinstall guidance script");
+    }
   }
   if (pkg.name === "@nuzo/memory-cli") {
     if (pkg.dependencies?.["@nuzo/memory-core"] !== pkg.version) {
@@ -182,7 +194,7 @@ function validateStagedPackage(root, pkg) {
   }
 
   const requiredPaths = pkg.name === "@nuzo/memory"
-    ? ["dist/cli/index.js", "dist/mcp-server/index.js", "dist/mcp-server/host-hook-cli.js", "README.md", "LICENSE"]
+    ? ["dist/cli/index.js", "dist/mcp-server/index.js", "dist/mcp-server/host-hook-cli.js", "postinstall.mjs", "README.md", "LICENSE"]
     : ["dist/index.js", "README.md", "LICENSE"];
   for (const requiredPath of requiredPaths) {
     if (!existsSync(join(root, requiredPath))) {
