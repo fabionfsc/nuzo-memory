@@ -14,9 +14,9 @@ npm install --global @nuzo/memory@0.9.0
 nuzo setup
 ```
 
-For automation, configure Codex with `nuzo host install codex --yes`, Claude
-Code with `nuzo host install claude-code --yes`, or both with
-`nuzo host install --all --yes`.
+For automation, configure Codex with `nuzo setup --codex --yes`, Claude
+Code with `nuzo setup --claude-code --yes`, or both with
+`nuzo setup --all --yes`.
 
 Future package upgrades do not repeat setup:
 

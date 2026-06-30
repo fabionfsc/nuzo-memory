@@ -28,8 +28,8 @@ npm install --global @nuzo/memory@0.9.0
 nuzo setup
 ```
 
-For unattended environments, use `nuzo host install codex --yes`, `nuzo host
-install claude-code --yes`, or `nuzo host install --all --yes`. Setup is
+For unattended environments, use `nuzo setup --codex --yes`,
+`nuzo setup --claude-code --yes`, or `nuzo setup --all --yes`. Setup is
 one-time; after a package upgrade, `nuzo update --yes` refreshes installed host
 plugins without reinstalling them.
 

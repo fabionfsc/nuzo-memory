@@ -29,14 +29,17 @@ For non-interactive use:
 
 ```bash
 # Codex
-nuzo host install codex --yes
+nuzo setup --codex --yes
 
 # Claude Code
-nuzo host install claude-code --yes
+nuzo setup --claude-code --yes
 
 # Both
-nuzo host install --all --yes
+nuzo setup --all --yes
 ```
+
+Compatibility aliases remain available under `nuzo host install`, but `nuzo
+setup` is the primary first-time user path.
 
 Do not rerun setup after an upgrade. Update the global package, then refresh
 every already-installed Nuzo host plugin with one explicit command:

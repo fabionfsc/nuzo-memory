@@ -86,9 +86,7 @@ export function formatHostUpdateResult(result: HostUpdateResult, json: boolean):
         scope: host.scope,
         steps: host.steps,
       })),
-      next_steps: result.dryRun
-        ? ["Run nuzo update --yes to update every installed Nuzo host plugin."]
-        : ["Start a new host session so the updated plugin and MCP server are loaded."],
+      next_steps: hostUpdateNextSteps(result),
     }, null, 2);
   }
 
@@ -97,17 +95,41 @@ export function formatHostUpdateResult(result: HostUpdateResult, json: boolean):
     "Only already-installed Nuzo plugins are updated; setup is not repeated.",
   ];
   for (const host of result.hosts) {
-    const state = !host.detected ? "not detected" : host.installed ? "installed" : "not installed";
+    const state = hostUpdateState(host);
     lines.push(`${displayName(host.host)}: ${state}`);
     for (const step of host.steps) {
       lines.push(`- ${step.status}: ${shellCommand(step)}`);
       lines.push(`  Purpose: ${step.purpose}`);
     }
   }
-  lines.push(result.dryRun
-    ? "Next: Run nuzo update --yes to apply this plan."
-    : "Next: Start a new host session so the updated plugin and MCP server are loaded.");
+  for (const step of hostUpdateNextSteps(result)) {
+    lines.push(`Next: ${step}`);
+  }
   return lines.join("\n");
+}
+
+function hostUpdateNextSteps(result: HostUpdateResult): string[] {
+  if (!result.dryRun) {
+    return ["Start a new host session so the updated plugin and MCP server are loaded."];
+  }
+
+  const steps = ["Run nuzo update --yes to update every installed Nuzo host plugin."];
+  for (const host of result.hosts) {
+    if (host.detected && !host.installed) {
+      steps.push(`${displayName(host.host)} is not installed; run ${setupCommand(host.host)} for first-time setup.`);
+    }
+  }
+  return steps;
+}
+
+function hostUpdateState(host: HostUpdateResult["hosts"][number]): string {
+  if (!host.detected) return "not detected";
+  if (host.installed) return "installed";
+  return `not installed (skipped; run ${setupCommand(host.host)} for first-time setup)`;
+}
+
+function setupCommand(host: HostBootstrapHost): string {
+  return host === "codex" ? "nuzo setup --codex --yes" : "nuzo setup --claude-code --yes";
 }
 
 function inspectHost(host: HostBootstrapHost, runner: CommandRunner): HostUpdateResult["hosts"][number] {

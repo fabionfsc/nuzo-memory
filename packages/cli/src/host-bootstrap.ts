@@ -209,9 +209,10 @@ function hostBootstrapNextSteps(result: HostBootstrapResult): string[] {
   if (result.dryRun) {
     return [
       "Re-run with --yes to apply this plan, or choose one host explicitly:",
-      "Codex only: nuzo host install codex --yes",
-      "Claude Code only: nuzo host install claude-code --yes",
-      "Both hosts: nuzo host install --all --yes",
+      "Codex only: nuzo setup --codex --yes",
+      "Claude Code only: nuzo setup --claude-code --yes",
+      "Both hosts: nuzo setup --all --yes",
+      "Compatibility aliases remain available under nuzo host install.",
     ];
   }
 

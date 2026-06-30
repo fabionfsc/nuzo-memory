@@ -64,19 +64,19 @@ function checkNonInteractiveSetupContract() {
   assertOrdered("docs/operations/local-cli.md", localCli, [
     "For non-interactive use:",
     "# Codex",
-    "nuzo host install codex --yes",
+    "nuzo setup --codex --yes",
     "# Claude Code",
-    "nuzo host install claude-code --yes",
+    "nuzo setup --claude-code --yes",
     "# Both",
-    "nuzo host install --all --yes",
+    "nuzo setup --all --yes",
   ]);
 
   for (const path of firstUseDocs) {
     const content = readText(path);
     for (const command of [
-      "nuzo host install codex --yes",
-      "nuzo host install claude-code --yes",
-      "nuzo host install --all --yes",
+      "nuzo setup --codex --yes",
+      "nuzo setup --claude-code --yes",
+      "nuzo setup --all --yes",
     ]) {
       assertIncludes(path, content, command, `must include non-interactive setup command: ${command}`);
     }

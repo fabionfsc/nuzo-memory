@@ -84,11 +84,11 @@ describe("nuzo memory cli", () => {
     expect(codex.stdout[0]).toMatch(/Codex: (detected|not detected)/);
     expect(codex.stdout[0]).toContain("- planned: codex plugin marketplace add fabionfsc/nuzo-memory");
     expect(codex.stdout[0]).toContain("- planned: codex plugin add nuzo@nuzo-memory");
-    expect(codex.stdout[0]).toContain("Codex only: nuzo host install codex --yes");
-    expect(codex.stdout[0]).toContain("Claude Code only: nuzo host install claude-code --yes");
-    expect(codex.stdout[0]).toContain("Both hosts: nuzo host install --all --yes");
+    expect(codex.stdout[0]).toContain("Codex only: nuzo setup --codex --yes");
+    expect(codex.stdout[0]).toContain("Claude Code only: nuzo setup --claude-code --yes");
+    expect(codex.stdout[0]).toContain("Both hosts: nuzo setup --all --yes");
 
-    const setup = await runCli(["setup", "--host", "codex", "claude-code", "--dry-run", "--json"]);
+    const setup = await runCli(["setup", "--codex", "--claude-code", "--dry-run", "--json"]);
     const output = JSON.parse(setup.stdout[0] ?? "{}") as {
       dry_run: boolean;
       hosts: Array<{ host: string; steps: Array<{ command: string; status: string }> }>;
@@ -113,9 +113,9 @@ describe("nuzo memory cli", () => {
         },
       ],
     });
-    expect(output.next_steps).toContain("Both hosts: nuzo host install --all --yes");
+    expect(output.next_steps).toContain("Both hosts: nuzo setup --all --yes");
 
-    const all = await runCli(["host", "install", "--all", "--dry-run", "--json"]);
+    const all = await runCli(["setup", "--all", "--dry-run", "--json"]);
     expect(JSON.parse(all.stdout[0] ?? "{}")).toMatchObject({
       dry_run: true,
       hosts: [
@@ -123,6 +123,23 @@ describe("nuzo memory cli", () => {
         { host: "claude-code" },
       ],
     });
+
+    const alias = await runCli(["host", "install", "--all", "--dry-run", "--json"]);
+    expect(JSON.parse(alias.stdout[0] ?? "{}")).toMatchObject({
+      dry_run: true,
+      hosts: [
+        { host: "codex" },
+        { host: "claude-code" },
+      ],
+    });
+  });
+
+  it("rejects ambiguous setup target styles", async () => {
+    const result = await runCli(["setup", "--codex", "--host", "claude-code", "--dry-run"]);
+    expect(result.stdout).toEqual([]);
+    expect(result.stderr.join("\n")).toContain(
+      "Use --codex, --claude-code, --all, or --host, not multiple target styles.",
+    );
   });
 
   it("keeps FTS default and reports semantic fallback and maintenance state", async () => {

@@ -54,9 +54,10 @@ describe("host bootstrap", () => {
       "- planned: claude plugin install nuzo@nuzo-memory --scope user",
       "  Purpose: Install the Nuzo Claude Code plugin for the user scope.",
       "Next: Re-run with --yes to apply this plan, or choose one host explicitly:",
-      "      Codex only: nuzo host install codex --yes",
-      "      Claude Code only: nuzo host install claude-code --yes",
-      "      Both hosts: nuzo host install --all --yes",
+      "      Codex only: nuzo setup --codex --yes",
+      "      Claude Code only: nuzo setup --claude-code --yes",
+      "      Both hosts: nuzo setup --all --yes",
+      "      Compatibility aliases remain available under nuzo host install.",
     ].join("\n"));
   });
 
@@ -121,6 +122,6 @@ describe("host bootstrap", () => {
         },
       ],
     });
-    expect(output.next_steps).toContain("Codex only: nuzo host install codex --yes");
+    expect(output.next_steps).toContain("Codex only: nuzo setup --codex --yes");
   });
 });
