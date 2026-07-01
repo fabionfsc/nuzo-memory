@@ -16,8 +16,9 @@ codex plugin list --json
 ```
 
 Start Codex, open `/plugins`, and confirm `nuzo@nuzo-memory` is enabled. Open
-`/hooks`, review and trust the Nuzo `SessionStart` and `UserPromptSubmit` hooks,
-then start a new thread.
+`/hooks`, review and trust the two Nuzo read-only recall hooks,
+`SessionStart` and `UserPromptSubmit`, then start a new thread. Trust prompts
+are expected; the hooks do not write memory.
 
 Continue with [Codex installation and troubleshooting](../operations/codex-plugin.md).
 
@@ -33,7 +34,8 @@ claude plugin list --json
 ```
 
 Confirm `nuzo@nuzo-memory` is enabled. Inside Claude Code, inspect `/mcp` and
-`/hooks`, then start a new session.
+`/hooks`, trust the two Nuzo read-only recall hooks, then start a new session.
+Trust prompts are expected; the hooks do not write memory.
 
 Continue with [Claude Code installation and troubleshooting](../operations/claude-code-plugin.md).
 

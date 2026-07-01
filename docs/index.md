@@ -30,8 +30,8 @@ Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
     codex plugin add nuzo@nuzo-memory
     ```
 
-    Open `/plugins`, confirm Nuzo is enabled, review and trust its hooks in
-    `/hooks`, then start a new thread.
+    Open `/plugins`, confirm Nuzo is enabled, review and trust the two Nuzo
+    read-only recall hooks in `/hooks`, then start a new thread.
 
 === "Claude Code"
 
@@ -40,8 +40,8 @@ Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
     claude plugin install nuzo@nuzo-memory --scope user
     ```
 
-    Run `claude plugin list --json`, inspect `/mcp` and `/hooks`, then start a
-    new session.
+    Run `claude plugin list --json`, inspect `/mcp` and `/hooks`, trust the two
+    Nuzo read-only recall hooks, then start a new session.
 
 === "CLI"
 
@@ -61,6 +61,8 @@ Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
 
 Codex and Claude Code plugins obtain their pinned runtime themselves. A global
 npm installation is only needed for the shell CLI or a direct MCP setup.
+Hook trust prompts are expected: Nuzo uses `SessionStart` and
+`UserPromptSubmit` for bounded recall, and those hooks do not write memory.
 
 ## Optional: Global Setup
 
