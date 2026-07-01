@@ -4,33 +4,6 @@ The official Nuzo package for local, inspectable agent memory. It includes the
 `nuzo` CLI, the MCP server, and the read-only lifecycle hook runner used by
 Codex and Claude Code plugins.
 
-## One-Time Setup
-
-For a first-time local install, start here:
-
-```bash
-npm install --global @nuzo/memory@0.9.0
-nuzo setup
-```
-
-For automation:
-
-```bash
-nuzo setup --codex --yes
-nuzo setup --claude-code --yes
-nuzo setup --all --yes
-```
-
-Future package upgrades do not repeat setup:
-
-```bash
-npm install --global @nuzo/memory@latest
-nuzo update --yes
-```
-
-`nuzo update` changes only Nuzo plugins that are already installed. It does not
-repeat setup or silently install missing host plugins.
-
 ## Codex
 
 Normal Codex users should install the Nuzo plugin, which obtains its matching
@@ -56,10 +29,10 @@ Confirm `nuzo@nuzo-memory` with `claude plugin list --json`, inspect `/mcp` and
 `/hooks`, then start a new session. A separate global npm install is not
 required unless you also want the shell CLI.
 
-## Shell CLI
+## Shell CLI And Host Setup
 
 ```bash
-npm install --global @nuzo/memory
+npm install --global @nuzo/memory@0.9.0
 nuzo memory init
 nuzo memory doctor
 ```
@@ -70,6 +43,18 @@ Store and recall safe test data:
 nuzo memory remember "The demo project uses SQLite." --kind project_decision --tag demo
 nuzo memory recall "demo storage"
 ```
+
+To let Nuzo detect and configure installed hosts from the global package, run:
+
+```bash
+nuzo setup
+nuzo setup --codex --yes
+nuzo setup --claude-code --yes
+nuzo setup --all --yes
+```
+
+After package upgrades, `nuzo update --yes` refreshes already-installed Nuzo
+host plugins. It does not repeat setup or silently install missing plugins.
 
 ## Verify Memory Across Sessions
 

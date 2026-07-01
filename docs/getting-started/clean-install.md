@@ -18,26 +18,6 @@ npm --version
 
 Git, Python, and a source checkout are not required for normal installation.
 
-## Recommended Setup Path
-
-For a clean first-time local install, start here:
-
-```bash
-npm install --global @nuzo/memory@0.9.0
-nuzo setup
-```
-
-For unattended environments:
-
-```bash
-nuzo setup --codex --yes
-nuzo setup --claude-code --yes
-nuzo setup --all --yes
-```
-
-Setup is one-time. After a package upgrade, `nuzo update --yes` refreshes
-already-installed host plugins.
-
 ## Option A: Codex Plugin
 
 ```bash
@@ -59,6 +39,27 @@ claude plugin list --json
 
 Confirm that `nuzo@nuzo-memory` is enabled. Inspect `/mcp` and `/hooks`, then
 start a new Claude Code session.
+
+## Optional: Global Setup
+
+Use the global package when you want the shell CLI or one command that detects
+and configures installed hosts:
+
+```bash
+npm install --global @nuzo/memory@0.9.0
+nuzo setup
+```
+
+For unattended environments:
+
+```bash
+nuzo setup --codex --yes
+nuzo setup --claude-code --yes
+nuzo setup --all --yes
+```
+
+Setup is one-time. After a package upgrade, `nuzo update --yes` refreshes
+already-installed host plugins.
 
 ## Verify A Plugin Across Sessions
 
