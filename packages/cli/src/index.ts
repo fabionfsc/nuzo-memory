@@ -78,6 +78,9 @@ import {
   type HostBootstrapHost,
 } from "./host-bootstrap.js";
 import { formatHostUpdateResult, runHostUpdate } from "./host-update.js";
+import { runMemoryManager } from "./memory-manager.js";
+import { TerminalMemoryManagerIO } from "./terminal-memory-manager.js";
+import { recordManagedHosts } from "./managed-hosts.js";
 
 export interface CliIO {
   stdout(message: string): void;
@@ -220,6 +223,12 @@ Examples:
       const detected = detectHostBootstrapHosts();
       const hosts = setupHostsFromOptions(commandOptions, detected);
       const result = runHostBootstrap(hosts, commandOptions);
+      if (!commandOptions.dryRun) {
+        recordManagedHosts(result.hosts.map(({ host }) => ({
+          host,
+          ...(host === "claude-code" ? { scope: "user" } : {}),
+        })));
+      }
       io.stdout(formatHostBootstrapResult(result, commandOptions.json));
     }));
 
@@ -555,6 +564,58 @@ Examples:
       const runtime = resolveRuntimeConfig(memory.opts<GlobalOptions>());
       const removed = clearSemanticIndex(semanticIndexPathFor(runtime.storePath));
       io.stdout(removed ? "Semantic index cleared" : "Semantic index already absent");
+    }));
+
+  memory
+    .command("manage")
+    .description("Open the interactive terminal memory manager.")
+    .option("--all-scopes", "Manage every authorized local scope.", false)
+    .action(withErrorHandling(io, async (commandOptions: { allScopes: boolean }) => {
+      const options = memory.opts<GlobalOptions>();
+      if (commandOptions.allScopes && options.scope !== undefined) {
+        throw new NuzoMemoryError(
+          "MEMORY_SCOPE_CONFLICT",
+          "Manage --all-scopes cannot be combined with --scope.",
+        );
+      }
+
+      const database = openDatabase(options);
+      const service = createService(database);
+      const managerIO = new TerminalMemoryManagerIO();
+      const scope = commandOptions.allScopes ? undefined : resolveScope(options);
+      try {
+        await runMemoryManager({
+          service,
+          io: managerIO,
+          ...(scope === undefined ? {} : { scope }),
+          transfers: {
+            exportJson: async (path, includeArchived) => {
+              const document = await service.exportMemories({
+                actor: "nuzo:cli-manager",
+                includeArchived,
+                ...(scope === undefined ? {} : { scope }),
+              });
+              const exportPath = resolve(path);
+              ensureStoreDirectory(exportPath);
+              writePrivateFile(exportPath, formatExportDocument(document, "json"));
+              return document.memories.length;
+            },
+            importJson: async (path, dryRun) => {
+              const document = readExportDocument(resolve(path));
+              const result = await service.importMemories({
+                document,
+                actor: "nuzo:cli-manager",
+                dryRun,
+                ...(scope === undefined ? {} : { scope }),
+              });
+              return { imported: result.imported, skipped: result.skipped };
+            },
+          },
+        });
+      } finally {
+        managerIO.close();
+        database.close();
+      }
     }));
 
   memory

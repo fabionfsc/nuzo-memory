@@ -212,16 +212,17 @@ function validateStagedReadme(root, pkg) {
   }
   if (pkg.name === "@nuzo/memory") {
     for (const requiredText of [
-      "codex plugin marketplace add fabionfsc/nuzo-memory",
-      "claude plugin marketplace add fabionfsc/nuzo-memory",
       "npm install --global @nuzo/memory",
+      "nuzo setup",
+      "nuzo memory manage",
+      "automatically refreshes",
       "Verify Memory Across Sessions",
     ]) {
       if (!readme.includes(requiredText)) {
         fail(`${pkg.name} staged README is missing user onboarding: ${requiredText}`);
       }
     }
-    const hostBootstrapCommands = ["nuzo setup", "nuzo update"];
+    const hostBootstrapCommands = ["nuzo setup"];
     if (isAtLeastVersion(pkg.version, "0.9.0")) {
       for (const command of hostBootstrapCommands) {
         if (!readme.includes(command)) {

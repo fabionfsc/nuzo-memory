@@ -10,6 +10,19 @@ Claude Code is one host package, not the product boundary. Codex and future MCP-
 
 Prerequisites: Node.js 22 or 24, npm 10 or newer, and a current Claude Code CLI.
 
+Recommended path:
+
+```bash
+npm install --global @nuzo/memory@0.9.1
+nuzo setup --claude-code
+```
+
+`nuzo setup` shows the Claude Code plugin changes and asks before changing host
+configuration. This path also installs the local `nuzo` CLI for memory
+management.
+
+Advanced manual path:
+
 ```bash
 claude plugin marketplace add fabionfsc/nuzo-memory
 claude plugin install nuzo@nuzo-memory --scope user
@@ -17,8 +30,9 @@ claude plugin install nuzo@nuzo-memory --scope user
 
 Run `claude plugin list --json` and confirm that `nuzo@nuzo-memory` is enabled.
 Inside Claude Code, inspect `/mcp` and `/hooks`, then start a new session. The
-plugin obtains its pinned `@nuzo/memory` runtime on first use, so a global npm
-install is not required.
+plugin obtains its pinned `@nuzo/memory` runtime on first use. Manual plugin
+installation is useful for host-only tests, but it does not install the shell
+CLI for managing memory.
 
 Two hook trust prompts are expected. Nuzo uses `SessionStart` for bounded
 session bootstrap recall and `UserPromptSubmit` for bounded prompt-context
@@ -46,7 +60,22 @@ The answer should use `NUZO-CLAUDE-OK`. If recall fails, confirm
 
 ## Update, Disable, Or Remove
 
-For the current `0.9.1` release, update with the native Claude Code commands:
+For a Nuzo-managed Claude Code install, update the global package normally:
+
+```bash
+npm install --global @nuzo/memory@latest
+```
+
+Nuzo automatically refreshes already-installed managed host plugins during the
+package lifecycle. If npm lifecycle scripts are disabled or the automatic
+refresh needs attention, run:
+
+```bash
+nuzo update --yes
+```
+
+For a manual Claude Code plugin install, update with the native Claude Code
+commands:
 
 ```bash
 claude plugin marketplace update nuzo-memory
@@ -61,17 +90,7 @@ claude plugin enable nuzo@nuzo-memory
 claude plugin uninstall nuzo@nuzo-memory --scope user
 ```
 
-### Managed Updates
-
-If Claude Code was installed through `nuzo setup`, later updates use:
-
-```bash
-nuzo update --yes
-```
-
-Nuzo refreshes the managed marketplace and updates the plugin in its existing
-Claude Code scope. It does not repeat setup or silently install a missing
-plugin.
+Managed updates do not repeat setup or silently install a missing plugin.
 
 ## Package
 

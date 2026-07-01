@@ -39,9 +39,11 @@ nuzo setup
 - print a concise success summary naming each configured host;
 - leave memory stores, host configs, and plugin changes auditable.
 
-The npm lifecycle must not silently modify Codex, Claude Code, or another host
-configuration. A package-manager install may point the user to `nuzo setup`,
-but host mutation belongs to an explicit Nuzo command.
+The first npm install must not silently modify Codex, Claude Code, or another
+host configuration. A package-manager install may point the user to
+`nuzo setup`, but first-time host mutation belongs to an explicit Nuzo command.
+After the user has opted in through `nuzo setup`, later npm package upgrades
+may automatically refresh only those Nuzo-managed host plugins.
 
 Automation should have clear non-interactive forms:
 
@@ -145,10 +147,19 @@ Routine package updates should not require the user to repeat setup:
 
 ```bash
 npm install --global @nuzo/memory@latest
-nuzo update --yes
 ```
 
-`nuzo update` should:
+The package lifecycle should:
+
+- read Nuzo's managed-host receipt from the previous explicit setup;
+- refresh only already-installed Nuzo-managed host plugins;
+- preserve the user's existing host scope;
+- skip missing hosts instead of silently installing new plugins;
+- explain whether the user must reload plugins or start a new session;
+- print `nuzo update --yes` only as a manual recovery path when automatic
+  refresh cannot run.
+
+`nuzo update` remains the explicit recovery and inspection command. It should:
 
 - discover already-installed Nuzo host plugins;
 - refresh the managed marketplace entries;
@@ -179,7 +190,7 @@ The existing command surface must remain capable of administration:
 - `nuzo memory export`
 - `nuzo memory import`
 
-Before `1.0.0`, Nuzo should evaluate a CLI-only interactive management mode for
+Before `1.0.0`, Nuzo should include a CLI-only interactive management mode for
 users who do not want to compose every lifecycle operation manually. The target
 shape is a terminal workflow, not a browser UI:
 
@@ -187,17 +198,8 @@ shape is a terminal workflow, not a browser UI:
 nuzo memory manage
 ```
 
-or:
-
-```bash
-nuzo manage
-```
-
-The interactive CLI should be treated as optional for the exact stable boundary
-unless implementation evidence shows it is necessary to make memory review,
-editing, deletion, and audit usable for normal developers. If included, it must
-reuse core use cases and the existing CLI/MCP contracts instead of introducing a
-second memory engine.
+The interactive CLI must reuse core use cases and the existing CLI/MCP
+contracts instead of introducing a second memory engine.
 
 ## Non-Goals For `1.0.0`
 
@@ -223,8 +225,9 @@ Before `1.0.0`, release validation should prove:
 - explicit remember, update, and forget requests work through host tools;
 - inferred capture remains draft-first and confirmation-gated;
 - update candidates avoid unbounded duplicate memories;
-- `nuzo update --yes` updates already-installed plugins without repeating
-  setup;
+- npm package upgrades automatically refresh already-installed managed host
+  plugins without repeating setup;
+- `nuzo update --yes` works as the explicit recovery path;
 - CLI memory administration works against the same store used by hosts;
 - docs match the tested user path;
 - failures produce actionable diagnostics without exposing memory content.

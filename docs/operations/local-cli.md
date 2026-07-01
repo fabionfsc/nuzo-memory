@@ -12,9 +12,8 @@ nuzo memory init
 nuzo memory doctor
 ```
 
-This installs the shell CLI. Codex and Claude Code users should follow their
-host plugin guides instead; those plugins obtain a version-matched runtime and
-do not require this global package.
+This installs the shell CLI and the runtime used by Nuzo-managed Codex and
+Claude Code plugins.
 
 ## Setup And Managed Updates
 
@@ -38,17 +37,19 @@ nuzo setup --claude-code --yes
 nuzo setup --all --yes
 ```
 
-Do not rerun setup after an upgrade. Update the global package, then refresh
-every already-installed Nuzo host plugin with one explicit command:
+Do not rerun setup after an upgrade. Update the global package normally; the
+package postinstall refreshes already-installed Nuzo host plugins that were
+managed by `nuzo setup`:
 
 ```bash
 npm install --global @nuzo/memory@latest
-nuzo update --yes
 ```
 
-Use `nuzo update --dry-run` to inspect the plan. Use
-`nuzo update --codex --yes` or `nuzo update --claude-code --yes` to target one
-host. Missing plugins are not installed by an update.
+Use `nuzo update --yes` when npm lifecycle scripts are disabled or the
+automatic refresh reports that manual attention is needed. Use
+`nuzo update --dry-run` to inspect the plan. Use `nuzo update --codex --yes` or
+`nuzo update --claude-code --yes` to target one host. Missing plugins are not
+installed by an update.
 
 ## Common Commands
 
@@ -59,6 +60,7 @@ nuzo memory remember "The project uses SQLite for local storage." --kind project
 nuzo memory suggest-capture "The user prefers concise final answers." --kind preference --reason "Durable response style preference."
 nuzo memory recall "local storage"
 nuzo memory list --all-scopes
+nuzo memory manage
 nuzo memory export --path ./memories.memory.export.json
 nuzo memory history mem_01HZY
 nuzo memory audit --scope project:auto --event-type memory.exported

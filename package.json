@@ -42,7 +42,8 @@
     "docs:build": "mkdocs build --strict",
     "docs:check": "node --test tools/docs-contracts.test.mjs && npm run docs:links && npm run docs:snippets",
     "docs:links": "node tools/docs-link-check.mjs",
-    "docs:snippets": "node tools/docs-snippet-check.mjs"
+    "docs:snippets": "node tools/docs-snippet-check.mjs",
+    "gate:developer-experience": "npm run package:npm && node tools/developer-experience-gate.mjs"
   },
   "devDependencies": {
     "typescript": "^6.0.3",

@@ -209,7 +209,8 @@ function hostBootstrapNextSteps(result: HostBootstrapResult): string[] {
     "Review and trust the installed plugin hooks in each host.",
     "Start a new Codex or Claude Code session so the plugin and MCP server are loaded.",
     "Run nuzo memory doctor, or use memory.doctor from the host, to verify runtime health.",
-    "For future upgrades, run nuzo update --yes; do not repeat setup.",
+    "Future npm upgrades automatically refresh these managed plugins; do not repeat setup.",
+    "If automatic refresh cannot run, use nuzo update --yes as the recovery path.",
   ];
 }
 

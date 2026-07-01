@@ -62,9 +62,13 @@ test("user onboarding exposes host bootstrap only after its public release", () 
     "packages/memory/README.md",
   ]) {
     const content = readText(path);
-    for (const command of commands) {
+    const requiredCommands = path === "packages/memory/README.md"
+      ? ["nuzo setup", "nuzo update"]
+      : commands;
+    for (const command of requiredCommands) {
       assert.match(content, new RegExp(escapeRegExp(command)), `${path}: ${command}`);
     }
+    assert.match(content, /nuzo memory manage/u, `${path}: nuzo memory manage`);
   }
 });
 

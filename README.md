@@ -46,36 +46,49 @@ store that you can inspect, edit, export, or delete.
 
 `0.9.1` is the current public release.
 
-## Install For Your Agent
+## Install Once
 
 Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
 
-### Codex
-
 ```bash
-codex plugin marketplace add fabionfsc/nuzo-memory
-codex plugin add nuzo@nuzo-memory
+npm install --global @nuzo/memory@0.9.1
+nuzo setup
 ```
 
-Open `/plugins` to confirm Nuzo is enabled, then open `/hooks` and trust the two
-Nuzo read-only recall hooks. Start a new thread after installation.
+`nuzo setup` detects Codex and Claude Code, shows the host changes, and asks
+before changing host configuration. Open the configured host, confirm Nuzo is
+enabled, trust the two Nuzo read-only recall hooks, then start a new session.
 
-### Claude Code
+For non-interactive setup:
 
 ```bash
-claude plugin marketplace add fabionfsc/nuzo-memory
-claude plugin install nuzo@nuzo-memory --scope user
+# Codex
+nuzo setup --codex --yes
+
+# Claude Code
+nuzo setup --claude-code --yes
+
+# Both
+nuzo setup --all --yes
 ```
-
-Run `claude plugin list --json`, inspect `/mcp` and `/hooks`, then trust the two
-Nuzo read-only recall hooks and start a new session.
-
-The plugins obtain their version-matched Nuzo runtime themselves. Do not also
-install the global npm package unless you want the shell CLI.
 
 Hook trust prompts are expected. Nuzo uses one `SessionStart` hook and one
 `UserPromptSubmit` hook for bounded recall. These hooks do not write memory;
 memory writes still require explicit user confirmation.
+
+After package upgrades, update the global package normally. Nuzo refreshes
+plugins that were already installed through `nuzo setup`:
+
+```bash
+npm install --global @nuzo/memory@latest
+```
+
+If npm lifecycle scripts are disabled or the automatic refresh needs attention,
+run `nuzo update --yes` as the recovery path. Direct host plugin installation
+is documented in the [Codex](docs/operations/codex-plugin.md) and
+[Claude Code](docs/operations/claude-code-plugin.md) guides for advanced
+setups, but the npm package is the recommended path because it also installs
+the management CLI.
 
 ## Verify Memory Across Sessions
 
@@ -95,15 +108,14 @@ The answer should use `NUZO-OK`. If it does not, follow the
 [Codex](docs/operations/codex-plugin.md) or
 [Claude Code](docs/operations/claude-code-plugin.md) troubleshooting path.
 
-## Use The CLI
+## Manage Memory From The CLI
 
-Install the CLI when you want to manage memory from a shell, connect a generic
-MCP host, or let Nuzo configure installed Codex and Claude Code hosts:
+Use the CLI to inspect, edit, export, import, archive, or delete local memory:
 
 ```bash
-npm install --global @nuzo/memory@0.9.1
 nuzo memory init
 nuzo memory doctor
+nuzo memory manage
 ```
 
 Try a local write and recall:
@@ -115,27 +127,6 @@ nuzo memory recall "demo storage"
 
 The CLI also supports list, update, forget, audit, export, import, and optional
 local semantic retrieval. See the [CLI guide](docs/operations/local-cli.md).
-
-To configure host plugins from the CLI, run:
-
-```bash
-nuzo setup
-```
-
-Automation can target one host or both:
-
-```bash
-nuzo setup --codex --yes
-nuzo setup --claude-code --yes
-nuzo setup --all --yes
-```
-
-After package upgrades, refresh only already-installed Nuzo host plugins:
-
-```bash
-npm install --global @nuzo/memory@latest
-nuzo update --yes
-```
 
 For a generic MCP host, run Nuzo as a stdio server:
 

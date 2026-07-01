@@ -18,14 +18,16 @@ tokens, raw logs, or private file contents.
 
 ## Choose An Interface
 
-Use the [Getting Started](index.md) host instructions for Codex or Claude Code;
-their plugins provide this flow without a separate global install. The commands
-below demonstrate the same lifecycle directly through the CLI:
+Use the [Getting Started](index.md) host instructions for Codex or Claude Code.
+The recommended install path gives you both host integration and the local
+management CLI:
 
 ```bash
 npm install --global @nuzo/memory
+nuzo setup
 ```
 
+The commands below demonstrate the same lifecycle directly through the CLI.
 Initialize the local store when you want to manage memory directly:
 
 ```bash
