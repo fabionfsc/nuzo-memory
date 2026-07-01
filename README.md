@@ -46,43 +46,34 @@ store that you can inspect, edit, export, or delete.
 
 `0.8.1` is the current public release.
 
-## Upcoming In 0.9.0: Install Once, Update In Place
+## Upcoming In 0.9.0: Install Once
 
-This workflow is **not available in the current 0.8.1 release**. It is the
-committed installation contract for `0.9.0`:
+This workflow is **not available in the current 0.8.1 release**. In `0.9.0`,
+the normal path becomes:
 
 ```bash
 npm install --global @nuzo/memory@0.9.0
 nuzo setup
 ```
 
-`nuzo setup` detects Codex and Claude Code, shows the exact host changes, and
-installs the selected Nuzo plugins after confirmation. It is a first-install
-command, not routine maintenance. Non-interactive alternatives remain clear:
+`nuzo setup` detects Codex and Claude Code, shows the host changes, and asks
+before changing any host configuration.
 
 ```bash
-# Codex only
 nuzo setup --codex --yes
-
-# Claude Code only
 nuzo setup --claude-code --yes
-
-# Both hosts
 nuzo setup --all --yes
 ```
 
-Later upgrades do not require setup again:
+After later package upgrades:
 
 ```bash
 npm install --global @nuzo/memory@latest
 nuzo update --yes
 ```
 
-`nuzo update` discovers already-installed Nuzo plugins, refreshes their managed
-marketplace, and updates Codex and Claude Code in place. It never silently
-installs a missing host plugin. npm installation itself does not modify host
-configuration; the explicit Nuzo command keeps every host change visible and
-auditable.
+`nuzo update` refreshes already-installed Nuzo host plugins. It does not repeat
+first-time setup or silently install a missing plugin.
 
 ## Install For Your Agent
 

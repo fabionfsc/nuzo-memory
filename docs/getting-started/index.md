@@ -13,22 +13,24 @@ npm install --global @nuzo/memory@0.9.0
 nuzo setup
 ```
 
-Nuzo will detect Codex and Claude Code, show its plan, and configure only the
-hosts the user confirms. Use `nuzo setup --codex --yes`,
-`nuzo setup --claude-code --yes`, or `nuzo setup --all --yes` for explicit
-non-interactive installation.
+Nuzo detects Codex and Claude Code, shows the plan, and configures only the
+hosts you approve.
 
-Setup is run once. For later releases, update the package and its already
-installed host plugins without repeating setup:
+```bash
+nuzo setup --codex --yes
+nuzo setup --claude-code --yes
+nuzo setup --all --yes
+```
+
+Setup is one-time. After later package upgrades:
 
 ```bash
 npm install --global @nuzo/memory@latest
 nuzo update --yes
 ```
 
-The npm lifecycle does not silently alter host configuration. `nuzo update`
-keeps that mutation explicit, updates only installed plugins, and directs a
-first-time user back to setup.
+`nuzo update` updates only installed plugins and sends first-time users back to
+setup.
 
 ## Codex
 
