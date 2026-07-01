@@ -14,9 +14,9 @@ codex plugin marketplace add fabionfsc/nuzo-memory
 codex plugin add nuzo@nuzo-memory
 ```
 
-Open `/plugins` to confirm Nuzo is enabled, review and trust its hooks in
-`/hooks`, then start a new thread. A separate global npm install is not
-required unless you also want the shell CLI.
+Open `/plugins` to confirm Nuzo is enabled, review and trust the two Nuzo
+read-only recall hooks in `/hooks`, then start a new thread. A separate global
+npm install is not required unless you also want the shell CLI.
 
 ## Claude Code
 
@@ -26,8 +26,9 @@ claude plugin install nuzo@nuzo-memory --scope user
 ```
 
 Confirm `nuzo@nuzo-memory` with `claude plugin list --json`, inspect `/mcp` and
-`/hooks`, then start a new session. A separate global npm install is not
-required unless you also want the shell CLI.
+`/hooks`, trust the two Nuzo read-only recall hooks, then start a new session.
+A separate global npm install is not required unless you also want the shell
+CLI.
 
 ## Shell CLI And Host Setup
 

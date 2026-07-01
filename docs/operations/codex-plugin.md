@@ -23,6 +23,12 @@ enabled, and open `/hooks` to review and trust its `SessionStart` and
 plugin obtains its pinned `@nuzo/memory` runtime on first use, so a global npm
 install is not required.
 
+Two hook trust prompts are expected. Nuzo uses `SessionStart` for bounded
+session bootstrap recall and `UserPromptSubmit` for bounded prompt-context
+recall. Both hooks are read-only, fail open, and never create, update, archive,
+or delete memory. Capture still goes through `memory.suggest_capture` and a
+confirmed `memory.confirm_capture` decision.
+
 Verify the installed state:
 
 ```bash

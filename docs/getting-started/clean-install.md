@@ -27,7 +27,7 @@ codex plugin list --json
 ```
 
 Confirm that `nuzo@nuzo-memory` is enabled. Start Codex, open `/hooks`, review
-and trust the Nuzo hooks, then start a new thread.
+and trust the two Nuzo read-only recall hooks, then start a new thread.
 
 ## Option B: Claude Code Plugin
 
@@ -37,8 +37,8 @@ claude plugin install nuzo@nuzo-memory --scope user
 claude plugin list --json
 ```
 
-Confirm that `nuzo@nuzo-memory` is enabled. Inspect `/mcp` and `/hooks`, then
-start a new Claude Code session.
+Confirm that `nuzo@nuzo-memory` is enabled. Inspect `/mcp` and `/hooks`, trust
+the two Nuzo read-only recall hooks, then start a new Claude Code session.
 
 ## Optional: Global Setup
 

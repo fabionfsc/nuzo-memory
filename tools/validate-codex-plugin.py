@@ -124,6 +124,12 @@ def validate_nuzo_skill(path: pathlib.Path) -> None:
     required_guidance = [
         "only after the user confirms or",
         "Explicit Save Requests",
+        "Durable Intent",
+        "even when the user does not name Nuzo directly",
+        "in every conversation",
+        "when I open a new session",
+        "If the user asks for both an immediate local action and durable behavior",
+        "AGENTS.<folder-name>.md",
         "memory.suggest_capture` with content, kind, scope, tags, source",
         "memory.confirm_capture",
         "If the user rejects or asks to clarify",

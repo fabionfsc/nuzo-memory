@@ -57,8 +57,8 @@ codex plugin marketplace add fabionfsc/nuzo-memory
 codex plugin add nuzo@nuzo-memory
 ```
 
-Open `/plugins` to confirm Nuzo is enabled, then open `/hooks` and trust the
-Nuzo hooks. Start a new thread after installation.
+Open `/plugins` to confirm Nuzo is enabled, then open `/hooks` and trust the two
+Nuzo read-only recall hooks. Start a new thread after installation.
 
 ### Claude Code
 
@@ -67,11 +67,15 @@ claude plugin marketplace add fabionfsc/nuzo-memory
 claude plugin install nuzo@nuzo-memory --scope user
 ```
 
-Run `claude plugin list --json`, inspect `/mcp` and `/hooks`, then start a new
-session.
+Run `claude plugin list --json`, inspect `/mcp` and `/hooks`, then trust the two
+Nuzo read-only recall hooks and start a new session.
 
 The plugins obtain their version-matched Nuzo runtime themselves. Do not also
 install the global npm package unless you want the shell CLI.
+
+Hook trust prompts are expected. Nuzo uses one `SessionStart` hook and one
+`UserPromptSubmit` hook for bounded recall. These hooks do not write memory;
+memory writes still require explicit user confirmation.
 
 ## Verify Memory Across Sessions
 

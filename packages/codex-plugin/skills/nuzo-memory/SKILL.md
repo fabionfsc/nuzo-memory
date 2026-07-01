@@ -36,6 +36,34 @@ Trigger this flow when the user asks to persist context in Nuzo, for example:
 - "keep this for future sessions";
 - "save this preference in Nuzo";
 
+### Durable Intent
+
+Treat durable-intent language as an explicit request to start the Nuzo capture
+flow, even when the user does not name Nuzo directly. Durable-intent language
+includes requests such as:
+
+- "always do this";
+- "from now on";
+- "in every conversation";
+- "for future sessions";
+- "next time";
+- "when I open a new session";
+- "remember this";
+- "keep this";
+- "this is how I want you to work".
+
+Do not silently write memory. Call `memory.suggest_capture`, show the draft and
+any duplicate or relationship evidence, and ask for confirmation before calling
+`memory.confirm_capture`. If the durable intent is ambiguous, ask whether the
+user wants the behavior saved in Nuzo for future sessions.
+
+If the user asks for both an immediate local action and durable behavior,
+perform the immediate action when safe, then start the Nuzo capture flow for the
+durable behavior. For example, if the user asks Codex to create or update a
+local `AGENTS.<folder-name>.md` file in every conversation, update the local
+file when safe and propose a Nuzo memory draft for the cross-session workflow
+instruction.
+
 For every explicit save request:
 
 1. Rewrite the requested content into a short affirmative memory without adding

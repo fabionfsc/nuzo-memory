@@ -36,6 +36,7 @@ for (const path of publicUserDocs) {
 checkSetupPreviewContract();
 checkNonInteractiveSetupContract();
 checkHostPluginCommandContract();
+checkHookTrustContract();
 
 if (failures.length > 0) {
   for (const failure of failures) {
@@ -121,6 +122,40 @@ function checkHostPluginCommandContract() {
     for (const command of contract.commands) {
       assertIncludes(contract.path, content, command, `must document host command: ${command}`);
     }
+  }
+}
+
+function checkHookTrustContract() {
+  for (const path of firstUseDocs) {
+    const content = readText(path);
+    assertIncludes(
+      path,
+      content,
+      "read-only recall hooks",
+      "must describe host hook trust as read-only recall hook trust",
+    );
+  }
+
+  for (const path of ["README.md", "docs/index.md", "docs/getting-started/index.md"]) {
+    const content = readText(path);
+    assertIncludes(path, content, "SessionStart", "must name the SessionStart recall hook");
+    assertIncludes(path, content, "UserPromptSubmit", "must name the UserPromptSubmit recall hook");
+    assertIncludes(path, content, "do not write memory", "must state that recall hooks do not write memory");
+  }
+
+  for (const path of ["docs/operations/codex-plugin.md", "docs/operations/claude-code-plugin.md"]) {
+    const content = readText(path);
+    assertIncludes(path, content, "Two hook trust prompts are expected", "must set expectation for hook trust prompts");
+    assertIncludes(path, content, "SessionStart", "must document SessionStart hook behavior");
+    assertIncludes(path, content, "UserPromptSubmit", "must document UserPromptSubmit hook behavior");
+    assertIncludes(
+      path,
+      content,
+      "never create, update, archive, or delete memory",
+      "must state that host recall hooks never write memory",
+    );
+    assertIncludes(path, content, "memory.suggest_capture", "must route capture through suggest_capture");
+    assertIncludes(path, content, "memory.confirm_capture", "must route capture through confirm_capture");
   }
 }
 
