@@ -24,6 +24,9 @@ Nuzo to configure Codex, Claude Code, or both:
 nuzo setup
 ```
 
+When both supported hosts are detected, `nuzo setup` asks whether to configure
+Codex, Claude Code, or both before showing the final plan and confirmation.
+
 For non-interactive use:
 
 ```bash

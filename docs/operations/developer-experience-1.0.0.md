@@ -30,7 +30,9 @@ nuzo setup
 - detect supported host CLIs available on `PATH`, starting with Codex and
   Claude Code;
 - show which hosts were detected and what Nuzo will change;
-- let the user choose Codex, Claude Code, or both;
+- when more than one supported host is detected and no target flag is passed,
+  let the user choose Codex, Claude Code, or both inside the default setup
+  flow;
 - install or refresh the Nuzo marketplace entry needed by each selected host;
 - install and enable the matching Nuzo plugin where the host supports that
   workflow;

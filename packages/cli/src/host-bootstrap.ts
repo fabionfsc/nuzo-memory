@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readSync } from "node:fs";
 import { spawnSync, type SpawnSyncOptions } from "node:child_process";
 import { NuzoMemoryError } from "@nuzo/memory-core";
 
@@ -225,10 +225,22 @@ function commandAvailable(command: string, runner: CommandRunner): boolean {
 function confirmHostBootstrap(result: HostBootstrapResult): boolean {
   process.stdout.write(`${formatHostBootstrapResult(result, false)}\nProceed? Type yes to continue: `);
   try {
-    return readFileSync(0, "utf8").trim().toLowerCase() === "yes";
+    return readLineFromStdin().trim().toLowerCase() === "yes";
   } catch {
     return false;
   }
+}
+
+function readLineFromStdin(): string {
+  const chunks: Buffer[] = [];
+  const buffer = Buffer.alloc(1);
+  while (true) {
+    const bytesRead = readSync(0, buffer, 0, 1, null);
+    if (bytesRead === 0) break;
+    chunks.push(Buffer.from(buffer.subarray(0, bytesRead)));
+    if (buffer[0] === 10) break;
+  }
+  return Buffer.concat(chunks).toString("utf8");
 }
 
 function hostDisplayName(host: HostBootstrapHost): string {

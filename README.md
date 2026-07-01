@@ -55,7 +55,8 @@ npm install --global @nuzo/memory@0.9.1
 nuzo setup
 ```
 
-`nuzo setup` detects Codex and Claude Code, shows the host changes, and asks
+`nuzo setup` detects Codex and Claude Code. When both are available, it lets
+you choose Codex, Claude Code, or both, then shows the host changes and asks
 before changing host configuration. Open the configured host, confirm Nuzo is
 enabled, trust the two Nuzo read-only recall hooks, then start a new session.
 

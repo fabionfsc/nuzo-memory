@@ -14,8 +14,9 @@ npm install --global @nuzo/memory@0.9.1
 nuzo setup
 ```
 
-`nuzo setup` detects supported local hosts, shows the exact Codex and Claude
-Code plugin changes, and asks before changing host configuration.
+`nuzo setup` detects supported local hosts. When both Codex and Claude Code are
+available, it lets you choose Codex, Claude Code, or both, then shows the exact
+plugin changes and asks before changing host configuration.
 
 For non-interactive setup:
 

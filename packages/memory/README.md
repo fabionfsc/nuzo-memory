@@ -11,10 +11,11 @@ npm install --global @nuzo/memory@0.9.1
 nuzo setup
 ```
 
-`nuzo setup` detects supported local hosts, shows the planned Codex and Claude
-Code plugin changes, and asks before changing host configuration. After setup,
-open your host, confirm Nuzo is enabled, trust the two read-only recall hooks,
-and start a new session.
+`nuzo setup` detects supported local hosts. When both Codex and Claude Code are
+available, it lets you choose Codex, Claude Code, or both, then shows the
+planned plugin changes and asks before changing host configuration. After
+setup, open your host, confirm Nuzo is enabled, trust the two read-only recall
+hooks, and start a new session.
 
 For package upgrades, update the global package. Nuzo automatically refreshes
 host plugins that were already installed through `nuzo setup`:
