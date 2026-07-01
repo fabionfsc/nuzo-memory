@@ -38,6 +38,19 @@ npm staging copies only package `dist/`, `README.md`, and `LICENSE` files into
 publishable artifacts, and `npm pack` validation rejects tests, local stores,
 exports, credentials, and other non-runtime files.
 
+Root hidden plugin directories are intentionally host-specific:
+
+- `.agents/plugins/marketplace.json` is the Codex marketplace catalog entry.
+- `.claude-plugin/marketplace.json` is the Claude Code marketplace catalog
+  entry.
+- `packages/codex-plugin/.codex-plugin/plugin.json` and
+  `packages/claude-code-plugin/.claude-plugin/plugin.json` are the plugin
+  manifests expected inside each installable host plugin.
+
+Do not collapse these into a repository-private directory such as `.plugins/`
+unless the host CLIs add support for that layout. The duplicated-looking names
+are discovery contracts for different hosts, not runtime source structure.
+
 ## Documentation Rules
 
 - Product decisions live in `docs/product/`.

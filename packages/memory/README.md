@@ -7,16 +7,20 @@ Codex and Claude Code plugins.
 ## Upcoming In 0.9.0: One-Time Setup
 
 This workflow is **not available in the current 0.8.1 release**. Starting with
-`0.9.0`, install the package once and let Nuzo configure the hosts you approve:
+`0.9.0`, start here:
 
 ```bash
 npm install --global @nuzo/memory@0.9.0
 nuzo setup
 ```
 
-For automation, configure Codex with `nuzo setup --codex --yes`, Claude
-Code with `nuzo setup --claude-code --yes`, or both with
-`nuzo setup --all --yes`.
+For automation:
+
+```bash
+nuzo setup --codex --yes
+nuzo setup --claude-code --yes
+nuzo setup --all --yes
+```
 
 Future package upgrades do not repeat setup:
 
@@ -25,9 +29,8 @@ npm install --global @nuzo/memory@latest
 nuzo update --yes
 ```
 
-The update command changes only Nuzo plugins that are already installed and
-preserves the existing Claude Code install scope. npm install does not silently
-change Codex or Claude Code configuration.
+`nuzo update` changes only Nuzo plugins that are already installed. It does not
+repeat setup or silently install missing host plugins.
 
 ## Codex
 
