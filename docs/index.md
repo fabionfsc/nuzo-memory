@@ -10,7 +10,7 @@
   </div>
   <div class="nuzo-hero__panel" markdown>
   <img src="assets/logo.svg" alt="Nuzo" class="nuzo-hero__logo">
-  <p class="nuzo-progress__label"><strong>0.8.1</strong> current release</p>
+  <p class="nuzo-progress__label"><strong>0.9.0</strong> current release</p>
   <div class="nuzo-stats" markdown>
   <span><strong>14</strong> MCP tools</span>
   <span><strong>0</strong> telemetry</span>
@@ -46,7 +46,7 @@ Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
 === "CLI"
 
     ```bash
-    npm install --global @nuzo/memory@0.8.1
+    npm install --global @nuzo/memory@0.9.0
     nuzo memory init
     nuzo memory doctor
     ```
@@ -56,16 +56,15 @@ Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
     Configure this stdio command in your host:
 
     ```bash
-    npm exec --yes --package=@nuzo/memory@0.8.1 -- nuzo-mcp-server
+    npm exec --yes --package=@nuzo/memory@0.9.0 -- nuzo-mcp-server
     ```
 
 Codex and Claude Code plugins obtain their pinned runtime themselves. A global
 npm installation is only needed for the shell CLI or a direct MCP setup.
 
-## Upcoming In 0.9.0: One Install Path
+## Recommended Setup Path
 
-These commands are **not available in the current 0.8.1 release**. In `0.9.0`,
-start here:
+For a first-time local install, start here:
 
 ```bash
 npm install --global @nuzo/memory@0.9.0
@@ -112,7 +111,7 @@ and later-session recall all work. Continue with the
 
 ## Current Release
 
-Nuzo `0.8.1` is the current public release.
+Nuzo `0.9.0` is the current public release.
 
 | Package | Intended use |
 | --- | --- |

@@ -40,7 +40,7 @@ The answer should use `NUZO-CLAUDE-OK`. If recall fails, confirm
 
 ## Update, Disable, Or Remove
 
-For the current `0.8.1` release, update with the native Claude Code commands:
+For the current `0.9.0` release, update with the native Claude Code commands:
 
 ```bash
 claude plugin marketplace update nuzo-memory
@@ -55,10 +55,9 @@ claude plugin enable nuzo@nuzo-memory
 claude plugin uninstall nuzo@nuzo-memory --scope user
 ```
 
-### Upcoming In 0.9.0
+### Managed Updates
 
-This command is **not available in the current 0.8.1 release**. If Claude Code
-was installed through `nuzo setup`, later updates use:
+If Claude Code was installed through `nuzo setup`, later updates use:
 
 ```bash
 nuzo update --yes
@@ -144,7 +143,7 @@ The tracked plugin points Claude Code at the version-matched Nuzo MCP server:
   "mcpServers": {
     "nuzo": {
       "command": "npm",
-      "args": ["exec", "--yes", "--package=@nuzo/memory@0.8.1", "--", "nuzo-mcp-server"],
+      "args": ["exec", "--yes", "--package=@nuzo/memory@0.9.0", "--", "nuzo-mcp-server"],
       "cwd": "${CLAUDE_PLUGIN_ROOT}"
     }
   }
@@ -158,14 +157,14 @@ The generated release artifact uses the same runtime command:
   "mcpServers": {
     "nuzo": {
       "command": "npm",
-      "args": ["exec", "--yes", "--package=@nuzo/memory@0.8.1", "--", "nuzo-mcp-server"],
+      "args": ["exec", "--yes", "--package=@nuzo/memory@0.9.0", "--", "nuzo-mcp-server"],
       "cwd": "${CLAUDE_PLUGIN_ROOT}"
     }
   }
 }
 ```
 
-`0.8.1` matches the current release. Future packaging pins the actual plugin
+`0.9.0` matches the current release. Future packaging pins the actual plugin
 version. This keeps the artifact portable across supported platforms while
 allowing npm to install the correct native SQLite build.
 
@@ -217,8 +216,8 @@ npm run package:plugins
 claude plugin validate build/plugins/claude-code/nuzo --strict
 ```
 
-The generated `0.8.1` config resolves the matching public
-`@nuzo/memory@0.8.1` package. The release gate validates the artifact with the
+The generated `0.9.0` config resolves the matching public
+`@nuzo/memory@0.9.0` package. The release gate validates the artifact with the
 npm-distributed Claude Code CLI and validates the shared NUZO-37 SessionStart
 canary without writing memory from hooks.
 
@@ -267,7 +266,7 @@ If marketplace installation is unavailable, configure Claude Code directly
 against the published runtime:
 
 ```bash
-claude mcp add --transport stdio nuzo -- npm exec --yes --package=@nuzo/memory@0.8.1 -- nuzo-mcp-server
+claude mcp add --transport stdio nuzo -- npm exec --yes --package=@nuzo/memory@0.9.0 -- nuzo-mcp-server
 ```
 
 This exposes MCP tools but does not install the Nuzo skill or lifecycle hooks.

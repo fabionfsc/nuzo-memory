@@ -7,7 +7,7 @@ Nuzo's local CLI command is `nuzo`.
 Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
 
 ```bash
-npm install --global @nuzo/memory@0.8.1
+npm install --global @nuzo/memory@0.9.0
 nuzo memory init
 nuzo memory doctor
 ```
@@ -16,10 +16,10 @@ This installs the shell CLI. Codex and Claude Code users should follow their
 host plugin guides instead; those plugins obtain a version-matched runtime and
 do not require this global package.
 
-## Upcoming In 0.9.0: Setup And Managed Updates
+## Setup And Managed Updates
 
-These commands are **not available in the current 0.8.1 release**. `0.9.0`
-adds one-time host setup after the global package installation:
+After installing the global package, use one-time host setup when you want
+Nuzo to configure Codex, Claude Code, or both:
 
 ```bash
 nuzo setup

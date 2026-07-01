@@ -1,6 +1,6 @@
 # Fresh Installation Walkthrough
 
-This walkthrough verifies the public `0.8.1` release without cloning the Nuzo
+This walkthrough verifies the public `0.9.0` release without cloning the Nuzo
 repository. It uses fake data only.
 
 ## Prerequisites
@@ -18,10 +18,9 @@ npm --version
 
 Git, Python, and a source checkout are not required for normal installation.
 
-## Upcoming In 0.9.0
+## Recommended Setup Path
 
-This path is **not available in the current 0.8.1 release**. The `0.9.0`
-clean-install path becomes:
+For a clean first-time local install, start here:
 
 ```bash
 npm install --global @nuzo/memory@0.9.0
@@ -76,7 +75,7 @@ What is my Nuzo clean-install marker?
 ```
 
 The answer should use `NUZO-CLEAN-OK`. The plugin supplies its own pinned
-`@nuzo/memory@0.8.1` runtime, so this path does not require a global npm
+`@nuzo/memory@0.9.0` runtime, so this path does not require a global npm
 installation.
 
 If the marker is missing, follow the [Codex](../operations/codex-plugin.md) or
@@ -87,7 +86,7 @@ If the marker is missing, follow the [Codex](../operations/codex-plugin.md) or
 Install the public package:
 
 ```bash
-npm install --global @nuzo/memory@0.8.1
+npm install --global @nuzo/memory@0.9.0
 nuzo --version
 ```
 
@@ -134,7 +133,7 @@ nuzo memory --store "$NUZO_STORE" import "$NUZO_EXPORT" --dry-run
 Configure this process as a stdio MCP server:
 
 ```bash
-npm exec --yes --package=@nuzo/memory@0.8.1 -- nuzo-mcp-server
+npm exec --yes --package=@nuzo/memory@0.9.0 -- nuzo-mcp-server
 ```
 
 The host should discover the [14 public memory tools](../spec/tools.md). Use

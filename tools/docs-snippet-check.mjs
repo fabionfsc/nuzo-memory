@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
+import { compareVersions } from "./npm-package-policy.mjs";
+
 const publicUserDocs = [
   "README.md",
   "docs/index.md",
@@ -23,6 +25,7 @@ const firstUseDocs = [
 ];
 
 const failures = [];
+const currentVersion = JSON.parse(readText("package.json")).version;
 
 for (const path of publicUserDocs) {
   const content = readText(path);
@@ -46,14 +49,24 @@ console.log(`documentation snippet validation passed: ${publicUserDocs.length} p
 function checkSetupPreviewContract() {
   for (const path of firstUseDocs) {
     const content = readText(path);
-    assertIncludes(path, content, "Upcoming In 0.9.0", "must clearly label unreleased setup guidance");
-    assertIncludes(
-      path,
-      content,
-      "not available in the current 0.8.1 release",
-      "must warn that setup guidance is not in the current public release",
-    );
-    assertIncludes(path, content, "npm install --global @nuzo/memory@0.9.0", "must show planned 0.9.0 install");
+    if (compareVersions(currentVersion, "0.9.0") < 0) {
+      assertIncludes(path, content, "Upcoming In 0.9.0", "must clearly label unreleased setup guidance");
+      assertIncludes(
+        path,
+        content,
+        `not available in the current ${currentVersion} release`,
+        "must warn that setup guidance is not in the current public release",
+      );
+    } else {
+      assertNotIncludes(path, content, "Upcoming In 0.9.0", "must not label current setup guidance as upcoming");
+      assertNotIncludes(
+        path,
+        content,
+        "not available in the current",
+        "must not warn that current setup guidance is unavailable",
+      );
+    }
+    assertIncludes(path, content, "npm install --global @nuzo/memory@0.9.0", "must show 0.9.0 install");
     assertIncludes(path, content, "nuzo setup", "must show one-time setup");
     assertIncludes(path, content, "nuzo update", "must show managed update path");
   }
@@ -175,6 +188,16 @@ function assertIncludes(path, content, expected, message) {
   const normalizedExpected = normalizeWhitespace(expected);
   try {
     assert.ok(normalizedContent.includes(normalizedExpected), message);
+  } catch {
+    fail(path, 1, message);
+  }
+}
+
+function assertNotIncludes(path, content, unexpected, message) {
+  const normalizedContent = normalizeWhitespace(content);
+  const normalizedUnexpected = normalizeWhitespace(unexpected);
+  try {
+    assert.ok(!normalizedContent.includes(normalizedUnexpected), message);
   } catch {
     fail(path, 1, message);
   }
