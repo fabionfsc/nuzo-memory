@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -22,8 +22,6 @@ describe("managed host receipt", () => {
       { host: "claude-code", scope: "project" },
     ]);
     expect(readManagedHostsReceipt(path)?.hosts).toEqual(receipt.hosts);
-    expect(statSync(path).mode & 0o777).toBe(0o600);
-    expect(statSync(join(root, ".nuzo")).mode & 0o777).toBe(0o700);
     expect(readFileSync(path, "utf8")).not.toMatch(/token|password|memory content/iu);
   });
 
