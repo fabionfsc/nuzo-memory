@@ -1,35 +1,8 @@
 # Getting Started
 
-Nuzo `0.9.0` is the current public release. Choose one path below and complete
-its verification before changing advanced configuration.
-
-## Recommended Setup Path
-
-For a first-time local install, start here:
-
-```bash
-npm install --global @nuzo/memory@0.9.0
-nuzo setup
-```
-
-Nuzo detects Codex and Claude Code, shows the plan, and configures only the
-hosts you approve.
-
-```bash
-nuzo setup --codex --yes
-nuzo setup --claude-code --yes
-nuzo setup --all --yes
-```
-
-Setup is one-time. After later package upgrades:
-
-```bash
-npm install --global @nuzo/memory@latest
-nuzo update --yes
-```
-
-`nuzo update` updates only installed plugins and sends first-time users back to
-setup.
+Nuzo `0.9.0` is the current public release. For Codex or Claude Code, install
+the host plugin first. Use the global package only when you also want the shell
+CLI or automated host setup.
 
 ## Codex
 
@@ -63,6 +36,34 @@ Confirm `nuzo@nuzo-memory` is enabled. Inside Claude Code, inspect `/mcp` and
 `/hooks`, then start a new session.
 
 Continue with [Claude Code installation and troubleshooting](../operations/claude-code-plugin.md).
+
+## Optional: Global Setup
+
+Use this path when you want the shell CLI or one command that detects and
+configures installed hosts:
+
+```bash
+npm install --global @nuzo/memory@0.9.0
+nuzo setup
+```
+
+Nuzo shows the plan and configures only the hosts you approve.
+
+```bash
+nuzo setup --codex --yes
+nuzo setup --claude-code --yes
+nuzo setup --all --yes
+```
+
+Setup is one-time. After package upgrades:
+
+```bash
+npm install --global @nuzo/memory@latest
+nuzo update --yes
+```
+
+`nuzo update` updates only installed plugins and sends first-time users back to
+setup.
 
 ## Verify A Host Installation
 

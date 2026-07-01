@@ -46,34 +46,6 @@ store that you can inspect, edit, export, or delete.
 
 `0.9.0` is the current public release.
 
-## Install Once With Nuzo Setup
-
-For a first-time local install, start here:
-
-```bash
-npm install --global @nuzo/memory@0.9.0
-nuzo setup
-```
-
-`nuzo setup` detects Codex and Claude Code, shows the host changes, and asks
-before changing any host configuration.
-
-```bash
-nuzo setup --codex --yes
-nuzo setup --claude-code --yes
-nuzo setup --all --yes
-```
-
-After package upgrades:
-
-```bash
-npm install --global @nuzo/memory@latest
-nuzo update --yes
-```
-
-`nuzo update` refreshes already-installed Nuzo host plugins. It does not repeat
-first-time setup or silently install a missing plugin.
-
 ## Install For Your Agent
 
 Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
@@ -121,8 +93,8 @@ The answer should use `NUZO-OK`. If it does not, follow the
 
 ## Use The CLI
 
-Install the CLI when you want to manage memory from a shell or connect a
-generic MCP host:
+Install the CLI when you want to manage memory from a shell, connect a generic
+MCP host, or let Nuzo configure installed Codex and Claude Code hosts:
 
 ```bash
 npm install --global @nuzo/memory@0.9.0
@@ -139,6 +111,27 @@ nuzo memory recall "demo storage"
 
 The CLI also supports list, update, forget, audit, export, import, and optional
 local semantic retrieval. See the [CLI guide](docs/operations/local-cli.md).
+
+To configure host plugins from the CLI, run:
+
+```bash
+nuzo setup
+```
+
+Automation can target one host or both:
+
+```bash
+nuzo setup --codex --yes
+nuzo setup --claude-code --yes
+nuzo setup --all --yes
+```
+
+After package upgrades, refresh only already-installed Nuzo host plugins:
+
+```bash
+npm install --global @nuzo/memory@latest
+nuzo update --yes
+```
 
 For a generic MCP host, run Nuzo as a stdio server:
 
