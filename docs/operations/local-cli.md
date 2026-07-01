@@ -7,7 +7,7 @@ Nuzo's local CLI command is `nuzo`.
 Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
 
 ```bash
-npm install --global @nuzo/memory@0.9.0
+npm install --global @nuzo/memory@0.9.1
 nuzo memory init
 nuzo memory doctor
 ```

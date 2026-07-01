@@ -38,6 +38,7 @@ export const publicReleaseReferencePaths = [
   "docs/operations/npm-publishing.md",
   "docs/operations/optional-semantics.md",
   "docs/operations/versioning.md",
+  "packages/memory/README.md",
 ];
 
 export const nuzoWorkspaceDependencies = new Set([

@@ -67,7 +67,12 @@ function checkSetupPreviewContract() {
         "must not warn that current setup guidance is unavailable",
       );
     }
-    assertIncludes(path, content, "npm install --global @nuzo/memory@0.9.0", "must show 0.9.0 install");
+    assertIncludes(
+      path,
+      content,
+      `npm install --global @nuzo/memory@${currentVersion}`,
+      `must show ${currentVersion} install`,
+    );
     assertIncludes(path, content, "nuzo setup", "must show one-time setup");
     assertIncludes(path, content, "nuzo update", "must show managed update path");
   }

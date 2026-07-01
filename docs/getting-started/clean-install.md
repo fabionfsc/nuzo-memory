@@ -1,6 +1,6 @@
 # Fresh Installation Walkthrough
 
-This walkthrough verifies the public `0.9.0` release without cloning the Nuzo
+This walkthrough verifies the public `0.9.1` release without cloning the Nuzo
 repository. It uses fake data only.
 
 ## Prerequisites
@@ -46,7 +46,7 @@ Use the global package when you want the shell CLI or one command that detects
 and configures installed hosts:
 
 ```bash
-npm install --global @nuzo/memory@0.9.0
+npm install --global @nuzo/memory@0.9.1
 nuzo setup
 ```
 
@@ -76,7 +76,7 @@ What is my Nuzo clean-install marker?
 ```
 
 The answer should use `NUZO-CLEAN-OK`. The plugin supplies its own pinned
-`@nuzo/memory@0.9.0` runtime, so this path does not require a global npm
+`@nuzo/memory@0.9.1` runtime, so this path does not require a global npm
 installation.
 
 If the marker is missing, follow the [Codex](../operations/codex-plugin.md) or
@@ -87,7 +87,7 @@ If the marker is missing, follow the [Codex](../operations/codex-plugin.md) or
 Install the public package:
 
 ```bash
-npm install --global @nuzo/memory@0.9.0
+npm install --global @nuzo/memory@0.9.1
 nuzo --version
 ```
 
@@ -134,7 +134,7 @@ nuzo memory --store "$NUZO_STORE" import "$NUZO_EXPORT" --dry-run
 Configure this process as a stdio MCP server:
 
 ```bash
-npm exec --yes --package=@nuzo/memory@0.9.0 -- nuzo-mcp-server
+npm exec --yes --package=@nuzo/memory@0.9.1 -- nuzo-mcp-server
 ```
 
 The host should discover the [14 public memory tools](../spec/tools.md). Use

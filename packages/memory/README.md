@@ -33,7 +33,7 @@ CLI.
 ## Shell CLI And Host Setup
 
 ```bash
-npm install --global @nuzo/memory@0.9.0
+npm install --global @nuzo/memory@0.9.1
 nuzo memory init
 nuzo memory doctor
 ```

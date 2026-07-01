@@ -846,8 +846,8 @@ The default doctor pass and MCP tool do not perform a full-store secret scan.
 
 MCP doctor returns a read-only diagnostic summary for host agents:
 
-The `config` and `authorization` blocks shown below join the public contract in
-`0.9.0`; `0.8.1` remains the current public release.
+The `config` and `authorization` blocks shown below joined the public contract
+in `0.9.0`.
 
 ```json
 {

@@ -49,11 +49,11 @@ package is still present in `build/npm/packages/`.
 
 ## Current Release
 
-Version `0.9.0` is the current release:
+Version `0.9.1` is the current release:
 
 ```text
-@nuzo/memory-core@0.9.0
-@nuzo/memory@0.9.0
+@nuzo/memory-core@0.9.1
+@nuzo/memory@0.9.1
 ```
 
 The packages are published together from the same source version. Routine
@@ -132,7 +132,7 @@ build/npm/
 └── tarballs/
 ```
 
-For `1.0.0` and later, generated staging must contain only:
+For releases after `0.9.0`, generated staging must contain only:
 
 ```text
 build/npm/
@@ -202,7 +202,7 @@ For `0.9.0`, that is:
 @nuzo/mcp-server
 ```
 
-For `1.0.0` and later routine releases, that is:
+For releases after `0.9.0`, including `0.9.1`, that is:
 
 ```text
 @nuzo/memory-core
@@ -228,11 +228,11 @@ publish staging packages, rejects already-published versions, rejects retired
 legacy staging after `0.9.0`, and publishes in dependency order:
 
 ```text
-@nuzo/memory-core -> @nuzo/memory -> legacy transition packages
+@nuzo/memory-core -> @nuzo/memory
 ```
 
-The legacy transition suffix applies only through `0.9.0`; for `1.0.0` and
-later the order is `@nuzo/memory-core -> @nuzo/memory`.
+The legacy transition suffix applies only through `0.9.0`; later releases use
+the active-package order shown above.
 
 Run it first with `publish` set to `false`. That dry run proves the workflow
 selects the intended version and package set without publishing.

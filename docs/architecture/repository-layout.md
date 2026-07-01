@@ -88,7 +88,7 @@ cleanly. Prefer merging small operational notes into the relevant docs page.
 - Core package: `@nuzo/memory-core`.
 - Legacy transition packages: `@nuzo/memory-cli` and `@nuzo/mcp-server`.
   These remain source packages, but their final planned public npm release is
-  `0.9.0`; `1.0.0` and later public releases publish only `@nuzo/memory-core`
+  `0.9.0`; later public releases publish only `@nuzo/memory-core`
   and `@nuzo/memory`.
 - Host plugin display name: `Nuzo`.
 - Default config directory: `~/.nuzo/`.

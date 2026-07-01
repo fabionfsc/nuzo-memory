@@ -10,7 +10,7 @@
   </div>
   <div class="nuzo-hero__panel" markdown>
   <img src="assets/logo.svg" alt="Nuzo" class="nuzo-hero__logo">
-  <p class="nuzo-progress__label"><strong>0.9.0</strong> current release</p>
+  <p class="nuzo-progress__label"><strong>0.9.1</strong> current release</p>
   <div class="nuzo-stats" markdown>
   <span><strong>14</strong> MCP tools</span>
   <span><strong>0</strong> telemetry</span>
@@ -46,7 +46,7 @@ Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
 === "CLI"
 
     ```bash
-    npm install --global @nuzo/memory@0.9.0
+    npm install --global @nuzo/memory@0.9.1
     nuzo memory init
     nuzo memory doctor
     ```
@@ -56,7 +56,7 @@ Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
     Configure this stdio command in your host:
 
     ```bash
-    npm exec --yes --package=@nuzo/memory@0.9.0 -- nuzo-mcp-server
+    npm exec --yes --package=@nuzo/memory@0.9.1 -- nuzo-mcp-server
     ```
 
 Codex and Claude Code plugins obtain their pinned runtime themselves. A global
@@ -70,7 +70,7 @@ Use the global package when you want the shell CLI or one command that detects
 and configures installed hosts:
 
 ```bash
-npm install --global @nuzo/memory@0.9.0
+npm install --global @nuzo/memory@0.9.1
 nuzo setup
 ```
 
@@ -114,7 +114,7 @@ and later-session recall all work. Continue with the
 
 ## Current Release
 
-Nuzo `0.9.0` is the current public release.
+Nuzo `0.9.1` is the current public release.
 
 | Package | Intended use |
 | --- | --- |
