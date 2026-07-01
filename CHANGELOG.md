@@ -6,6 +6,25 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-07-01
+
+### Changed
+
+- Codex and Claude Code guidance now recognizes explicit durable-intent
+  language such as "always do this", "from now on", and "remember this" as a
+  trigger to propose the Nuzo capture flow, while keeping every inferred write
+  behind a visible draft and explicit user confirmation.
+- When a request combines an immediate safe action with a durable instruction,
+  host guidance now performs the immediate action and then proposes the
+  reusable behavior for confirmed capture, including workflows such as
+  creating `AGENTS.<folder-name>.md` in future directories.
+- Public installation guidance now separates the one-time `nuzo setup` path
+  from native host marketplace installation more clearly and keeps routine
+  upgrade instructions concise.
+- Hook documentation now identifies the expected `SessionStart` and
+  `UserPromptSubmit` trust prompts and states that both hooks perform bounded,
+  read-only recall and never write memory.
+
 ## [0.9.0] - 2026-06-30
 
 ### Added

@@ -1,6 +1,6 @@
 # Getting Started
 
-Nuzo `0.9.0` is the current public release. For Codex or Claude Code, install
+Nuzo `0.9.1` is the current public release. For Codex or Claude Code, install
 the host plugin first. Use the global package only when you also want the shell
 CLI or automated host setup.
 
@@ -45,7 +45,7 @@ Use this path when you want the shell CLI or one command that detects and
 configures installed hosts:
 
 ```bash
-npm install --global @nuzo/memory@0.9.0
+npm install --global @nuzo/memory@0.9.1
 nuzo setup
 ```
 
@@ -92,7 +92,7 @@ Install the unified package when you want to inspect and administer memory from
 a terminal:
 
 ```bash
-npm install --global @nuzo/memory@0.9.0
+npm install --global @nuzo/memory@0.9.1
 nuzo memory init
 nuzo memory doctor
 ```
@@ -111,7 +111,7 @@ Continue with the [local CLI guide](../operations/local-cli.md).
 Configure the following as a stdio MCP server:
 
 ```bash
-npm exec --yes --package=@nuzo/memory@0.9.0 -- nuzo-mcp-server
+npm exec --yes --package=@nuzo/memory@0.9.1 -- nuzo-mcp-server
 ```
 
 The server exposes the [14 Nuzo memory tools](../spec/tools.md). A host should

@@ -190,7 +190,7 @@ export function createProgram(io: CliIO = defaultIO): Command {
   program
     .name("nuzo")
     .description("Local-first, auditable memory for AI agents.")
-    .version("0.9.0");
+    .version("0.9.1");
 
   program
     .command("setup")

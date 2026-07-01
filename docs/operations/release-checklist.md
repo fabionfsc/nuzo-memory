@@ -207,7 +207,7 @@ For `0.9.0`, confirm:
 @nuzo/mcp-server
 ```
 
-For `1.0.0` and later routine releases, confirm:
+For releases after `0.9.0`, including `0.9.1`, confirm:
 
 ```text
 @nuzo/memory-core
@@ -324,7 +324,7 @@ For the `0.9.0` release only:
 Deprecation is a post-publication metadata action. Do not perform it during a
 dry run, rehearsal, or before the unified `0.9.0` replacement is available.
 
-For `1.0.0` and later:
+For releases after `0.9.0`:
 
 1. Confirm `npm run package:npm`, `npm run validate:npm`, and the npm release
    workflow stage only `@nuzo/memory-core` and `@nuzo/memory`.

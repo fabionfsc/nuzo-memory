@@ -1,7 +1,7 @@
 # Init Specification
 
 The effective authorization and ancestor-discovery additions in this document
-target `0.9.0`; `0.8.1` remains the current public release.
+shipped in `0.9.0`.
 
 `nuzo memory init` prepares a local memory store.
 

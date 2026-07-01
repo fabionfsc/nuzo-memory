@@ -34,6 +34,7 @@ The public docs currently managed by that list are:
 | `docs/operations/local-cli.md` | current public CLI installation version. |
 | `docs/operations/npm-publishing.md` | current npm package version list. |
 | `docs/operations/versioning.md` | current package version block. |
+| `packages/memory/README.md` | npm package installation version. |
 
 ## Checked By `release:check`
 

@@ -20,8 +20,8 @@
   <a href="https://nuzo.com.br">
     <img alt="Docs" src="https://img.shields.io/badge/docs-nuzo.com.br-111827">
   </a>
-  <a href="https://github.com/fabionfsc/nuzo-memory/releases/tag/v0.9.0">
-    <img alt="Release" src="https://img.shields.io/badge/release-v0.9.0-22c55e">
+  <a href="https://github.com/fabionfsc/nuzo-memory/releases/tag/v0.9.1">
+    <img alt="Release" src="https://img.shields.io/badge/release-v0.9.1-22c55e">
   </a>
   <a href="#license">
     <img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-64748b">
@@ -44,7 +44,7 @@ Nuzo gives Codex, Claude Code, and other MCP-compatible agents durable memory
 without turning that memory into hidden state. Memories stay in a local SQLite
 store that you can inspect, edit, export, or delete.
 
-`0.9.0` is the current public release.
+`0.9.1` is the current public release.
 
 ## Install For Your Agent
 
@@ -101,7 +101,7 @@ Install the CLI when you want to manage memory from a shell, connect a generic
 MCP host, or let Nuzo configure installed Codex and Claude Code hosts:
 
 ```bash
-npm install --global @nuzo/memory@0.9.0
+npm install --global @nuzo/memory@0.9.1
 nuzo memory init
 nuzo memory doctor
 ```
@@ -140,7 +140,7 @@ nuzo update --yes
 For a generic MCP host, run Nuzo as a stdio server:
 
 ```bash
-npm exec --yes --package=@nuzo/memory@0.9.0 -- nuzo-mcp-server
+npm exec --yes --package=@nuzo/memory@0.9.1 -- nuzo-mcp-server
 ```
 
 ## Safe Defaults
