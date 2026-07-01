@@ -4,10 +4,9 @@ The official Nuzo package for local, inspectable agent memory. It includes the
 `nuzo` CLI, the MCP server, and the read-only lifecycle hook runner used by
 Codex and Claude Code plugins.
 
-## Upcoming In 0.9.0: One-Time Setup
+## One-Time Setup
 
-This workflow is **not available in the current 0.8.1 release**. Starting with
-`0.9.0`, start here:
+For a first-time local install, start here:
 
 ```bash
 npm install --global @nuzo/memory@0.9.0

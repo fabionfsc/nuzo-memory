@@ -49,11 +49,11 @@ package is still present in `build/npm/packages/`.
 
 ## Current Release
 
-Version `0.8.1` is the current release:
+Version `0.9.0` is the current release:
 
 ```text
-@nuzo/memory-core@0.8.1
-@nuzo/memory@0.8.1
+@nuzo/memory-core@0.9.0
+@nuzo/memory@0.9.0
 ```
 
 The packages are published together from the same source version. Routine

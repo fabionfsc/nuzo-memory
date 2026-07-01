@@ -212,6 +212,7 @@ function assertCodexNativeMarketplaceInstall() {
   if (!nuzo?.installed || !nuzo?.enabled) {
     fail(`Codex native marketplace install was not enabled: ${JSON.stringify(listed)}`);
   }
+  assertNativeMarketplaceVersion("Codex", nuzo.pluginId, nuzo.version);
   codexJson(["plugin", "marketplace", "upgrade", "nuzo-memory", "--json"], codexHome);
   codexJson(["plugin", "add", "nuzo@nuzo-memory", "--json"], codexHome);
   codexJson(["plugin", "remove", "nuzo@nuzo-memory", "--json"], codexHome);
@@ -236,9 +237,10 @@ function assertClaudeNativeMarketplaceInstall() {
   const listed = claude(["plugin", "list", "--json"], home);
   const plugins = JSON.parse(listed.stdout);
   const nuzo = plugins.find((plugin) => plugin.id === "nuzo@nuzo-memory");
-  if (!nuzo?.enabled || nuzo?.version !== readJson(join(repositoryRoot, "package.json")).version) {
+  if (!nuzo?.enabled) {
     fail(`Claude Code native marketplace install was not enabled: ${listed.stdout}`);
   }
+  assertNativeMarketplaceVersion("Claude Code", nuzo.id, nuzo.version);
   claude(["plugin", "marketplace", "update", "nuzo-memory"], home);
   claude(["plugin", "update", "nuzo@nuzo-memory", "--scope", "user"], home);
   claude(["plugin", "disable", "nuzo@nuzo-memory"], home);
@@ -257,6 +259,18 @@ function assertClaudeNativeMarketplaceInstall() {
   const version = claude(["--version"], home);
   const versionText = version.status === 0 ? version.stdout.trim() : "version unavailable";
   console.log(`NUZO-37 native Claude Code marketplace check passed: ${nuzo.id}@${nuzo.version} with ${versionText}`);
+}
+
+function assertNativeMarketplaceVersion(host, pluginId, installedVersion) {
+  const sourceVersion = readJson(join(repositoryRoot, "package.json")).version;
+  if (installedVersion === sourceVersion) {
+    return;
+  }
+  const message = `${host} native marketplace installed ${pluginId}@${installedVersion}; source version is ${sourceVersion}`;
+  if (process.env.NUZO_PLUGIN_SMOKE_PUBLISHED === "1") {
+    fail(`${message}. Published marketplace smoke must resolve the source version.`);
+  }
+  console.log(`NUZO-37 native ${host} marketplace version check deferred until publish: ${message}.`);
 }
 
 function claude(args, home) {

@@ -20,8 +20,8 @@
   <a href="https://nuzo.com.br">
     <img alt="Docs" src="https://img.shields.io/badge/docs-nuzo.com.br-111827">
   </a>
-  <a href="https://github.com/fabionfsc/nuzo-memory/releases/tag/v0.8.1">
-    <img alt="Release" src="https://img.shields.io/badge/release-v0.8.1-22c55e">
+  <a href="https://github.com/fabionfsc/nuzo-memory/releases/tag/v0.9.0">
+    <img alt="Release" src="https://img.shields.io/badge/release-v0.9.0-22c55e">
   </a>
   <a href="#license">
     <img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-64748b">
@@ -44,12 +44,11 @@ Nuzo gives Codex, Claude Code, and other MCP-compatible agents durable memory
 without turning that memory into hidden state. Memories stay in a local SQLite
 store that you can inspect, edit, export, or delete.
 
-`0.8.1` is the current public release.
+`0.9.0` is the current public release.
 
-## Upcoming In 0.9.0: Install Once
+## Install Once With Nuzo Setup
 
-This workflow is **not available in the current 0.8.1 release**. In `0.9.0`,
-the normal path becomes:
+For a first-time local install, start here:
 
 ```bash
 npm install --global @nuzo/memory@0.9.0
@@ -65,7 +64,7 @@ nuzo setup --claude-code --yes
 nuzo setup --all --yes
 ```
 
-After later package upgrades:
+After package upgrades:
 
 ```bash
 npm install --global @nuzo/memory@latest
@@ -126,7 +125,7 @@ Install the CLI when you want to manage memory from a shell or connect a
 generic MCP host:
 
 ```bash
-npm install --global @nuzo/memory@0.8.1
+npm install --global @nuzo/memory@0.9.0
 nuzo memory init
 nuzo memory doctor
 ```
@@ -144,7 +143,7 @@ local semantic retrieval. See the [CLI guide](docs/operations/local-cli.md).
 For a generic MCP host, run Nuzo as a stdio server:
 
 ```bash
-npm exec --yes --package=@nuzo/memory@0.8.1 -- nuzo-mcp-server
+npm exec --yes --package=@nuzo/memory@0.9.0 -- nuzo-mcp-server
 ```
 
 ## Safe Defaults

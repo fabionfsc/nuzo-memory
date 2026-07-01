@@ -51,7 +51,7 @@ threads use the same `NUZO_MEMORY_STORE` configuration.
 
 ## Update Or Remove
 
-For the current `0.8.1` release, update with the native Codex commands:
+For the current `0.9.0` release, update with the native Codex commands:
 
 ```bash
 codex plugin marketplace upgrade nuzo-memory
@@ -65,10 +65,9 @@ codex plugin remove nuzo@nuzo-memory
 codex plugin marketplace remove nuzo-memory
 ```
 
-### Upcoming In 0.9.0
+### Managed Updates
 
-This command is **not available in the current 0.8.1 release**. If Codex was
-installed through `nuzo setup`, later updates use:
+If Codex was installed through `nuzo setup`, later updates use:
 
 ```bash
 nuzo update --yes
@@ -144,13 +143,13 @@ package to the same version as the plugin:
   "mcpServers": {
     "nuzo": {
       "command": "npm",
-      "args": ["exec", "--yes", "--package=@nuzo/memory@0.8.1", "--", "nuzo-mcp-server"]
+      "args": ["exec", "--yes", "--package=@nuzo/memory@0.9.0", "--", "nuzo-mcp-server"]
     }
   }
 }
 ```
 
-`0.8.1` matches the current release. Future packaging uses the actual shared
+`0.9.0` matches the current release. Future packaging uses the actual shared
 package version and rejects version drift.
 
 The first launch may need npm registry access. Nuzo does not use `latest` and
@@ -232,8 +231,8 @@ codex
 8. Start a new thread. `SessionStart` loads bounded `autoload` memory and
    `UserPromptSubmit` recalls topic matches from content and tags.
 
-The generated `0.8.1` config resolves the matching public
-`@nuzo/memory@0.8.1` package. The release gate installs the artifact through
+The generated `0.9.0` config resolves the matching public
+`@nuzo/memory@0.9.0` package. The release gate installs the artifact through
 an isolated local Codex marketplace and validates the shared NUZO-37
 SessionStart canary without writing memory from hooks.
 
@@ -243,7 +242,7 @@ If marketplace installation is unavailable, configure Codex directly against
 the published runtime:
 
 ```bash
-codex mcp add nuzo -- npm exec --yes --package=@nuzo/memory@0.8.1 -- nuzo-mcp-server
+codex mcp add nuzo -- npm exec --yes --package=@nuzo/memory@0.9.0 -- nuzo-mcp-server
 ```
 
 This exposes MCP tools but does not install the Nuzo skill or lifecycle hooks.

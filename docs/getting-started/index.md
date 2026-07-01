@@ -1,12 +1,11 @@
 # Getting Started
 
-Nuzo `0.8.1` is the current public release. Choose one path below and complete
+Nuzo `0.9.0` is the current public release. Choose one path below and complete
 its verification before changing advanced configuration.
 
-## Upcoming In 0.9.0: One Install Path
+## Recommended Setup Path
 
-The following commands are **not available in the current 0.8.1 release**.
-They define the simpler `0.9.0` onboarding flow:
+For a first-time local install, start here:
 
 ```bash
 npm install --global @nuzo/memory@0.9.0
@@ -90,7 +89,7 @@ Install the unified package when you want to inspect and administer memory from
 a terminal:
 
 ```bash
-npm install --global @nuzo/memory@0.8.1
+npm install --global @nuzo/memory@0.9.0
 nuzo memory init
 nuzo memory doctor
 ```
@@ -109,7 +108,7 @@ Continue with the [local CLI guide](../operations/local-cli.md).
 Configure the following as a stdio MCP server:
 
 ```bash
-npm exec --yes --package=@nuzo/memory@0.8.1 -- nuzo-mcp-server
+npm exec --yes --package=@nuzo/memory@0.9.0 -- nuzo-mcp-server
 ```
 
 The server exposes the [14 Nuzo memory tools](../spec/tools.md). A host should

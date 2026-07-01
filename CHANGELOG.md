@@ -6,6 +6,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-06-30
+
 ### Added
 
 - The CLI now supports local store recovery commands:
