@@ -144,6 +144,51 @@ override and continued to reject hook errors. The restricted-history fix and
 affected package ranges are recorded in
 [GHSA-wmpf-4gjv-ww8f](https://github.com/fabionfsc/nuzo-memory/security/advisories/GHSA-wmpf-4gjv-ww8f).
 
+## Published 0.9.0 Verification
+
+The `0.9.0` contract-stabilization release was published from `main` at commit
+`e775e17a0ea4b4decbe778b79bb5bcbee6ed5ad3` through the GitHub Release
+[`v0.9.0`](https://github.com/fabionfsc/nuzo-memory/releases/tag/v0.9.0).
+The npm trusted-publishing dry run passed in
+[workflow run 28486174585](https://github.com/fabionfsc/nuzo-memory/actions/runs/28486174585),
+then trusted publishing completed in
+[workflow run 28486216026](https://github.com/fabionfsc/nuzo-memory/actions/runs/28486216026).
+
+Registry validation covered the final aligned transition set at `0.9.0`:
+
+- `@nuzo/memory-core@0.9.0`;
+- `@nuzo/memory@0.9.0`;
+- `@nuzo/memory-cli@0.9.0`;
+- `@nuzo/mcp-server@0.9.0`.
+
+After the unified replacement passed published validation, every published
+version of `@nuzo/memory-cli` and `@nuzo/mcp-server` was deprecated with
+migration guidance to `@nuzo/memory`. No later release publishes either
+transition package.
+
+## Published 0.9.1 Verification
+
+The `0.9.1` host UX patch was published from `main` at commit
+`6625edd061ec009c2607b05555541845491011c4` through the GitHub Release
+[`v0.9.1`](https://github.com/fabionfsc/nuzo-memory/releases/tag/v0.9.1).
+The npm trusted-publishing dry run passed in
+[workflow run 28533281336](https://github.com/fabionfsc/nuzo-memory/actions/runs/28533281336),
+then trusted publishing with SLSA provenance completed in
+[workflow run 28533334076](https://github.com/fabionfsc/nuzo-memory/actions/runs/28533334076).
+
+Registry metadata, integrity values, and npm provenance verified the active
+package set:
+
+- `@nuzo/memory-core@0.9.1`;
+- `@nuzo/memory@0.9.1`.
+
+The retired transition packages remained at their deprecated final `0.9.0`
+versions. Published CLI and MCP session continuity, default FTS fallback,
+explicit local-model semantic recall, Codex and Claude Code plugin artifacts,
+and the NUZO-37 host canary all passed against the exact public `0.9.1`
+package. Native marketplace validation installed
+`nuzo@nuzo-memory@0.9.1` successfully in both Codex and Claude Code.
+
 ## Real Flow To Prove
 
 The canonical post-release smoke is:
