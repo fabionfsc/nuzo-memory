@@ -118,4 +118,4 @@ easy to install and prove in real agent workflows:
 - [Mem0 Codex integration](https://docs.mem0.ai/integrations/codex)
 - [Mem0 Claude Code integration](https://docs.mem0.ai/integrations/claude-code)
 - [Zep overview](https://help.getzep.com/overview)
-- [Letta Code memory](https://docs.letta.com/letta-code/memory)
+- [Letta Agent memory](https://docs.letta.com/letta-agent/memory)
