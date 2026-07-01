@@ -225,7 +225,9 @@ Deliverables:
   first-use path;
 - explain the package split as user-facing roles: CLI for humans,
   MCP server for agent hosts, core for library/integrator use;
-- make `@nuzo/memory-cli` the default package users see first;
+- historical: make `@nuzo/memory-cli` the default package users see first
+  during the early split-package phase. Current releases use unified
+  `@nuzo/memory` as the recommended package;
 - add or improve clean install docs for CLI, MCP host, Codex, and Claude Code
   without requiring a source checkout;
 - reduce `AGENTS.md` to safe public guidance and move local/operator-only
