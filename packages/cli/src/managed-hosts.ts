@@ -56,9 +56,7 @@ export function recordManagedHosts(
   hosts: ManagedHostEntry[],
   path = managedHostsReceiptPath(),
 ): ManagedHostsReceipt {
-  const existing = readManagedHostsReceipt(path);
   const byHost = new Map<HostBootstrapHost, ManagedHostEntry>();
-  for (const entry of existing?.hosts ?? []) byHost.set(entry.host, entry);
   for (const entry of hosts) byHost.set(entry.host, normalizeEntry(entry));
   const receipt: ManagedHostsReceipt = {
     format: "nuzo-managed-hosts",

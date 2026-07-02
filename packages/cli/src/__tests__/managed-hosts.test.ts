@@ -11,16 +11,16 @@ afterEach(() => {
 });
 
 describe("managed host receipt", () => {
-  it("records consented hosts without secrets and preserves prior selections", () => {
+  it("records exactly the current consented hosts without secrets", () => {
     const root = temporaryRoot();
     const path = join(root, ".nuzo", "managed-hosts.json");
-    recordManagedHosts([{ host: "codex" }], path);
-    const receipt = recordManagedHosts([{ host: "claude-code", scope: "project" }], path);
-
-    expect(receipt.hosts).toEqual([
+    recordManagedHosts([
       { host: "codex" },
       { host: "claude-code", scope: "project" },
-    ]);
+    ], path);
+    const receipt = recordManagedHosts([{ host: "codex" }], path);
+
+    expect(receipt.hosts).toEqual([{ host: "codex" }]);
     expect(readManagedHostsReceipt(path)?.hosts).toEqual(receipt.hosts);
     expect(readFileSync(path, "utf8")).not.toMatch(/token|password|memory content/iu);
   });
