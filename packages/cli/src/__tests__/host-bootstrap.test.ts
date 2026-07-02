@@ -83,7 +83,7 @@ describe("host bootstrap", () => {
     ]);
     expect(result.dryRun).toBe(false);
     expect(formatHostBootstrapResult(result, false)).toContain(
-      "For future upgrades, run nuzo update --yes; do not repeat setup.",
+      "Future npm upgrades automatically refresh these managed plugins; do not repeat setup.",
     );
   });
 

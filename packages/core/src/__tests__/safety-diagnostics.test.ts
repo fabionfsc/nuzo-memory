@@ -47,6 +47,7 @@ describe("runtime file safety diagnostics", () => {
     mkdirSync(join(projectRoot, ".nuzo"), { recursive: true, mode: 0o700 });
     const storePath = join(memoryRoot, "memories.sqlite");
     writeFileSync(storePath, "fixture", { mode: 0o600 });
+    writeFileSync(join(home, ".nuzo", "managed-hosts.json"), "{}", { mode: 0o600 });
     chmodSync(join(home, ".nuzo"), 0o700);
 
     const report = inspectRuntimeFileSafety({ storePath, projectRoot, home });

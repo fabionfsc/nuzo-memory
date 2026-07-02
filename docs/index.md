@@ -19,36 +19,47 @@
   </div>
 </section>
 
-## Choose Your Interface
+## Install Once
 
 Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
 
-=== "Codex"
+```bash
+npm install --global @nuzo/memory@0.9.1
+nuzo setup
+```
 
-    ```bash
-    codex plugin marketplace add fabionfsc/nuzo-memory
-    codex plugin add nuzo@nuzo-memory
-    ```
+`nuzo setup` detects Codex and Claude Code. When both are available, it lets
+you choose Codex, Claude Code, or both, then shows the host changes and asks
+before changing host configuration. Open the configured host, confirm Nuzo is
+enabled, trust the two Nuzo read-only recall hooks, then start a new session.
 
-    Open `/plugins`, confirm Nuzo is enabled, review and trust the two Nuzo
-    read-only recall hooks in `/hooks`, then start a new thread.
+Hook trust prompts are expected: Nuzo uses `SessionStart` and
+`UserPromptSubmit` for bounded recall, and those hooks do not write memory.
 
-=== "Claude Code"
+After package upgrades, update the global package normally. Nuzo refreshes
+plugins that were already installed through `nuzo setup`:
 
-    ```bash
-    claude plugin marketplace add fabionfsc/nuzo-memory
-    claude plugin install nuzo@nuzo-memory --scope user
-    ```
+```bash
+npm install --global @nuzo/memory@latest
+```
 
-    Run `claude plugin list --json`, inspect `/mcp` and `/hooks`, trust the two
-    Nuzo read-only recall hooks, then start a new session.
+If npm lifecycle scripts are disabled or the automatic refresh needs
+attention, run `nuzo update --yes` as the recovery path.
+
+## Choose Your Interface
+
+=== "Codex or Claude Code"
+
+    Use `nuzo setup` from the global package. This is the recommended path
+    because it installs the local management CLI and configures supported
+    hosts from one place.
 
 === "CLI"
 
     ```bash
-    npm install --global @nuzo/memory@0.9.1
     nuzo memory init
     nuzo memory doctor
+    nuzo memory manage
     ```
 
 === "Generic MCP host"
@@ -59,31 +70,18 @@ Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
     npm exec --yes --package=@nuzo/memory@0.9.1 -- nuzo-mcp-server
     ```
 
-Codex and Claude Code plugins obtain their pinned runtime themselves. A global
-npm installation is only needed for the shell CLI or a direct MCP setup.
-Hook trust prompts are expected: Nuzo uses `SessionStart` and
-`UserPromptSubmit` for bounded recall, and those hooks do not write memory.
-
-## Optional: Global Setup
-
-Use the global package when you want the shell CLI or one command that detects
-and configures installed hosts:
+For non-interactive setup:
 
 ```bash
-npm install --global @nuzo/memory@0.9.1
-nuzo setup
-```
-
-Automation can target one host or both:
-
-```bash
+# Codex
 nuzo setup --codex --yes
+
+# Claude Code
 nuzo setup --claude-code --yes
+
+# Both
 nuzo setup --all --yes
 ```
-
-After package upgrades, use `nuzo update --yes`. It updates only
-already-installed Nuzo host plugins and does not install missing plugins.
 
 ## Prove It Works
 

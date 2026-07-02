@@ -75,6 +75,19 @@ function checkSetupPreviewContract() {
     );
     assertIncludes(path, content, "nuzo setup", "must show one-time setup");
     assertIncludes(path, content, "nuzo update", "must show managed update path");
+    assertIncludes(path, content, "nuzo memory manage", "must show CLI memory management");
+    assertNotIncludes(
+      path,
+      content,
+      "codex plugin marketplace add fabionfsc/nuzo-memory",
+      "must keep direct Codex plugin installation out of first-use docs",
+    );
+    assertNotIncludes(
+      path,
+      content,
+      "claude plugin marketplace add fabionfsc/nuzo-memory",
+      "must keep direct Claude Code plugin installation out of first-use docs",
+    );
   }
 }
 
@@ -90,7 +103,7 @@ function checkNonInteractiveSetupContract() {
     "nuzo setup --all --yes",
   ]);
 
-  for (const path of firstUseDocs) {
+  for (const path of firstUseDocs.filter((path) => path !== "packages/memory/README.md")) {
     const content = readText(path);
     for (const command of [
       "nuzo setup --codex --yes",

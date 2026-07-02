@@ -13,7 +13,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { SQLiteMemoryDatabase } from "@nuzo/memory-core";
-import { createProgram, type CliIO } from "../index.js";
+import { createProgram, setupHostsFromOptions, type CliIO, type SetupCommandOptions } from "../index.js";
 
 let tempDirectories: string[] = [];
 let testHome: string;
@@ -78,6 +78,25 @@ async function runCli(
   return { stderr, stdout };
 }
 
+function setupOptions(): SetupCommandOptions {
+  return {
+    all: false,
+    claudeCode: false,
+    codex: false,
+    dryRun: false,
+    json: false,
+    yes: false,
+  };
+}
+
+function fakeSetupIO(input: string, output: string[]): CliIO {
+  return {
+    stdout: (message) => output.push(message),
+    stderr: (message) => output.push(message),
+    readStdin: () => input,
+  };
+}
+
 describe("nuzo memory cli", () => {
   it("prints host setup dry-run plans without changing host configuration", async () => {
     const codex = await runCli(["setup", "--codex", "--dry-run"]);
@@ -126,6 +145,38 @@ describe("nuzo memory cli", () => {
       ],
     });
 
+  });
+
+  it("lets default setup choose a detected host interactively", () => {
+    const output: string[] = [];
+    const detected = { codex: true, "claude-code": true };
+    const base = setupOptions();
+
+    expect(setupHostsFromOptions(base, detected, fakeSetupIO("1\n", output))).toEqual(["codex"]);
+    expect(setupHostsFromOptions(base, detected, fakeSetupIO("2\n", output))).toEqual(["claude-code"]);
+    expect(setupHostsFromOptions(base, detected, fakeSetupIO("\n", output))).toEqual(["codex", "claude-code"]);
+    expect(output.join("\n")).toContain("Choose which host plugins to configure");
+  });
+
+  it("keeps setup automation deterministic without interactive selection", () => {
+    const output: string[] = [];
+    const detected = { codex: true, "claude-code": true };
+    const io = fakeSetupIO("1\n", output);
+
+    expect(setupHostsFromOptions({ ...setupOptions(), yes: true }, detected, io)).toEqual(["codex", "claude-code"]);
+    expect(setupHostsFromOptions({ ...setupOptions(), dryRun: true }, detected, io)).toEqual(["codex", "claude-code"]);
+    expect(setupHostsFromOptions({ ...setupOptions(), json: true }, detected, io)).toEqual(["codex", "claude-code"]);
+    expect(setupHostsFromOptions({ ...setupOptions(), codex: true }, detected, io)).toEqual(["codex"]);
+    expect(setupHostsFromOptions(setupOptions(), { codex: true, "claude-code": false }, io)).toEqual(["codex"]);
+    expect(output).toEqual([]);
+  });
+
+  it("rejects invalid interactive setup host choices", () => {
+    expect(() => setupHostsFromOptions(
+      setupOptions(),
+      { codex: true, "claude-code": true },
+      fakeSetupIO("wat\n", []),
+    )).toThrow("Choose 1 for Codex, 2 for Claude Code, or 3 for both.");
   });
 
   it("rejects ambiguous setup target styles", async () => {

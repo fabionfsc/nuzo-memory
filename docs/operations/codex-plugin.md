@@ -12,6 +12,19 @@ See `docs/architecture/agent-host-compatibility.md` before changing plugin packa
 
 Prerequisites: Node.js 22 or 24, npm 10 or newer, and a current Codex CLI.
 
+Recommended path:
+
+```bash
+npm install --global @nuzo/memory@0.9.1
+nuzo setup --codex
+```
+
+`nuzo setup` shows the Codex plugin changes and asks before changing host
+configuration. This path also installs the local `nuzo` CLI for memory
+management.
+
+Advanced manual path:
+
 ```bash
 codex plugin marketplace add fabionfsc/nuzo-memory
 codex plugin add nuzo@nuzo-memory
@@ -20,8 +33,9 @@ codex plugin add nuzo@nuzo-memory
 Then start Codex, open `/plugins` to confirm that `Nuzo` is installed and
 enabled, and open `/hooks` to review and trust its `SessionStart` and
 `UserPromptSubmit` command hooks. Start a new thread after installation. The
-plugin obtains its pinned `@nuzo/memory` runtime on first use, so a global npm
-install is not required.
+plugin obtains its pinned `@nuzo/memory` runtime on first use. Manual plugin
+installation is useful for host-only tests, but it does not install the shell
+CLI for managing memory.
 
 Two hook trust prompts are expected. Nuzo uses `SessionStart` for bounded
 session bootstrap recall and `UserPromptSubmit` for bounded prompt-context
@@ -57,7 +71,21 @@ threads use the same `NUZO_MEMORY_STORE` configuration.
 
 ## Update Or Remove
 
-For the current `0.9.1` release, update with the native Codex commands:
+For a Nuzo-managed Codex install, update the global package normally:
+
+```bash
+npm install --global @nuzo/memory@latest
+```
+
+Nuzo automatically refreshes already-installed managed host plugins during the
+package lifecycle. If npm lifecycle scripts are disabled or the automatic
+refresh needs attention, run:
+
+```bash
+nuzo update --yes
+```
+
+For a manual Codex plugin install, update with the native Codex commands:
 
 ```bash
 codex plugin marketplace upgrade nuzo-memory
@@ -71,16 +99,8 @@ codex plugin remove nuzo@nuzo-memory
 codex plugin marketplace remove nuzo-memory
 ```
 
-### Managed Updates
-
-If Codex was installed through `nuzo setup`, later updates use:
-
-```bash
-nuzo update --yes
-```
-
-Nuzo refreshes the managed marketplace and activates the latest plugin. It
-does not repeat setup or silently install Codex when the plugin is absent.
+Managed updates do not repeat setup or silently install Codex when the plugin
+is absent.
 
 ## Official Codex Shape
 

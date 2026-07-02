@@ -837,6 +837,8 @@ CLI checks:
 - Git is not tracking local memory files;
 - known runtime paths have owner-only permissions and expected ownership where
   POSIX semantics are meaningful;
+- the managed-host receipt at `~/.nuzo/managed-hosts.json`, when present, is a
+  known owner-only runtime file;
 - stale temporary/backup artifacts and unexpected runtime files are reported;
 - network access is disabled.
 

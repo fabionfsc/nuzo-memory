@@ -7,6 +7,7 @@ import {
   mkdirSync,
   openSync,
   readFileSync,
+  readSync,
   realpathSync,
   statSync,
   writeFileSync,
@@ -78,15 +79,20 @@ import {
   type HostBootstrapHost,
 } from "./host-bootstrap.js";
 import { formatHostUpdateResult, runHostUpdate } from "./host-update.js";
+import { runMemoryManager } from "./memory-manager.js";
+import { TerminalMemoryManagerIO } from "./terminal-memory-manager.js";
+import { recordManagedHosts } from "./managed-hosts.js";
 
 export interface CliIO {
   stdout(message: string): void;
   stderr(message: string): void;
+  readStdin?(): string;
 }
 
 const defaultIO: CliIO = {
   stdout: (message) => console.log(message),
   stderr: (message) => console.error(message),
+  readStdin: () => readLineFromStdin(),
 };
 
 interface GlobalOptions {
@@ -131,7 +137,7 @@ interface RecallCommandOptions {
   json: boolean;
 }
 
-interface HostTargetCommandOptions {
+export interface HostTargetCommandOptions {
   all: boolean;
   claudeCode: boolean;
   codex: boolean;
@@ -140,7 +146,7 @@ interface HostTargetCommandOptions {
   yes: boolean;
 }
 
-type SetupCommandOptions = HostTargetCommandOptions;
+export type SetupCommandOptions = HostTargetCommandOptions;
 
 interface DoctorReport {
   storePath: string;
@@ -218,8 +224,14 @@ Examples:
 `)
     .action(withErrorHandling(io, async (commandOptions: SetupCommandOptions) => {
       const detected = detectHostBootstrapHosts();
-      const hosts = setupHostsFromOptions(commandOptions, detected);
+      const hosts = setupHostsFromOptions(commandOptions, detected, io);
       const result = runHostBootstrap(hosts, commandOptions);
+      if (!commandOptions.dryRun) {
+        recordManagedHosts(result.hosts.map(({ host }) => ({
+          host,
+          ...(host === "claude-code" ? { scope: "user" } : {}),
+        })));
+      }
       io.stdout(formatHostBootstrapResult(result, commandOptions.json));
     }));
 
@@ -555,6 +567,58 @@ Examples:
       const runtime = resolveRuntimeConfig(memory.opts<GlobalOptions>());
       const removed = clearSemanticIndex(semanticIndexPathFor(runtime.storePath));
       io.stdout(removed ? "Semantic index cleared" : "Semantic index already absent");
+    }));
+
+  memory
+    .command("manage")
+    .description("Open the interactive terminal memory manager.")
+    .option("--all-scopes", "Manage every authorized local scope.", false)
+    .action(withErrorHandling(io, async (commandOptions: { allScopes: boolean }) => {
+      const options = memory.opts<GlobalOptions>();
+      if (commandOptions.allScopes && options.scope !== undefined) {
+        throw new NuzoMemoryError(
+          "MEMORY_SCOPE_CONFLICT",
+          "Manage --all-scopes cannot be combined with --scope.",
+        );
+      }
+
+      const database = openDatabase(options);
+      const service = createService(database);
+      const managerIO = new TerminalMemoryManagerIO();
+      const scope = commandOptions.allScopes ? undefined : resolveScope(options);
+      try {
+        await runMemoryManager({
+          service,
+          io: managerIO,
+          ...(scope === undefined ? {} : { scope }),
+          transfers: {
+            exportJson: async (path, includeArchived) => {
+              const document = await service.exportMemories({
+                actor: "nuzo:cli-manager",
+                includeArchived,
+                ...(scope === undefined ? {} : { scope }),
+              });
+              const exportPath = resolve(path);
+              ensureStoreDirectory(exportPath);
+              writePrivateFile(exportPath, formatExportDocument(document, "json"));
+              return document.memories.length;
+            },
+            importJson: async (path, dryRun) => {
+              const document = readExportDocument(resolve(path));
+              const result = await service.importMemories({
+                document,
+                actor: "nuzo:cli-manager",
+                dryRun,
+                ...(scope === undefined ? {} : { scope }),
+              });
+              return { imported: result.imported, skipped: result.skipped };
+            },
+          },
+        });
+      } finally {
+        managerIO.close();
+        database.close();
+      }
     }));
 
   memory
@@ -1742,12 +1806,16 @@ function parseRelationshipMode(value: string): "exact" | "bounded" {
   throw new InvalidArgumentError("Expected relationship mode to be exact or bounded.");
 }
 
-function setupHostsFromOptions(
+export function setupHostsFromOptions(
   options: SetupCommandOptions,
   detected: Record<HostBootstrapHost, boolean>,
+  io: CliIO = defaultIO,
 ): HostBootstrapHost[] {
   const hosts = hostsFromTargetOptions(options, "HOST_BOOTSTRAP_TARGET_CONFLICT");
-  return hosts.length > 0 ? hosts : defaultSetupHosts(detected);
+  if (hosts.length > 0) return hosts;
+  const defaults = defaultSetupHosts(detected);
+  if (options.dryRun || options.json || options.yes || defaults.length < 2) return defaults;
+  return chooseSetupHostsInteractively(defaults, io);
 }
 
 function updateHostsFromOptions(options: HostTargetCommandOptions): HostBootstrapHost[] {
@@ -1774,11 +1842,48 @@ function hostsFromTargetOptions(
   return selected;
 }
 
+function chooseSetupHostsInteractively(
+  hosts: HostBootstrapHost[],
+  io: CliIO,
+): HostBootstrapHost[] {
+  const choices = hosts.filter((host) => host === "codex" || host === "claude-code");
+  if (choices.length < 2) return hosts;
+
+  io.stdout([
+    "Nuzo detected multiple supported hosts.",
+    "Choose which host plugins to configure:",
+    "  1) Codex",
+    "  2) Claude Code",
+    "  3) Both",
+    "Selection [3]:",
+  ].join("\n"));
+  const answer = (io.readStdin?.() ?? readLineFromStdin()).trim().toLowerCase();
+  if (answer === "" || answer === "3" || answer === "both" || answer === "all") return choices;
+  if (answer === "1" || answer === "codex") return ["codex"];
+  if (answer === "2" || answer === "claude" || answer === "claude-code") return ["claude-code"];
+  throw new NuzoMemoryError(
+    "HOST_BOOTSTRAP_TARGET_INVALID",
+    "Choose 1 for Codex, 2 for Claude Code, or 3 for both.",
+  );
+}
+
 function parseRetrievalMode(value: string): RetrievalMode {
   if (value !== "fts" && value !== "semantic" && value !== "hybrid") {
     throw new InvalidArgumentError("Retrieval mode must be fts, semantic, or hybrid.");
   }
   return value;
+}
+
+function readLineFromStdin(): string {
+  const chunks: Buffer[] = [];
+  const buffer = Buffer.alloc(1);
+  while (true) {
+    const bytesRead = readSync(0, buffer, 0, 1, null);
+    if (bytesRead === 0) break;
+    chunks.push(Buffer.from(buffer.subarray(0, bytesRead)));
+    if (buffer[0] === 10) break;
+  }
+  return Buffer.concat(chunks).toString("utf8");
 }
 
 function parseSemanticFallback(value: string): SemanticFallbackMode {

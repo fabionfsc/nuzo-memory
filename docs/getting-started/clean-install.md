@@ -7,7 +7,7 @@ repository. It uses fake data only.
 
 - Node.js 22 LTS or 24 LTS.
 - npm 10 or newer.
-- A current Codex or Claude Code CLI when installing a host plugin.
+- A current Codex or Claude Code CLI when configuring a host plugin.
 
 Check the runtime:
 
@@ -18,48 +18,38 @@ npm --version
 
 Git, Python, and a source checkout are not required for normal installation.
 
-## Option A: Codex Plugin
-
-```bash
-codex plugin marketplace add fabionfsc/nuzo-memory
-codex plugin add nuzo@nuzo-memory
-codex plugin list --json
-```
-
-Confirm that `nuzo@nuzo-memory` is enabled. Start Codex, open `/hooks`, review
-and trust the two Nuzo read-only recall hooks, then start a new thread.
-
-## Option B: Claude Code Plugin
-
-```bash
-claude plugin marketplace add fabionfsc/nuzo-memory
-claude plugin install nuzo@nuzo-memory --scope user
-claude plugin list --json
-```
-
-Confirm that `nuzo@nuzo-memory` is enabled. Inspect `/mcp` and `/hooks`, trust
-the two Nuzo read-only recall hooks, then start a new Claude Code session.
-
-## Optional: Global Setup
-
-Use the global package when you want the shell CLI or one command that detects
-and configures installed hosts:
+## Option A: Nuzo For Codex Or Claude Code
 
 ```bash
 npm install --global @nuzo/memory@0.9.1
 nuzo setup
 ```
 
-For unattended environments:
+`nuzo setup` detects installed supported hosts. When both Codex and Claude Code
+are available, it lets you choose Codex, Claude Code, or both, then shows the
+planned plugin changes and asks before changing host configuration.
+
+For non-interactive environments:
 
 ```bash
+# Codex
 nuzo setup --codex --yes
+
+# Claude Code
 nuzo setup --claude-code --yes
+
+# Both
 nuzo setup --all --yes
 ```
 
-Setup is one-time. After a package upgrade, `nuzo update --yes` refreshes
-already-installed host plugins.
+Confirm that `nuzo@nuzo-memory` is enabled in the host. Start Codex or Claude
+Code, open the host's hook view, review and trust the two Nuzo read-only recall
+hooks, then start a new session.
+
+Setup is one-time. After a package upgrade, `npm install --global
+@nuzo/memory@latest` automatically refreshes already-installed Nuzo host
+plugins. If npm lifecycle scripts are disabled or refresh needs attention, run
+`nuzo update --yes` as the recovery path.
 
 ## Verify A Plugin Across Sessions
 
@@ -75,20 +65,25 @@ Review and confirm the draft. Close that session, start another one, and ask:
 What is my Nuzo clean-install marker?
 ```
 
-The answer should use `NUZO-CLEAN-OK`. The plugin supplies its own pinned
-`@nuzo/memory@0.9.1` runtime, so this path does not require a global npm
-installation.
+The answer should use `NUZO-CLEAN-OK`.
 
 If the marker is missing, follow the [Codex](../operations/codex-plugin.md) or
 [Claude Code](../operations/claude-code-plugin.md) host checks.
 
-## Option C: Shell CLI
+## Option B: Shell CLI Only
 
-Install the public package:
+If you only want local memory administration without configuring a host plugin,
+install the public package:
 
 ```bash
 npm install --global @nuzo/memory@0.9.1
 nuzo --version
+```
+
+For the default local store, open the terminal memory manager with:
+
+```bash
+nuzo memory manage
 ```
 
 Use a temporary store so this walkthrough does not touch existing memory:
@@ -105,6 +100,7 @@ Initialize and inspect it:
 ```bash
 nuzo memory --store "$NUZO_STORE" init
 nuzo memory --store "$NUZO_STORE" doctor
+nuzo memory --store "$NUZO_STORE" manage
 ```
 
 Store and recall fake project context:

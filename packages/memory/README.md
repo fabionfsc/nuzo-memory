@@ -1,41 +1,38 @@
 # @nuzo/memory
 
-The official Nuzo package for local, inspectable agent memory. It includes the
+The official Nuzo package for local, inspectable agent memory. It installs the
 `nuzo` CLI, the MCP server, and the read-only lifecycle hook runner used by
 Codex and Claude Code plugins.
 
-## Codex
-
-Normal Codex users should install the Nuzo plugin, which obtains its matching
-runtime automatically:
-
-```bash
-codex plugin marketplace add fabionfsc/nuzo-memory
-codex plugin add nuzo@nuzo-memory
-```
-
-Open `/plugins` to confirm Nuzo is enabled, review and trust the two Nuzo
-read-only recall hooks in `/hooks`, then start a new thread. A separate global
-npm install is not required unless you also want the shell CLI.
-
-## Claude Code
-
-```bash
-claude plugin marketplace add fabionfsc/nuzo-memory
-claude plugin install nuzo@nuzo-memory --scope user
-```
-
-Confirm `nuzo@nuzo-memory` with `claude plugin list --json`, inspect `/mcp` and
-`/hooks`, trust the two Nuzo read-only recall hooks, then start a new session.
-A separate global npm install is not required unless you also want the shell
-CLI.
-
-## Shell CLI And Host Setup
+## Install Once
 
 ```bash
 npm install --global @nuzo/memory@0.9.1
+nuzo setup
+```
+
+`nuzo setup` detects supported local hosts. When both Codex and Claude Code are
+available, it lets you choose Codex, Claude Code, or both, then shows the
+planned plugin changes and asks before changing host configuration. After
+setup, open your host, confirm Nuzo is enabled, trust the two read-only recall
+hooks, and start a new session.
+
+For package upgrades, update the global package. Nuzo automatically refreshes
+host plugins that were already installed through `nuzo setup`:
+
+```bash
+npm install --global @nuzo/memory@latest
+```
+
+If npm lifecycle scripts are disabled or the automatic refresh needs attention,
+run `nuzo update --yes` as the recovery path.
+
+## Manage Memory
+
+```bash
 nuzo memory init
 nuzo memory doctor
+nuzo memory manage
 ```
 
 Store and recall safe test data:
@@ -44,18 +41,6 @@ Store and recall safe test data:
 nuzo memory remember "The demo project uses SQLite." --kind project_decision --tag demo
 nuzo memory recall "demo storage"
 ```
-
-To let Nuzo detect and configure installed hosts from the global package, run:
-
-```bash
-nuzo setup
-nuzo setup --codex --yes
-nuzo setup --claude-code --yes
-nuzo setup --all --yes
-```
-
-After package upgrades, `nuzo update --yes` refreshes already-installed Nuzo
-host plugins. It does not repeat setup or silently install missing plugins.
 
 ## Verify Memory Across Sessions
 

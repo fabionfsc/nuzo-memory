@@ -59,10 +59,16 @@ logic or a copied platform-specific `node_modules`.
 Rejected because the native SQLite dependency makes a single generated plugin
 artifact platform-specific.
 
-### Require A Global Install
+### Require A Global Install Only
 
-Rejected because it creates a second manual setup step and allows host plugin
-and MCP server versions to diverge.
+Rejected for standalone plugin artifacts because it can allow host plugin and
+MCP server versions to diverge when a user installs the plugin directly.
+
+The later npm-first user flow still installs `@nuzo/memory` globally as the
+recommended control plane. That global package owns the CLI, one-time
+`nuzo setup`, managed host-plugin updates, and local memory administration.
+Release plugin artifacts continue to pin their runtime package version so a
+direct host-plugin install remains reproducible.
 
 ### Install Dependencies With A Plugin Script
 

@@ -28,7 +28,7 @@ The tracked plugin and generated release artifact use the same pinned public
 runtime:
 
 ```bash
-npm exec --yes --package=@nuzo/memory@0.8.1 -- nuzo-mcp-server
+npm exec --yes --package=@nuzo/memory@0.9.1 -- nuzo-mcp-server
 ```
 
 ## Validation

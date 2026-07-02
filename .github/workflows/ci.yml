@@ -83,6 +83,9 @@ jobs:
       - name: Validate npm artifacts
         run: npm run validate:npm
 
+      - name: Run 1.0.0 developer experience gate
+        run: npm run gate:developer-experience
+
       - name: Validate native host marketplace installation
         if: matrix.node == '24'
         run: npm exec --yes --package=@openai/codex@0.142.3 -- sh -c 'NUZO_USE_EXISTING_ARTIFACTS=1 NUZO_HOST_CANARY_NATIVE=1 npm run smoke:host-canary'

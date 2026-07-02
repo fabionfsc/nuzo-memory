@@ -1,71 +1,57 @@
 # Getting Started
 
-Nuzo `0.9.1` is the current public release. For Codex or Claude Code, install
-the host plugin first. Use the global package only when you also want the shell
-CLI or automated host setup.
+Nuzo `0.9.1` is the current public release. For Codex and Claude Code, use the
+global npm package first. It installs the local management CLI and lets Nuzo
+configure supported host plugins from one place.
 
-## Codex
+## Install
 
 Prerequisites: Node.js 22 LTS or 24 LTS, npm 10 or newer, and a current Codex
-CLI.
-
-```bash
-codex plugin marketplace add fabionfsc/nuzo-memory
-codex plugin add nuzo@nuzo-memory
-codex plugin list --json
-```
-
-Start Codex, open `/plugins`, and confirm `nuzo@nuzo-memory` is enabled. Open
-`/hooks`, review and trust the two Nuzo read-only recall hooks,
-`SessionStart` and `UserPromptSubmit`, then start a new thread. Trust prompts
-are expected; the hooks do not write memory.
-
-Continue with [Codex installation and troubleshooting](../operations/codex-plugin.md).
-
-## Claude Code
-
-Prerequisites: Node.js 22 LTS or 24 LTS, npm 10 or newer, and a current Claude
-Code CLI.
-
-```bash
-claude plugin marketplace add fabionfsc/nuzo-memory
-claude plugin install nuzo@nuzo-memory --scope user
-claude plugin list --json
-```
-
-Confirm `nuzo@nuzo-memory` is enabled. Inside Claude Code, inspect `/mcp` and
-`/hooks`, trust the two Nuzo read-only recall hooks, then start a new session.
-Trust prompts are expected; the hooks do not write memory.
-
-Continue with [Claude Code installation and troubleshooting](../operations/claude-code-plugin.md).
-
-## Optional: Global Setup
-
-Use this path when you want the shell CLI or one command that detects and
-configures installed hosts:
+or Claude Code CLI when configuring a host plugin.
 
 ```bash
 npm install --global @nuzo/memory@0.9.1
 nuzo setup
 ```
 
-Nuzo shows the plan and configures only the hosts you approve.
+`nuzo setup` detects supported local hosts. When both Codex and Claude Code are
+available, it lets you choose Codex, Claude Code, or both, then shows the exact
+plugin changes and asks before changing host configuration.
+
+For non-interactive setup:
 
 ```bash
+# Codex
 nuzo setup --codex --yes
+
+# Claude Code
 nuzo setup --claude-code --yes
+
+# Both
 nuzo setup --all --yes
 ```
 
-Setup is one-time. After package upgrades:
+After setup, open Codex or Claude Code, confirm Nuzo is enabled, review and
+trust the two Nuzo read-only recall hooks, `SessionStart` and
+`UserPromptSubmit`, then start a new session. Trust prompts are expected; the
+hooks do not write memory.
+
+Direct host plugin commands remain documented for advanced installs:
+[Codex](../operations/codex-plugin.md) and
+[Claude Code](../operations/claude-code-plugin.md).
+
+## Upgrade
+
+Update the global package normally. Nuzo automatically refreshes host plugins
+that were already installed through `nuzo setup`:
 
 ```bash
 npm install --global @nuzo/memory@latest
-nuzo update --yes
 ```
 
-`nuzo update` updates only installed plugins and sends first-time users back to
-setup.
+If npm lifecycle scripts are disabled or the automatic refresh needs attention,
+run `nuzo update --yes` as the recovery path. Updates never install a missing
+host plugin; first-time host configuration stays behind `nuzo setup`.
 
 ## Verify A Host Installation
 
@@ -92,9 +78,9 @@ Install the unified package when you want to inspect and administer memory from
 a terminal:
 
 ```bash
-npm install --global @nuzo/memory@0.9.1
 nuzo memory init
 nuzo memory doctor
+nuzo memory manage
 ```
 
 Store and recall safe test data:
@@ -127,9 +113,9 @@ Most users need only one installation path.
 | `@nuzo/memory` | The CLI, direct MCP server, or host hook runtime. |
 | `@nuzo/memory-core` | A library-level integration or Nuzo development. |
 
-Codex and Claude Code plugins resolve their own version-matched
-`@nuzo/memory` runtime. Do not install it globally as a second copy unless you
-also want the shell CLI.
+Use `@nuzo/memory` for the normal Codex and Claude Code setup path. Manual
+host-plugin installation remains available for advanced host-only testing, but
+it does not install the local management CLI.
 
 ## Local Data
 

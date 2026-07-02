@@ -24,7 +24,7 @@ export interface InspectRuntimeFileSafetyInput {
   home: string;
 }
 
-const allowedNuzoRootEntries = new Set(["config.json", "exports", "logs", "memory", "models"]);
+const allowedNuzoRootEntries = new Set(["config.json", "exports", "logs", "managed-hosts.json", "memory", "models"]);
 const staleArtifactPattern = /(?:^\.nuzo-semantic-model-|\.bak$|\.backup(?:-|$)|\.tmp$)/u;
 
 export function inspectRuntimeFileSafety(input: InspectRuntimeFileSafetyInput): RuntimeFileSafetyReport {
@@ -42,6 +42,7 @@ export function inspectRuntimeFileSafety(input: InspectRuntimeFileSafetyInput): 
 
   inspectKnownPath(homeRoot, 0o700, report);
   inspectKnownPath(join(homeRoot, "config.json"), 0o600, report);
+  inspectKnownPath(join(homeRoot, "managed-hosts.json"), 0o600, report);
   inspectKnownPath(projectRoot, 0o700, report);
   inspectKnownPath(join(projectRoot, "config.json"), 0o600, report);
   inspectKnownPath(storeDirectory, 0o700, report);
