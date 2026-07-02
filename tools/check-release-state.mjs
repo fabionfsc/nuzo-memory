@@ -58,7 +58,7 @@ for (const packagePath of ["", ...packagePaths.filter((path) => path !== "packag
   assertNuzoDependencies(`package-lock.json packages[${JSON.stringify(packagePath)}]`, lockPackage, version);
 }
 
-assertSourceVersion("packages/cli/src/index.ts", /\.version\("([^"]+)"\)/, version);
+assertSourceVersion("packages/cli/src/program.ts", /\.version\("([^"]+)"\)/, version);
 assertSourceVersion("packages/mcp-server/src/index.ts", /version: "([^"]+)"/, version);
 assertChangelog(version);
 assertPublicReleaseReferences(version);
