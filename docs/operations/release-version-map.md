@@ -15,7 +15,7 @@ release notes and roadmap history should not be rewritten.
 - `package-lock.json`;
 - `packages/*/package.json`;
 - Codex and Claude Code plugin manifests;
-- `packages/cli/src/index.ts`;
+- `packages/cli/src/program.ts`;
 - `packages/mcp-server/src/index.ts`;
 - public release references listed in `tools/release-shared.mjs` as
   `publicReleaseReferencePaths`.

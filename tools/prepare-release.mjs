@@ -58,7 +58,7 @@ for (const [packagePath, pkg] of Object.entries(lockfile.packages ?? {})) {
 }
 writeJson("package-lock.json", lockfile);
 
-replaceLiteralVersion("packages/cli/src/index.ts", /\.version\("([^"]+)"\)/, `.version("${version}")`);
+replaceLiteralVersion("packages/cli/src/program.ts", /\.version\("([^"]+)"\)/, `.version("${version}")`);
 replaceLiteralVersion(
   "packages/mcp-server/src/index.ts",
   /version: "([^"]+)"/,

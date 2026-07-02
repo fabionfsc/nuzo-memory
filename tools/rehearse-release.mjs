@@ -35,7 +35,7 @@ const protectedFiles = [
   ...pluginRuntimeConfigPaths,
   ...publicReleaseReferencePaths,
   "package-lock.json",
-  "packages/cli/src/index.ts",
+  "packages/cli/src/program.ts",
   "packages/mcp-server/src/index.ts",
   "CHANGELOG.md",
 ];
