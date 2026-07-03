@@ -1,9 +1,16 @@
 #!/usr/bin/env node
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { isAbsolute, join, resolve } from "node:path";
-import { performance } from "node:perf_hooks";
+import { isAbsolute, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import {
+  average,
+  cleanupTemporaryStore,
+  createTemporaryStore,
+  formatCounts,
+  formatPercent,
+  measureLatency,
+  optionValue,
+  ratio,
+} from "./benchmark-shared.mjs";
 
 const coreModulePath = optionValue("--core-module");
 const expectation = optionValue("--expect") ?? "baseline";
@@ -24,8 +31,9 @@ const {
 
 const keepStore = process.argv.includes("--keep");
 const jsonOutput = process.argv.includes("--json");
-const tmpRoot = mkdtempSync(join(tmpdir(), "nuzo-capture-benchmark-"));
-const storePath = join(tmpRoot, "memories.sqlite");
+const temporaryStore = createTemporaryStore("nuzo-capture-benchmark-");
+const tmpRoot = temporaryStore.root;
+const storePath = temporaryStore.storePath;
 
 const fixtures = [
   fixture("response-concise", "The user prefers concise final answers with explicit tradeoffs.", "preference", "user:default", ["communication", "style"]),
@@ -227,10 +235,9 @@ try {
   for (const benchmarkCase of cases) {
     const caseService = benchmarkCase.restricted === true ? restrictedService : service;
     const before = await stateSnapshot(service);
-    const started = performance.now();
     let suggestion = null;
     let error = null;
-    try {
+    const { latencyMs } = await measureLatency(async () => {
       const suggestionInput = {
         content: benchmarkCase.content,
         kind: benchmarkCase.kind,
@@ -243,11 +250,12 @@ try {
       if (expectation === "bounded") {
         suggestionInput.relationshipMode = "bounded";
       }
-      suggestion = await caseService.suggestCapture(suggestionInput);
-    } catch (caught) {
-      error = caught;
-    }
-    const latencyMs = performance.now() - started;
+      try {
+        suggestion = await caseService.suggestCapture(suggestionInput);
+      } catch (caught) {
+        error = caught;
+      }
+    });
     const after = await stateSnapshot(service);
     results.push(evaluateCase({
       benchmarkCase,
@@ -287,7 +295,7 @@ try {
 } finally {
   database.close();
   if (!keepStore) {
-    rmSync(tmpRoot, { recursive: true, force: true });
+    cleanupTemporaryStore(tmpRoot);
   } else if (!jsonOutput) {
     console.log(`kept benchmark store: ${storePath}`);
   }
@@ -716,18 +724,6 @@ function printHumanReport(report) {
   }
 }
 
-function average(values) {
-  return values.reduce((sum, value) => sum + value, 0) / values.length;
-}
-
-function ratio(numerator, denominator) {
-  return denominator === 0 ? 1 : numerator / denominator;
-}
-
-function formatPercent(value) {
-  return `${(value * 100).toFixed(1)}%`;
-}
-
 function countBy(values, keyForValue) {
   const counts = {};
   for (const value of values) {
@@ -735,20 +731,4 @@ function countBy(values, keyForValue) {
     counts[key] = (counts[key] ?? 0) + 1;
   }
   return Object.fromEntries(Object.entries(counts).sort(([left], [right]) => left.localeCompare(right)));
-}
-
-function formatCounts(counts) {
-  return Object.entries(counts).map(([key, count]) => `${key}:${count}`).join(",");
-}
-
-function optionValue(name) {
-  const optionIndex = process.argv.indexOf(name);
-  if (optionIndex === -1) {
-    return undefined;
-  }
-  const value = process.argv[optionIndex + 1];
-  if (value === undefined || value.startsWith("--")) {
-    throw new Error(`${name} requires a value`);
-  }
-  return value;
 }
