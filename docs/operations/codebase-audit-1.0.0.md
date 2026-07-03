@@ -15,10 +15,10 @@ and does not redefine the product contract in
 | Legacy transition packages | Keep `packages/cli` and `packages/mcp-server` as source workspaces; do not publish new public versions after `0.9.0`. | `tools/npm-package-policy.mjs`, npm publishing docs, release checklist. | Remove only after internal build/package architecture no longer needs source workspaces. |
 | Root hidden plugin catalogs | Keep `.agents/plugins/marketplace.json` and `.claude-plugin/marketplace.json`. | They are host discovery contracts for Codex and Claude Code marketplace development. | Revisit only if host CLIs support a unified catalog location. |
 | Host plugin hidden manifests | Keep `.codex-plugin/` and `.claude-plugin/` inside package roots. | Host-required plugin manifest paths. | Do not collapse into a custom `.plugins/` directory. |
-| `tools/` directory | Keep committed. | Release, smoke, benchmark, docs, packaging, and governance validation depend on it. npm staging excludes it. | Refactor repeated harness code in #237. |
+| `tools/` directory | Keep committed. | Release, smoke, benchmark, docs, packaging, and governance validation depend on it. npm staging excludes it. | Shared benchmark helpers landed through #237; keep new harness logic focused. |
 | Generated artifacts | Keep untracked. | `.gitignore` excludes `dist/`, `build/`, `site/`, memory stores, exports, npm caches, virtualenvs, and local agent notes. `git ls-files` found no tracked generated runtime artifacts. | Continue checking before release and PR handoff. |
-| Setup/update path | Keep explicit first-time setup and managed updates. | `nuzo setup`, managed-host receipt, package postinstall, and `nuzo update --yes` recovery path. | Add interactive host selection in #245. |
-| CLI manager | Keep as CLI-only control plane. | `nuzo memory manage` reuses core use cases and existing local store. | Close #216 after the implementing PR lands. |
+| Setup/update path | Keep explicit first-time setup and managed updates. | `nuzo setup`, managed-host receipt, package postinstall, and `nuzo update --yes` recovery path. | Interactive host selection landed through #245. |
+| CLI manager | Keep as CLI-only control plane. | `nuzo memory manage` reuses core use cases and existing local store. | Evaluation and documentation completed through #216. |
 
 ## Safe Fixes Applied
 
@@ -30,10 +30,10 @@ and does not redefine the product contract in
 - Updated the historical roadmap note that previously said
   `@nuzo/memory-cli` should be the default package users see first.
 
-## Larger Refactors Already Split Out
+## Completed Focused Refactors
 
-These are valid codebase hygiene items, but they are intentionally tracked as
-focused work instead of being hidden inside one broad cleanup:
+The audit split larger hygiene work into focused issues. All of the following
+are complete:
 
 - [#234](https://github.com/fabionfsc/nuzo-memory/issues/234): Refactor CLI
   entrypoint into focused command modules.
@@ -45,6 +45,8 @@ focused work instead of being hidden inside one broad cleanup:
   repeated benchmark and smoke-test harness code.
 - [#245](https://github.com/fabionfsc/nuzo-memory/issues/245): Add interactive
   host selection to `nuzo setup`.
+- [#253](https://github.com/fabionfsc/nuzo-memory/issues/253): Split runtime
+  configuration parsing from resolution.
 
 ## Package Boundary Notes
 
@@ -98,12 +100,10 @@ developer machines, but they remain ignored and should not be committed.
 
 ## 1.0.0 Readiness Recommendation
 
-The codebase is ready to continue toward `1.0.0` with the current layout. Do
-not remove the CLI or MCP source workspaces yet; they are internal build inputs
-for the unified package. The highest-value next cleanup is modularization, not
-deletion:
+The focused modularization and developer-experience follow-ups are complete.
+The codebase is ready to enter the `1.0.0` release process with the current
+package layout. Do not remove the CLI or MCP source workspaces; they remain
+internal build inputs for the unified package.
 
-1. land the developer experience gate PR;
-2. complete #245 for a cleaner default `nuzo setup`;
-3. work through #234-#237 in small PRs;
-4. rerun this audit before cutting a `1.0.0` release candidate.
+The final pre-release evidence and remaining publication-only steps are
+recorded in [1.0.0 Release Readiness Audit](release-readiness-1.0.0.md).
