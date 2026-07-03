@@ -238,7 +238,7 @@ Before `1.0.0`, release validation should prove:
 
 ## Execution Tracking
 
-Focused GitHub Issues own the executable work:
+The completed GitHub Issues below provide the implementation evidence:
 
 - [#214](https://github.com/fabionfsc/nuzo-memory/issues/214) defines the
   overall `1.0.0` CLI-first developer experience release gate.
