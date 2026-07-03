@@ -192,16 +192,18 @@ The existing command surface must remain capable of administration:
 - `nuzo memory export`
 - `nuzo memory import`
 
-Before `1.0.0`, Nuzo should include a CLI-only interactive management mode for
-users who do not want to compose every lifecycle operation manually. The target
-shape is a terminal workflow, not a browser UI:
+Nuzo includes a CLI-only interactive management mode for users who do not want
+to compose every lifecycle operation manually. The pre-`1.0.0` evaluation
+selected this terminal workflow because it materially shortens routine review,
+edit, archive, delete, export, import, and audit tasks without adding another
+memory engine or storage path:
 
 ```bash
 nuzo memory manage
 ```
 
-The interactive CLI must reuse core use cases and the existing CLI/MCP
-contracts instead of introducing a second memory engine.
+The interactive CLI reuses core use cases and the existing CLI/MCP contracts.
+Destructive actions retain explicit confirmation and displayed-revision checks.
 
 ## Non-Goals For `1.0.0`
 

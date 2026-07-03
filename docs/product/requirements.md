@@ -23,6 +23,8 @@
 - Export memories.
 - Import memories.
 - Show an audit trail for memory changes.
+- Manage the lifecycle interactively from a terminal through the same core use
+  cases and local store.
 
 ## Quality Requirements
 
@@ -45,9 +47,6 @@
 
 - Optional encrypted storage.
 - Optional sync provider.
-- CLI-only interactive memory manager for users who want to review, edit,
-  archive, delete, export, import, and inspect audit history without composing
-  every command manually.
 - Browser memory manager only after the stable CLI-first workflow is proven.
 - Agent-specific policies.
 - Team-level memory stores.
