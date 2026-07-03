@@ -1,11 +1,18 @@
 #!/usr/bin/env node
 import { createHash } from "node:crypto";
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { isAbsolute, join, resolve } from "node:path";
-import { performance } from "node:perf_hooks";
+import { isAbsolute, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import Database from "better-sqlite3";
+import {
+  average,
+  cleanupTemporaryStore,
+  createTemporaryStore,
+  formatPercent,
+  measureLatency,
+  numberOption,
+  optionValue,
+  ratio,
+} from "./benchmark-shared.mjs";
 
 import {
   createMemoryService,
@@ -31,8 +38,9 @@ const storeSize = optionValue("--store-size") ?? "small";
 if (!["small", "medium"].includes(storeSize)) {
   throw new Error("--store-size must be small or medium");
 }
-const tmpRoot = mkdtempSync(join(tmpdir(), "nuzo-semantic-benchmark-"));
-const storePath = join(tmpRoot, "memories.sqlite");
+const temporaryStore = createTemporaryStore("nuzo-semantic-benchmark-");
+const tmpRoot = temporaryStore.root;
+const storePath = temporaryStore.storePath;
 
 const fixtures = [
   fixture("npm-provenance", "Publish npm releases through trusted publishing with SLSA provenance.", ["npm", "release", "provenance"]),
@@ -292,7 +300,7 @@ async function runBenchmark() {
   } finally {
     database.close();
     await encoder.dispose?.();
-    if (!keepStore) rmSync(tmpRoot, { recursive: true, force: true });
+    if (!keepStore) cleanupTemporaryStore(tmpRoot);
     else if (!jsonOutput) console.log(`kept benchmark store: ${storePath}`);
   }
 }
@@ -330,9 +338,7 @@ function semanticCase(label, query, expected, options = {}) {
 async function evaluateMode(mode, cases, searchIndex, keyById) {
   const results = [];
   for (const item of cases) {
-    const started = performance.now();
-    const recalled = await retrieve(mode, item, searchIndex);
-    const latencyMs = performance.now() - started;
+    const { value: recalled, latencyMs } = await measureLatency(() => retrieve(mode, item, searchIndex));
     const keys = recalled.map((result) => keyById.get(result.memory.id));
     const rank = keys.indexOf(item.expected) + 1;
     const noise = keys.filter((key) => key !== item.expected).length;
@@ -424,10 +430,9 @@ function mutationCounts(db) {
 }
 
 async function measureStatus(operation) {
-  const started = performance.now();
-  const status = await operation();
+  const { value: status, latencyMs } = await measureLatency(operation);
   return {
-    latencyMs: performance.now() - started,
+    latencyMs,
     status: {
       state: status.state,
       indexedMemories: status.indexedMemories,
@@ -439,10 +444,9 @@ async function measureStatus(operation) {
 }
 
 async function measureDetailedRecall(operation) {
-  const started = performance.now();
-  const response = await operation();
+  const { value: response, latencyMs } = await measureLatency(operation);
   return {
-    latencyMs: performance.now() - started,
+    latencyMs,
     resultCount: response.results.length,
     effectiveMode: response.diagnostics.effectiveMode,
     semanticFallbackCode: response.diagnostics.semanticFallbackCode,
@@ -534,9 +538,7 @@ function tokenize(text) {
 
 const stopWords = new Set(["the", "and", "for", "with", "what", "which", "when", "how", "should", "does", "must", "before", "from", "that", "this", "are", "into", "uma", "qual", "como", "antes", "para", "los", "las", "que", "was", "wird", "werden", "durfen", "welche"]);
 
-function ratio(numerator, denominator) { return denominator === 0 ? 1 : numerator / denominator; }
-function average(values) { return values.reduce((sum, value) => sum + value, 0) / values.length; }
-function percent(value) { return `${(value * 100).toFixed(1)}%`; }
+const percent = formatPercent;
 
 function printReport(report) {
   console.log("Nuzo optional semantics benchmark");
@@ -565,22 +567,6 @@ async function loadExternalProvider(path) {
     throw new Error("--provider-module must export an embedding provider or createProvider()");
   }
   return provider;
-}
-
-function optionValue(name) {
-  const index = process.argv.indexOf(name);
-  if (index === -1) return undefined;
-  const value = process.argv[index + 1];
-  if (!value || value.startsWith("--")) throw new Error(`${name} requires a value`);
-  return value;
-}
-
-function numberOption(name, fallback) {
-  const value = optionValue(name);
-  if (value === undefined) return fallback;
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) throw new Error(`${name} requires a finite number`);
-  return parsed;
 }
 
 await runBenchmark();
