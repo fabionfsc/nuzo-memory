@@ -101,11 +101,18 @@ export function parseToolJson(result: Awaited<ReturnType<Client["callTool"]>>): 
 }
 
 export function toolText(result: Awaited<ReturnType<Client["callTool"]>>): string {
-  const text = result.content.find(
-    (item): item is Extract<typeof item, { type: "text" }> => item.type === "text",
-  );
+  if (!Array.isArray(result.content)) {
+    throw new Error("Expected MCP tool result content to be an array.");
+  }
+  const text = result.content.find(isTextContent);
   if (!text) {
     throw new Error("Expected MCP tool result to contain text.");
   }
   return text.text;
+}
+
+function isTextContent(item: unknown): item is { type: "text"; text: string } {
+  return typeof item === "object" && item !== null &&
+    "type" in item && item.type === "text" &&
+    "text" in item && typeof item.text === "string";
 }

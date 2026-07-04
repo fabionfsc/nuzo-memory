@@ -237,6 +237,9 @@ function createTestHandlers(options: {
           ]
         : [];
     },
+    async audit() {
+      return [];
+    },
     async exportMemories(input) {
       calls.exportMemories += 1;
       return {

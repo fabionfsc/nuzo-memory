@@ -107,11 +107,11 @@ test("normal installation recommends only the unified runtime package", () => {
   }
 });
 
-test("legacy npm READMEs define the 0.9.0 cutoff and unified replacement", () => {
+test("legacy npm READMEs identify their deprecation and unified replacement", () => {
   for (const path of ["packages/cli/README.md", "packages/mcp-server/README.md"]) {
     const content = readText(path);
     assert.match(content, /New installs should use `@nuzo\/memory`/u, path);
-    assert.match(content, /Version `0\.9\.0` is the planned final release/u, path);
+    assert.match(content, /every\s+published version is deprecated/u, path);
   }
 });
 

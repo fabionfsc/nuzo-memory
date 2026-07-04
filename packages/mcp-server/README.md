@@ -19,10 +19,8 @@ The MCP server and hook runner honor the shared Nuzo runtime environment:
 
 Documentation: https://nuzo.com.br/
 
-This package remains published during the transition window for existing users
-and automation. New installs should use `@nuzo/memory`.
-Version `0.9.0` is the planned final release of this transition package. After
-`0.9.0` is published, all of its npm versions will be marked deprecated with
-migration guidance to `@nuzo/memory`.
+This package remains available for existing users and automation, but every
+published version is deprecated with migration guidance to `@nuzo/memory`.
+New installs should use `@nuzo/memory`.
 
 License: Apache-2.0

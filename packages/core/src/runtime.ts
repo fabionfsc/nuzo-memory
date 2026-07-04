@@ -4,7 +4,6 @@ import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { NuzoMemoryError } from "./errors.js";
 import type { Clock, IdGenerator } from "./ports.js";
-import { memoryLimits } from "./policy.js";
 import {
   assertScope,
   readProjectConfig,
