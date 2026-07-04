@@ -317,7 +317,7 @@ For the `0.9.0` release only:
 3. Confirm the transition-package npm READMEs identify `@nuzo/memory` as the
    replacement and `0.9.0` as their final release.
 4. Only then apply the two npm deprecation messages documented in
-   [npm Publishing](npm-publishing.md#legacy-deprecation-after-090).
+   [npm Publishing](npm-publishing.md#legacy-deprecation-state).
 5. Verify npm reports both transition packages as deprecated and record the
    registry evidence in post-release validation.
 

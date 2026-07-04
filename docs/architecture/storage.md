@@ -148,7 +148,7 @@ redirect writes outside the project.
 
 ## Secrets And Sensitive Data
 
-The MVP should reject obvious secret-like values:
+Nuzo rejects obvious secret-like values:
 
 - API keys;
 - private keys;
@@ -156,7 +156,8 @@ The MVP should reject obvious secret-like values:
 - auth tokens;
 - cookie/session blobs.
 
-The CLI should include a diagnostic command that reports whether any memory database or export file is tracked by Git.
+The CLI includes `nuzo memory doctor`, a diagnostic command that reports
+whether any memory database or export file is tracked by Git.
 
 ## Scope Boundary
 
