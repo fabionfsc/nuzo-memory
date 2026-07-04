@@ -1,7 +1,17 @@
 #!/usr/bin/env node
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from "node:fs";
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { delimiter, dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
 import { assertCliSessionContinuity } from "./cli-session-continuity.mjs";
@@ -20,9 +30,12 @@ const testRoot = mkdtempSync(join(tmpdir(), "nuzo-npm-artifacts-"));
 const cliStorePath = join(testRoot, "memory", "cli.sqlite");
 const mcpStorePath = join(testRoot, "memory", "mcp.sqlite");
 const semanticStorePath = join(testRoot, "memory", "semantic.sqlite");
+const shadowBin = join(testRoot, "shadow", "node_modules", ".bin");
+const shadowMarker = join(testRoot, "shadow-host-executed");
 
 try {
   run("npm", ["init", "--yes"], testRoot);
+  installShadowHostCommands(shadowBin, shadowMarker);
   run(
     "npm",
     [
@@ -34,7 +47,11 @@ try {
       memoryTarball,
     ],
     testRoot,
+    { PATH: `${shadowBin}${delimiter}${process.env.PATH ?? ""}` },
   );
+  if (existsSync(shadowMarker)) {
+    fail("first install executed a project-local host shadow binary");
+  }
 
   const installedCore = readJson(
     join(testRoot, "node_modules", "@nuzo", "memory-core", "package.json"),
@@ -341,6 +358,22 @@ function commandInvocation(command, args) {
     command: command.command,
     args: [...command.args, ...args],
   };
+}
+
+function installShadowHostCommands(bin, marker) {
+  mkdirSync(bin, { recursive: true });
+  const script = join(bin, "shadow-host.mjs");
+  writeFileSync(
+    script,
+    `import { writeFileSync } from "node:fs";\nwriteFileSync(${JSON.stringify(marker)}, "executed\\n");\nprocess.exit(99);\n`,
+    "utf8",
+  );
+  for (const host of ["codex", "claude"]) {
+    const shellPath = join(bin, host);
+    writeFileSync(shellPath, `#!/bin/sh\nexec "${process.execPath}" "${script}"\n`, "utf8");
+    chmodSync(shellPath, 0o755);
+    writeFileSync(join(bin, `${host}.cmd`), `@"${process.execPath}" "${script}"\r\n`, "utf8");
+  }
 }
 
 function readJson(path) {

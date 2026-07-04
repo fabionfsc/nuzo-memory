@@ -80,6 +80,14 @@ Examples:
     .action(withErrorHandling(io, async (commandOptions: HostTargetCommandOptions) => {
       const hosts = updateHostsFromOptions(commandOptions);
       const result = runHostUpdate(hosts, commandOptions);
+      if (!commandOptions.dryRun) {
+        recordManagedHosts(result.hosts
+          .filter(({ installed }) => installed)
+          .map(({ host, scope }) => ({
+            host,
+            ...(scope === undefined ? {} : { scope }),
+          })));
+      }
       io.stdout(formatHostUpdateResult(result, commandOptions.json));
     }));
 }

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import {
   chmodSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -8,7 +9,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { delimiter, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { assertMcpSessionContinuity } from "./mcp-session-continuity.mjs";
@@ -21,6 +22,8 @@ const prefix = join(testRoot, "npm-prefix");
 const fakeBin = join(testRoot, "fake-host-bin");
 const statePath = join(testRoot, "host-state.json");
 const managedHostsPath = join(testRoot, "managed-hosts.json");
+const shadowBin = join(testRoot, "project", "node_modules", ".bin");
+const shadowMarker = join(testRoot, "shadow-host-executed");
 const storePath = join(testRoot, "memory", "shared.sqlite");
 const backupPath = join(testRoot, "memory", "shared.backup.sqlite");
 const restoredPath = join(testRoot, "memory", "restored.sqlite");
@@ -77,6 +80,12 @@ try {
   const corePackage = readJson(join(repositoryRoot, "packages", "core", "package.json"));
   const memoryPackage = readJson(join(repositoryRoot, "packages", "memory", "package.json"));
   const tarballs = join(repositoryRoot, "build", "npm", "tarballs");
+  installShadowHostShims(shadowBin, shadowMarker);
+  const upgradeEnvironment = {
+    ...environment,
+    PATH: `${shadowBin}${delimiter}${environment.PATH}`,
+  };
+  const beforeReceiptMigration = hostState().mutations.length;
   const stagedInstall = run("npm", [
     "install",
     "--global",
@@ -87,20 +96,49 @@ try {
     "--foreground-scripts",
     join(tarballs, tarballName(corePackage)),
     join(tarballs, tarballName(memoryPackage)),
-  ], repositoryRoot, environment);
+  ], repositoryRoot, upgradeEnvironment);
   assertIncludes(stagedInstall.stdout, "Nuzo installed.", "staged upgrade notice");
   assertIncludes(
     stagedInstall.stdout,
-    "Managed Nuzo plugins refreshed automatically",
-    "staged upgrade automatic managed plugin refresh",
+    "Automatic host refresh skipped because no managed-host receipt exists",
+    "legacy staged upgrade receipt migration guidance",
   );
+  if (existsSync(shadowMarker)) {
+    fail("staged upgrade executed a project-local host shadow binary");
+  }
+  if (hostState().mutations.length !== beforeReceiptMigration) {
+    fail("staged upgrade without a receipt changed host state");
+  }
 
   nuzo = installedBinary(prefix, "nuzo");
   mcp = installedBinary(prefix, "nuzo-mcp-server");
   assertVersion(nuzo, sourceVersion, environment);
   assertSetupState();
+  const receiptMigration = runJson(nuzo, ["update", "--all", "--yes", "--json"], testRoot, environment);
+  assertHostPlan(receiptMigration, "succeeded");
   assertManagedUpdateState();
   assertManagedHostsReceipt();
+
+  rmSync(shadowMarker, { force: true });
+  const managedUpgrade = run("npm", [
+    "install",
+    "--global",
+    "--prefix",
+    prefix,
+    "--no-audit",
+    "--no-fund",
+    "--foreground-scripts",
+    join(tarballs, tarballName(corePackage)),
+    join(tarballs, tarballName(memoryPackage)),
+  ], repositoryRoot, upgradeEnvironment);
+  assertIncludes(
+    managedUpgrade.stdout,
+    "Managed Nuzo plugins refreshed automatically",
+    "receipt-backed staged upgrade automatic refresh",
+  );
+  if (existsSync(shadowMarker)) {
+    fail("receipt-backed staged upgrade executed a project-local host shadow binary");
+  }
 
   const beforeUpdateMutations = hostState().mutations.length;
   const dryUpdate = runJson(nuzo, ["update", "--all", "--dry-run", "--json"], testRoot, environment);
@@ -176,6 +214,21 @@ function installHostShims(bin, state) {
     chmodSync(path, 0o755);
   }
   process.env.NUZO_DX_STATE = state;
+}
+
+function installShadowHostShims(bin, marker) {
+  mkdirSync(bin, { recursive: true });
+  const shim = join(bin, "shadow-host.mjs");
+  writeFileSync(
+    shim,
+    `import { writeFileSync } from "node:fs";\nwriteFileSync(${JSON.stringify(marker)}, "executed\\n");\nprocess.exit(99);\n`,
+    "utf8",
+  );
+  for (const host of ["codex", "claude"]) {
+    const path = join(bin, host);
+    writeFileSync(path, `#!/bin/sh\nexec "${process.execPath}" "${shim}"\n`, "utf8");
+    chmodSync(path, 0o755);
+  }
 }
 
 function hostShimSource() {

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { delimiter, isAbsolute, relative, resolve, sep } from "node:path";
 
 try {
   if (process.env.NUZO_SKIP_POSTINSTALL === "1") process.exit(0);
@@ -19,7 +20,17 @@ try {
     import("./dist/cli/host-update.js"),
   ]);
   const receipt = readManagedHostsReceipt();
-  const candidates = receipt?.hosts.map((entry) => entry.host) ?? ["codex", "claude-code"];
+  if (receipt === null || receipt.hosts.length === 0) {
+    console.log(
+      "Automatic host refresh skipped because no managed-host receipt exists.\n" +
+      "First-time setup:\n  nuzo setup\n" +
+      "Existing managed installation:\n  nuzo update --yes\n",
+    );
+    process.exit(0);
+  }
+  const candidates = receipt.hosts.map((entry) => entry.host);
+  const originalPath = process.env.PATH;
+  process.env.PATH = trustedHostPath(originalPath);
   try {
     const result = runHostUpdate(candidates, { dryRun: false, json: false, yes: true });
     const refreshed = result.hosts.filter((host) => host.installed);
@@ -34,12 +45,11 @@ try {
       console.log(`  - ${name}${host.scope === undefined ? "" : ` (${host.scope} scope)`}`);
     }
     console.log("Start a new host session to load the updated plugin.\n");
-  } catch (error) {
-    if (receipt === null && error?.code === "HOST_UPDATE_NOT_INSTALLED") {
-      console.log("First-time setup:\n  nuzo setup\n");
-    } else {
-      console.log("Managed host refresh needs attention.\nRun:\n  nuzo update --yes\n");
-    }
+  } catch {
+    console.log("Managed host refresh needs attention.\nRun:\n  nuzo update --yes\n");
+  } finally {
+    if (originalPath === undefined) delete process.env.PATH;
+    else process.env.PATH = originalPath;
   }
 } catch {
   console.log("First-time setup:\n  nuzo setup\n");
@@ -48,4 +58,28 @@ try {
 function unsafeElevatedInstall() {
   return typeof process.getuid === "function" && process.getuid() === 0 &&
     typeof process.env.SUDO_USER === "string" && process.env.SUDO_USER !== "root";
+}
+
+function trustedHostPath(value) {
+  const untrustedRoots = [process.env.INIT_CWD, process.env.npm_config_local_prefix]
+    .filter((entry) => typeof entry === "string" && isAbsolute(entry))
+    .map((entry) => resolve(entry));
+  return String(value ?? "")
+    .split(delimiter)
+    .filter((entry) => isTrustedPathEntry(entry, untrustedRoots))
+    .join(delimiter);
+}
+
+function isTrustedPathEntry(entry, untrustedRoots) {
+  if (!entry || !isAbsolute(entry) || isNpmLocalBin(entry)) return false;
+  const candidate = resolve(entry);
+  return !untrustedRoots.some((root) => {
+    const pathFromRoot = relative(root, candidate);
+    return pathFromRoot === "" || (!pathFromRoot.startsWith(`..${sep}`) && pathFromRoot !== "..");
+  });
+}
+
+function isNpmLocalBin(entry) {
+  const normalized = entry.replaceAll("\\", "/").replace(/\/+$/u, "").toLowerCase();
+  return normalized.endsWith("/node_modules/.bin") || normalized.includes("/node_modules/.bin/");
 }
