@@ -86,9 +86,7 @@ export function buildBoundedCaptureSuggestion(input: BoundedCaptureSuggestionInp
       duplicate: null,
       relationship: "uncertain",
       evidence: relationshipEvidence(
-        vague
-          ? "The draft uses broad or underspecified wording, so the relationship cannot be classified safely."
-          : "Candidate retrieval was not exhaustive enough to safely classify the draft.",
+        "The draft uses broad or underspecified wording, so the relationship cannot be classified safely.",
         null,
         evaluated.length,
         searchExhaustive,
@@ -130,6 +128,23 @@ export function buildBoundedCaptureSuggestion(input: BoundedCaptureSuggestionInp
         searchExhaustive,
         evidenceTruncated,
         [toRelationshipCandidate(relatedCandidate)],
+      ),
+    });
+  }
+
+  if (!searchExhaustive) {
+    return boundedResult({
+      status: "review",
+      draft: input.draft,
+      duplicate: null,
+      relationship: "uncertain",
+      evidence: relationshipEvidence(
+        "Candidate retrieval was not exhaustive enough to safely classify the draft as independent.",
+        null,
+        evaluated.length,
+        false,
+        evidenceTruncated,
+        returnedCandidates,
       ),
     });
   }
@@ -409,4 +424,3 @@ function isAmbiguousDraft(content: string): boolean {
 function truncateReason(reason: string): string {
   return reason.length <= captureReasonLimit ? reason : reason.slice(0, captureReasonLimit);
 }
-

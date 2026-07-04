@@ -447,6 +447,45 @@ describe("memory service", () => {
     await expect(auditLog.list(memory.id)).resolves.toEqual(beforeEvents);
   });
 
+  it("does not claim independence after truncating qualifying capture candidates", async () => {
+    const { service } = createTestService();
+    for (let index = 0; index < 21; index += 1) {
+      await service.remember({
+        content: `Release branch fixture ${index} stores unrelated context.`,
+        kind: "note",
+        scope: "project:nuzo",
+        source: "test",
+      });
+    }
+
+    const suggestion = await service.suggestCapture({
+      content: "Release branch governance applies for every planned milestone.",
+      kind: "project_decision",
+      scope: "project:nuzo",
+      source: "codex:capture-suggestion",
+      reason: "The project established a durable release governance rule.",
+      relationshipMode: "bounded",
+    });
+
+    expect(suggestion).toMatchObject({
+      status: "review",
+      memoryWrites: false,
+      requiresConfirmation: true,
+      duplicate: null,
+      relationshipMode: "bounded",
+      relationship: "uncertain",
+      relationshipEvidence: {
+        primaryMemoryId: null,
+        evaluatedCount: 20,
+        searchExhaustive: false,
+        evidenceTruncated: true,
+        candidates: [],
+      },
+    });
+    expect(suggestion.relationshipEvidence?.reason).toContain("not exhaustive");
+    await expect(service.list({ scope: "project:nuzo" })).resolves.toHaveLength(21);
+  });
+
   it("applies remember policy to capture suggestions", async () => {
     const { service } = createRestrictedTestService(["project:nuzo"]);
 
