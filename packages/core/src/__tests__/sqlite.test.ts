@@ -1,4 +1,13 @@
-import { chmodSync, existsSync, mkdtempSync, rmSync, statSync } from "node:fs";
+import {
+  chmodSync,
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import Database from "better-sqlite3";
@@ -124,6 +133,20 @@ describe("SQLiteMemoryDatabase", () => {
     } finally {
       process.umask(previousUmask);
     }
+  });
+
+  it.skipIf(process.platform === "win32")("refuses to open a SQLite store through a symbolic link", () => {
+    const directory = mkdtempSync(join(tmpdir(), "nuzo-store-symlink-"));
+    tempDirectories.push(directory);
+    const target = join(directory, "target.sqlite");
+    const link = join(directory, "memories.sqlite");
+    writeFileSync(target, "sentinel", "utf8");
+    symlinkSync(target, link);
+
+    expect(() => new SQLiteMemoryDatabase({ path: link })).toThrowError(
+      expect.objectContaining({ code: "MEMORY_STORE_PATH_UNSAFE" }),
+    );
+    expect(readFileSync(target, "utf8")).toBe("sentinel");
   });
 
   it.skipIf(process.platform === "win32")("opens diagnostics read-only without repairing permissions", async () => {

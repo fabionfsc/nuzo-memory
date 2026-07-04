@@ -937,6 +937,47 @@ describe("nuzo memory cli", () => {
     }
   });
 
+  it("refuses project initialization through managed symlinks", async () => {
+    const projectRoot = mkdtempSync(join(tmpdir(), "nuzo-project-init-symlink-"));
+    const outside = mkdtempSync(join(tmpdir(), "nuzo-project-init-outside-"));
+    tempDirectories.push(projectRoot, outside);
+    writeFileSync(join(outside, "sentinel"), "unchanged", "utf8");
+    symlinkSync(outside, join(projectRoot, ".nuzo"), "dir");
+
+    const previousCwd = process.cwd();
+    process.chdir(projectRoot);
+    try {
+      const output = await runCli(["memory", "init", "--project"]);
+      expect(output.stderr).toEqual([
+        "MEMORY_INIT_PATH_UNSAFE: Project init refuses symbolic links in managed paths.",
+      ]);
+      expect(readFileSync(join(outside, "sentinel"), "utf8")).toBe("unchanged");
+      expect(existsSync(join(outside, "config.json"))).toBe(false);
+    } finally {
+      process.chdir(previousCwd);
+    }
+  });
+
+  it("refuses a symlinked project gitignore without changing its target", async () => {
+    const projectRoot = mkdtempSync(join(tmpdir(), "nuzo-gitignore-symlink-"));
+    const outside = mkdtempSync(join(tmpdir(), "nuzo-gitignore-outside-"));
+    tempDirectories.push(projectRoot, outside);
+    const target = join(outside, "target");
+    writeFileSync(target, "sentinel\n", "utf8");
+    symlinkSync(target, join(projectRoot, ".gitignore"));
+
+    const previousCwd = process.cwd();
+    process.chdir(projectRoot);
+    try {
+      const output = await runCli(["memory", "init", "--project"]);
+      expect(output.stderr[0]).toContain("MEMORY_INIT_PATH_UNSAFE");
+      expect(readFileSync(target, "utf8")).toBe("sentinel\n");
+      expect(existsSync(join(projectRoot, ".nuzo"))).toBe(false);
+    } finally {
+      process.chdir(previousCwd);
+    }
+  });
+
   it("resolves project:auto instead of storing a shared literal scope", async () => {
     const projectRoot = mkdtempSync(join(tmpdir(), "nuzo-project-auto-"));
     tempDirectories.push(projectRoot);
@@ -1201,6 +1242,23 @@ describe("nuzo memory cli", () => {
 
     const recall = await runCli(["memory", "--store", targetStore, "recall", "portable exports"]);
     expect(recall.stdout.join("\n")).toContain("portable memory exports");
+  });
+
+  it("does not overwrite an export target through a symbolic link", async () => {
+    const store = createStorePath();
+    const directory = mkdtempSync(join(tmpdir(), "nuzo-export-symlink-"));
+    tempDirectories.push(directory);
+    const target = join(directory, "target.json");
+    const link = join(directory, "linked.memory.export.json");
+    writeFileSync(target, "sentinel\n", "utf8");
+    symlinkSync(target, link);
+
+    const output = await runCli(["memory", "--store", store, "export", "--path", link]);
+
+    expect(output.stderr).toEqual([
+      "MEMORY_FILE_WRITE_UNSAFE: Nuzo refuses to write through a symbolic link or non-file path.",
+    ]);
+    expect(readFileSync(target, "utf8")).toBe("sentinel\n");
   });
 
   it("checks integrity, creates SQLite backups, and restores validated stores", async () => {

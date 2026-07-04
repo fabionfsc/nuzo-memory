@@ -201,8 +201,8 @@ function assertCliWorkflow(cwd, memoryStore) {
     executable,
     ["memory", "--store", cwd, "init"],
     cwd,
-    70,
-    "NUZO_INTERNAL_ERROR",
+    1,
+    "MEMORY_STORE_PATH_UNSAFE",
   );
 }
 

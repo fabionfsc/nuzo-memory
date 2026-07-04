@@ -1,5 +1,13 @@
 import Database from "better-sqlite3";
-import { chmodSync, closeSync, existsSync, openSync } from "node:fs";
+import {
+  chmodSync,
+  closeSync,
+  constants,
+  existsSync,
+  fchmodSync,
+  fstatSync,
+  openSync,
+} from "node:fs";
 import { NuzoMemoryError } from "../errors.js";
 import { decodeMemoryEventCursor, decodeMemoryListCursor } from "../pagination.js";
 import type { AuditLog, MemoryStore, SearchIndex, TransactionManager } from "../ports.js";
@@ -613,7 +621,31 @@ function createPrivateDatabaseFile(path: string): void {
   if (path === ":memory:") {
     return;
   }
-  const descriptor = openSync(path, "a", 0o600);
-  closeSync(descriptor);
-  chmodSync(path, 0o600);
+  let descriptor: number;
+  try {
+    descriptor = openSync(
+      path,
+      constants.O_WRONLY | constants.O_CREAT | (constants.O_NOFOLLOW ?? 0),
+      0o600,
+    );
+  } catch {
+    throw unsafeStorePath(path);
+  }
+  try {
+    if (!fstatSync(descriptor).isFile()) {
+      throw unsafeStorePath(path);
+    }
+    if (process.platform !== "win32") fchmodSync(descriptor, 0o600);
+  } finally {
+    closeSync(descriptor);
+  }
+  if (process.platform === "win32") chmodSync(path, 0o600);
+}
+
+function unsafeStorePath(path: string): NuzoMemoryError {
+  return new NuzoMemoryError(
+    "MEMORY_STORE_PATH_UNSAFE",
+    "SQLite memory store path must be a regular file and cannot be a symbolic link.",
+    { path },
+  );
 }

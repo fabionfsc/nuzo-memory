@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { mkdirSync, realpathSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import {
   getDefaultStorePath,
@@ -11,6 +11,9 @@ import {
   ensurePrivateDirectory,
   ensureStoreDirectory,
   pathExists,
+  pathIsSymbolicLink,
+  readFileWithoutFollowingLinks,
+  writeFileWithoutFollowingLinks,
   writePrivateFile,
 } from "./filesystem.js";
 import { resolveRuntimeConfig, type GlobalOptions } from "./runtime.js";
@@ -21,6 +24,7 @@ export interface InitCommandOptions {
 
 export function initializeMemory(options: GlobalOptions, commandOptions: InitCommandOptions) {
   const init = resolveInitContext(options, commandOptions);
+  if (init.projectRoot !== null) assertSafeProjectInitPaths(init.projectRoot);
   ensureStoreDirectory(init.storePath);
   if (!init.project) {
     ensurePrivateDirectory(join(dirname(init.storePath), "exports"));
@@ -105,11 +109,30 @@ function writeConfigIfMissing(
 function ensureProjectGitIgnore(projectRoot: string): void {
   const path = join(projectRoot, ".gitignore");
   const rules = [".nuzo/memory/", ".nuzo/**/*.sqlite", ".nuzo/**/*.sqlite-*"];
-  const existing = pathExists(path) ? readFileSync(path, "utf8") : "";
+  const existing = pathExists(path) ? readFileWithoutFollowingLinks(path) : "";
   const lines = new Set(existing.split(/\r?\n/));
   const missing = rules.filter((rule) => !lines.has(rule));
   if (missing.length === 0) return;
 
   const separator = existing.length > 0 && !existing.endsWith("\n") ? "\n" : "";
-  writeFileSync(path, `${existing}${separator}${missing.join("\n")}\n`, "utf8");
+  const mode = pathExists(path) ? statSync(path).mode & 0o777 : 0o644;
+  writeFileWithoutFollowingLinks(path, `${existing}${separator}${missing.join("\n")}\n`, mode);
+}
+
+function assertSafeProjectInitPaths(projectRoot: string): void {
+  for (const path of [
+    join(projectRoot, ".nuzo"),
+    join(projectRoot, ".nuzo", "config.json"),
+    join(projectRoot, ".nuzo", "memory"),
+    join(projectRoot, ".nuzo", "memory", "memories.sqlite"),
+    join(projectRoot, ".gitignore"),
+  ]) {
+    if (pathIsSymbolicLink(path)) {
+      throw new NuzoMemoryError(
+        "MEMORY_INIT_PATH_UNSAFE",
+        "Project init refuses symbolic links in managed paths.",
+        { path },
+      );
+    }
+  }
 }
