@@ -8,7 +8,7 @@ const patterns: Array<{ kind: string; regex: RegExp; message: string }> = [
   },
   {
     kind: "github_token",
-    regex: /\b(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9_]{20,}\b/,
+    regex: /\b(?:github_pat_[A-Za-z0-9_]{20,}|(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9_]{20,})\b/,
     message: "GitHub tokens should not be stored as memory.",
   },
   {

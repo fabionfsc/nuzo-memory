@@ -56,8 +56,9 @@ The system should reject or warn on likely sensitive data:
 - private personal identifiers unless explicitly allowed.
 
 The MVP scanner uses local, high-confidence patterns for private key headers,
-GitHub and common provider keys, AWS access keys, JWTs, bearer tokens,
-credential-bearing database URLs, and cookie/session assignments. It allows
+classic and fine-grained GitHub tokens, common provider keys, AWS access keys,
+JWTs, bearer tokens, credential-bearing database URLs, and cookie/session
+assignments. It allows
 redacted placeholders and environment-variable instructions so safe
 documentation can still be remembered.
 
