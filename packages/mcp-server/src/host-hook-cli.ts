@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { existsSync, readSync, realpathSync } from "node:fs";
+import { StringDecoder } from "node:string_decoder";
 import { fileURLToPath } from "node:url";
 import {
   createMemoryService,
@@ -27,6 +28,43 @@ const defaultIO: HookIO = {
   stdout: (message) => console.log(message),
   stderr: (message) => console.error(message),
 };
+
+export function readBoundedHookInput(
+  fd = 0,
+  limit = hostHookLimits.inputCharacters,
+): string {
+  const decoder = new StringDecoder("utf8");
+  const chunks: string[] = [];
+  const buffer = Buffer.allocUnsafe(8_192);
+  let characters = 0;
+
+  while (true) {
+    const remainingCharacters = limit - characters;
+    const bytesToRead = Math.min(buffer.length, Math.max(4, remainingCharacters + 4));
+    const bytesRead = readSync(fd, buffer, 0, bytesToRead, null);
+    if (bytesRead === 0) {
+      break;
+    }
+
+    const chunk = decoder.write(buffer.subarray(0, bytesRead));
+    characters += chunk.length;
+    if (characters > limit) {
+      throw new Error("Hook input exceeds the supported size.");
+    }
+    chunks.push(chunk);
+  }
+
+  const tail = decoder.end();
+  characters += tail.length;
+  if (characters > limit) {
+    throw new Error("Hook input exceeds the supported size.");
+  }
+  if (tail.length > 0) {
+    chunks.push(tail);
+  }
+
+  return chunks.join("");
+}
 
 export async function runHostHookProcess(
   args: string[],
@@ -129,6 +167,6 @@ function isMainModule(): boolean {
 }
 
 if (isMainModule()) {
-  const inputText = process.argv.includes("--doctor") ? "" : readFileSync(0, "utf8");
+  const inputText = process.argv.includes("--doctor") ? "" : readBoundedHookInput();
   process.exitCode = await runHostHookProcess(process.argv.slice(2), inputText);
 }

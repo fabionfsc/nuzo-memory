@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { closeSync, mkdirSync, mkdtempSync, openSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { MemoryRecord, MemoryService } from "@nuzo/memory-core";
@@ -18,7 +18,7 @@ import {
   hostHookMemoryEnvelope,
   parseHostHookInput,
 } from "../host-hook.js";
-import { runHostHookProcess } from "../host-hook-cli.js";
+import { readBoundedHookInput, runHostHookProcess } from "../host-hook-cli.js";
 
 function memory(overrides: Partial<MemoryRecord> = {}): MemoryRecord {
   return {
@@ -36,6 +36,19 @@ function memory(overrides: Partial<MemoryRecord> = {}): MemoryRecord {
     archivedAt: null,
     ...overrides,
   };
+}
+
+function withInputFile<T>(content: string, callback: (fd: number) => T): T {
+  const directory = mkdtempSync(join(tmpdir(), "nuzo-hook-input-"));
+  const file = join(directory, "stdin.json");
+  writeFileSync(file, content);
+  const fd = openSync(file, "r");
+  try {
+    return callback(fd);
+  } finally {
+    closeSync(fd);
+    rmSync(directory, { recursive: true, force: true });
+  }
 }
 
 describe("host recall hooks", () => {
@@ -287,6 +300,25 @@ describe("host recall hooks", () => {
     })).toMatchObject({ prompt: "cloudflare" });
     expect(() => parseHostHookInput({ hook_event_name: "Stop", cwd: "/tmp/project" }))
       .toThrow("Unsupported hook event");
+  });
+
+  it("reads hook stdin up to the exact configured bound", () => {
+    const input = "x".repeat(hostHookLimits.inputCharacters);
+
+    expect(withInputFile(input, (fd) => readBoundedHookInput(fd))).toBe(input);
+  });
+
+  it("rejects oversized hook stdin while reading", () => {
+    const input = "x".repeat(hostHookLimits.inputCharacters + 1);
+
+    expect(() => withInputFile(input, (fd) => readBoundedHookInput(fd)))
+      .toThrow("Hook input exceeds the supported size.");
+  });
+
+  it("preserves multibyte hook stdin across the configured bound", () => {
+    const input = `${"x".repeat(hostHookLimits.inputCharacters - 1)}é`;
+
+    expect(withInputFile(input, (fd) => readBoundedHookInput(fd))).toBe(input);
   });
 
   it("fails open when hook input is invalid", async () => {
