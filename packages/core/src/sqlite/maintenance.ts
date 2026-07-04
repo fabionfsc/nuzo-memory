@@ -11,7 +11,6 @@ import {
 import { dirname, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 import { NuzoMemoryError } from "../errors.js";
-import { SQLiteMemoryDatabase } from "./adapter.js";
 import { schemaVersion } from "./schema.js";
 
 export interface SQLiteIntegrityReport {

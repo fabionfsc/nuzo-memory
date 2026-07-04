@@ -11,11 +11,9 @@ npm install --global @nuzo/memory
 `@nuzo/memory` includes the `nuzo` command, the `nuzo-mcp-server` binary, and
 the `nuzo-memory-hook` lifecycle runner used by host plugins.
 
-This package remains published during the transition window for existing users
-and automation. New installs should use `@nuzo/memory`.
-Version `0.9.0` is the planned final release of this transition package. After
-`0.9.0` is published, all of its npm versions will be marked deprecated with
-migration guidance to `@nuzo/memory`.
+This package remains available for existing users and automation, but every
+published version is deprecated with migration guidance to `@nuzo/memory`.
+New installs should use `@nuzo/memory`.
 
 ## Legacy Install
 

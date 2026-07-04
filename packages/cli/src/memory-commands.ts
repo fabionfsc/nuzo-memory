@@ -1,5 +1,4 @@
-import { writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { resolve } from "node:path";
 import type { Command } from "commander";
 import {
   createHybridSearchIndex,
@@ -10,7 +9,6 @@ import {
   inspectSQLiteMemoryStore,
   restoreSQLiteMemoryStore,
   semanticIndexPathFor,
-  SQLiteMemoryDatabase,
   resolveAutomaticScope,
   type MemoryKind,
   type ListMemoriesInput,
@@ -26,7 +24,6 @@ import {
   type MemoryEvent,
   type RetrievalMode,
   type SemanticFallbackMode,
-  type NuzoConfig,
 } from "@nuzo/memory-core";
 import { runMemoryManager } from "./memory-manager.js";
 import { TerminalMemoryManagerIO } from "./terminal-memory-manager.js";

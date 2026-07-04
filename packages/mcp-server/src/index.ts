@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { accessSync, constants, mkdirSync, realpathSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname } from "node:path";
 import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";

@@ -9,6 +9,7 @@ import {
   backupSQLiteMemoryStore,
   inspectSQLiteMemoryStore,
   type MemoryExportDocument,
+  type MemoryRecord,
   RegexSecretScanner,
   restoreSQLiteMemoryStore,
   SQLiteMemoryDatabase,
@@ -462,7 +463,7 @@ describe("SQLiteMemoryDatabase", () => {
       tags: ["projecttopic"],
       source: "test",
     });
-    const tagged = [];
+    const tagged: MemoryRecord[] = [];
     for (let index = 0; index < 7; index += 1) {
       tagged.push(await service.remember({
         content: `Bounded recall fixture ${index} must respect the result limit.`,
