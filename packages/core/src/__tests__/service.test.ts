@@ -186,6 +186,31 @@ describe("memory service", () => {
     ]);
   });
 
+  it("rejects fractional limits and oversized audit event filters", async () => {
+    const { service } = createTestService();
+
+    await expect(service.recall({
+      query: "bounded recall",
+      scope: "project:nuzo",
+      limit: 1.5,
+    })).rejects.toMatchObject({ code: "RECALL_LIMIT_INVALID" });
+    await expect(service.list({ limit: 1.5 })).rejects.toMatchObject({
+      code: "MEMORY_LIST_LIMIT_INVALID",
+    });
+    await expect(service.audit({ limit: 1.5 })).rejects.toMatchObject({
+      code: "MEMORY_AUDIT_LIMIT_INVALID",
+    });
+    await expect(service.history("mem_missing", { limit: 1.5 })).rejects.toMatchObject({
+      code: "MEMORY_HISTORY_LIMIT_INVALID",
+    });
+    await expect(service.audit({
+      eventTypes: Array.from({ length: 8 }, () => "memory.created" as const),
+    })).rejects.toMatchObject({
+      code: "MEMORY_AUDIT_EVENT_TYPE_LIMIT_EXCEEDED",
+      details: { maxEventTypes: 7 },
+    });
+  });
+
   it("enforces restricted scope policy for audit queries", async () => {
     const unrestricted = createTestService();
     const allowed = await unrestricted.service.remember({
@@ -805,6 +830,12 @@ describe("memory service", () => {
 
   it("rejects oversized recall, tag, source, import, and reason inputs", async () => {
     const { service } = createTestService();
+    const actorMemory = await service.remember({
+      content: "Actor validation must protect direct updates.",
+      kind: "instruction",
+      scope: "project:nuzo",
+      source: "test",
+    });
     await expect(
       service.recall({
         query: "x".repeat(2001),
@@ -819,6 +850,12 @@ describe("memory service", () => {
         actor: "x".repeat(257),
       }),
     ).rejects.toMatchObject({ code: "MEMORY_ACTOR_INVALID" });
+    await expect(service.update({
+      id: actorMemory.id,
+      content: "This update must not be committed.",
+      actor: "x".repeat(257),
+    })).rejects.toMatchObject({ code: "MEMORY_ACTOR_INVALID" });
+    await expect(service.list({ scope: "project:nuzo" })).resolves.toEqual([actorMemory]);
     await expect(
       service.remember({
         content: "Too many tags.",

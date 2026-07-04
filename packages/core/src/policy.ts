@@ -109,6 +109,12 @@ export class DefaultPolicyEngine implements PolicyEngine {
       confidence: input.confidence ?? current.confidence,
     });
     invariant(input.actor.trim().length > 0, "MEMORY_ACTOR_EMPTY", "Memory actor cannot be empty.");
+    invariant(
+      input.actor.length <= memoryLimits.actorLength,
+      "MEMORY_ACTOR_INVALID",
+      "Memory actor is too long.",
+      { maxLength: memoryLimits.actorLength },
+    );
   }
 
   async assertCanForget(_input: { id: string }, current: MemoryRecord): Promise<void> {
@@ -130,9 +136,12 @@ export class DefaultPolicyEngine implements PolicyEngine {
     }
 
     const limit = input.limit ?? 8;
-    invariant(limit > 0 && limit <= 50, "RECALL_LIMIT_INVALID", "Recall limit must be 1-50.", {
-      limit,
-    });
+    invariant(
+      Number.isInteger(limit) && limit > 0 && limit <= 50,
+      "RECALL_LIMIT_INVALID",
+      "Recall limit must be 1-50.",
+      { limit },
+    );
   }
 
   async assertCanList(input: ListMemoriesInput): Promise<void> {
@@ -156,9 +165,12 @@ export class DefaultPolicyEngine implements PolicyEngine {
       assertTag(tag);
     }
     if (input.limit !== undefined) {
-      invariant(input.limit > 0 && input.limit <= 1000, "MEMORY_LIST_LIMIT_INVALID", "List limit must be 1-1000.", {
-        limit: input.limit,
-      });
+      invariant(
+        Number.isInteger(input.limit) && input.limit > 0 && input.limit <= 1000,
+        "MEMORY_LIST_LIMIT_INVALID",
+        "List limit must be 1-1000.",
+        { limit: input.limit },
+      );
     }
     if (input.cursor !== undefined) {
       invariant(input.cursor.trim().length > 0, "MEMORY_CURSOR_INVALID", "Memory pagination cursor is invalid.");
@@ -186,6 +198,12 @@ export class DefaultPolicyEngine implements PolicyEngine {
       });
     }
 
+    invariant(
+      (input.eventTypes?.length ?? 0) <= memoryEventTypes.length,
+      "MEMORY_AUDIT_EVENT_TYPE_LIMIT_EXCEEDED",
+      "Audit event type filter has too many values.",
+      { maxEventTypes: memoryEventTypes.length },
+    );
     for (const eventType of input.eventTypes ?? []) {
       invariant(
         memoryEventTypes.includes(eventType),
@@ -196,9 +214,12 @@ export class DefaultPolicyEngine implements PolicyEngine {
     }
 
     if (input.limit !== undefined) {
-      invariant(input.limit > 0 && input.limit <= 200, "MEMORY_AUDIT_LIMIT_INVALID", "Audit limit must be 1-200.", {
-        limit: input.limit,
-      });
+      invariant(
+        Number.isInteger(input.limit) && input.limit > 0 && input.limit <= 200,
+        "MEMORY_AUDIT_LIMIT_INVALID",
+        "Audit limit must be 1-200.",
+        { limit: input.limit },
+      );
     }
 
     if (input.since !== undefined) {
