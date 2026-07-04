@@ -16,8 +16,8 @@ and does not redefine the product contract in
 | Root hidden plugin catalogs | Keep `.agents/plugins/marketplace.json` and `.claude-plugin/marketplace.json`. | They are host discovery contracts for Codex and Claude Code marketplace development. | Revisit only if host CLIs support a unified catalog location. |
 | Host plugin hidden manifests | Keep `.codex-plugin/` and `.claude-plugin/` inside package roots. | Host-required plugin manifest paths. | Do not collapse into a custom `.plugins/` directory. |
 | `tools/` directory | Keep committed. | Release, smoke, benchmark, docs, packaging, and governance validation depend on it. npm staging excludes it. | Shared benchmark helpers landed through #237; keep new harness logic focused. |
-| Generated artifacts | Keep untracked. | `.gitignore` excludes `dist/`, `build/`, `site/`, memory stores, exports, npm caches, virtualenvs, and local agent notes. `git ls-files` found no tracked generated runtime artifacts. | Continue checking before release and PR handoff. |
-| Setup/update path | Keep explicit first-time setup and managed updates. | `nuzo setup`, managed-host receipt, package postinstall, and `nuzo update --yes` recovery path. | Interactive host selection landed through #245. |
+| Generated artifacts | Keep untracked. | `.gitignore` excludes `dist/`, `build/`, `site/`, memory stores, exports, npm caches, virtualenvs, and local agent notes. `git status --short` is clean after validation cleanup. | Continue checking before release and PR handoff. |
+| Setup/update path | Keep explicit first-time setup and managed updates. | `nuzo setup`, managed-host receipt, package postinstall, and `nuzo update --yes` recovery path. Postinstall refresh is gated by an existing managed-host receipt and filters npm/project-local PATH shadowing. | Interactive host selection landed through #245; postinstall hardening landed through #273. |
 | CLI manager | Keep as CLI-only control plane. | `nuzo memory manage` reuses core use cases and existing local store. | Evaluation and documentation completed through #216. |
 
 ## Safe Fixes Applied
@@ -29,6 +29,15 @@ and does not redefine the product contract in
   plugin artifacts, while the current user path is npm-first.
 - Updated the historical roadmap note that previously said
   `@nuzo/memory-cli` should be the default package users see first.
+- Hardened project initialization, managed-file writes, exports, private config,
+  and SQLite store opening against symlink redirection.
+- Hardened npm postinstall host refresh so first install never mutates host
+  configuration and managed updates do not execute project-local shadow host
+  binaries.
+- Replaced unbounded lifecycle-hook stdin buffering with bounded incremental
+  UTF-8 decoding while preserving fail-open hook behavior.
+- Removed completed `0.9.0` transition wording from current operations docs and
+  kept historical pages period-accurate.
 
 ## Completed Focused Refactors
 
@@ -47,6 +56,37 @@ are complete:
   host selection to `nuzo setup`.
 - [#253](https://github.com/fabionfsc/nuzo-memory/issues/253): Split runtime
   configuration parsing from resolution.
+- [#257](https://github.com/fabionfsc/nuzo-memory/issues/257): Harden
+  project-local file writes and SQLite store paths against symlink redirection.
+- [#258](https://github.com/fabionfsc/nuzo-memory/issues/258): Fail capture
+  suggestion relationship classification safe when candidate evidence is
+  non-exhaustive.
+- [#262](https://github.com/fabionfsc/nuzo-memory/issues/262),
+  [#264](https://github.com/fabionfsc/nuzo-memory/issues/264), and
+  [#265](https://github.com/fabionfsc/nuzo-memory/issues/265): Tighten
+  integer, audit-filter, and direct-update boundary validation.
+- [#266](https://github.com/fabionfsc/nuzo-memory/issues/266): Detect
+  fine-grained `github_pat_` GitHub tokens in the local secret scanner.
+- [#268](https://github.com/fabionfsc/nuzo-memory/issues/268): Remove completed
+  `0.9.0` transition language from current operations docs.
+- [#269](https://github.com/fabionfsc/nuzo-memory/issues/269): Enforce the
+  lifecycle-hook stdin bound while reading.
+- [#273](https://github.com/fabionfsc/nuzo-memory/issues/273): Harden npm
+  postinstall host refresh against PATH shadowing.
+
+## Remaining Non-Blocking Follow-Ups
+
+The audit found two p2 architecture follow-ups that are useful, but not a
+reason to publish extra legacy packages or block release preparation:
+
+- [#260](https://github.com/fabionfsc/nuzo-memory/issues/260): Bound
+  capture-suggestion candidate retrieval with an indexed or otherwise
+  correctness-preserving storage prefilter. Do not replace this with a simple
+  list limit, because exact duplicate and update/related correctness depend on
+  complete same-scope evidence or an explicit non-exhaustive result.
+- [#272](https://github.com/fabionfsc/nuzo-memory/issues/272): Evaluate npm and
+  verified one-line installer entry points. The current supported path remains
+  `npm install --global @nuzo/memory` followed by explicit `nuzo setup`.
 
 ## Package Boundary Notes
 
@@ -100,10 +140,11 @@ developer machines, but they remain ignored and should not be committed.
 
 ## 1.0.0 Readiness Recommendation
 
-The focused modularization and developer-experience follow-ups are complete.
-The codebase is ready to enter the `1.0.0` release process with the current
-package layout. Do not remove the CLI or MCP source workspaces; they remain
-internal build inputs for the unified package.
+The focused modularization, hardening, and developer-experience follow-ups that
+were identified as release-readiness work are complete. The codebase is ready
+to enter the `1.0.0` release process with the current package layout after the
+normal final release validation. Do not remove the CLI or MCP source
+workspaces; they remain internal build inputs for the unified package.
 
 The final pre-release evidence and remaining publication-only steps are
 recorded in [1.0.0 Release Readiness Audit](release-readiness-1.0.0.md).
