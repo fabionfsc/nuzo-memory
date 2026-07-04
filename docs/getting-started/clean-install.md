@@ -47,9 +47,9 @@ Code, open the host's hook view, review and trust the two Nuzo read-only recall
 hooks, then start a new session.
 
 Setup is one-time. After a package upgrade, `npm install --global
-@nuzo/memory@latest` automatically refreshes already-installed Nuzo host
-plugins. If npm lifecycle scripts are disabled or refresh needs attention, run
-`nuzo update --yes` as the recovery path.
+@nuzo/memory@latest` automatically refreshes Nuzo host plugins that were
+already installed through `nuzo setup`. If npm lifecycle scripts are disabled
+or refresh needs attention, run `nuzo update --yes` as the recovery path.
 
 ## Verify A Plugin Across Sessions
 

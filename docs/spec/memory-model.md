@@ -71,7 +71,7 @@ user-confirmed draft and must never trigger a silent write.
 
 Confidence is a number from `0.0` to `1.0`.
 
-The MVP should default explicit user-approved memories to `1.0`.
+Nuzo defaults explicit user-approved memories to `1.0`.
 
 Inferred or suggested memories should not be saved without confirmation. If saved, they can use lower confidence and include source metadata.
 

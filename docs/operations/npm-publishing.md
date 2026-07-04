@@ -25,17 +25,16 @@ Use `@nuzo/memory-core` for library-level integrations and Nuzo development.
 
 `@nuzo/memory-cli` and `@nuzo/mcp-server` remain published only as transition
 packages for users or automation that adopted the earlier split package names.
-Version `0.9.0` is their final planned release. It remains version-aligned with
-the unified package so existing pre-1.0 users receive the last compatibility
-and migration hardening.
+Version `0.9.0` was their final public release. It remains version-aligned
+with the unified package so existing pre-1.0 users received the last
+compatibility and migration hardening.
 
-After `0.9.0` is published and validated:
+After the validated `0.9.0` publication, maintainers completed the transition:
 
 - mark every published version of both transition packages deprecated on npm;
 - point users to `@nuzo/memory` in the npm deprecation message;
 - stop publishing new `@nuzo/memory-cli` and `@nuzo/mcp-server` versions;
-- publish `1.0.0` and later releases only for `@nuzo/memory-core` and
-  `@nuzo/memory`.
+- publish later releases only for `@nuzo/memory-core` and `@nuzo/memory`.
 
 Deprecation changes npm metadata; it does not remove an existing version or
 break an installed dependency. Ending public transition-package publication
@@ -59,27 +58,26 @@ Version `0.9.1` is the current release:
 The packages are published together from the same source version. Routine
 releases should use npm trusted publishing through GitHub Actions OIDC.
 
-## Legacy Deprecation After `0.9.0`
+## Legacy Deprecation State
 
-Once the final transition packages and unified replacement have passed
-published validation, an authenticated maintainer should run:
+The final transition packages are deprecated on npm. Keep the registry state
+aligned with these messages:
 
 ```bash
 npm deprecate "@nuzo/memory-cli@*" "Deprecated: migrate to @nuzo/memory, which includes the nuzo CLI. Version 0.9.0 is the final compatibility release."
 npm deprecate "@nuzo/mcp-server@*" "Deprecated: migrate to @nuzo/memory, which includes nuzo-mcp-server. Version 0.9.0 is the final compatibility release."
 ```
 
-Verify the registry state:
+Verify the registry state during release readiness checks:
 
 ```bash
 npm view @nuzo/memory-cli@0.9.0 deprecated
 npm view @nuzo/mcp-server@0.9.0 deprecated
 ```
 
-Do not run those commands before `0.9.0` is public and its replacement package
-has passed the published smoke tests. npm trusted publishing authorizes the
-release workflow to publish packages; npm metadata administration may still
-require a separately authenticated maintainer session.
+npm trusted publishing authorizes the release workflow to publish packages;
+npm metadata administration may still require a separately authenticated
+maintainer session if the deprecation metadata must be repaired.
 
 ## Scope Ownership
 
