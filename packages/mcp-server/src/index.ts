@@ -448,7 +448,7 @@ export function registerMemoryTools(
       description: "List bounded store-wide Nuzo audit events without memory content.",
       inputSchema: {
         memory_id: memoryIdSchema.optional(),
-        event_type: z.array(eventTypeSchema).max(16).default([]),
+        event_type: z.array(eventTypeSchema).max(memoryEventTypes.length).default([]),
         actor: z.string().min(1).max(memoryLimits.actorLength).optional(),
         scope: scopeSchema.optional(),
         since: exportDateSchema.optional(),

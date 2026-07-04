@@ -658,8 +658,8 @@ Input:
 }
 ```
 
-All filters are optional. `limit` defaults to `50` and must be between `1` and
-`200`. `event_type` accepts:
+All filters are optional. `limit` defaults to `50` and must be an integer
+between `1` and `200`. The `event_type` array accepts at most seven values from:
 
 - `memory.created`;
 - `memory.updated`;

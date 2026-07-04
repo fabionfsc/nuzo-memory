@@ -166,6 +166,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
 
   async function updateMemory(input: UpdateMemoryInput): Promise<MemoryRecord> {
     assertMemoryId(input.id);
+    assertActor(input.actor);
     const current = await store.findById(input.id);
     if (!current) {
       throw new NuzoMemoryError("MEMORY_NOT_FOUND", "Memory was not found.", { id: input.id });
@@ -731,7 +732,10 @@ function assertReason(reason: string | undefined): void {
 }
 
 function assertPageInput(input: MemoryHistoryInput): void {
-  if (input.limit !== undefined && (input.limit <= 0 || input.limit > 1000)) {
+  const invalidLimit = input.limit !== undefined && (
+    !Number.isInteger(input.limit) || input.limit <= 0 || input.limit > 1000
+  );
+  if (invalidLimit) {
     throw new NuzoMemoryError("MEMORY_HISTORY_LIMIT_INVALID", "History limit must be 1-1000.", {
       limit: input.limit,
     });
