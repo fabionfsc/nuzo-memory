@@ -62,7 +62,7 @@ describe("nuzo CLI process contract", () => {
     expect(result.stderr).not.toContain("at ");
   });
 
-  it("returns the internal code without exposing a stack trace", () => {
+  it("returns an operational error for an unsafe store path without exposing a stack trace", () => {
     const directory = mkdtempSync(join(tmpdir(), "nuzo-cli-process-"));
     tempDirectories.push(directory);
     const result = runProcess([
@@ -72,9 +72,9 @@ describe("nuzo CLI process contract", () => {
       "init",
     ]);
 
-    expect(result.status).toBe(cliExitCodes.internalError);
+    expect(result.status).toBe(cliExitCodes.operationalError);
     expect(result.stderr.trim()).toBe(
-      "NUZO_INTERNAL_ERROR: Unexpected CLI failure.",
+      "MEMORY_STORE_PATH_UNSAFE: SQLite memory store path must be a regular file and cannot be a symbolic link.",
     );
     expect(result.stderr).not.toContain("at ");
   });
