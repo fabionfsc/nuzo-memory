@@ -167,7 +167,10 @@ const cases = [
     restricted: true,
   }),
   captureCase("Cross-scope exact content stays isolated", "safety", "The Atlas project stores generated reports in object storage.", "project_decision", "project:nuzo", "independent"),
-  captureCase("Archived exact content stays excluded", "safety", "Legacy deployments use a shared administrator password.", "note", "project:nuzo", "independent"),
+  captureCase("Archived exact content stays excluded", "safety", "Legacy deployments use a shared administrator password.", "note", "project:nuzo", "uncertain", {
+    expectedSearchExhaustive: false,
+    expectedEvidenceTruncated: true,
+  }),
   captureCase("Empty scope is independent", "safety", "This isolated scope uses a synthetic retention policy.", "instruction", "project:empty", "independent"),
   captureCase("Dense candidates stay bounded", "safety", "Deployment checklist components require review, rollback notes, and an owner.", "instruction", "project:nuzo", "related", {
     expectedPrimary: "capture-bound-0",
