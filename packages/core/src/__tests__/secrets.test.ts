@@ -4,6 +4,7 @@ import { RegexSecretScanner } from "../index.js";
 const blocked = [
   ["private_key", "-----BEGIN PRIVATE KEY-----\nfake-private-key-material"],
   ["github_token", "ghp_123456789012345678901234567890123456"],
+  ["github_token", "github_pat_11AA22BB33CC44DD55EE66FF77GG88HH99II00JJ"],
   ["npm_token", "npm_1234567890abcdefghijklmnopqrstuvwxyz"],
   ["provider_api_key", "sk-proj-abcdefghijklmnopqrstuvwxyz123456"],
   ["provider_api_key", "sk-ant-api03-abcdefghijklmnopqrstuvwxyz123456"],
@@ -26,6 +27,7 @@ const allowed = [
   "session_id=placeholder",
   "cookie=****************",
   "Rotate the leaked credential instead of storing it.",
+  "Fine-grained GitHub tokens use the github_pat_ prefix.",
 ];
 
 describe("RegexSecretScanner", () => {

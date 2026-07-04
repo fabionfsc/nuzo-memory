@@ -931,6 +931,15 @@ describe("memory service", () => {
       source: "test",
     });
 
+    await expect(service.remember({
+      content: "github_pat_11AA22BB33CC44DD55EE66FF77GG88HH99II00JJ",
+      kind: "note",
+      scope: "user:default",
+      source: "test",
+    })).rejects.toMatchObject({
+      code: "MEMORY_SECRET_DETECTED",
+    });
+
     await expect(
       service.update({
         id: memory.id,
