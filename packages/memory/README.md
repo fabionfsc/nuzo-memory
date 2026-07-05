@@ -1,8 +1,17 @@
 # @nuzo/memory
 
-The official Nuzo package for local, inspectable agent memory. It installs the
-`nuzo` CLI, the MCP server, and the read-only lifecycle hook runner used by
-Codex and Claude Code plugins.
+The official Nuzo runtime package for local, inspectable agent memory.
+
+It installs:
+
+- `nuzo`, the local memory administration CLI;
+- `nuzo-mcp-server`, the stdio MCP server;
+- `nuzo-memory-hook`, the bounded read-only lifecycle hook runner used by Codex
+  and Claude Code integrations.
+
+Nuzo stores memory locally, keeps inferred writes behind confirmation, and lets
+Codex, Claude Code, CLI workflows, and generic MCP hosts use the same memory
+contract.
 
 ## Install Once
 
@@ -58,6 +67,15 @@ What is my Nuzo installation test marker?
 
 The answer should use `NUZO-OK`.
 
+## Safety Boundary
+
+| Default | Meaning |
+| --- | --- |
+| Local SQLite storage | Memory stays under `~/.nuzo/memory/` unless configured otherwise. |
+| Read-only recall hooks | Lifecycle hooks retrieve context but do not write memory. |
+| Confirmed writes | Suggested memories remain drafts until the user confirms them. |
+| No telemetry | Nuzo does not enable telemetry or remote embeddings by default. |
+
 ## Generic MCP Host
 
 Configure this package as a stdio MCP server:
@@ -74,8 +92,9 @@ npm exec --yes --package=@nuzo/memory -- nuzo-mcp-server
 | `nuzo-mcp-server` | Expose Nuzo memory tools over MCP stdio. |
 | `nuzo-memory-hook` | Provide bounded read-only host recall hooks. |
 
-Runtime memory is stored locally under `~/.nuzo/memory/`. The CLI, MCP server,
-and hook runner share these optional overrides:
+## Runtime Configuration
+
+The CLI, MCP server, and hook runner share these optional overrides:
 
 | Variable | Purpose |
 | --- | --- |
@@ -84,10 +103,6 @@ and hook runner share these optional overrides:
 | `NUZO_PROJECT_ROOT` | Select the active project root; otherwise Nuzo discovers the nearest ancestor project config. |
 | `NUZO_AUTHORIZATION_MODE` | Select `restricted` or `administrator` host authorization. |
 | `NUZO_AUTHORIZED_SCOPES` | Restrict MCP/hook access to a comma-separated scope allowlist. |
-
-Nuzo does not enable telemetry or remote embeddings by default. Suggested
-memories require explicit confirmation, and recalled memory remains untrusted
-data rather than agent instructions.
 
 Optional local hybrid retrieval is available through an explicitly installed
 `@huggingface/transformers@4.2.0` peer and separately provisioned model. See

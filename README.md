@@ -1,13 +1,13 @@
 <p align="center">
-  <img src="docs/assets/logo.svg" alt="Nuzo" width="92" height="92">
+  <img src="docs/assets/logo.svg" alt="Nuzo" width="96" height="96">
 </p>
 
 <h1 align="center">Nuzo</h1>
 
 <p align="center">
-  Local-first memory for AI agents.
+  <strong>Local-first memory for AI agents.</strong>
   <br>
-  Inspectable, portable, and built around MCP.
+  Inspectable, portable, user-controlled memory for Codex, Claude Code, and MCP-compatible hosts.
 </p>
 
 <p align="center">
@@ -31,18 +31,25 @@
 <p align="center">
   <a href="https://nuzo.com.br/getting-started/">Get started</a>
   ·
-  <a href="https://nuzo.com.br/operations/codex-plugin/">Codex</a>
+  <a href="https://nuzo.com.br/getting-started/agent-memory-loop/">Memory loop</a>
   ·
-  <a href="https://nuzo.com.br/operations/claude-code-plugin/">Claude Code</a>
+  <a href="https://nuzo.com.br/operations/privacy-and-security/">Privacy & security</a>
   ·
   <a href="https://nuzo.com.br/spec/tools/">MCP tools</a>
 </p>
 
 ---
 
-Nuzo gives Codex, Claude Code, and other MCP-compatible agents durable memory
-without turning that memory into hidden state. Memories stay in a local SQLite
-store that you can inspect, edit, export, or delete.
+Nuzo gives agents useful memory across sessions without turning that memory into
+opaque hidden state. Memories stay in a local SQLite store that you can inspect,
+edit, export, archive, or delete.
+
+| What you get | What stays explicit |
+| --- | --- |
+| Cross-session recall for Codex, Claude Code, and MCP hosts. | No telemetry or remote embeddings by default. |
+| CLI, MCP server, and host hook runtime in one package. | No silent inferred memory writes. |
+| Local SQLite storage and portable import/export. | Suggested memories require confirmation. |
+| A stable 1.0.0 public contract with release validation. | Recalled memory remains untrusted data, not agent instructions. |
 
 `1.0.0` is the current public release.
 
@@ -52,6 +59,13 @@ Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
 
 ```bash
 npm install --global @nuzo/memory@1.0.0
+nuzo setup
+```
+
+Prefer a one-line installer when you want prerequisite checks first:
+
+```bash
+curl -fsSL https://nuzo.com.br/install.sh | sh
 nuzo setup
 ```
 
@@ -109,6 +123,22 @@ The answer should use `NUZO-OK`. If it does not, follow the
 [Codex](docs/operations/codex-plugin.md) or
 [Claude Code](docs/operations/claude-code-plugin.md) troubleshooting path.
 
+## The Memory Loop
+
+```text
+new session
+  -> read-only recall hook
+  -> useful local context
+conversation
+  -> suggested durable memory
+  -> user review and confirmation
+later session
+  -> confirmed memory recalled again
+```
+
+The key boundary is simple: recall can be automatic and read-only; writes are
+visible, editable, and confirmed.
+
 ## Manage Memory From The CLI
 
 Use the CLI to inspect, edit, export, import, archive, or delete local memory:
@@ -135,18 +165,23 @@ For a generic MCP host, run Nuzo as a stdio server:
 npm exec --yes --package=@nuzo/memory@1.0.0 -- nuzo-mcp-server
 ```
 
-## Safe Defaults
+## Why Not Just A File?
 
-- Local SQLite storage under `~/.nuzo/memory/`.
-- No telemetry or remote embeddings by default.
-- No hidden inferred writes; suggested memories require confirmation.
-- Recalled memory remains untrusted data, not agent instructions.
-- Runtime memory files stay out of Git.
+Files such as `AGENTS.md` or `MEMORY.md` are good for durable instructions.
+Nuzo is for memory that also needs lifecycle control:
+
+| Need | Nuzo behavior |
+| --- | --- |
+| Recall across Codex, Claude Code, and MCP hosts. | One local memory store and MCP contract. |
+| Audit, update, forget, export, and import. | Managed CLI and core memory lifecycle. |
+| Avoid hidden agent writes. | Suggested memories are drafts until confirmed. |
+| Keep runtime memory out of Git. | Local SQLite store under `~/.nuzo/memory/`. |
 
 ## Documentation
 
 - [Getting started](docs/getting-started/index.md)
 - [Clean install walkthrough](docs/getting-started/clean-install.md)
+- [Agent memory loop](docs/getting-started/agent-memory-loop.md)
 - [Privacy and security](docs/operations/privacy-and-security.md)
 - [MCP tool contract](docs/spec/tools.md)
 - [Roadmap](docs/operations/roadmap.md)
