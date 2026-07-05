@@ -20,8 +20,8 @@
   <a href="https://nuzo.com.br">
     <img alt="Docs" src="https://img.shields.io/badge/docs-nuzo.com.br-111827">
   </a>
-  <a href="https://github.com/fabionfsc/nuzo-memory/releases/tag/v0.9.1">
-    <img alt="Release" src="https://img.shields.io/badge/release-v0.9.1-22c55e">
+  <a href="https://github.com/fabionfsc/nuzo-memory/releases/tag/v1.0.0">
+    <img alt="Release" src="https://img.shields.io/badge/release-v1.0.0-22c55e">
   </a>
   <a href="#license">
     <img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-64748b">
@@ -44,14 +44,14 @@ Nuzo gives Codex, Claude Code, and other MCP-compatible agents durable memory
 without turning that memory into hidden state. Memories stay in a local SQLite
 store that you can inspect, edit, export, or delete.
 
-`0.9.1` is the current public release.
+`1.0.0` is the current public release.
 
 ## Install Once
 
 Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
 
 ```bash
-npm install --global @nuzo/memory@0.9.1
+npm install --global @nuzo/memory@1.0.0
 nuzo setup
 ```
 
@@ -132,7 +132,7 @@ local semantic retrieval. See the [CLI guide](docs/operations/local-cli.md).
 For a generic MCP host, run Nuzo as a stdio server:
 
 ```bash
-npm exec --yes --package=@nuzo/memory@0.9.1 -- nuzo-mcp-server
+npm exec --yes --package=@nuzo/memory@1.0.0 -- nuzo-mcp-server
 ```
 
 ## Safe Defaults

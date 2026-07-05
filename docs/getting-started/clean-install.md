@@ -1,6 +1,6 @@
 # Fresh Installation Walkthrough
 
-This walkthrough verifies the public `0.9.1` release without cloning the Nuzo
+This walkthrough verifies the public `1.0.0` release without cloning the Nuzo
 repository. It uses fake data only.
 
 ## Prerequisites
@@ -21,7 +21,7 @@ Git, Python, and a source checkout are not required for normal installation.
 ## Option A: Nuzo For Codex Or Claude Code
 
 ```bash
-npm install --global @nuzo/memory@0.9.1
+npm install --global @nuzo/memory@1.0.0
 nuzo setup
 ```
 
@@ -84,7 +84,7 @@ If you only want local memory administration without configuring a host plugin,
 install the public package:
 
 ```bash
-npm install --global @nuzo/memory@0.9.1
+npm install --global @nuzo/memory@1.0.0
 nuzo --version
 ```
 
@@ -138,7 +138,7 @@ nuzo memory --store "$NUZO_STORE" import "$NUZO_EXPORT" --dry-run
 Configure this process as a stdio MCP server:
 
 ```bash
-npm exec --yes --package=@nuzo/memory@0.9.1 -- nuzo-mcp-server
+npm exec --yes --package=@nuzo/memory@1.0.0 -- nuzo-mcp-server
 ```
 
 The host should discover the [14 public memory tools](../spec/tools.md). Use

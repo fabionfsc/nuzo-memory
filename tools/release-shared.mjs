@@ -38,6 +38,8 @@ export const publicReleaseReferencePaths = [
   "docs/operations/npm-publishing.md",
   "docs/operations/optional-semantics.md",
   "docs/operations/versioning.md",
+  "packages/claude-code-plugin/README.md",
+  "packages/codex-plugin/README.md",
   "packages/memory/README.md",
 ];
 
@@ -129,6 +131,17 @@ export function updateNuzoDependencyVersions(pkg, version) {
       }
     }
   }
+}
+
+export function replaceCurrentPackageVersionBlock(content, fromVersion, toVersion) {
+  const currentBlock = `Packages currently use:\n\n\`\`\`text\n${fromVersion}\n\`\`\``;
+  if (!content.includes(currentBlock)) {
+    return null;
+  }
+  return content.replace(
+    currentBlock,
+    `Packages currently use:\n\n\`\`\`text\n${toVersion}\n\`\`\``,
+  );
 }
 
 export function assertReleaseFileListsAreComplete() {

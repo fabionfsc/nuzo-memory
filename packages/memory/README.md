@@ -7,7 +7,7 @@ Codex and Claude Code plugins.
 ## Install Once
 
 ```bash
-npm install --global @nuzo/memory@0.9.1
+npm install --global @nuzo/memory@1.0.0
 nuzo setup
 ```
 
