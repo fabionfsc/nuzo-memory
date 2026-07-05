@@ -369,3 +369,46 @@ criteria of each release. The stable user-experience target is defined in the
 [1.0.0 Developer Experience Contract](developer-experience-1.0.0.md). GitHub
 milestones mirror those release boundaries, while focused GitHub Issues remain
 the execution tracker for current work.
+
+## Post-1.0 Adoption Focus
+
+Goal: make the stable Nuzo 1.0 contract easy for new developers to understand,
+trust, install, and evaluate before adding another major capability layer.
+
+Nuzo `1.0.0` moved the main risk from contract stability to adoption. The next
+work should explain the product clearly, answer likely objections, and create a
+short reproducible path from installation to cross-session recall.
+
+Tracked by GitHub Issue
+[#289](https://github.com/fabionfsc/nuzo-memory/issues/289).
+
+Deliverables:
+
+- a concise public launch narrative for Nuzo 1.0;
+- a direct answer to "why not just `AGENTS.md`, `MEMORY.md`, or native assistant
+  memory?";
+- honest positioning against adjacent tools such as Mem0, Zep, server-memory,
+  and native assistant memory;
+- a short demo path that installs Nuzo, saves a memory, starts a fresh session,
+  and recalls it;
+- README and home-page copy tuned for a first-time visitor deciding quickly
+  whether Nuzo is worth installing;
+- a deliberate public feedback path through GitHub Issues or Discussions;
+- a launch checklist for registries, lists, and announcement posts.
+
+Non-goals:
+
+- cloud sync, telemetry, remote embeddings, or silent write automation;
+- a new npm release as part of the adoption-planning work;
+- unsupported adoption metrics or invented npm download numbers;
+- feature work that does not directly reduce adoption friction.
+
+Exit criteria:
+
+- a first-time developer can understand Nuzo's value, safety boundary, and
+  install path without reading maintainer-only docs;
+- public docs answer the strongest objections before asking the user to install
+  another tool;
+- feedback channels are intentionally configured and discoverable;
+- launch tasks are represented as executable follow-up issues or checklist
+  items.
