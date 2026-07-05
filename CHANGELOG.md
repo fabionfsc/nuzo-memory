@@ -6,6 +6,11 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+### Changed
+
+- Public presentation now uses a polished post-1.0 landing page, README, and
+  package README narrative for clearer first-time evaluation.
+
 ### Fixed
 
 - GitHub Pages deployments now use explicit Pages configuration and queue

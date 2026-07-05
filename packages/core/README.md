@@ -2,9 +2,27 @@
 
 The host-neutral memory engine for Nuzo.
 
-This package contains memory lifecycle behavior, policy checks, SQLite storage,
-FTS recall, audit events, and portable import/export contracts. It is consumed
-by `@nuzo/memory`.
+This package contains the memory lifecycle behavior, policy checks, SQLite
+storage, FTS recall, audit events, and portable import/export contracts used by
+`@nuzo/memory`.
+
+Most users should install `@nuzo/memory` instead. Use this package directly
+when you are building a library-level integration or contributing to Nuzo
+itself.
+
+## Product Boundary
+
+Nuzo is intentionally local-first. SQLite is part of the product boundary, not
+a placeholder for a required cloud database.
+
+By default, Nuzo should not:
+
+- send memories to a remote service;
+- call embedding APIs;
+- enable telemetry;
+- hide inferred memory writes from the user.
+
+## Retrieval Model
 
 SQLite FTS is the default retrieval path. The optional semantic contracts are
 inert unless a library caller supplies a provider, builds a derived sidecar,
@@ -21,9 +39,6 @@ npm install @nuzo/memory-core @huggingface/transformers@4.2.0
 Model provisioning is a separate explicit operation. Provider creation and
 normal recall only accept the pinned, checksum-verified local model files and
 disable remote model loading.
-
-Most users should install the CLI or a host plugin instead of depending on the
-core package directly.
 
 ## Use When
 
@@ -51,18 +66,6 @@ there.
 Expected domain failures throw `NuzoMemoryError`. Use its `code` for
 machine-readable handling; `message` is for humans, and `details` may be absent
 where exposing details would leak unauthorized memory metadata.
-
-## Product Boundary
-
-Nuzo is intentionally local-first. SQLite is part of the product boundary, not
-a placeholder for a required cloud database.
-
-By default, Nuzo should not:
-
-- send memories to a remote service;
-- call embedding APIs;
-- enable telemetry;
-- hide inferred memory writes from the user.
 
 Documentation: https://nuzo.com.br/
 
