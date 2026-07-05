@@ -13,6 +13,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ### Fixed
 
+- GitHub Pages deploys now retry once inside the deploy job when the Pages
+  backend returns a transient failure after accepting the artifact.
 - GitHub Pages deployments now use explicit Pages configuration and queue
   deploy attempts instead of canceling an in-progress Pages deployment.
 - Docker installer smoke tests now derive their pinned package version from
