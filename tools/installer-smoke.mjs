@@ -1,11 +1,16 @@
 #!/usr/bin/env node
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { isValidReleaseVersion } from "./release-shared.mjs";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const releaseVersion = JSON.parse(readFileSync(join(repositoryRoot, "package.json"), "utf8")).version;
+if (!isValidReleaseVersion(releaseVersion)) {
+  throw new Error(`package.json contains an invalid release version: ${String(releaseVersion)}`);
+}
 const runId = `nuzo-installer-smoke-${Date.now()}-${process.pid}`;
 const tempRoot = mkdtempSync(join(tmpdir(), `${runId}-`));
 const label = `nuzo.installer-smoke=${runId}`;
@@ -69,12 +74,12 @@ const scenarios = [
     name: "node 24 alpine installs pinned version through npm",
     image: "node:24-alpine",
     fake: { npm: "supported", nuzo: "supported" },
-    command: "PATH=/smoke/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin sh docs/install.sh --version 0.9.1",
+    command: `PATH=/smoke/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin sh docs/install.sh --version ${releaseVersion}`,
     expectedStatus: 0,
     expectedOutput: [
-      "==> Installing @nuzo/memory@0.9.1 with npm",
-      "npm install --global @nuzo/memory@0.9.1",
-      "0.9.1",
+      `==> Installing @nuzo/memory@${releaseVersion} with npm`,
+      `npm install --global @nuzo/memory@${releaseVersion}`,
+      releaseVersion,
     ],
     forbiddenOutput: ["nuzo setup invoked"],
   },
@@ -82,28 +87,28 @@ const scenarios = [
     name: "node 22 bookworm real npm install pinned release",
     image: "node:22-bookworm",
     network: "default",
-    command: "sh docs/install.sh --version 0.9.1 && nuzo --version",
+    command: `sh docs/install.sh --version ${releaseVersion} && nuzo --version`,
     expectedStatus: 0,
     expectedOutput: [
-      "==> Installing @nuzo/memory@0.9.1 with npm",
+      `==> Installing @nuzo/memory@${releaseVersion} with npm`,
       "==> Validating Nuzo",
       "Nuzo installed.",
       "nuzo setup",
-      "0.9.1",
+      releaseVersion,
     ],
   },
   {
     name: "node 24 alpine real npm install pinned release",
     image: "node:24-alpine",
     network: "default",
-    command: "sh docs/install.sh --version 0.9.1 && nuzo --version",
+    command: `sh docs/install.sh --version ${releaseVersion} && nuzo --version`,
     expectedStatus: 0,
     expectedOutput: [
-      "==> Installing @nuzo/memory@0.9.1 with npm",
+      `==> Installing @nuzo/memory@${releaseVersion} with npm`,
       "==> Validating Nuzo",
       "Nuzo installed.",
       "nuzo setup",
-      "0.9.1",
+      releaseVersion,
     ],
   },
 ];
@@ -210,7 +215,7 @@ function writeFakes(fakeBin, fake = {}) {
     writeExecutable(join(fakeBin, "nuzo"), [
       "#!/bin/sh",
       "if [ \"$1\" = \"setup\" ]; then printf 'nuzo setup invoked\\n'; exit 1; fi",
-      "printf '0.9.1\\n'",
+      `printf '${releaseVersion}\\n'`,
     ]);
   }
 }

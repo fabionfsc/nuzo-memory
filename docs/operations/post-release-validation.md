@@ -189,6 +189,31 @@ and the NUZO-37 host canary all passed against the exact public `0.9.1`
 package. Native marketplace validation installed
 `nuzo@nuzo-memory@0.9.1` successfully in both Codex and Claude Code.
 
+## Published 1.0.0 Verification
+
+The stable `1.0.0` release was published from `main` at commit
+`ede98f7b356d9419e0e10a7de23be7db236edd91` through the GitHub Release
+[`v1.0.0`](https://github.com/fabionfsc/nuzo-memory/releases/tag/v1.0.0).
+The npm trusted-publishing dry run passed in
+[workflow run 28755783760](https://github.com/fabionfsc/nuzo-memory/actions/runs/28755783760),
+then trusted publishing with SLSA provenance completed in
+[workflow run 28755823677](https://github.com/fabionfsc/nuzo-memory/actions/runs/28755823677).
+
+Registry metadata, integrity values, `latest` tags, and npm attestations
+verified the stable active package set:
+
+- `@nuzo/memory-core@1.0.0`;
+- `@nuzo/memory@1.0.0`.
+
+Published CLI and MCP session continuity, default FTS fallback, explicit
+checksum-verified local-model semantic recall, Codex and Claude Code artifact
+flows, and the shared NUZO-37 canary passed against the exact public package.
+Native marketplace validation installed `nuzo@nuzo-memory@1.0.0` through both
+Codex and Claude Code. The public one-line installer installed `1.0.0` and
+opened a working SQLite store in clean Node.js 22 Debian and Node.js 24 Alpine
+containers. Validation used only temporary fake memory data and left no
+runtime stores or containers in the repository workspace.
+
 ## Real Flow To Prove
 
 The canonical post-release smoke is:

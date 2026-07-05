@@ -6,6 +6,12 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+### Fixed
+
+- Docker installer smoke tests now derive their pinned package version from
+  the repository release instead of continuing to exercise the previous
+  public version after a release bump.
+
 ## [1.0.0] - 2026-07-05
 
 ### Added
