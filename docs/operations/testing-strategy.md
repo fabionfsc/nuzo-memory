@@ -194,6 +194,22 @@ npm run smoke:claude-code-plugin
 npm run smoke:codex-plugin
 ```
 
+The one-line installer has an optional Docker smoke gate:
+
+```bash
+npm run smoke:installer
+```
+
+It runs `docs/install.sh` in ephemeral Linux containers with representative
+POSIX shells and Node/npm states. Deterministic success scenarios use fake
+`npm` and `nuzo` commands so the gate proves the installer invokes
+`npm install --global @nuzo/memory@...` without configuring Codex or Claude
+Code. Release scenarios also perform a real global npm install inside Node 22
+and Node 24 containers for the current public package. Failure scenarios cover
+missing Node.js, unsupported Node.js, unsupported npm, and invalid installer
+versions. Containers use `--rm` and a Nuzo-specific label; the harness removes
+only containers with that label if cleanup is needed.
+
 On Node.js 24, CI additionally installs the tracked repository marketplaces
 with pinned Codex and Claude Code CLIs and runs `npm run smoke:host-canary`.
 Published-package smokes remain post-release checks because they require the
