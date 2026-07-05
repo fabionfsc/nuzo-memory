@@ -28,6 +28,14 @@ npm install --global @nuzo/memory@0.9.1
 nuzo setup
 ```
 
+Or use the one-line installer, which checks Node.js/npm and installs the same
+npm package:
+
+```bash
+curl -fsSL https://nuzo.com.br/install.sh | sh
+nuzo setup
+```
+
 `nuzo setup` detects Codex and Claude Code. When both are available, it lets
 you choose Codex, Claude Code, or both, then shows the host changes and asks
 before changing host configuration. Open the configured host, confirm Nuzo is

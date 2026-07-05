@@ -209,6 +209,16 @@ function normalizeExternalUrl(value) {
 
 function isIgnoredExternalUrl(value) {
   const url = new URL(value);
+  // The installer is generated from docs/install.sh by MkDocs. During the PR
+  // that introduces or changes it, production may still return 404 until the
+  // Pages deployment succeeds, so validate the source file locally instead.
+  if (
+    url.hostname === "nuzo.com.br" &&
+    url.pathname === "/install.sh" &&
+    existsSync(join(docsRoot, "install.sh"))
+  ) {
+    return true;
+  }
   // Historical GitHub Actions run pages may expire or require dynamic state;
   // release evidence still keeps the URL text, but CI does not depend on them.
   if (url.hostname === "github.com" && url.pathname.includes("/actions/runs/")) {

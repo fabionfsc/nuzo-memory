@@ -79,4 +79,24 @@ The workflow is:
 .github/workflows/pages.yml
 ```
 
-It runs on pushes to `main` and manual dispatch.
+It runs on manual dispatch and on pushes to `main` that change site-relevant
+files. Newer Pages runs cancel obsolete queued deployments so rapid main merges
+do not publish stale artifacts.
+
+## Installer Asset
+
+The site serves the npm-backed one-line installer from:
+
+```text
+https://nuzo.com.br/install.sh
+```
+
+The source file is:
+
+```text
+docs/install.sh
+```
+
+The installer checks Node.js and npm, installs `@nuzo/memory` with npm, validates
+`nuzo --version`, and stops before host configuration. Users still run
+`nuzo setup` explicitly to review Codex or Claude Code changes.
