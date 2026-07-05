@@ -14,6 +14,15 @@ npm install --global @nuzo/memory@0.9.1
 nuzo setup
 ```
 
+Alternatively, use the one-line installer. It invokes npm for the same
+`@nuzo/memory` package, validates the installed `nuzo` command, and leaves host
+configuration to the explicit `nuzo setup` step:
+
+```bash
+curl -fsSL https://nuzo.com.br/install.sh | sh
+nuzo setup
+```
+
 `nuzo setup` detects supported local hosts. When both Codex and Claude Code are
 available, it lets you choose Codex, Claude Code, or both, then shows the exact
 plugin changes and asks before changing host configuration.

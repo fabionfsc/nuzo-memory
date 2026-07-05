@@ -4,6 +4,15 @@ on:
   push:
     branches:
       - main
+    paths:
+      - ".github/workflows/pages.yml"
+      - "docs/**"
+      - "mkdocs.yml"
+      - "package.json"
+      - "package-lock.json"
+      - "requirements-docs.txt"
+      - "tools/docs-*.mjs"
+      - "tools/docs-*.test.mjs"
   workflow_dispatch:
 
 permissions:
@@ -16,7 +25,7 @@ env:
 
 concurrency:
   group: pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:
