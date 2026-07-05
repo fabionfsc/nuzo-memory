@@ -8,6 +8,7 @@ import {
   publicReleaseReferencePaths,
   readJson,
   readText,
+  replaceCurrentPackageVersionBlock,
   updateNuzoDependencyVersions,
   writeJson,
   writeText,
@@ -65,7 +66,11 @@ replaceLiteralVersion(
   `version: "${version}"`,
 );
 for (const relativePath of publicReleaseReferencePaths) {
-  replacePublicReleaseReference(relativePath, currentVersion, version);
+  if (relativePath === "docs/operations/versioning.md") {
+    replaceCurrentPackageVersion(relativePath, currentVersion, version);
+  } else {
+    replacePublicReleaseReference(relativePath, currentVersion, version);
+  }
 }
 
 console.log(`prepared Nuzo release version ${version}`);
@@ -87,4 +92,13 @@ function replacePublicReleaseReference(relativePath, fromVersion, toVersion) {
   if (next !== content) {
     writeText(relativePath, next);
   }
+}
+
+function replaceCurrentPackageVersion(relativePath, fromVersion, toVersion) {
+  const content = readText(relativePath);
+  const next = replaceCurrentPackageVersionBlock(content, fromVersion, toVersion);
+  if (next === null) {
+    fail(`${relativePath} does not contain the expected current package version block`);
+  }
+  writeText(relativePath, next);
 }

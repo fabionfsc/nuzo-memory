@@ -33,7 +33,10 @@ The public docs currently managed by that list are:
 | `docs/operations/claude-code-plugin.md` | generated plugin `@nuzo/memory@X.Y.Z` example and validation text. |
 | `docs/operations/local-cli.md` | current public CLI installation version. |
 | `docs/operations/npm-publishing.md` | current npm package version list. |
+| `docs/operations/optional-semantics.md` | compatible optional semantics install command. |
 | `docs/operations/versioning.md` | current package version block. |
+| `packages/claude-code-plugin/README.md` | packaged Claude Code fallback runtime command. |
+| `packages/codex-plugin/README.md` | packaged Codex fallback runtime command. |
 | `packages/memory/README.md` | npm package installation version. |
 
 ## Checked By `release:check`
@@ -44,6 +47,11 @@ to a new release but README or docs still advertise the previous one.
 
 If a new public page starts saying "current release", add it to
 `publicReleaseReferencePaths` in `tools/release-shared.mjs`.
+
+Most mapped pages replace the previous release literal globally. The
+versioning policy is intentionally narrower: release preparation updates only
+its `Packages currently use` block so stable `1.0.0` compatibility rules and
+historical release ranges are not rewritten by later releases.
 
 ## Do Not Auto-Rewrite
 

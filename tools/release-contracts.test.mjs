@@ -8,6 +8,7 @@ import {
   isSensitiveRehearsalPath,
   isValidReleaseVersion,
   publicReleaseReferencePaths,
+  replaceCurrentPackageVersionBlock,
 } from "./release-shared.mjs";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -145,4 +146,24 @@ test("release tooling covers public release version references", () => {
   assert.match(prepare, /publicReleaseReferencePaths/);
   assert.match(check, /publicReleaseReferencePaths/);
   assert.match(rehearse, /publicReleaseReferencePaths/);
+});
+
+test("release preparation preserves stable versioning policy references", () => {
+  const source = [
+    "Packages currently use:",
+    "",
+    "```text",
+    "1.0.0",
+    "```",
+    "",
+    "For Nuzo before `1.0.0`:",
+    "After `1.0.0`:",
+  ].join("\n");
+
+  const prepared = replaceCurrentPackageVersionBlock(source, "1.0.0", "1.0.1");
+  assert.notEqual(prepared, null);
+  assert.match(prepared, /```text\n1\.0\.1\n```/u);
+  assert.match(prepared, /For Nuzo before `1\.0\.0`:/u);
+  assert.match(prepared, /After `1\.0\.0`:/u);
+  assert.equal(replaceCurrentPackageVersionBlock(source, "0.9.1", "1.0.0"), null);
 });

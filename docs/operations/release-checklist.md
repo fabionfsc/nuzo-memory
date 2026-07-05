@@ -207,7 +207,7 @@ For `0.9.0`, confirm:
 @nuzo/mcp-server
 ```
 
-For releases after `0.9.0`, including `0.9.1`, confirm:
+For every release after `0.9.0`, confirm:
 
 ```text
 @nuzo/memory-core

@@ -6,6 +6,56 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-07-05
+
+### Added
+
+- A release-blocking developer-experience gate now validates staged npm
+  packages, CLI help and diagnostics, MCP startup, Codex and Claude Code
+  plugin layouts, first-run setup guidance, and cross-session host behavior.
+- The documentation site now serves a one-line, npm-backed installer at
+  `https://nuzo.com.br/install.sh`; it validates Node.js and npm, supports
+  exact Nuzo versions, verifies the installed CLI, and leaves host changes to
+  the explicit `nuzo setup` command.
+- Docker installer smoke coverage now exercises prerequisite failures, latest
+  and pinned package selection, and real registry installs on supported
+  Node.js 22 and 24 images across Debian and Alpine environments.
+
+### Changed
+
+- CLI commands, MCP handlers, runtime configuration parsing, core memory
+  service internals, and benchmark harnesses are split into focused modules
+  while preserving the stable public CLI, MCP, storage, and package contracts.
+- TypeScript test code now follows the same explicit typing and unused-code
+  standards as production code.
+- Public release and operations guidance now reflects the completed `1.0.0`
+  readiness audit, the stable package boundary, and current installation and
+  validation workflows.
+- GitHub Pages deployments now run only for site-relevant changes and cancel
+  superseded deployments, avoiding unrelated and conflicting deploy jobs.
+
+### Fixed
+
+- Capture suggestions preserve an `uncertain` result when bounded candidate
+  evaluation cannot establish an exhaustive duplicate or conflict decision.
+- Core use cases now validate identifiers, revisions, pagination inputs,
+  import payloads, configuration limits, and scope boundaries before storage
+  or policy execution.
+- Managed-host postinstall refresh resolves only trusted executables from the
+  npm lifecycle environment and refuses unsafe or ambiguous command paths.
+- Lifecycle-hook stdin reads now enforce byte and time limits so malformed or
+  stalled hosts cannot cause unbounded buffering or waiting.
+- Release preparation now updates packaged plugin instructions while
+  preserving historical and stable `1.0.0` policy references during later
+  patch releases.
+
+### Security
+
+- Secret scanning now detects fine-grained GitHub personal access tokens in
+  direct writes and imports without weakening false-positive controls.
+- Backup, export, model, plugin, and managed-host writes now reject symlinked
+  destinations and unsafe path components before replacing local files.
+
 ## [0.9.1] - 2026-07-01
 
 ### Changed

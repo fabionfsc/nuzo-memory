@@ -13,7 +13,7 @@ export function createProgram(io: CliIO = defaultIO): Command {
     .exitOverride()
     .name("nuzo")
     .description("Local-first, auditable memory for AI agents.")
-    .version("0.9.1");
+    .version("1.0.0");
 
   registerHostCommands(program, io);
   registerMemoryCommands(program, io);

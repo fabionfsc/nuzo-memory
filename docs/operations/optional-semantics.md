@@ -11,7 +11,7 @@ provider, install its exact optional peer alongside Nuzo:
 
 ```bash
 npm install --global \
-  @nuzo/memory@0.9.1 \
+  @nuzo/memory@1.0.0 \
   @huggingface/transformers@4.2.0
 ```
 
