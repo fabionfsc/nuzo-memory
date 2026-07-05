@@ -8,6 +8,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ### Fixed
 
+- GitHub Pages deployments now use explicit Pages configuration and queue
+  deploy attempts instead of canceling an in-progress Pages deployment.
 - Docker installer smoke tests now derive their pinned package version from
   the repository release instead of continuing to exercise the previous
   public version after a release bump.
