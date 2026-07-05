@@ -98,5 +98,18 @@ docs/install.sh
 ```
 
 The installer checks Node.js and npm, installs `@nuzo/memory` with npm, validates
-`nuzo --version`, and stops before host configuration. Users still run
-`nuzo setup` explicitly to review Codex or Claude Code changes.
+`nuzo --version`, and stops before host configuration. It does not install
+Node.js, npm, or other system packages automatically; missing prerequisites
+fail with guidance. Users still run `nuzo setup` explicitly to review Codex or
+Claude Code changes.
+
+Validate installer behavior locally with:
+
+```bash
+npm run smoke:installer
+```
+
+The smoke gate uses ephemeral Docker containers. It combines fake npm/Nuzo
+commands for deterministic control-flow checks with real npm installs inside
+Node containers for the current public package. It does not publish packages or
+configure host plugins.

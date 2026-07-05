@@ -16,7 +16,8 @@ nuzo setup
 
 Alternatively, use the one-line installer. It invokes npm for the same
 `@nuzo/memory` package, validates the installed `nuzo` command, and leaves host
-configuration to the explicit `nuzo setup` step:
+configuration to the explicit `nuzo setup` step. It does not install Node.js or
+npm automatically:
 
 ```bash
 curl -fsSL https://nuzo.com.br/install.sh | sh

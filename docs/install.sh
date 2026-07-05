@@ -32,6 +32,17 @@ fail() {
   exit 1
 }
 
+prerequisite_help() {
+  cat >&2 <<'EOF'
+
+Install Node.js 22 LTS or 24 LTS with npm 10 or newer, then rerun this script.
+This installer does not install system packages automatically.
+Recommended sources:
+  https://nodejs.org/
+  https://github.com/nvm-sh/nvm
+EOF
+}
+
 validate_version() {
   version="$1"
 
@@ -65,14 +76,20 @@ parse_args() {
 }
 
 require_command() {
-  command -v "$1" >/dev/null 2>&1 || fail "$1 is required to install Nuzo."
+  if ! command -v "$1" >/dev/null 2>&1; then
+    prerequisite_help
+    fail "$1 is required to install Nuzo."
+  fi
 }
 
 check_node_version() {
   node -e '
 const major = Number(process.versions.node.split(".")[0]);
 process.exit(major === 22 || major === 24 ? 0 : 1);
-' || fail "Nuzo requires Node.js 22 LTS or 24 LTS."
+' || {
+    prerequisite_help
+    fail "Nuzo requires Node.js 22 LTS or 24 LTS."
+  }
 }
 
 check_npm_version() {
@@ -81,7 +98,10 @@ check_npm_version() {
       if ($1 >= 10) exit 0;
     }
     { exit 1 }
-  ' || fail "Nuzo requires npm 10 or newer."
+  ' || {
+    prerequisite_help
+    fail "Nuzo requires npm 10 or newer."
+  }
 }
 
 main() {
