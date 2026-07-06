@@ -14,6 +14,7 @@ import {
   type ListMemoriesInput,
   type ConfirmCaptureDecision,
   type ConfirmCaptureInput,
+  type MemoryConfidenceState,
   type MemoryProvenance,
   type MemoryScope,
   type ForgetMemoryInput,
@@ -56,6 +57,7 @@ import {
   inferExportFormat,
   parseAuditEventType,
   parseConfidence,
+  parseConfidenceState,
   parseConfirmCaptureDecision,
   parseExportFormat,
   parseIsoDate,
@@ -72,6 +74,7 @@ interface SuggestCaptureCommandOptions {
   tag?: string[];
   source: string;
   confidence?: number;
+  confidenceState?: MemoryConfidenceState | null;
   provenanceJson?: MemoryProvenance | null;
   relationshipMode?: "exact" | "bounded";
   reason: string;
@@ -84,6 +87,7 @@ interface ConfirmCaptureCommandOptions {
   tag?: string[];
   source: string;
   confidence?: number;
+  confidenceState?: MemoryConfidenceState | null;
   provenanceJson?: MemoryProvenance | null;
   reason: string;
   yes: boolean;
@@ -129,11 +133,13 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
     .requiredOption("--kind <kind>", "Memory kind.")
     .option("--tag <tag...>", "Memory tag. Can be used multiple times.")
     .option("--source <source>", "Memory source.", "nuzo:cli")
+    .option("--confidence-state <state>", "Human-readable confidence state.", parseConfidenceState)
     .option("--provenance-json <json>", "Structured provenance metadata as JSON.", parseProvenanceJson)
     .action(withErrorHandling(io, async (content: string, commandOptions: {
       kind: MemoryKind;
       tag?: string[];
       source: string;
+      confidenceState?: MemoryConfidenceState;
       provenanceJson?: MemoryProvenance | null;
     }) => {
       const options = memory.opts<GlobalOptions>();
@@ -146,6 +152,7 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
           scope: resolveScope(options),
           tags: commandOptions.tag ?? [],
           source: commandOptions.source,
+          ...(commandOptions.confidenceState === undefined ? {} : { confidenceState: commandOptions.confidenceState }),
           ...(commandOptions.provenanceJson === undefined ? {} : { provenance: commandOptions.provenanceJson }),
         };
         const saved = await service.remember(rememberInput);
@@ -164,6 +171,7 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
     .option("--tag <tag...>", "Memory tag. Can be used multiple times.")
     .option("--source <source>", "Capture suggestion source.", "nuzo:cli:capture-suggestion")
     .option("--confidence <number>", "Capture confidence between 0 and 1.", parseConfidence)
+    .option("--confidence-state <state>", "Human-readable confidence state.", parseConfidenceState)
     .option("--provenance-json <json>", "Structured provenance metadata as JSON.", parseProvenanceJson)
     .option("--relationship-mode <mode>", "Capture relationship mode: exact or bounded.", parseRelationshipMode)
     .option("--json", "Print JSON output for scripting.", false)
@@ -183,6 +191,7 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
           source: commandOptions.source,
           reason: commandOptions.reason,
           ...(commandOptions.confidence === undefined ? {} : { confidence: commandOptions.confidence }),
+          ...(commandOptions.confidenceState === undefined ? {} : { confidenceState: commandOptions.confidenceState }),
           ...(commandOptions.provenanceJson === undefined ? {} : { provenance: commandOptions.provenanceJson }),
           ...(commandOptions.relationshipMode === undefined ? {} : { relationshipMode: commandOptions.relationshipMode }),
         };
@@ -203,6 +212,7 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
     .option("--tag <tag...>", "Memory tag. Can be used multiple times.")
     .option("--source <source>", "Confirmed capture source.", "nuzo:cli:capture-confirmed")
     .option("--confidence <number>", "Capture confidence between 0 and 1.", parseConfidence)
+    .option("--confidence-state <state>", "Human-readable confidence state.", parseConfidenceState)
     .option("--provenance-json <json>", "Structured provenance metadata as JSON.", parseProvenanceJson)
     .option("--target-memory-id <id>", "Existing memory ID for update decisions.")
     .option("--expected-revision <number>", "Displayed memory revision for update decisions.", parsePositiveInteger)
@@ -230,6 +240,9 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
         };
         if (commandOptions.confidence !== undefined) {
           confirmInput.confidence = commandOptions.confidence;
+        }
+        if (commandOptions.confidenceState !== undefined) {
+          confirmInput.confidenceState = commandOptions.confidenceState;
         }
         if (commandOptions.provenanceJson !== undefined) {
           confirmInput.provenance = commandOptions.provenanceJson;
@@ -412,6 +425,7 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
     .option("--scope <scope>", "Replacement memory scope.")
     .option("--tag <tag...>", "Replacement memory tags.")
     .option("--confidence <number>", "Replacement confidence between 0 and 1.", parseConfidence)
+    .option("--confidence-state <state>", "Replacement human-readable confidence state.", parseConfidenceState)
     .option("--provenance-json <json>", "Replacement structured provenance metadata as JSON.", parseProvenanceJson)
     .option("--expected-revision <number>", "Only update if the memory is still at this revision.", parsePositiveInteger)
     .action(withErrorHandling(io, async (
@@ -422,6 +436,7 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
         scope?: MemoryScope;
         tag?: string[];
         confidence?: number;
+        confidenceState?: MemoryConfidenceState;
         provenanceJson?: MemoryProvenance | null;
         expectedRevision?: number;
       },
@@ -451,6 +466,9 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
         }
         if (commandOptions.confidence !== undefined) {
           updateInput.confidence = commandOptions.confidence;
+        }
+        if (commandOptions.confidenceState !== undefined) {
+          updateInput.confidenceState = commandOptions.confidenceState;
         }
         if (commandOptions.provenanceJson !== undefined) {
           updateInput.provenance = commandOptions.provenanceJson;

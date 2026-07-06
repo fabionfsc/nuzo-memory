@@ -70,6 +70,7 @@ describe("memory service", () => {
 
     expect(memory.id).toBe("mem_000001");
     expect(memory.revision).toBe(1);
+    expect(memory.confidenceState).toBe("user_confirmed");
 
     const results = await service.recall({
       query: "local-first tools",
@@ -82,6 +83,44 @@ describe("memory service", () => {
 
     const events = await auditLog.list(memory.id);
     expect(events.map((event) => event.eventType)).toEqual(["memory.created"]);
+  });
+
+  it("stores, validates, updates, and clears confidence state", async () => {
+    const { service } = createTestService();
+
+    const memory = await service.remember({
+      content: "This deploy flow should be reviewed before use.",
+      kind: "project_decision",
+      scope: "project:nuzo",
+      source: "test",
+      confidence: 0.6,
+      confidenceState: "observed",
+    });
+    expect(memory.confidence).toBe(0.6);
+    expect(memory.confidenceState).toBe("observed");
+
+    const updated = await service.update({
+      id: memory.id,
+      actor: "test",
+      confidenceState: "needs_review",
+    });
+    expect(updated.confidence).toBe(0.6);
+    expect(updated.confidenceState).toBe("needs_review");
+
+    const cleared = await service.update({
+      id: memory.id,
+      actor: "test",
+      confidenceState: null,
+    });
+    expect(cleared.confidenceState).toBeNull();
+
+    await expect(service.remember({
+      content: "Unsupported confidence state should be rejected.",
+      kind: "note",
+      scope: "project:nuzo",
+      source: "test",
+      confidenceState: "certain" as never,
+    })).rejects.toMatchObject({ code: "MEMORY_CONFIDENCE_STATE_INVALID" });
   });
 
   it("stores, validates, updates, and clears structured provenance", async () => {
@@ -378,6 +417,7 @@ describe("memory service", () => {
       tags: ["workflow", "workflow"],
       source: "codex:capture-suggestion",
       confidence: 0.72,
+      confidenceState: "observed",
       provenance: {
         kind: "conversation",
         host: "codex",
@@ -398,6 +438,7 @@ describe("memory service", () => {
         tags: ["workflow"],
         source: "codex:capture-suggestion",
         confidence: 0.72,
+        confidenceState: "observed",
         provenance: {
           kind: "conversation",
           host: "codex",
@@ -1271,6 +1312,7 @@ describe("memory service", () => {
       scope: "user:default",
       tags: ["export"],
       source: "codex:capture-confirmed",
+      confidenceState: "needs_review",
       provenance: {
         kind: "import",
         host: "cli",
@@ -1292,6 +1334,7 @@ describe("memory service", () => {
     expect(document.memories).toHaveLength(1);
     expect(document.memories[0]?.content).toBe("The user prefers JSON exports for migrations.");
     expect(document.memories[0]?.source).toBe("codex:capture-confirmed");
+    expect(document.memories[0]?.confidence_state).toBe("needs_review");
     expect(document.memories[0]?.provenance).toEqual({
       kind: "import",
       host: "cli",
@@ -1334,6 +1377,7 @@ describe("memory service", () => {
     });
     expect(imported[0]?.memory.content).toBe("The user prefers JSON exports for migrations.");
     expect(imported[0]?.memory.source).toBe("codex:capture-confirmed");
+    expect(imported[0]?.memory.confidenceState).toBe("needs_review");
     expect(imported[0]?.memory.provenance).toEqual({
       kind: "import",
       host: "cli",

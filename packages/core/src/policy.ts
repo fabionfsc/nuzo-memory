@@ -1,6 +1,13 @@
 import { invariant, NuzoMemoryError } from "./errors.js";
 import type { PolicyEngine, SecretScanner } from "./ports.js";
-import { memoryEventTypes, memoryKinds, memoryProvenanceKinds, type MemoryProvenance, type MemoryScope } from "./types.js";
+import {
+  memoryConfidenceStates,
+  memoryEventTypes,
+  memoryKinds,
+  memoryProvenanceKinds,
+  type MemoryProvenance,
+  type MemoryScope,
+} from "./types.js";
 import type {
   AuditEventFilter,
   ListMemoriesInput,
@@ -82,6 +89,14 @@ export class DefaultPolicyEngine implements PolicyEngine {
       "Memory confidence must be between 0 and 1.",
       { confidence },
     );
+    if (input.confidenceState !== undefined && input.confidenceState !== null) {
+      invariant(
+        memoryConfidenceStates.includes(input.confidenceState),
+        "MEMORY_CONFIDENCE_STATE_INVALID",
+        "Memory confidence state is not supported.",
+        { confidenceState: input.confidenceState },
+      );
+    }
 
     const tags = input.tags ?? [];
     invariant(
@@ -111,6 +126,7 @@ export class DefaultPolicyEngine implements PolicyEngine {
       tags: input.tags ?? current.tags,
       source: current.source,
       confidence: input.confidence ?? current.confidence,
+      confidenceState: "confidenceState" in input ? input.confidenceState : current.confidenceState,
       provenance: "provenance" in input ? input.provenance : current.provenance,
     });
     invariant(input.actor.trim().length > 0, "MEMORY_ACTOR_EMPTY", "Memory actor cannot be empty.");

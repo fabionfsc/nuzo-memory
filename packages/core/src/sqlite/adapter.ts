@@ -16,6 +16,7 @@ import type {
   ListMemoriesInput,
   MemoryHistoryInput,
   MemoryEvent,
+  MemoryConfidenceState,
   MemoryKind,
   MemoryProvenance,
   MemoryRecord,
@@ -34,6 +35,7 @@ interface MemoryRow {
   tags: string;
   source: string;
   confidence: number;
+  confidence_state: MemoryConfidenceState | null;
   provenance: string | null;
   created_at: string;
   updated_at: string;
@@ -123,11 +125,11 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
       .prepare(
         `
           INSERT INTO memories (
-            id, scope, kind, content, tags, source, confidence, provenance,
+            id, scope, kind, content, tags, source, confidence, confidence_state, provenance,
             created_at, updated_at, last_used_at, archived_at
           )
           VALUES (
-            @id, @scope, @kind, @content, @tags, @source, @confidence, @provenance,
+            @id, @scope, @kind, @content, @tags, @source, @confidence, @confidence_state, @provenance,
             @created_at, @updated_at, @last_used_at, @archived_at
           )
         `,
@@ -148,6 +150,7 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
               tags = @tags,
               source = @source,
               confidence = @confidence,
+              confidence_state = @confidence_state,
               provenance = @provenance,
               created_at = @created_at,
               updated_at = @updated_at,
@@ -436,6 +439,7 @@ function toMemoryRow(memory: MemoryRecord): Record<string, unknown> {
     tags: JSON.stringify(memory.tags),
     source: memory.source,
     confidence: memory.confidence,
+    confidence_state: memory.confidenceState,
     provenance: memory.provenance === null ? null : JSON.stringify(memory.provenance),
     created_at: memory.createdAt.toISOString(),
     updated_at: memory.updatedAt.toISOString(),
@@ -454,6 +458,7 @@ function fromMemoryRow(row: MemoryRow): MemoryRecord {
     tags: parseTags(row.tags),
     source: row.source,
     confidence: row.confidence,
+    confidenceState: row.confidence_state,
     provenance: parseProvenance(row.provenance),
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),

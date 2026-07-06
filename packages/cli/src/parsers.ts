@@ -1,6 +1,7 @@
 import {
   memoryEventTypes,
   type ConfirmCaptureDecision,
+  type MemoryConfidenceState,
   type MemoryEvent,
   type MemoryProvenance,
   type RetrievalMode,
@@ -51,6 +52,21 @@ export function parseConfidence(value: string): number {
     throw new InvalidArgumentError("Expected a number between 0 and 1.");
   }
   return parsed;
+}
+
+export function parseConfidenceState(value: string): MemoryConfidenceState {
+  if (
+    value === "observed" ||
+    value === "inferred" ||
+    value === "user_confirmed" ||
+    value === "needs_review" ||
+    value === "deprecated"
+  ) {
+    return value;
+  }
+  throw new InvalidArgumentError(
+    "Expected confidence state to be observed, inferred, user_confirmed, needs_review, or deprecated.",
+  );
 }
 
 export function parseProvenanceJson(value: string): MemoryProvenance | null {

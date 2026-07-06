@@ -118,6 +118,7 @@ export type {
 } from "./sqlite/maintenance.js";
 export {
   memoryEventTypes,
+  memoryConfidenceStates,
   memoryKinds,
   memoryProvenanceKinds,
 } from "./types.js";
@@ -144,6 +145,7 @@ export type {
   MemoryEventType,
   MemoryExportDocument,
   MemoryExportItem,
+  MemoryConfidenceState,
   MemoryKind,
   MemoryProvenance,
   MemoryProvenanceKind,

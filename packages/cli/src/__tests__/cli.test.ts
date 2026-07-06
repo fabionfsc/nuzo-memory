@@ -390,6 +390,8 @@ describe("nuzo memory cli", () => {
       "The user prefers local-first memory tools.",
       "--kind",
       "preference",
+      "--confidence-state",
+      "needs_review",
       "--tag",
       "workflow",
     ]);
@@ -526,6 +528,7 @@ describe("nuzo memory cli", () => {
         "Tags: workflow",
         "Source: codex:capture-suggestion",
         "Confidence: 0.72",
+        "Confidence state: inferred",
         "Reason: The user stated a durable response style preference.",
       ].join("\n"),
     ]);
@@ -691,6 +694,7 @@ describe("nuzo memory cli", () => {
         "Tags: communication",
         "Source: nuzo:cli:capture-suggestion",
         "Confidence: 1",
+        "Confidence state: inferred",
         "Reason: The user stated a durable response style preference.",
         "Relationship: update_candidate",
         "Relationship reason: The draft appears to revise an active same-scope memory rather than add a separate memory.",
@@ -1212,6 +1216,8 @@ describe("nuzo memory cli", () => {
       "preference",
       "--tag",
       "export",
+      "--confidence-state",
+      "needs_review",
       "--provenance-json",
       JSON.stringify({
         kind: "cli",
@@ -1227,10 +1233,11 @@ describe("nuzo memory cli", () => {
 
     const document = JSON.parse(readFileSync(exportPath, "utf8")) as {
       format: string;
-      memories: Array<{ provenance?: unknown }>;
+      memories: Array<{ confidence_state?: unknown; provenance?: unknown }>;
     };
     expect(document.format).toBe("nuzo-memory-export");
     expect(document.memories).toHaveLength(1);
+    expect(document.memories[0]?.confidence_state).toBe("needs_review");
     expect(document.memories[0]?.provenance).toEqual({
       kind: "cli",
       host: "nuzo",
@@ -1242,6 +1249,7 @@ describe("nuzo memory cli", () => {
     expect(markdownExported.stdout[0]).toContain("Exported 1 memories");
     const markdown = readFileSync(markdownExportPath, "utf8");
     expect(markdown).toContain("# Nuzo Memory Export");
+    expect(markdown).toContain('confidence_state: "needs_review"');
     expect(markdown).toContain('provenance: "{\\"kind\\":\\"cli\\"');
     expect(markdown).toContain("The user prefers portable memory exports.");
 
@@ -1302,7 +1310,7 @@ describe("nuzo memory cli", () => {
     const integrity = await runCli(["memory", "--store", sourceStore, "integrity", "--json"]);
     expect(JSON.parse(integrity.stdout[0] ?? "{}")).toMatchObject({
       ok: true,
-      schema_version: 3,
+      schema_version: 4,
       memory_count: 1,
       fts_row_count: 1,
       errors: [],
@@ -1480,7 +1488,7 @@ describe("nuzo memory cli", () => {
       store_exists: true,
       integrity: {
         ok: true,
-        schema_version: 3,
+        schema_version: 4,
       },
       git_tracking: {
         status: "skipped",
@@ -1548,6 +1556,7 @@ describe("nuzo memory cli", () => {
       tags: [],
       source: "test:doctor",
       confidence: 1,
+      confidenceState: "user_confirmed",
       provenance: null,
       createdAt: now,
       updatedAt: now,

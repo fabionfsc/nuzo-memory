@@ -229,6 +229,7 @@ Input:
   "tags": ["workflow"],
   "source": "codex:capture-suggestion",
   "confidence": 0.72,
+  "confidence_state": "inferred",
   "provenance": {
     "kind": "conversation",
     "host": "codex",
@@ -255,7 +256,8 @@ invariants are defined in [Capture Suggestions](capture-suggestions.md).
 Behavior:
 
 - applies the same core validation, scope authorization, tag rules, confidence
-  rules, provenance validation, and secret scanning as `memory.remember`;
+  rules, confidence-state rules, provenance validation, and secret scanning as
+  `memory.remember`;
 - trims content and de-duplicates tags in the returned draft;
 - checks active memories in the same scope for exact normalized content
   duplicates;
@@ -285,6 +287,7 @@ Output when ready to ask the user:
     "scope": "user:default",
     "tags": ["workflow"],
     "source": "codex:capture-suggestion",
+    "confidence_state": "inferred",
     "provenance": {
       "kind": "conversation",
       "host": "codex",
@@ -467,6 +470,7 @@ Input for confirmed creation:
   "tags": ["workflow"],
   "source": "codex:capture-confirmed",
   "confidence": 0.72,
+  "confidence_state": "user_confirmed",
   "provenance": {
     "kind": "conversation",
     "host": "codex",
@@ -529,6 +533,7 @@ Output:
     "tags": ["workflow"],
     "source": "codex:capture-confirmed",
     "confidence": 0.72,
+    "confidence_state": "user_confirmed",
     "provenance": {
       "kind": "conversation",
       "host": "codex",
@@ -549,6 +554,9 @@ updates, stored drafts, or hidden notes. Confirmed writes remain subject to the
 same policy checks as direct `memory.remember` and `memory.update` calls.
 When provided, `provenance` is bounded metadata for audit and review. It does
 not authenticate `source`, authorize writes, or change recall trust rules.
+When provided, `confidence_state` is a human-readable label for review and
+audit. It complements the numeric `confidence`; it does not grant instruction
+authority, authorization, or ranking priority.
 
 Revision conflicts are never retried silently. A client must re-read the memory
 and ask the user to confirm again before calling `memory.confirm_capture` or
@@ -601,6 +609,7 @@ Input:
   "expected_revision": 1,
   "content": "The user prefers SQLite for simple local-first prototypes.",
   "tags": ["storage", "architecture", "sqlite"],
+  "confidence_state": "needs_review",
   "provenance": {
     "kind": "mcp",
     "host": "codex",
@@ -802,8 +811,9 @@ Export memories as a versioned JSON document.
 This is the Nuzo portability format. Codex, Claude Code, and future host plugins should expose this same tool instead of creating host-specific export formats.
 
 JSON export version `1` preserves memory record provenance fields that are part
-of the memory model, including `source`, structured `provenance`, scope, kind,
-tags, confidence, and timestamps. It does not export audit history. Export itself appends a
+of the memory model, including `source`, numeric `confidence`,
+`confidence_state`, structured `provenance`, scope, kind, tags, and timestamps.
+It does not export audit history. Export itself appends a
 store-wide `memory.exported` audit event with `memory_id: null`.
 
 The MCP tool returns JSON only. The CLI can also render the same document as
@@ -930,8 +940,8 @@ in `0.9.0`.
   "integrity": {
     "ok": true,
     "path": "~/.nuzo/memory/memories.sqlite",
-    "schema_version": 3,
-    "supported_schema_version": 3,
+    "schema_version": 4,
+    "supported_schema_version": 4,
     "integrity_check": "ok",
     "foreign_key_violations": 0,
     "memory_count": 5,
