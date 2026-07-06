@@ -1,4 +1,11 @@
-import { memoryEventTypes, type ConfirmCaptureDecision, type MemoryEvent, type RetrievalMode, type SemanticFallbackMode } from "@nuzo/memory-core";
+import {
+  memoryEventTypes,
+  type ConfirmCaptureDecision,
+  type MemoryEvent,
+  type MemoryProvenance,
+  type RetrievalMode,
+  type SemanticFallbackMode,
+} from "@nuzo/memory-core";
 import { InvalidArgumentError } from "commander";
 
 export type ExportFormat = "json" | "markdown";
@@ -44,6 +51,19 @@ export function parseConfidence(value: string): number {
     throw new InvalidArgumentError("Expected a number between 0 and 1.");
   }
   return parsed;
+}
+
+export function parseProvenanceJson(value: string): MemoryProvenance | null {
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (parsed === null) return null;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      throw new Error("not an object");
+    }
+    return parsed as MemoryProvenance;
+  } catch {
+    throw new InvalidArgumentError("Expected provenance to be a JSON object or null.");
+  }
 }
 
 export function parseRelationshipMode(value: string): "exact" | "bounded" {

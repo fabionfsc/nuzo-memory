@@ -13,11 +13,37 @@ export const memoryKinds = [
   "note",
 ] as const satisfies readonly MemoryKind[];
 
+export type MemoryProvenanceKind =
+  | "conversation"
+  | "file"
+  | "import"
+  | "cli"
+  | "mcp";
+
+export const memoryProvenanceKinds = [
+  "conversation",
+  "file",
+  "import",
+  "cli",
+  "mcp",
+] as const satisfies readonly MemoryProvenanceKind[];
+
 export type MemoryScope =
   | `user:${string}`
   | `project:${string}`
   | `agent:${string}`
   | `team:${string}`;
+
+export interface MemoryProvenance {
+  kind: MemoryProvenanceKind;
+  host?: string;
+  surface?: string;
+  path?: string;
+  line?: number;
+  thread_id?: string;
+  action?: string;
+  reason?: string;
+}
 
 export interface MemoryRecord {
   id: string;
@@ -28,6 +54,7 @@ export interface MemoryRecord {
   tags: string[];
   source: string;
   confidence: number;
+  provenance: MemoryProvenance | null;
   createdAt: Date;
   updatedAt: Date;
   lastUsedAt: Date | null;
@@ -79,6 +106,7 @@ export interface RememberMemoryInput {
   tags?: string[];
   source: string;
   confidence?: number;
+  provenance?: MemoryProvenance | null;
 }
 
 export interface SuggestCaptureInput extends RememberMemoryInput {
@@ -102,6 +130,7 @@ export interface CaptureSuggestionDraft {
   tags: string[];
   source: string;
   confidence: number;
+  provenance: MemoryProvenance | null;
   reason: string;
 }
 
@@ -223,6 +252,7 @@ export interface UpdateMemoryInput {
   scope?: MemoryScope;
   tags?: string[];
   confidence?: number;
+  provenance?: MemoryProvenance | null;
   actor: string;
 }
 
@@ -257,6 +287,7 @@ export interface MemoryExportItem {
   tags: string[];
   source: string;
   confidence: number;
+  provenance?: MemoryProvenance | null;
   created_at: string;
   updated_at: string;
   last_used_at: string | null;

@@ -1,7 +1,7 @@
 import { NuzoMemoryError } from "./errors.js";
 import { memoryLimits } from "./policy.js";
-import { memoryKinds } from "./types.js";
-import type { MemoryExportDocument, MemoryExportItem, MemoryRecord } from "./types.js";
+import { memoryKinds, memoryProvenanceKinds } from "./types.js";
+import type { MemoryExportDocument, MemoryExportItem, MemoryProvenance, MemoryRecord } from "./types.js";
 
 export function toExportItem(memory: MemoryRecord): MemoryExportItem {
   return {
@@ -11,6 +11,7 @@ export function toExportItem(memory: MemoryRecord): MemoryExportItem {
     tags: [...memory.tags],
     source: memory.source,
     confidence: memory.confidence,
+    provenance: memory.provenance,
     created_at: memory.createdAt.toISOString(),
     updated_at: memory.updatedAt.toISOString(),
     last_used_at: memory.lastUsedAt?.toISOString() ?? null,
@@ -66,6 +67,7 @@ function assertExportItem(item: unknown, index: number): void {
       confidence,
     });
   }
+  getOptionalProvenanceField(item, "provenance", `memories[${index}]`);
   const createdAt = getStringField(item, "created_at", `memories[${index}]`);
   const updatedAt = getStringField(item, "updated_at", `memories[${index}]`);
   const lastUsedAt = getNullableStringField(item, "last_used_at", `memories[${index}]`);
@@ -111,6 +113,45 @@ function getNumberField(record: Record<string, unknown>, field: string, path: st
     throwInvalidExportField(path, field, "must be a finite number", { value: record[field] });
   }
   return record[field];
+}
+
+function getOptionalProvenanceField(
+  record: Record<string, unknown>,
+  field: string,
+  path: string,
+): MemoryProvenance | null | undefined {
+  if (!(field in record)) {
+    return undefined;
+  }
+  if (record[field] === null) {
+    return null;
+  }
+  if (!isRecord(record[field])) {
+    throwInvalidExportField(path, field, "must be an object or null", { value: record[field] });
+  }
+  const provenance = record[field];
+  if (!memoryProvenanceKinds.includes(provenance.kind as MemoryProvenance["kind"])) {
+    throwInvalidExportField(path, field, "kind is not supported", { kind: provenance.kind });
+  }
+  for (const textField of ["host", "surface", "thread_id", "action", "reason"] as const) {
+    if (provenance[textField] !== undefined && typeof provenance[textField] !== "string") {
+      throwInvalidExportField(`${path}.${field}`, textField, "must be a string", {
+        value: provenance[textField],
+      });
+    }
+  }
+  if (provenance.path !== undefined && typeof provenance.path !== "string") {
+    throwInvalidExportField(`${path}.${field}`, "path", "must be a string", { value: provenance.path });
+  }
+  if (
+    provenance.line !== undefined &&
+    (typeof provenance.line !== "number" || !Number.isInteger(provenance.line) || provenance.line <= 0)
+  ) {
+    throwInvalidExportField(`${path}.${field}`, "line", "must be a positive integer", {
+      value: provenance.line,
+    });
+  }
+  return provenance as unknown as MemoryProvenance;
 }
 
 function throwInvalidExportField(

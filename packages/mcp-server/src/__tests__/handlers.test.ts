@@ -47,6 +47,7 @@ function createTestHandlers(options: {
             tags: [...new Set(input.tags ?? [])],
             source: input.source,
             confidence: input.confidence ?? 1,
+            provenance: input.provenance ?? null,
             reason: input.reason.trim(),
           },
           duplicate: null,
@@ -81,6 +82,7 @@ function createTestHandlers(options: {
           tags: [...new Set(input.tags ?? [])],
           source: input.source,
           confidence: input.confidence ?? 1,
+          provenance: input.provenance ?? null,
           reason: input.reason.trim(),
         },
         duplicate,
@@ -117,6 +119,7 @@ function createTestHandlers(options: {
           scope: input.scope,
           tags: input.tags ?? [],
           confidence: input.confidence ?? memory.confidence,
+          provenance: "provenance" in input ? input.provenance ?? null : memory.provenance,
           updatedAt: new Date("2026-06-13T01:00:00.000Z"),
         };
         return {
@@ -137,6 +140,7 @@ function createTestHandlers(options: {
         tags: input.tags ?? [],
         source: input.source,
         confidence: input.confidence ?? 1,
+        provenance: input.provenance ?? null,
         createdAt: new Date("2026-06-13T00:00:00.000Z"),
         updatedAt: new Date("2026-06-13T00:00:00.000Z"),
         lastUsedAt: null,
@@ -162,6 +166,7 @@ function createTestHandlers(options: {
         tags: input.tags ?? [],
         source: input.source,
         confidence: input.confidence ?? 1,
+        provenance: input.provenance ?? null,
         createdAt: new Date("2026-06-13T00:00:00.000Z"),
         updatedAt: new Date("2026-06-13T00:00:00.000Z"),
         lastUsedAt: null,
@@ -218,6 +223,7 @@ function createTestHandlers(options: {
         revision: memory.revision + 1,
         content: input.content ?? memory.content,
         tags: input.tags ?? memory.tags,
+        provenance: "provenance" in input ? input.provenance ?? null : memory.provenance,
         updatedAt: new Date("2026-06-13T01:00:00.000Z"),
       };
       return memory;
@@ -358,6 +364,12 @@ describe("memory MCP handlers", () => {
       scope: "user:default",
       tags: ["mcp"],
       source: "nuzo:mcp",
+      provenance: {
+        kind: "mcp",
+        host: "codex",
+        surface: "mcp",
+        action: "remember",
+      },
     });
 
     expect(remembered).toEqual({
@@ -404,6 +416,12 @@ describe("memory MCP handlers", () => {
       scope: "user:default",
       tags: ["mcp"],
       source: "nuzo:mcp",
+      provenance: {
+        kind: "mcp",
+        host: "codex",
+        surface: "mcp",
+        action: "remember",
+      },
     });
 
     const listed = await handlers.list({
@@ -412,15 +430,33 @@ describe("memory MCP handlers", () => {
       limit: 50,
     });
     expect(listed.memories[0]?.id).toBe(remembered.id);
+    expect(listed.memories[0]?.provenance).toEqual({
+      kind: "mcp",
+      host: "codex",
+      surface: "mcp",
+      action: "remember",
+    });
 
     const updated = await handlers.update({
       id: remembered.id,
       content: "The user prefers complete MCP contracts.",
       tags: ["mcp", "contracts"],
+      provenance: {
+        kind: "mcp",
+        host: "codex",
+        surface: "mcp",
+        action: "update",
+      },
     });
     expect(updated.memory).toMatchObject({
       content: "The user prefers complete MCP contracts.",
       tags: ["mcp", "contracts"],
+      provenance: {
+        kind: "mcp",
+        host: "codex",
+        surface: "mcp",
+        action: "update",
+      },
     });
 
     const history = await handlers.history({ id: remembered.id, limit: 50 });
@@ -773,6 +809,7 @@ describe("memory MCP handlers", () => {
         tags: ["workflow"],
         source: "codex:capture-suggestion",
         confidence: 0.72,
+        provenance: null,
         reason: "The user stated a durable response style preference.",
       },
       duplicate: null,

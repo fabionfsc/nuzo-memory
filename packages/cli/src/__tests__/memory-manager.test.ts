@@ -163,6 +163,7 @@ function memory(): MemoryRecord {
     tags: ["style"],
     source: "test:manager",
     confidence: 1,
+    provenance: null,
     createdAt: now,
     updatedAt: now,
     lastUsedAt: null,

@@ -52,6 +52,7 @@ export function toSuggestionDraftOutput(draft: CaptureSuggestionDraft): CaptureS
     tags: draft.tags,
     source: draft.source,
     confidence: draft.confidence,
+    provenance: draft.provenance,
     reason: draft.reason,
   };
 }
@@ -66,6 +67,7 @@ export function toToolRecord(memory: MemoryRecord): MemoryToolRecord {
     tags: memory.tags,
     source: memory.source,
     confidence: memory.confidence,
+    provenance: memory.provenance,
     created_at: memory.createdAt.toISOString(),
     updated_at: memory.updatedAt.toISOString(),
     last_used_at: memory.lastUsedAt?.toISOString() ?? null,

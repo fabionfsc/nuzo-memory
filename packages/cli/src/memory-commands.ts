@@ -14,6 +14,7 @@ import {
   type ListMemoriesInput,
   type ConfirmCaptureDecision,
   type ConfirmCaptureInput,
+  type MemoryProvenance,
   type MemoryScope,
   type ForgetMemoryInput,
   type ForgetMemoriesInput,
@@ -59,6 +60,7 @@ import {
   parseExportFormat,
   parseIsoDate,
   parsePositiveInteger,
+  parseProvenanceJson,
   parseRelationshipMode,
   parseRetrievalMode,
   parseSemanticFallback,
@@ -70,6 +72,7 @@ interface SuggestCaptureCommandOptions {
   tag?: string[];
   source: string;
   confidence?: number;
+  provenanceJson?: MemoryProvenance | null;
   relationshipMode?: "exact" | "bounded";
   reason: string;
   json: boolean;
@@ -81,6 +84,7 @@ interface ConfirmCaptureCommandOptions {
   tag?: string[];
   source: string;
   confidence?: number;
+  provenanceJson?: MemoryProvenance | null;
   reason: string;
   yes: boolean;
   actor: string;
@@ -125,18 +129,26 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
     .requiredOption("--kind <kind>", "Memory kind.")
     .option("--tag <tag...>", "Memory tag. Can be used multiple times.")
     .option("--source <source>", "Memory source.", "nuzo:cli")
-    .action(withErrorHandling(io, async (content: string, commandOptions: { kind: MemoryKind; tag?: string[]; source: string }) => {
+    .option("--provenance-json <json>", "Structured provenance metadata as JSON.", parseProvenanceJson)
+    .action(withErrorHandling(io, async (content: string, commandOptions: {
+      kind: MemoryKind;
+      tag?: string[];
+      source: string;
+      provenanceJson?: MemoryProvenance | null;
+    }) => {
       const options = memory.opts<GlobalOptions>();
       const database = openDatabase(options);
       try {
         const service = createService(database);
-        const saved = await service.remember({
+        const rememberInput = {
           content,
           kind: commandOptions.kind,
           scope: resolveScope(options),
           tags: commandOptions.tag ?? [],
           source: commandOptions.source,
-        });
+          ...(commandOptions.provenanceJson === undefined ? {} : { provenance: commandOptions.provenanceJson }),
+        };
+        const saved = await service.remember(rememberInput);
         io.stdout(saved.id);
       } finally {
         database.close();
@@ -152,6 +164,7 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
     .option("--tag <tag...>", "Memory tag. Can be used multiple times.")
     .option("--source <source>", "Capture suggestion source.", "nuzo:cli:capture-suggestion")
     .option("--confidence <number>", "Capture confidence between 0 and 1.", parseConfidence)
+    .option("--provenance-json <json>", "Structured provenance metadata as JSON.", parseProvenanceJson)
     .option("--relationship-mode <mode>", "Capture relationship mode: exact or bounded.", parseRelationshipMode)
     .option("--json", "Print JSON output for scripting.", false)
     .action(withErrorHandling(io, async (
@@ -170,6 +183,7 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
           source: commandOptions.source,
           reason: commandOptions.reason,
           ...(commandOptions.confidence === undefined ? {} : { confidence: commandOptions.confidence }),
+          ...(commandOptions.provenanceJson === undefined ? {} : { provenance: commandOptions.provenanceJson }),
           ...(commandOptions.relationshipMode === undefined ? {} : { relationshipMode: commandOptions.relationshipMode }),
         };
         const suggestion = await service.suggestCapture(suggestionInput);
@@ -189,6 +203,7 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
     .option("--tag <tag...>", "Memory tag. Can be used multiple times.")
     .option("--source <source>", "Confirmed capture source.", "nuzo:cli:capture-confirmed")
     .option("--confidence <number>", "Capture confidence between 0 and 1.", parseConfidence)
+    .option("--provenance-json <json>", "Structured provenance metadata as JSON.", parseProvenanceJson)
     .option("--target-memory-id <id>", "Existing memory ID for update decisions.")
     .option("--expected-revision <number>", "Displayed memory revision for update decisions.", parsePositiveInteger)
     .option("--actor <actor>", "Audit actor.", "nuzo:cli")
@@ -215,6 +230,9 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
         };
         if (commandOptions.confidence !== undefined) {
           confirmInput.confidence = commandOptions.confidence;
+        }
+        if (commandOptions.provenanceJson !== undefined) {
+          confirmInput.provenance = commandOptions.provenanceJson;
         }
         if (commandOptions.targetMemoryId !== undefined) {
           confirmInput.targetMemoryId = commandOptions.targetMemoryId;
@@ -394,6 +412,7 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
     .option("--scope <scope>", "Replacement memory scope.")
     .option("--tag <tag...>", "Replacement memory tags.")
     .option("--confidence <number>", "Replacement confidence between 0 and 1.", parseConfidence)
+    .option("--provenance-json <json>", "Replacement structured provenance metadata as JSON.", parseProvenanceJson)
     .option("--expected-revision <number>", "Only update if the memory is still at this revision.", parsePositiveInteger)
     .action(withErrorHandling(io, async (
       id: string,
@@ -403,6 +422,7 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
         scope?: MemoryScope;
         tag?: string[];
         confidence?: number;
+        provenanceJson?: MemoryProvenance | null;
         expectedRevision?: number;
       },
     ) => {
@@ -431,6 +451,9 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
         }
         if (commandOptions.confidence !== undefined) {
           updateInput.confidence = commandOptions.confidence;
+        }
+        if (commandOptions.provenanceJson !== undefined) {
+          updateInput.provenance = commandOptions.provenanceJson;
         }
 
         const updated = await service.update(updateInput);

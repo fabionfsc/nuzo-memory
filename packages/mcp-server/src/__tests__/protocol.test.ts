@@ -112,6 +112,13 @@ describe("MCP protocol contract", () => {
           type: "object",
           required: ["content", "kind"],
           properties: {
+            provenance: {
+              anyOf: expect.arrayContaining([
+                expect.objectContaining({
+                  type: "object",
+                }),
+              ]),
+            },
             scope: {
               default: "user:default",
               type: "string",
@@ -133,6 +140,13 @@ describe("MCP protocol contract", () => {
           type: "object",
           required: ["content", "kind", "reason"],
           properties: {
+            provenance: {
+              anyOf: expect.arrayContaining([
+                expect.objectContaining({
+                  type: "object",
+                }),
+              ]),
+            },
             relationship_mode: {
               type: "string",
             },
@@ -364,9 +378,9 @@ describe("MCP protocol contract", () => {
         },
         ok: true,
         schema: {
-          current_version: 2,
+          current_version: 3,
           status: "current",
-          supported_version: 2,
+          supported_version: 3,
         },
         store: {
           writable_check: "writable",

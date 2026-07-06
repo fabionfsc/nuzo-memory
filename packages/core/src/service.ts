@@ -142,6 +142,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       tags: [...new Set(input.tags ?? [])],
       source: input.source,
       confidence: input.confidence ?? 1,
+      provenance: input.provenance ?? null,
       createdAt: now,
       updatedAt: now,
       lastUsedAt: null,
@@ -156,7 +157,12 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
         memoryId: memory.id,
         eventType: "memory.created",
         actor: input.source,
-        payload: { kind: memory.kind, scope: memory.scope, tags: memory.tags },
+        payload: {
+          kind: memory.kind,
+          scope: memory.scope,
+          tags: memory.tags,
+          provenance: memory.provenance,
+        },
         createdAt: now,
       });
     });
@@ -178,7 +184,8 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       input.kind !== undefined ||
       input.scope !== undefined ||
       input.tags !== undefined ||
-      input.confidence !== undefined;
+      input.confidence !== undefined ||
+      "provenance" in input;
     if (!hasChanges) {
       throw new NuzoMemoryError("MEMORY_UPDATE_EMPTY", "At least one memory field must be updated.", {
         id: input.id,
@@ -195,6 +202,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       scope: input.scope ?? current.scope,
       tags: input.tags ? [...new Set(input.tags)] : current.tags,
       confidence: input.confidence ?? current.confidence,
+      provenance: "provenance" in input ? input.provenance ?? null : current.provenance,
       updatedAt: clock.now(),
     };
 
@@ -214,6 +222,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
             scope: input.scope !== undefined,
             tags: input.tags !== undefined,
             confidence: input.confidence !== undefined,
+            provenance: "provenance" in input,
           },
           scope: updated.scope,
         },
@@ -276,6 +285,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
         tags: [...new Set(input.tags ?? [])],
         source: input.source,
         confidence: input.confidence ?? 1,
+        provenance: input.provenance ?? null,
         reason: input.reason.trim(),
       };
       const duplicateKey = toCaptureDuplicateKey(draft.content);
@@ -360,6 +370,9 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
         if (input.confidence !== undefined) {
           updateInput.confidence = input.confidence;
         }
+        if ("provenance" in input) {
+          updateInput.provenance = input.provenance ?? null;
+        }
         const memory = await updateMemory(updateInput);
         return {
           decision: input.decision,
@@ -396,6 +409,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
           scope: input.scope,
           tags: input.tags ?? [],
           source: input.source,
+          provenance: input.provenance ?? null,
         };
         if (input.confidence !== undefined) {
           rememberInput.confidence = input.confidence;
@@ -497,6 +511,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
           tags: item.tags,
           source: item.source,
           confidence: item.confidence,
+          provenance: item.provenance ?? null,
         });
 
       }
@@ -571,6 +586,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
             tags,
             source: item.source,
             confidence: item.confidence,
+            provenance: item.provenance ?? null,
             createdAt: parseExportDate(item.created_at, "created_at"),
             updatedAt: parseExportDate(item.updated_at, "updated_at"),
             lastUsedAt: item.last_used_at ? parseExportDate(item.last_used_at, "last_used_at") : null,
