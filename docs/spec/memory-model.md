@@ -3,6 +3,8 @@
 ## Memory
 
 A memory is a durable record the user expects the agent to use in future sessions.
+The [Memory Hygiene](memory-hygiene.md) contract defines target metadata for
+keeping records inspectable, reviewable, and contestable as they age.
 
 ```json
 {
@@ -22,6 +24,12 @@ A memory is a durable record the user expects the agent to use in future session
 ```
 
 ## Kinds
+
+`kind` is the current public compatibility field. Do not add new allowed values
+without updating tool schemas, validation, import/export behavior, and
+compatibility documentation. Future durability classes such as repo convention,
+task state, and lesson learned are specified in
+[Memory Hygiene](memory-hygiene.md).
 
 - `preference`: stable user preference.
 - `project_decision`: durable project decision.
@@ -77,6 +85,9 @@ Inferred or suggested memories should not be saved without confirmation. If save
 
 Confidence is not an authorization or instruction-priority signal. Recalled
 content remains stored data even when confidence is `1.0`.
+Future human-readable confidence states such as `observed`, `inferred`,
+`user_confirmed`, `needs_review`, and `deprecated` are defined by
+[Memory Hygiene](memory-hygiene.md).
 
 ## Source, Provenance, And Recall Trust
 
@@ -104,6 +115,8 @@ plugin, or current-user instruction hierarchy.
 Automatic lifecycle context preserves bounded content with its ID, revision,
 scope, kind, tags, and source inside the rendering contract defined by
 [Memory Trust Boundary](../architecture/memory-trust-boundary.md).
+Future structured provenance must preserve this trust boundary and remain
+bounded attribution metadata.
 
 ## Lifecycle
 

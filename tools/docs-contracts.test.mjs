@@ -157,6 +157,38 @@ test("published installer verifies npm package integrity before install", () => 
   assert.match(readText("docs/getting-started/index.md"), /verifies its npm integrity metadata/u);
 });
 
+test("memory hygiene contract stays visible and sliced for implementation", () => {
+  const navigation = readText("mkdocs.yml");
+  const memoryModel = readText("docs/spec/memory-model.md");
+  const trustBoundary = readText("docs/architecture/memory-trust-boundary.md");
+  const hygiene = readText("docs/spec/memory-hygiene.md");
+
+  assert.match(navigation, /Memory Hygiene: spec\/memory-hygiene\.md/u);
+  assert.match(memoryModel, /\[Memory Hygiene\]\(memory-hygiene\.md\)/u);
+  assert.match(trustBoundary, /\[Memory Hygiene\]\(\.\.\/spec\/memory-hygiene\.md\)/u);
+
+  for (const required of [
+    "Durability Classes",
+    "Scope Granularity",
+    "Provenance",
+    "Confidence State",
+    "Review And Expiry",
+    "Challenge Flow",
+    "Recall Rendering",
+    "Compatibility Plan",
+    "Test Plan",
+    "Structured provenance",
+    "Review metadata",
+    "Challenge flow",
+  ]) {
+    assert.match(hygiene, new RegExp(escapeRegExp(required), "u"), required);
+  }
+
+  for (const field of ["review_after", "expires_at", "user_confirmed", "needs_review", "superseded"]) {
+    assert.match(hygiene, new RegExp("`" + escapeRegExp(field) + "`", "u"), field);
+  }
+});
+
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
 }
