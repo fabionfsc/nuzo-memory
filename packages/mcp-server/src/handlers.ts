@@ -7,6 +7,7 @@ import type {
   ImportMemoriesInput,
   ListMemoriesInput,
   MemoryExportDocument,
+  MemoryConfidenceState,
   MemoryKind,
   MemoryProvenance,
   MemoryScope,
@@ -42,6 +43,7 @@ export interface RememberToolInput {
   tags: string[];
   source: string;
   confidence?: number;
+  confidence_state?: MemoryConfidenceState | null;
   provenance?: MemoryProvenance | null;
 }
 
@@ -67,6 +69,7 @@ export interface SuggestCaptureToolInput {
   tags: string[];
   source: string;
   confidence?: number;
+  confidence_state?: MemoryConfidenceState | null;
   provenance?: MemoryProvenance | null;
   reason: string;
   relationship_mode?: "exact" | "bounded";
@@ -80,6 +83,7 @@ export interface ConfirmCaptureToolInput {
   tags: string[];
   source: string;
   confidence?: number;
+  confidence_state?: MemoryConfidenceState | null;
   provenance?: MemoryProvenance | null;
   reason: string;
   confirm: boolean;
@@ -104,6 +108,7 @@ export interface UpdateToolInput {
   scope?: string;
   tags?: string[];
   confidence?: number;
+  confidence_state?: MemoryConfidenceState | null;
   provenance?: MemoryProvenance | null;
 }
 
@@ -382,6 +387,7 @@ export type MemoryToolRecord = {
   tags: string[];
   source: string;
   confidence: number;
+  confidence_state: MemoryConfidenceState | null;
   provenance: MemoryProvenance | null;
   created_at: string;
   updated_at: string;
@@ -405,6 +411,7 @@ export type CaptureSuggestionToolDraft = {
   tags: string[];
   source: string;
   confidence: number;
+  confidence_state: MemoryConfidenceState | null;
   provenance: MemoryProvenance | null;
   reason: string;
 };
@@ -424,6 +431,9 @@ export function createMemoryToolHandlers(
       };
       if (input.confidence !== undefined) {
         rememberInput.confidence = input.confidence;
+      }
+      if ("confidence_state" in input) {
+        rememberInput.confidenceState = input.confidence_state ?? null;
       }
       if ("provenance" in input) {
         rememberInput.provenance = input.provenance ?? null;
@@ -497,6 +507,9 @@ export function createMemoryToolHandlers(
       if (input.confidence !== undefined) {
         suggestInput.confidence = input.confidence;
       }
+      if ("confidence_state" in input) {
+        suggestInput.confidenceState = input.confidence_state ?? null;
+      }
       if ("provenance" in input) {
         suggestInput.provenance = input.provenance ?? null;
       }
@@ -553,6 +566,9 @@ export function createMemoryToolHandlers(
       };
       if (input.confidence !== undefined) {
         confirmInput.confidence = input.confidence;
+      }
+      if ("confidence_state" in input) {
+        confirmInput.confidenceState = input.confidence_state ?? null;
       }
       if ("provenance" in input) {
         confirmInput.provenance = input.provenance ?? null;
@@ -623,6 +639,9 @@ export function createMemoryToolHandlers(
       }
       if (input.confidence !== undefined) {
         updateInput.confidence = input.confidence;
+      }
+      if ("confidence_state" in input) {
+        updateInput.confidenceState = input.confidence_state ?? null;
       }
       if ("provenance" in input) {
         updateInput.provenance = input.provenance ?? null;

@@ -128,7 +128,7 @@ Recommended provenance fields:
 The numeric `confidence` field remains a score from `0.0` to `1.0`. It is not
 authorization, instruction priority, or a security score.
 
-The target contract adds a human-readable confidence state:
+The governance contract adds a human-readable `confidence_state` field:
 
 | State | Meaning | Typical numeric range |
 | --- | --- | --- |
@@ -138,8 +138,8 @@ The target contract adds a human-readable confidence state:
 | `needs_review` | Record may still be true but should be rechecked before strong use. | unchanged |
 | `deprecated` | Record is retained for history but should not be used as active guidance. | unchanged |
 
-The state should be rendered for humans. It must not cause a host to treat a
-memory as higher-priority instruction.
+The state is rendered for humans and exported/imported with the memory record.
+It must not cause a host to treat a memory as higher-priority instruction.
 
 ## Review And Expiry
 
@@ -206,8 +206,8 @@ Implement this contract in slices:
 
 1. **Specification only**: this page, links, and docs contracts.
 2. **Structured provenance**: add bounded optional metadata; preserve `source`.
-3. **Confidence/review state**: add human-readable state without removing
-   numeric `confidence`.
+3. **Confidence/review state**: add `confidence_state` without removing numeric
+   `confidence`.
 4. **Review metadata**: add `review_after` first; defer automatic expiry.
 5. **Challenge flow**: add CLI/MCP operations or flags with explicit
    confirmation and audit events.

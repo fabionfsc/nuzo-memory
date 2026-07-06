@@ -16,6 +16,7 @@ keeping records inspectable, reviewable, and contestable as they age.
   "tags": ["codex", "workflow"],
   "source": "codex:mcp",
   "confidence": 1.0,
+  "confidence_state": "user_confirmed",
   "provenance": null,
   "created_at": "2026-06-11T00:00:00Z",
   "updated_at": "2026-06-11T00:00:00Z",
@@ -86,9 +87,9 @@ Inferred or suggested memories should not be saved without confirmation. If save
 
 Confidence is not an authorization or instruction-priority signal. Recalled
 content remains stored data even when confidence is `1.0`.
-Future human-readable confidence states such as `observed`, `inferred`,
-`user_confirmed`, `needs_review`, and `deprecated` are defined by
-[Memory Governance](memory-governance.md).
+Human-readable confidence states such as `observed`, `inferred`,
+`user_confirmed`, `needs_review`, and `deprecated` complement the numeric score
+and are defined by [Memory Governance](memory-governance.md).
 
 ## Source, Provenance, And Recall Trust
 

@@ -28,6 +28,21 @@ export const memoryProvenanceKinds = [
   "mcp",
 ] as const satisfies readonly MemoryProvenanceKind[];
 
+export type MemoryConfidenceState =
+  | "observed"
+  | "inferred"
+  | "user_confirmed"
+  | "needs_review"
+  | "deprecated";
+
+export const memoryConfidenceStates = [
+  "observed",
+  "inferred",
+  "user_confirmed",
+  "needs_review",
+  "deprecated",
+] as const satisfies readonly MemoryConfidenceState[];
+
 export type MemoryScope =
   | `user:${string}`
   | `project:${string}`
@@ -54,6 +69,7 @@ export interface MemoryRecord {
   tags: string[];
   source: string;
   confidence: number;
+  confidenceState: MemoryConfidenceState | null;
   provenance: MemoryProvenance | null;
   createdAt: Date;
   updatedAt: Date;
@@ -106,6 +122,7 @@ export interface RememberMemoryInput {
   tags?: string[];
   source: string;
   confidence?: number;
+  confidenceState?: MemoryConfidenceState | null;
   provenance?: MemoryProvenance | null;
 }
 
@@ -130,6 +147,7 @@ export interface CaptureSuggestionDraft {
   tags: string[];
   source: string;
   confidence: number;
+  confidenceState: MemoryConfidenceState | null;
   provenance: MemoryProvenance | null;
   reason: string;
 }
@@ -252,6 +270,7 @@ export interface UpdateMemoryInput {
   scope?: MemoryScope;
   tags?: string[];
   confidence?: number;
+  confidenceState?: MemoryConfidenceState | null;
   provenance?: MemoryProvenance | null;
   actor: string;
 }
@@ -287,6 +306,7 @@ export interface MemoryExportItem {
   tags: string[];
   source: string;
   confidence: number;
+  confidence_state?: MemoryConfidenceState | null;
   provenance?: MemoryProvenance | null;
   created_at: string;
   updated_at: string;

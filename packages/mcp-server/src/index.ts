@@ -21,6 +21,7 @@ import {
   inspectRuntimeFileSafety,
   memoryLimits,
   memoryEventTypes,
+  memoryConfidenceStates,
   memoryScopePattern,
   memoryTagPattern,
   projectScopeFromPath,
@@ -30,6 +31,7 @@ import {
   type EmbeddingProvider,
   type MemoryService,
   type MemoryExportDocument,
+  type MemoryConfidenceState,
   type MemoryProvenance,
   type MemoryScope,
   type NuzoAuthorizationMode,
@@ -59,6 +61,7 @@ const memoryIdSchema = z.string().min(1).max(memoryLimits.identifierLength);
 const exportDateSchema = z.string().max(memoryLimits.dateLength);
 const eventTypeSchema = z.enum(memoryEventTypes);
 const paginationCursorSchema = z.string().min(1).max(memoryLimits.identifierLength * 4);
+const confidenceStateSchema = z.enum(memoryConfidenceStates);
 const provenanceSchema = z.object({
   kind: z.enum(["conversation", "file", "import", "cli", "mcp"]),
   host: z.string().min(1).max(memoryLimits.provenanceTextLength).optional(),
@@ -213,6 +216,7 @@ export function registerMemoryTools(
         tags: z.array(tagSchema).max(memoryLimits.tags).default([]),
         source: z.string().min(1).max(memoryLimits.sourceLength).default("nuzo:mcp"),
         confidence: z.number().min(0).max(1).optional(),
+        confidence_state: confidenceStateSchema.nullable().optional(),
         provenance: provenanceSchema.nullable().optional(),
       },
     },
@@ -226,6 +230,9 @@ export function registerMemoryTools(
       };
       if (input.confidence !== undefined) {
         rememberInput.confidence = input.confidence;
+      }
+      if (input.confidence_state !== undefined) {
+        rememberInput.confidence_state = toMemoryConfidenceState(input.confidence_state);
       }
       if (input.provenance !== undefined) {
         rememberInput.provenance = toMemoryProvenance(input.provenance);
@@ -297,6 +304,7 @@ export function registerMemoryTools(
         tags: z.array(tagSchema).max(memoryLimits.tags).default([]),
         source: z.string().min(1).max(memoryLimits.sourceLength).default("nuzo:capture-suggestion"),
         confidence: z.number().min(0).max(1).optional(),
+        confidence_state: confidenceStateSchema.nullable().optional(),
         provenance: provenanceSchema.nullable().optional(),
         reason: z.string().min(1).max(memoryLimits.reasonLength),
         relationship_mode: z.enum(["exact", "bounded"]).optional(),
@@ -313,6 +321,9 @@ export function registerMemoryTools(
       };
       if (input.confidence !== undefined) {
         suggestInput.confidence = input.confidence;
+      }
+      if (input.confidence_state !== undefined) {
+        suggestInput.confidence_state = toMemoryConfidenceState(input.confidence_state);
       }
       if (input.provenance !== undefined) {
         suggestInput.provenance = toMemoryProvenance(input.provenance);
@@ -337,6 +348,7 @@ export function registerMemoryTools(
         tags: z.array(tagSchema).max(memoryLimits.tags).default([]),
         source: z.string().min(1).max(memoryLimits.sourceLength).default("nuzo:capture-confirmed"),
         confidence: z.number().min(0).max(1).optional(),
+        confidence_state: confidenceStateSchema.nullable().optional(),
         provenance: provenanceSchema.nullable().optional(),
         reason: z.string().min(1).max(memoryLimits.reasonLength),
         confirm: z.boolean().default(false),
@@ -359,6 +371,9 @@ export function registerMemoryTools(
       };
       if (input.confidence !== undefined) {
         confirmInput.confidence = input.confidence;
+      }
+      if (input.confidence_state !== undefined) {
+        confirmInput.confidence_state = toMemoryConfidenceState(input.confidence_state);
       }
       if (input.provenance !== undefined) {
         confirmInput.provenance = toMemoryProvenance(input.provenance);
@@ -414,6 +429,7 @@ export function registerMemoryTools(
         scope: scopeSchema.optional(),
         tags: z.array(tagSchema).max(memoryLimits.tags).optional(),
         confidence: z.number().min(0).max(1).optional(),
+        confidence_state: confidenceStateSchema.nullable().optional(),
         provenance: provenanceSchema.nullable().optional(),
       },
     },
@@ -438,6 +454,9 @@ export function registerMemoryTools(
       }
       if (input.confidence !== undefined) {
         updateInput.confidence = input.confidence;
+      }
+      if (input.confidence_state !== undefined) {
+        updateInput.confidence_state = toMemoryConfidenceState(input.confidence_state);
       }
       if (input.provenance !== undefined) {
         updateInput.provenance = toMemoryProvenance(input.provenance);
@@ -616,6 +635,7 @@ export function registerMemoryTools(
               tags: z.array(tagSchema).max(memoryLimits.tags),
               source: z.string().min(1).max(memoryLimits.sourceLength),
               confidence: z.number().min(0).max(1),
+              confidence_state: confidenceStateSchema.nullable().optional(),
               provenance: provenanceSchema.nullable().optional(),
               created_at: exportDateSchema,
               updated_at: exportDateSchema,
@@ -704,6 +724,10 @@ function isMainModule(): boolean {
 
 function toMemoryProvenance(value: unknown): MemoryProvenance | null {
   return value === null ? null : value as MemoryProvenance;
+}
+
+function toMemoryConfidenceState(value: unknown): MemoryConfidenceState | null {
+  return value === null ? null : value as MemoryConfidenceState;
 }
 
 function openDatabase(storePath: string): SQLiteMemoryDatabase {

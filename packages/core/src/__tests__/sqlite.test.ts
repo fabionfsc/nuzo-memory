@@ -80,7 +80,7 @@ class PrefixedIdGenerator implements IdGenerator {
 }
 
 describe("SQLiteMemoryDatabase", () => {
-  it("creates the complete version 3 schema from an empty database", () => {
+  it("creates the complete version 4 schema from an empty database", () => {
     const directory = mkdtempSync(join(tmpdir(), "nuzo-schema-"));
     tempDirectories.push(directory);
     const database = new SQLiteMemoryDatabase({ path: join(directory, "memories.sqlite") });
@@ -105,10 +105,11 @@ describe("SQLiteMemoryDatabase", () => {
 
     const columns = database.database.pragma("table_info(memories)") as Array<{ name: string }>;
 
-    expect(database.getSchemaVersion()).toBe(3);
+    expect(database.getSchemaVersion()).toBe(4);
     expect(database.database.pragma("busy_timeout", { simple: true })).toBe(5000);
     expect(columns.some((column) => column.name === "revision")).toBe(true);
     expect(columns.some((column) => column.name === "provenance")).toBe(true);
+    expect(columns.some((column) => column.name === "confidence_state")).toBe(true);
     expect(objects).toEqual([
       { name: "idx_memories_archived_at", type: "index" },
       { name: "idx_memories_scope", type: "index" },
@@ -189,7 +190,7 @@ describe("SQLiteMemoryDatabase", () => {
 
     const reopened = new SQLiteMemoryDatabase({ path });
 
-    expect(reopened.getSchemaVersion()).toBe(3);
+    expect(reopened.getSchemaVersion()).toBe(4);
     await expect(reopened.findById(memory.id)).resolves.toMatchObject({
       revision: 1,
       content: "Migration tests preserve fake memory data.",
@@ -259,7 +260,7 @@ describe("SQLiteMemoryDatabase", () => {
 
     expect(inspectSQLiteMemoryStore(path)).toMatchObject({
       ok: true,
-      schemaVersion: 3,
+      schemaVersion: 4,
       integrityCheck: "ok",
       memoryCount: 1,
       activeMemoryCount: 1,
@@ -372,15 +373,15 @@ describe("SQLiteMemoryDatabase", () => {
     tempDirectories.push(directory);
     const path = join(directory, "memories.sqlite");
     const database = new Database(path);
-    database.pragma("user_version = 4");
+    database.pragma("user_version = 5");
     database.close();
 
     expect(() => new SQLiteMemoryDatabase({ path })).toThrowError(
       expect.objectContaining({
         code: "MEMORY_SCHEMA_UNSUPPORTED",
         details: {
-          currentVersion: 4,
-          supportedVersion: 3,
+          currentVersion: 5,
+          supportedVersion: 4,
         },
       }),
     );

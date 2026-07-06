@@ -19,6 +19,7 @@ export function formatCaptureSuggestion(suggestion: CaptureSuggestionResult, jso
     `Tags: ${output.draft.tags.length > 0 ? output.draft.tags.join(", ") : "none"}`,
     `Source: ${output.draft.source}`,
     `Confidence: ${output.draft.confidence}`,
+    `Confidence state: ${output.draft.confidence_state ?? "none"}`,
     `Reason: ${output.draft.reason}`,
   ];
   if (output.duplicate !== null) lines.push(`Duplicate: ${output.duplicate.id}`);
@@ -44,6 +45,7 @@ function toCaptureSuggestionOutput(suggestion: CaptureSuggestionResult) {
       tags: suggestion.draft.tags,
       source: suggestion.draft.source,
       confidence: suggestion.draft.confidence,
+      confidence_state: suggestion.draft.confidenceState,
       provenance: suggestion.draft.provenance,
       reason: suggestion.draft.reason,
     },
@@ -111,6 +113,7 @@ function toCliMemoryRecord(memory: MemoryRecord) {
     tags: memory.tags,
     source: memory.source,
     confidence: memory.confidence,
+    confidence_state: memory.confidenceState,
     provenance: memory.provenance,
     created_at: memory.createdAt.toISOString(),
     updated_at: memory.updatedAt.toISOString(),

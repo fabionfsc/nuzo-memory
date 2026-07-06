@@ -1,6 +1,6 @@
 import { NuzoMemoryError } from "./errors.js";
 import { memoryLimits } from "./policy.js";
-import { memoryKinds, memoryProvenanceKinds } from "./types.js";
+import { memoryConfidenceStates, memoryKinds, memoryProvenanceKinds } from "./types.js";
 import type { MemoryExportDocument, MemoryExportItem, MemoryProvenance, MemoryRecord } from "./types.js";
 
 export function toExportItem(memory: MemoryRecord): MemoryExportItem {
@@ -11,6 +11,7 @@ export function toExportItem(memory: MemoryRecord): MemoryExportItem {
     tags: [...memory.tags],
     source: memory.source,
     confidence: memory.confidence,
+    confidence_state: memory.confidenceState,
     provenance: memory.provenance,
     created_at: memory.createdAt.toISOString(),
     updated_at: memory.updatedAt.toISOString(),
@@ -67,6 +68,7 @@ function assertExportItem(item: unknown, index: number): void {
       confidence,
     });
   }
+  getOptionalConfidenceStateField(item, "confidence_state", `memories[${index}]`);
   getOptionalProvenanceField(item, "provenance", `memories[${index}]`);
   const createdAt = getStringField(item, "created_at", `memories[${index}]`);
   const updatedAt = getStringField(item, "updated_at", `memories[${index}]`);
@@ -113,6 +115,18 @@ function getNumberField(record: Record<string, unknown>, field: string, path: st
     throwInvalidExportField(path, field, "must be a finite number", { value: record[field] });
   }
   return record[field];
+}
+
+function getOptionalConfidenceStateField(record: Record<string, unknown>, field: string, path: string): void {
+  if (!(field in record) || record[field] === null) {
+    return;
+  }
+  const value = record[field];
+  if (typeof value !== "string" || !memoryConfidenceStates.includes(value as NonNullable<MemoryExportItem["confidence_state"]>)) {
+    throwInvalidExportField(path, field, "must be a supported confidence state or null", {
+      value,
+    });
+  }
 }
 
 function getOptionalProvenanceField(

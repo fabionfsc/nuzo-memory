@@ -201,6 +201,7 @@ function cloneMemory(memory: MemoryRecord): MemoryRecord {
   return {
     ...memory,
     tags: [...memory.tags],
+    confidenceState: memory.confidenceState,
     provenance: memory.provenance === null ? null : { ...memory.provenance },
     createdAt: new Date(memory.createdAt),
     updatedAt: new Date(memory.updatedAt),

@@ -54,6 +54,7 @@ CREATE TABLE memories (
   tags TEXT NOT NULL DEFAULT '[]',
   source TEXT NOT NULL,
   confidence REAL NOT NULL DEFAULT 1.0,
+  confidence_state TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   last_used_at TEXT,

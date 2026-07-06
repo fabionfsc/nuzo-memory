@@ -1,7 +1,7 @@
 import type Database from "better-sqlite3";
 import { NuzoMemoryError } from "../errors.js";
 
-export const schemaVersion = 3;
+export const schemaVersion = 4;
 
 export function migrate(database: Database.Database): void {
   database.pragma("journal_mode = WAL");
@@ -32,6 +32,11 @@ export function migrate(database: Database.Database): void {
 
   if (currentVersion < 3) {
     migrateToV3(database);
+    database.pragma("user_version = 3");
+  }
+
+  if (currentVersion < 4) {
+    migrateToV4(database);
     database.pragma(`user_version = ${schemaVersion}`);
   }
 }
@@ -86,5 +91,12 @@ function migrateToV3(database: Database.Database): void {
   const columns = database.pragma("table_info(memories)") as Array<{ name: string }>;
   if (!columns.some((column) => column.name === "provenance")) {
     database.exec("ALTER TABLE memories ADD COLUMN provenance TEXT;");
+  }
+}
+
+function migrateToV4(database: Database.Database): void {
+  const columns = database.pragma("table_info(memories)") as Array<{ name: string }>;
+  if (!columns.some((column) => column.name === "confidence_state")) {
+    database.exec("ALTER TABLE memories ADD COLUMN confidence_state TEXT;");
   }
 }
