@@ -39,6 +39,9 @@ export function toRecallOutput(result: RecallMemoryResult) {
     kind: result.memory.kind,
     scope: result.memory.scope,
     tags: result.memory.tags,
+    confidence_state: result.memory.confidenceState,
+    review_after: result.memory.reviewAfter?.toISOString() ?? null,
+    expires_at: result.memory.expiresAt?.toISOString() ?? null,
     score: result.score,
     reason: result.reason,
   };
@@ -54,6 +57,8 @@ export function toSuggestionDraftOutput(draft: CaptureSuggestionDraft): CaptureS
     confidence: draft.confidence,
     confidence_state: draft.confidenceState,
     provenance: draft.provenance,
+    review_after: draft.reviewAfter?.toISOString() ?? null,
+    expires_at: draft.expiresAt?.toISOString() ?? null,
     reason: draft.reason,
   };
 }
@@ -70,6 +75,8 @@ export function toToolRecord(memory: MemoryRecord): MemoryToolRecord {
     confidence: memory.confidence,
     confidence_state: memory.confidenceState,
     provenance: memory.provenance,
+    review_after: memory.reviewAfter?.toISOString() ?? null,
+    expires_at: memory.expiresAt?.toISOString() ?? null,
     created_at: memory.createdAt.toISOString(),
     updated_at: memory.updatedAt.toISOString(),
     last_used_at: memory.lastUsedAt?.toISOString() ?? null,

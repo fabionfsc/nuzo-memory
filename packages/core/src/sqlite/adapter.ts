@@ -37,6 +37,8 @@ interface MemoryRow {
   confidence: number;
   confidence_state: MemoryConfidenceState | null;
   provenance: string | null;
+  review_after: string | null;
+  expires_at: string | null;
   created_at: string;
   updated_at: string;
   last_used_at: string | null;
@@ -126,11 +128,11 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
         `
           INSERT INTO memories (
             id, scope, kind, content, tags, source, confidence, confidence_state, provenance,
-            created_at, updated_at, last_used_at, archived_at
+            review_after, expires_at, created_at, updated_at, last_used_at, archived_at
           )
           VALUES (
             @id, @scope, @kind, @content, @tags, @source, @confidence, @confidence_state, @provenance,
-            @created_at, @updated_at, @last_used_at, @archived_at
+            @review_after, @expires_at, @created_at, @updated_at, @last_used_at, @archived_at
           )
         `,
       )
@@ -152,6 +154,8 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
               confidence = @confidence,
               confidence_state = @confidence_state,
               provenance = @provenance,
+              review_after = @review_after,
+              expires_at = @expires_at,
               created_at = @created_at,
               updated_at = @updated_at,
               last_used_at = @last_used_at,
@@ -394,6 +398,15 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
       where.push("m.archived_at IS NULL");
     }
 
+    if (filter.needsReview === true) {
+      const reviewDueAt = filter.reviewDueAt ?? new Date();
+      where.push(`(
+        (m.review_after IS NOT NULL AND m.review_after <= @review_due_at) OR
+        (m.expires_at IS NOT NULL AND m.expires_at <= @review_due_at)
+      )`);
+      params.review_due_at = reviewDueAt.toISOString();
+    }
+
     for (const [index, tag] of (filter.tags ?? []).entries()) {
       const parameterName = `tag_${index}`;
       where.push(`EXISTS (SELECT 1 FROM json_each(m.tags) WHERE value = @${parameterName})`);
@@ -441,6 +454,8 @@ function toMemoryRow(memory: MemoryRecord): Record<string, unknown> {
     confidence: memory.confidence,
     confidence_state: memory.confidenceState,
     provenance: memory.provenance === null ? null : JSON.stringify(memory.provenance),
+    review_after: memory.reviewAfter?.toISOString() ?? null,
+    expires_at: memory.expiresAt?.toISOString() ?? null,
     created_at: memory.createdAt.toISOString(),
     updated_at: memory.updatedAt.toISOString(),
     last_used_at: memory.lastUsedAt?.toISOString() ?? null,
@@ -460,6 +475,8 @@ function fromMemoryRow(row: MemoryRow): MemoryRecord {
     confidence: row.confidence,
     confidenceState: row.confidence_state,
     provenance: parseProvenance(row.provenance),
+    reviewAfter: row.review_after ? new Date(row.review_after) : null,
+    expiresAt: row.expires_at ? new Date(row.expires_at) : null,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
     lastUsedAt: row.last_used_at ? new Date(row.last_used_at) : null,

@@ -529,6 +529,8 @@ describe("nuzo memory cli", () => {
         "Source: codex:capture-suggestion",
         "Confidence: 0.72",
         "Confidence state: inferred",
+        "Review after: none",
+        "Expires at: none",
         "Reason: The user stated a durable response style preference.",
       ].join("\n"),
     ]);
@@ -536,6 +538,57 @@ describe("nuzo memory cli", () => {
       stderr: [],
       stdout: [],
     });
+  });
+
+  it("lists memories due for review from review_after or expires_at", async () => {
+    const store = createStorePath();
+    await runCli(["memory", "--store", store, "init"]);
+
+    const due = await runCli([
+      "memory",
+      "--store",
+      store,
+      "remember",
+      "Review the old deployment flow before using it.",
+      "--kind",
+      "project_decision",
+      "--review-after",
+      "2000-01-01T00:00:00.000Z",
+      "--expires-at",
+      "2001-01-01T00:00:00.000Z",
+    ]);
+    const dueId = due.stdout[0] ?? "";
+
+    await runCli([
+      "memory",
+      "--store",
+      store,
+      "remember",
+      "Review the future deployment flow later.",
+      "--kind",
+      "project_decision",
+      "--review-after",
+      "2999-01-01T00:00:00.000Z",
+    ]);
+
+    const listed = await runCli(["memory", "--store", store, "list", "--needs-review"]);
+    expect(listed.stdout).toHaveLength(1);
+    expect(listed.stdout[0]).toContain(dueId);
+    expect(listed.stdout[0]).toContain("needs_review");
+    expect(listed.stdout[0]).toContain("expired");
+
+    await runCli([
+      "memory",
+      "--store",
+      store,
+      "update",
+      dueId,
+      "--clear-review-after",
+      "--clear-expires-at",
+    ]);
+
+    const afterClear = await runCli(["memory", "--store", store, "list", "--needs-review"]);
+    expect(afterClear.stdout).toEqual([]);
   });
 
   it("prints duplicate capture suggestions as JSON", async () => {
@@ -695,6 +748,8 @@ describe("nuzo memory cli", () => {
         "Source: nuzo:cli:capture-suggestion",
         "Confidence: 1",
         "Confidence state: inferred",
+        "Review after: none",
+        "Expires at: none",
         "Reason: The user stated a durable response style preference.",
         "Relationship: update_candidate",
         "Relationship reason: The draft appears to revise an active same-scope memory rather than add a separate memory.",
@@ -1310,7 +1365,7 @@ describe("nuzo memory cli", () => {
     const integrity = await runCli(["memory", "--store", sourceStore, "integrity", "--json"]);
     expect(JSON.parse(integrity.stdout[0] ?? "{}")).toMatchObject({
       ok: true,
-      schema_version: 4,
+      schema_version: 5,
       memory_count: 1,
       fts_row_count: 1,
       errors: [],
@@ -1488,7 +1543,7 @@ describe("nuzo memory cli", () => {
       store_exists: true,
       integrity: {
         ok: true,
-        schema_version: 4,
+        schema_version: 5,
       },
       git_tracking: {
         status: "skipped",
@@ -1558,6 +1613,8 @@ describe("nuzo memory cli", () => {
       confidence: 1,
       confidenceState: "user_confirmed",
       provenance: null,
+      reviewAfter: null,
+      expiresAt: null,
       createdAt: now,
       updatedAt: now,
       lastUsedAt: null,

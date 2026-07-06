@@ -97,6 +97,12 @@ export class DefaultPolicyEngine implements PolicyEngine {
         { confidenceState: input.confidenceState },
       );
     }
+    if (input.reviewAfter !== undefined && input.reviewAfter !== null) {
+      assertValidDate(input.reviewAfter, "reviewAfter");
+    }
+    if (input.expiresAt !== undefined && input.expiresAt !== null) {
+      assertValidDate(input.expiresAt, "expiresAt");
+    }
 
     const tags = input.tags ?? [];
     invariant(
@@ -128,6 +134,8 @@ export class DefaultPolicyEngine implements PolicyEngine {
       confidence: input.confidence ?? current.confidence,
       confidenceState: "confidenceState" in input ? input.confidenceState : current.confidenceState,
       provenance: "provenance" in input ? input.provenance : current.provenance,
+      reviewAfter: "reviewAfter" in input ? input.reviewAfter : current.reviewAfter,
+      expiresAt: "expiresAt" in input ? input.expiresAt : current.expiresAt,
     });
     invariant(input.actor.trim().length > 0, "MEMORY_ACTOR_EMPTY", "Memory actor cannot be empty.");
     invariant(
@@ -196,6 +204,9 @@ export class DefaultPolicyEngine implements PolicyEngine {
     if (input.cursor !== undefined) {
       invariant(input.cursor.trim().length > 0, "MEMORY_CURSOR_INVALID", "Memory pagination cursor is invalid.");
       invariant(input.cursor.length <= memoryLimits.identifierLength * 4, "MEMORY_CURSOR_INVALID", "Memory pagination cursor is invalid.");
+    }
+    if (input.reviewDueAt !== undefined) {
+      assertValidDate(input.reviewDueAt, "reviewDueAt");
     }
   }
 

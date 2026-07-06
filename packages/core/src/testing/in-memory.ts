@@ -63,6 +63,14 @@ export class InMemoryStore implements MemoryStore {
       .filter((memory) => filter.includeArchived === true || memory.archivedAt === null)
       .filter((memory) => !filter.scope || memory.scope === filter.scope)
       .filter((memory) => !filter.tags || filter.tags.every((tag) => memory.tags.includes(tag)))
+      .filter((memory) => {
+        if (filter.needsReview !== true) {
+          return true;
+        }
+        const dueAt = filter.reviewDueAt ?? new Date();
+        return (memory.reviewAfter !== null && memory.reviewAfter <= dueAt) ||
+          (memory.expiresAt !== null && memory.expiresAt <= dueAt);
+      })
       .sort((left, right) =>
         right.updatedAt.getTime() - left.updatedAt.getTime() ||
         right.createdAt.getTime() - left.createdAt.getTime() ||
@@ -203,6 +211,8 @@ function cloneMemory(memory: MemoryRecord): MemoryRecord {
     tags: [...memory.tags],
     confidenceState: memory.confidenceState,
     provenance: memory.provenance === null ? null : { ...memory.provenance },
+    reviewAfter: memory.reviewAfter ? new Date(memory.reviewAfter) : null,
+    expiresAt: memory.expiresAt ? new Date(memory.expiresAt) : null,
     createdAt: new Date(memory.createdAt),
     updatedAt: new Date(memory.updatedAt),
     lastUsedAt: memory.lastUsedAt ? new Date(memory.lastUsedAt) : null,

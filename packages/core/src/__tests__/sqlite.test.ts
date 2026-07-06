@@ -80,7 +80,7 @@ class PrefixedIdGenerator implements IdGenerator {
 }
 
 describe("SQLiteMemoryDatabase", () => {
-  it("creates the complete version 4 schema from an empty database", () => {
+  it("creates the complete version 5 schema from an empty database", () => {
     const directory = mkdtempSync(join(tmpdir(), "nuzo-schema-"));
     tempDirectories.push(directory);
     const database = new SQLiteMemoryDatabase({ path: join(directory, "memories.sqlite") });
@@ -96,6 +96,8 @@ describe("SQLiteMemoryDatabase", () => {
             'memories_fts',
             'idx_memories_scope',
             'idx_memories_archived_at',
+            'idx_memories_review_after',
+            'idx_memories_expires_at',
             'idx_memory_events_memory_id'
           )
           ORDER BY name
@@ -105,13 +107,17 @@ describe("SQLiteMemoryDatabase", () => {
 
     const columns = database.database.pragma("table_info(memories)") as Array<{ name: string }>;
 
-    expect(database.getSchemaVersion()).toBe(4);
+    expect(database.getSchemaVersion()).toBe(5);
     expect(database.database.pragma("busy_timeout", { simple: true })).toBe(5000);
     expect(columns.some((column) => column.name === "revision")).toBe(true);
     expect(columns.some((column) => column.name === "provenance")).toBe(true);
     expect(columns.some((column) => column.name === "confidence_state")).toBe(true);
+    expect(columns.some((column) => column.name === "review_after")).toBe(true);
+    expect(columns.some((column) => column.name === "expires_at")).toBe(true);
     expect(objects).toEqual([
       { name: "idx_memories_archived_at", type: "index" },
+      { name: "idx_memories_expires_at", type: "index" },
+      { name: "idx_memories_review_after", type: "index" },
       { name: "idx_memories_scope", type: "index" },
       { name: "idx_memory_events_memory_id", type: "index" },
       { name: "memories", type: "table" },
@@ -190,7 +196,7 @@ describe("SQLiteMemoryDatabase", () => {
 
     const reopened = new SQLiteMemoryDatabase({ path });
 
-    expect(reopened.getSchemaVersion()).toBe(4);
+    expect(reopened.getSchemaVersion()).toBe(5);
     await expect(reopened.findById(memory.id)).resolves.toMatchObject({
       revision: 1,
       content: "Migration tests preserve fake memory data.",
@@ -260,7 +266,7 @@ describe("SQLiteMemoryDatabase", () => {
 
     expect(inspectSQLiteMemoryStore(path)).toMatchObject({
       ok: true,
-      schemaVersion: 4,
+      schemaVersion: 5,
       integrityCheck: "ok",
       memoryCount: 1,
       activeMemoryCount: 1,
@@ -373,15 +379,15 @@ describe("SQLiteMemoryDatabase", () => {
     tempDirectories.push(directory);
     const path = join(directory, "memories.sqlite");
     const database = new Database(path);
-    database.pragma("user_version = 5");
+    database.pragma("user_version = 6");
     database.close();
 
     expect(() => new SQLiteMemoryDatabase({ path })).toThrowError(
       expect.objectContaining({
         code: "MEMORY_SCHEMA_UNSUPPORTED",
         details: {
-          currentVersion: 5,
-          supportedVersion: 4,
+          currentVersion: 6,
+          supportedVersion: 5,
         },
       }),
     );

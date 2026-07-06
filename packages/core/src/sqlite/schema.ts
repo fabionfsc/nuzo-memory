@@ -1,7 +1,7 @@
 import type Database from "better-sqlite3";
 import { NuzoMemoryError } from "../errors.js";
 
-export const schemaVersion = 4;
+export const schemaVersion = 5;
 
 export function migrate(database: Database.Database): void {
   database.pragma("journal_mode = WAL");
@@ -37,6 +37,11 @@ export function migrate(database: Database.Database): void {
 
   if (currentVersion < 4) {
     migrateToV4(database);
+    database.pragma("user_version = 4");
+  }
+
+  if (currentVersion < 5) {
+    migrateToV5(database);
     database.pragma(`user_version = ${schemaVersion}`);
   }
 }
@@ -99,4 +104,18 @@ function migrateToV4(database: Database.Database): void {
   if (!columns.some((column) => column.name === "confidence_state")) {
     database.exec("ALTER TABLE memories ADD COLUMN confidence_state TEXT;");
   }
+}
+
+function migrateToV5(database: Database.Database): void {
+  const columns = database.pragma("table_info(memories)") as Array<{ name: string }>;
+  if (!columns.some((column) => column.name === "review_after")) {
+    database.exec("ALTER TABLE memories ADD COLUMN review_after TEXT;");
+  }
+  if (!columns.some((column) => column.name === "expires_at")) {
+    database.exec("ALTER TABLE memories ADD COLUMN expires_at TEXT;");
+  }
+  database.exec(`
+    CREATE INDEX IF NOT EXISTS idx_memories_review_after ON memories(review_after);
+    CREATE INDEX IF NOT EXISTS idx_memories_expires_at ON memories(expires_at);
+  `);
 }

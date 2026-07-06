@@ -20,6 +20,8 @@ export function formatCaptureSuggestion(suggestion: CaptureSuggestionResult, jso
     `Source: ${output.draft.source}`,
     `Confidence: ${output.draft.confidence}`,
     `Confidence state: ${output.draft.confidence_state ?? "none"}`,
+    `Review after: ${output.draft.review_after ?? "none"}`,
+    `Expires at: ${output.draft.expires_at ?? "none"}`,
     `Reason: ${output.draft.reason}`,
   ];
   if (output.duplicate !== null) lines.push(`Duplicate: ${output.duplicate.id}`);
@@ -47,6 +49,8 @@ function toCaptureSuggestionOutput(suggestion: CaptureSuggestionResult) {
       confidence: suggestion.draft.confidence,
       confidence_state: suggestion.draft.confidenceState,
       provenance: suggestion.draft.provenance,
+      review_after: suggestion.draft.reviewAfter?.toISOString() ?? null,
+      expires_at: suggestion.draft.expiresAt?.toISOString() ?? null,
       reason: suggestion.draft.reason,
     },
     duplicate: suggestion.duplicate ? toCliMemoryRecord(suggestion.duplicate) : null,
@@ -115,6 +119,8 @@ function toCliMemoryRecord(memory: MemoryRecord) {
     confidence: memory.confidence,
     confidence_state: memory.confidenceState,
     provenance: memory.provenance,
+    review_after: memory.reviewAfter?.toISOString() ?? null,
+    expires_at: memory.expiresAt?.toISOString() ?? null,
     created_at: memory.createdAt.toISOString(),
     updated_at: memory.updatedAt.toISOString(),
     last_used_at: memory.lastUsedAt?.toISOString() ?? null,

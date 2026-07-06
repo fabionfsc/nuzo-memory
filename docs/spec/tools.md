@@ -88,6 +88,8 @@ Input:
   "scope": "user:default",
   "tags": ["storage", "architecture"],
   "source": "codex:mcp",
+  "review_after": null,
+  "expires_at": null,
   "provenance": {
     "kind": "mcp",
     "host": "codex",
@@ -230,6 +232,8 @@ Input:
   "source": "codex:capture-suggestion",
   "confidence": 0.72,
   "confidence_state": "inferred",
+  "review_after": "2026-08-01T00:00:00Z",
+  "expires_at": null,
   "provenance": {
     "kind": "conversation",
     "host": "codex",
@@ -288,6 +292,8 @@ Output when ready to ask the user:
     "tags": ["workflow"],
     "source": "codex:capture-suggestion",
     "confidence_state": "inferred",
+    "review_after": "2026-08-01T00:00:00Z",
+    "expires_at": null,
     "provenance": {
       "kind": "conversation",
       "host": "codex",
@@ -557,6 +563,9 @@ not authenticate `source`, authorize writes, or change recall trust rules.
 When provided, `confidence_state` is a human-readable label for review and
 audit. It complements the numeric `confidence`; it does not grant instruction
 authority, authorization, or ranking priority.
+When provided, `review_after` and `expires_at` are nullable ISO timestamps for
+review lifecycle metadata. They mark memories for review/filtering after the
+timestamp is due; they do not automatically archive, delete, or rewrite memory.
 
 Revision conflicts are never retried silently. A client must re-read the memory
 and ask the user to confirm again before calling `memory.confirm_capture` or
@@ -578,9 +587,14 @@ Input:
   "scope": "user:default",
   "tags": ["architecture"],
   "include_archived": false,
+  "needs_review": false,
   "limit": 50
 }
 ```
+
+Set `needs_review: true` to list active memories whose `review_after` or
+`expires_at` timestamp is due. This is a review filter only; it does not mutate
+matching records.
 
 Output:
 
@@ -610,6 +624,8 @@ Input:
   "content": "The user prefers SQLite for simple local-first prototypes.",
   "tags": ["storage", "architecture", "sqlite"],
   "confidence_state": "needs_review",
+  "review_after": "2026-08-01T00:00:00Z",
+  "expires_at": null,
   "provenance": {
     "kind": "mcp",
     "host": "codex",
@@ -812,7 +828,8 @@ This is the Nuzo portability format. Codex, Claude Code, and future host plugins
 
 JSON export version `1` preserves memory record provenance fields that are part
 of the memory model, including `source`, numeric `confidence`,
-`confidence_state`, structured `provenance`, scope, kind, tags, and timestamps.
+`confidence_state`, structured `provenance`, `review_after`, `expires_at`,
+scope, kind, tags, and timestamps.
 It does not export audit history. Export itself appends a
 store-wide `memory.exported` audit event with `memory_id: null`.
 
@@ -928,8 +945,8 @@ in `0.9.0`.
     "allowed_scopes": ["project:0123456789abcdef", "user:default"]
   },
   "schema": {
-    "current_version": 1,
-    "supported_version": 1,
+    "current_version": 5,
+    "supported_version": 5,
     "status": "current"
   },
   "counts": {
@@ -940,8 +957,8 @@ in `0.9.0`.
   "integrity": {
     "ok": true,
     "path": "~/.nuzo/memory/memories.sqlite",
-    "schema_version": 4,
-    "supported_schema_version": 4,
+    "schema_version": 5,
+    "supported_schema_version": 5,
     "integrity_check": "ok",
     "foreign_key_violations": 0,
     "memory_count": 5,

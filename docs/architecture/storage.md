@@ -38,7 +38,7 @@ The response must include which scope produced each result.
 
 ## SQLite Tables
 
-The current schema version is `2`. Nuzo stores it in SQLite `user_version` and
+The current schema version is `5`. Nuzo stores it in SQLite `user_version` and
 rejects databases created by newer unsupported Nuzo versions with the
 structured `MEMORY_SCHEMA_UNSUPPORTED` error.
 
@@ -55,6 +55,9 @@ CREATE TABLE memories (
   source TEXT NOT NULL,
   confidence REAL NOT NULL DEFAULT 1.0,
   confidence_state TEXT,
+  provenance TEXT,
+  review_after TEXT,
+  expires_at TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   last_used_at TEXT,

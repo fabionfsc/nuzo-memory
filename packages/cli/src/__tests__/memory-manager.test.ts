@@ -165,6 +165,8 @@ function memory(): MemoryRecord {
     confidence: 1,
     confidenceState: "user_confirmed",
     provenance: null,
+    reviewAfter: null,
+    expiresAt: null,
     createdAt: now,
     updatedAt: now,
     lastUsedAt: null,

@@ -98,6 +98,12 @@ directly instead of depending on internal assertion helpers.
 | `NuzoRuntimeConfigProvenance` | Non-sensitive source metadata for effective runtime fields. |
 | `NuzoRuntimeAdjustment` | Safe runtime adjustments caused by authorization constraints. |
 
+`MemoryRecord`, `RememberMemoryInput`, `UpdateMemoryInput`, `CaptureSuggestionDraft`,
+and `MemoryExportItem` include nullable review lifecycle metadata:
+`reviewAfter` / `review_after` and `expiresAt` / `expires_at`. These fields are
+optional for inputs and export imports, and `null` means no review or expiry
+timestamp is set.
+
 ## Advanced Public Exports
 
 These exports are public for integrations that own storage, policy, dependency
