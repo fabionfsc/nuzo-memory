@@ -100,6 +100,7 @@ nav:
       - Repository Layout: architecture/repository-layout.md
   - Specification:
       - Memory Model: spec/memory-model.md
+      - Memory Hygiene: spec/memory-hygiene.md
       - Capture Suggestions: spec/capture-suggestions.md
       - Lifecycle Hooks: operations/lifecycle-hooks.md
       - Optional Semantic Retrieval: spec/semantic-retrieval.md

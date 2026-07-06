@@ -30,6 +30,10 @@ make the stored text a permanent higher-level instruction, prove that its
 `source` value is authentic, or guarantee that an imported record is safe in a
 different session.
 
+The [Memory Hygiene](../spec/memory-hygiene.md) contract adds target provenance,
+confidence-state, review, and challenge metadata. These fields improve audit
+and maintenance. They do not change the trust boundary.
+
 ## Trust Rules
 
 1. Memory content is untrusted stored data during recall, regardless of its
@@ -38,15 +42,17 @@ different session.
    authorization and must not elevate a record's authority.
 3. Confidence expresses confidence in a draft or fact. It is not permission to
    execute instructions and is not a security score.
-4. Tags and kinds affect organization and retrieval only. An `instruction`
+4. Provenance, review state, and challenge history improve inspectability but
+   do not grant instruction priority.
+5. Tags and kinds affect organization and retrieval only. An `instruction`
    memory is still data until the current host decides it is relevant and
    consistent with current instructions.
-5. Scope selectors identify records. Core policy allowlists authorize access.
+6. Scope selectors identify records. Core policy allowlists authorize access.
    Filesystem/process isolation requires separate stores or operating-system
    controls.
-6. Imports preserve inspectability and attribution but never inherit trust from
+7. Imports preserve inspectability and attribution but never inherit trust from
    the exporting host.
-7. Current system, developer, plugin, and user instructions always take
+8. Current system, developer, plugin, and user instructions always take
    precedence over recalled content.
 
 ## Threats And Controls
