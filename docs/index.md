@@ -1,8 +1,8 @@
 <section class="nuzo-landing nuzo-reveal">
   <div class="nuzo-landing__copy">
   <p class="nuzo-eyebrow">Local-first memory for AI agents</p>
-  <h1>Memory your agent can use without becoming hidden state.</h1>
-  <p class="nuzo-lead">Nuzo gives Codex, Claude Code, and MCP-compatible agents durable memory that stays local, inspectable, editable, exportable, and deletable.</p>
+  <h1>Local memory for AI agents.</h1>
+  <p class="nuzo-lead">Nuzo gives Codex, Claude Code, and MCP-compatible hosts durable memory that stays local, inspectable, editable, exportable, and deletable.</p>
   <p class="nuzo-actions">
     <a href="getting-started/" class="nuzo-button">Start in 60 seconds</a>
     <a href="#see-the-loop" class="nuzo-button nuzo-button--secondary">See the memory loop</a>
@@ -36,6 +36,7 @@ nuzo setup</code></pre>
   <p>The installer validates Node.js/npm, installs the same npm package, verifies the CLI, and leaves host configuration to <code>nuzo setup</code>.</p>
   <pre><code>curl -fsSL https://nuzo.com.br/install.sh | sh
 nuzo setup</code></pre>
+  <p><a href="getting-started/#install">Download, verify, and inspect first →</a></p>
   </article>
 </section>
 
@@ -172,7 +173,8 @@ Nuzo `1.0.0` is the current public release.
 | `@nuzo/memory-core` | Library-level integrations. |
 
 Start with the [installation overview](getting-started/index.md), read the
-[privacy and security model](operations/privacy-and-security.md), or inspect
-the [MCP tool contract](spec/tools.md). Internal architecture, specifications,
+[privacy and security model](operations/privacy-and-security.md), review the
+[threat model](operations/threat-model.md), or inspect the
+[MCP tool contract](spec/tools.md). Internal architecture, specifications,
 benchmarks, and release procedures remain available under the maintainer
 sections of this site.
