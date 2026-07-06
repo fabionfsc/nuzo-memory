@@ -35,6 +35,7 @@ directly instead of depending on internal assertion helpers.
 | `SystemClock` | Default wall-clock implementation. |
 | `RandomIdGenerator` | Default memory and event ID generator. |
 | `memoryKinds` | Stable memory kind values. |
+| `memoryProvenanceKinds` | Stable structured provenance kind values. |
 | `memoryEventTypes` | Stable audit event type values. |
 | `memoryLimits` | Public validation limits used across CLI and MCP contracts. |
 | `memoryScopePattern` | Scope validation pattern. |
@@ -54,6 +55,8 @@ directly instead of depending on internal assertion helpers.
 | `MemoryRecord` | Canonical memory record. |
 | `MemoryEvent` | Canonical audit event. |
 | `MemoryKind` | Memory kind union. |
+| `MemoryProvenance` | Structured provenance metadata. |
+| `MemoryProvenanceKind` | Structured provenance kind union. |
 | `MemoryScope` | Scope string type. |
 | `MemoryEventType` | Audit event type union. |
 | `RememberMemoryInput` | Explicit memory write input. |

@@ -87,7 +87,13 @@ Input:
   "kind": "preference",
   "scope": "user:default",
   "tags": ["storage", "architecture"],
-  "source": "codex:mcp"
+  "source": "codex:mcp",
+  "provenance": {
+    "kind": "mcp",
+    "host": "codex",
+    "surface": "mcp",
+    "action": "remember"
+  }
 }
 ```
 
@@ -223,6 +229,12 @@ Input:
   "tags": ["workflow"],
   "source": "codex:capture-suggestion",
   "confidence": 0.72,
+  "provenance": {
+    "kind": "conversation",
+    "host": "codex",
+    "surface": "mcp",
+    "action": "suggest_capture"
+  },
   "reason": "The user stated a recurring response style preference."
 }
 ```
@@ -243,7 +255,7 @@ invariants are defined in [Capture Suggestions](capture-suggestions.md).
 Behavior:
 
 - applies the same core validation, scope authorization, tag rules, confidence
-  rules, and secret scanning as `memory.remember`;
+  rules, provenance validation, and secret scanning as `memory.remember`;
 - trims content and de-duplicates tags in the returned draft;
 - checks active memories in the same scope for exact normalized content
   duplicates;
@@ -273,6 +285,12 @@ Output when ready to ask the user:
     "scope": "user:default",
     "tags": ["workflow"],
     "source": "codex:capture-suggestion",
+    "provenance": {
+      "kind": "conversation",
+      "host": "codex",
+      "surface": "mcp",
+      "action": "suggest_capture"
+    },
     "confidence": 0.72,
     "reason": "The user stated a recurring response style preference."
   },
@@ -449,6 +467,12 @@ Input for confirmed creation:
   "tags": ["workflow"],
   "source": "codex:capture-confirmed",
   "confidence": 0.72,
+  "provenance": {
+    "kind": "conversation",
+    "host": "codex",
+    "surface": "mcp",
+    "action": "capture_confirmed"
+  },
   "reason": "The user confirmed the draft.",
   "confirm": true
 }
@@ -466,6 +490,12 @@ Input for confirmed replacement:
   "scope": "user:default",
   "tags": ["workflow"],
   "source": "codex:capture-confirmed",
+  "provenance": {
+    "kind": "conversation",
+    "host": "codex",
+    "surface": "mcp",
+    "action": "capture_confirmed"
+  },
   "reason": "The user confirmed the replacement.",
   "confirm": true
 }
@@ -499,6 +529,12 @@ Output:
     "tags": ["workflow"],
     "source": "codex:capture-confirmed",
     "confidence": 0.72,
+    "provenance": {
+      "kind": "conversation",
+      "host": "codex",
+      "surface": "mcp",
+      "action": "capture_confirmed"
+    },
     "created_at": "2026-06-19T00:00:00.000Z",
     "updated_at": "2026-06-28T00:00:00.000Z",
     "last_used_at": null,
@@ -511,6 +547,8 @@ Output:
 `clarify` ignore `confirm` and must not create memories, audit events, usage
 updates, stored drafts, or hidden notes. Confirmed writes remain subject to the
 same policy checks as direct `memory.remember` and `memory.update` calls.
+When provided, `provenance` is bounded metadata for audit and review. It does
+not authenticate `source`, authorize writes, or change recall trust rules.
 
 Revision conflicts are never retried silently. A client must re-read the memory
 and ask the user to confirm again before calling `memory.confirm_capture` or
@@ -562,7 +600,13 @@ Input:
   "id": "mem_01HZY...",
   "expected_revision": 1,
   "content": "The user prefers SQLite for simple local-first prototypes.",
-  "tags": ["storage", "architecture", "sqlite"]
+  "tags": ["storage", "architecture", "sqlite"],
+  "provenance": {
+    "kind": "mcp",
+    "host": "codex",
+    "surface": "mcp",
+    "action": "update"
+  }
 }
 ```
 
@@ -758,8 +802,8 @@ Export memories as a versioned JSON document.
 This is the Nuzo portability format. Codex, Claude Code, and future host plugins should expose this same tool instead of creating host-specific export formats.
 
 JSON export version `1` preserves memory record provenance fields that are part
-of the memory model, including `source`, scope, kind, tags, confidence, and
-timestamps. It does not export audit history. Export itself appends a
+of the memory model, including `source`, structured `provenance`, scope, kind,
+tags, confidence, and timestamps. It does not export audit history. Export itself appends a
 store-wide `memory.exported` audit event with `memory_id: null`.
 
 The MCP tool returns JSON only. The CLI can also render the same document as
@@ -886,8 +930,8 @@ in `0.9.0`.
   "integrity": {
     "ok": true,
     "path": "~/.nuzo/memory/memories.sqlite",
-    "schema_version": 2,
-    "supported_schema_version": 2,
+    "schema_version": 3,
+    "supported_schema_version": 3,
     "integrity_check": "ok",
     "foreign_key_violations": 0,
     "memory_count": 5,

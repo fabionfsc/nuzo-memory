@@ -43,12 +43,12 @@ Optional encrypted stores remain a future design area. Until that exists, treat
 device compromise, same-user malware, and uncontrolled backups as out of scope
 for Nuzo's protection model.
 
-## Agent Memory Hygiene
+## Agent Memory Governance
 
 Recalled memory remains untrusted stored data. A high confidence score, known
 source, or familiar scope does not turn a memory into a system instruction.
 
-Good memory hygiene means:
+Good memory governance means:
 
 - inferred memories stay as drafts until a human confirms or edits them;
 - every memory keeps enough attribution to understand where it came from;

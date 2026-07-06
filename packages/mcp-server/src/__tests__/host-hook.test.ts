@@ -30,6 +30,7 @@ function memory(overrides: Partial<MemoryRecord> = {}): MemoryRecord {
     tags: ["cloudflare", "docker", "workflow"],
     source: "codex:mcp",
     confidence: 1,
+    provenance: null,
     createdAt: new Date("2026-06-27T00:00:00.000Z"),
     updatedAt: new Date("2026-06-27T00:00:00.000Z"),
     lastUsedAt: null,
@@ -437,8 +438,8 @@ describe("host recall hooks", () => {
         integrity: {
           ok: true,
           status: "ok",
-          schema_version: 2,
-          supported_schema_version: 2,
+          schema_version: 3,
+          supported_schema_version: 3,
           missing_fts_rows: 0,
           orphan_fts_rows: 0,
           errors: [],

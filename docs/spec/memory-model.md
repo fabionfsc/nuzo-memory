@@ -3,7 +3,7 @@
 ## Memory
 
 A memory is a durable record the user expects the agent to use in future sessions.
-The [Memory Hygiene](memory-hygiene.md) contract defines target metadata for
+The [Memory Governance](memory-governance.md) contract defines target metadata for
 keeping records inspectable, reviewable, and contestable as they age.
 
 ```json
@@ -16,6 +16,7 @@ keeping records inspectable, reviewable, and contestable as they age.
   "tags": ["codex", "workflow"],
   "source": "codex:mcp",
   "confidence": 1.0,
+  "provenance": null,
   "created_at": "2026-06-11T00:00:00Z",
   "updated_at": "2026-06-11T00:00:00Z",
   "last_used_at": null,
@@ -29,7 +30,7 @@ keeping records inspectable, reviewable, and contestable as they age.
 without updating tool schemas, validation, import/export behavior, and
 compatibility documentation. Future durability classes such as repo convention,
 task state, and lesson learned are specified in
-[Memory Hygiene](memory-hygiene.md).
+[Memory Governance](memory-governance.md).
 
 - `preference`: stable user preference.
 - `project_decision`: durable project decision.
@@ -87,7 +88,7 @@ Confidence is not an authorization or instruction-priority signal. Recalled
 content remains stored data even when confidence is `1.0`.
 Future human-readable confidence states such as `observed`, `inferred`,
 `user_confirmed`, `needs_review`, and `deprecated` are defined by
-[Memory Hygiene](memory-hygiene.md).
+[Memory Governance](memory-governance.md).
 
 ## Source, Provenance, And Recall Trust
 
@@ -115,8 +116,27 @@ plugin, or current-user instruction hierarchy.
 Automatic lifecycle context preserves bounded content with its ID, revision,
 scope, kind, tags, and source inside the rendering contract defined by
 [Memory Trust Boundary](../architecture/memory-trust-boundary.md).
-Future structured provenance must preserve this trust boundary and remain
-bounded attribution metadata.
+Structured provenance preserves this trust boundary and remains bounded
+attribution metadata. It is optional and does not replace `source`.
+
+```json
+{
+  "source": "codex:capture-confirmed",
+  "provenance": {
+    "kind": "conversation",
+    "host": "codex",
+    "surface": "mcp",
+    "path": "AGENTS.md",
+    "line": 42,
+    "action": "capture_confirmed",
+    "reason": "User confirmed a recurring repository convention."
+  }
+}
+```
+
+Provenance fields are metadata for audit and review. Paths must be relative,
+line numbers must be positive integers, and reason text is bounded and
+secret-scanned.
 
 ## Lifecycle
 

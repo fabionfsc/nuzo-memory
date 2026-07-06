@@ -84,6 +84,83 @@ describe("memory service", () => {
     expect(events.map((event) => event.eventType)).toEqual(["memory.created"]);
   });
 
+  it("stores, validates, updates, and clears structured provenance", async () => {
+    const { service } = createTestService();
+
+    const memory = await service.remember({
+      content: "This repo uses npm scripts for validation.",
+      kind: "project_decision",
+      scope: "project:nuzo",
+      tags: ["workflow"],
+      source: "codex:capture-confirmed",
+      provenance: {
+        kind: "file",
+        host: "codex",
+        surface: "mcp",
+        path: "AGENTS.md",
+        line: 42,
+        action: "capture_confirmed",
+        reason: "User confirmed repository workflow guidance.",
+      },
+    });
+
+    expect(memory.provenance).toEqual({
+      kind: "file",
+      host: "codex",
+      surface: "mcp",
+      path: "AGENTS.md",
+      line: 42,
+      action: "capture_confirmed",
+      reason: "User confirmed repository workflow guidance.",
+    });
+
+    const updated = await service.update({
+      id: memory.id,
+      actor: "test",
+      provenance: {
+        kind: "conversation",
+        host: "codex",
+        surface: "cli",
+        action: "update",
+      },
+    });
+    expect(updated.provenance).toEqual({
+      kind: "conversation",
+      host: "codex",
+      surface: "cli",
+      action: "update",
+    });
+
+    const cleared = await service.update({
+      id: memory.id,
+      actor: "test",
+      provenance: null,
+    });
+    expect(cleared.provenance).toBeNull();
+
+    await expect(service.remember({
+      content: "Unsafe provenance path should be rejected.",
+      kind: "note",
+      scope: "project:nuzo",
+      source: "test",
+      provenance: {
+        kind: "file",
+        path: "../secrets.env",
+      },
+    })).rejects.toMatchObject({ code: "MEMORY_PROVENANCE_PATH_UNSAFE" });
+
+    await expect(service.remember({
+      content: "Sensitive provenance reason should be rejected.",
+      kind: "note",
+      scope: "project:nuzo",
+      source: "test",
+      provenance: {
+        kind: "conversation",
+        reason: "Authorization: Bearer abcdefghijklmnopqrstuvwxyz123456",
+      },
+    })).rejects.toMatchObject({ code: "MEMORY_SECRET_DETECTED" });
+  });
+
   it("recalls Unicode words without splitting accented characters", async () => {
     const { service } = createTestService();
     const memory = await service.remember({
@@ -301,6 +378,12 @@ describe("memory service", () => {
       tags: ["workflow", "workflow"],
       source: "codex:capture-suggestion",
       confidence: 0.72,
+      provenance: {
+        kind: "conversation",
+        host: "codex",
+        surface: "mcp",
+        action: "suggest_capture",
+      },
       reason: "The user stated a durable response style preference.",
     });
 
@@ -315,6 +398,12 @@ describe("memory service", () => {
         tags: ["workflow"],
         source: "codex:capture-suggestion",
         confidence: 0.72,
+        provenance: {
+          kind: "conversation",
+          host: "codex",
+          surface: "mcp",
+          action: "suggest_capture",
+        },
         reason: "The user stated a durable response style preference.",
       },
       duplicate: null,
@@ -668,6 +757,12 @@ describe("memory service", () => {
       scope: "user:default",
       tags: ["communication"],
       source: "test:capture-confirmed",
+      provenance: {
+        kind: "conversation",
+        host: "codex",
+        surface: "mcp",
+        action: "capture_confirmed",
+      },
       reason: "The user confirmed a replacement preference.",
       confirm: true,
       actor: "test",
@@ -682,6 +777,12 @@ describe("memory service", () => {
         id: memory.id,
         revision: 2,
         content: "The user prefers detailed final answers.",
+        provenance: {
+          kind: "conversation",
+          host: "codex",
+          surface: "mcp",
+          action: "capture_confirmed",
+        },
       },
     });
 
@@ -1170,6 +1271,13 @@ describe("memory service", () => {
       scope: "user:default",
       tags: ["export"],
       source: "codex:capture-confirmed",
+      provenance: {
+        kind: "import",
+        host: "cli",
+        surface: "cli",
+        action: "remember",
+        reason: "Seeded by export/import test.",
+      },
     });
 
     const document = await source.service.exportMemories({
@@ -1184,6 +1292,13 @@ describe("memory service", () => {
     expect(document.memories).toHaveLength(1);
     expect(document.memories[0]?.content).toBe("The user prefers JSON exports for migrations.");
     expect(document.memories[0]?.source).toBe("codex:capture-confirmed");
+    expect(document.memories[0]?.provenance).toEqual({
+      kind: "import",
+      host: "cli",
+      surface: "cli",
+      action: "remember",
+      reason: "Seeded by export/import test.",
+    });
 
     await expect(source.service.audit({ eventTypes: ["memory.exported"] })).resolves.toMatchObject([
       {
@@ -1219,6 +1334,13 @@ describe("memory service", () => {
     });
     expect(imported[0]?.memory.content).toBe("The user prefers JSON exports for migrations.");
     expect(imported[0]?.memory.source).toBe("codex:capture-confirmed");
+    expect(imported[0]?.memory.provenance).toEqual({
+      kind: "import",
+      host: "cli",
+      surface: "cli",
+      action: "remember",
+      reason: "Seeded by export/import test.",
+    });
     await expect(target.service.audit({ eventTypes: ["memory.imported"] })).resolves.toMatchObject([
       {
         eventType: "memory.imported",

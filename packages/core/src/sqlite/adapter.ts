@@ -17,6 +17,7 @@ import type {
   MemoryHistoryInput,
   MemoryEvent,
   MemoryKind,
+  MemoryProvenance,
   MemoryRecord,
   MemoryScope,
   RecallMemoriesInput,
@@ -33,6 +34,7 @@ interface MemoryRow {
   tags: string;
   source: string;
   confidence: number;
+  provenance: string | null;
   created_at: string;
   updated_at: string;
   last_used_at: string | null;
@@ -121,11 +123,11 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
       .prepare(
         `
           INSERT INTO memories (
-            id, scope, kind, content, tags, source, confidence,
+            id, scope, kind, content, tags, source, confidence, provenance,
             created_at, updated_at, last_used_at, archived_at
           )
           VALUES (
-            @id, @scope, @kind, @content, @tags, @source, @confidence,
+            @id, @scope, @kind, @content, @tags, @source, @confidence, @provenance,
             @created_at, @updated_at, @last_used_at, @archived_at
           )
         `,
@@ -146,6 +148,7 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
               tags = @tags,
               source = @source,
               confidence = @confidence,
+              provenance = @provenance,
               created_at = @created_at,
               updated_at = @updated_at,
               last_used_at = @last_used_at,
@@ -433,6 +436,7 @@ function toMemoryRow(memory: MemoryRecord): Record<string, unknown> {
     tags: JSON.stringify(memory.tags),
     source: memory.source,
     confidence: memory.confidence,
+    provenance: memory.provenance === null ? null : JSON.stringify(memory.provenance),
     created_at: memory.createdAt.toISOString(),
     updated_at: memory.updatedAt.toISOString(),
     last_used_at: memory.lastUsedAt?.toISOString() ?? null,
@@ -450,6 +454,7 @@ function fromMemoryRow(row: MemoryRow): MemoryRecord {
     tags: parseTags(row.tags),
     source: row.source,
     confidence: row.confidence,
+    provenance: parseProvenance(row.provenance),
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
     lastUsedAt: row.last_used_at ? new Date(row.last_used_at) : null,
@@ -485,6 +490,17 @@ function parseTags(value: string): string[] {
     throw new NuzoMemoryError("MEMORY_TAGS_INVALID", "Stored memory tags are invalid.");
   }
   return parsed;
+}
+
+function parseProvenance(value: string | null): MemoryProvenance | null {
+  if (value === null) {
+    return null;
+  }
+  const parsed: unknown = JSON.parse(value);
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new NuzoMemoryError("MEMORY_PROVENANCE_INVALID", "Stored memory provenance is invalid.");
+  }
+  return parsed as MemoryProvenance;
 }
 
 function parsePayload(value: string): Record<string, unknown> {

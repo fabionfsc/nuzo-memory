@@ -119,6 +119,7 @@ export type {
 export {
   memoryEventTypes,
   memoryKinds,
+  memoryProvenanceKinds,
 } from "./types.js";
 export type {
   AuditEventFilter,
@@ -144,6 +145,8 @@ export type {
   MemoryExportDocument,
   MemoryExportItem,
   MemoryKind,
+  MemoryProvenance,
+  MemoryProvenanceKind,
   MemoryRecord,
   MemoryScope,
   RecallDiagnostics,

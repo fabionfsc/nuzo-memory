@@ -1,14 +1,14 @@
-# Memory Hygiene
+# Memory Governance
 
-Memory hygiene is the contract that keeps Nuzo memory useful after the moment
+Memory governance is the contract that keeps Nuzo memory useful after the moment
 it is captured. Storage and recall are not enough: records also need enough
 type, scope, provenance, confidence, review, and challenge metadata for users
 and agents to decide whether a recalled memory should still influence the
 current session.
 
-This page defines the target contract for issue #294. It is intentionally a
-specification and compatibility plan first. Runtime schema and tool changes
-should land in later, smaller implementation PRs.
+This page defines the contract and compatibility plan for issue #294. Runtime
+schema and tool changes should land in smaller implementation PRs that keep
+existing stores and clients compatible.
 
 ## Problem Statement
 
@@ -46,7 +46,7 @@ correct it.
 ## Durability Classes
 
 The current `kind` field remains the public compatibility field until a
-versioned contract change lands. The hygiene contract introduces target
+versioned contract change lands. The governance contract introduces target
 durability classes that may map to `kind`, tags, or future fields.
 
 | Durability class | Meaning | Typical scope | Aging behavior |
@@ -71,7 +71,7 @@ Existing scopes remain valid:
 - `agent:<name>`
 - `team:<name>`
 
-The hygiene contract adds target semantics for narrower project contexts:
+The governance contract adds target semantics for narrower project contexts:
 
 | Target scope concept | Use when | Compatibility approach |
 | --- | --- | --- |
@@ -88,7 +88,8 @@ selectors and explanations inside an authorized scope, not security principals.
 `source` remains the compact attribution field. It is not authenticated identity
 and must not grant authority.
 
-The target contract adds structured provenance as metadata for human audit:
+The governance contract includes structured provenance as metadata for human
+audit:
 
 ```json
 {
@@ -113,7 +114,7 @@ Recommended provenance fields:
 
 | Field | Meaning | Notes |
 | --- | --- | --- |
-| `kind` | Source category such as `conversation`, `file`, `import`, `cli`, or `mcp`. | Required once structured provenance is implemented. |
+| `kind` | Source category such as `conversation`, `file`, `import`, `cli`, or `mcp`. | Required when `provenance` is present. |
 | `host` | Host name such as `codex`, `claude-code`, or `cli`. | Attribution only. |
 | `surface` | Integration surface such as `cli`, `mcp`, `hook`, or `import`. | Attribution only. |
 | `path` | Optional relative file path associated with the memory. | Must reject unsafe or absolute paths unless explicitly designed. |
@@ -183,7 +184,7 @@ They should produce audit metadata without storing sensitive prompt content.
 
 ## Recall Rendering
 
-Recall output should make memory hygiene visible without bloating context.
+Recall output should make memory governance visible without bloating context.
 
 Host rendering should eventually include:
 
@@ -210,7 +211,7 @@ Implement this contract in slices:
 4. **Review metadata**: add `review_after` first; defer automatic expiry.
 5. **Challenge flow**: add CLI/MCP operations or flags with explicit
    confirmation and audit events.
-6. **Recall rendering**: include compact hygiene metadata in host output.
+6. **Recall rendering**: include compact governance metadata in host output.
 
 Compatibility requirements:
 
@@ -232,7 +233,7 @@ Each implementation slice should add tests appropriate to the changed contract:
 - JSON import/export round-trip tests;
 - MCP schema and handler tests;
 - CLI text and JSON output tests;
-- recall rendering tests for compact hygiene metadata;
+- recall rendering tests for compact governance metadata;
 - secret scanning tests for provenance reason/path-like metadata where relevant;
 - regression tests proving confidence/source/provenance do not grant
   instruction authority.

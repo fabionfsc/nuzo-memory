@@ -1212,20 +1212,37 @@ describe("nuzo memory cli", () => {
       "preference",
       "--tag",
       "export",
+      "--provenance-json",
+      JSON.stringify({
+        kind: "cli",
+        host: "nuzo",
+        surface: "cli",
+        action: "remember",
+      }),
     ]);
     expect(remembered.stdout[0]).toMatch(/^mem_/);
 
     const exported = await runCli(["memory", "--store", sourceStore, "export", "--path", exportPath]);
     expect(exported.stdout[0]).toContain("Exported 1 memories");
 
-    const document = JSON.parse(readFileSync(exportPath, "utf8")) as { format: string; memories: unknown[] };
+    const document = JSON.parse(readFileSync(exportPath, "utf8")) as {
+      format: string;
+      memories: Array<{ provenance?: unknown }>;
+    };
     expect(document.format).toBe("nuzo-memory-export");
     expect(document.memories).toHaveLength(1);
+    expect(document.memories[0]?.provenance).toEqual({
+      kind: "cli",
+      host: "nuzo",
+      surface: "cli",
+      action: "remember",
+    });
 
     const markdownExported = await runCli(["memory", "--store", sourceStore, "export", "--path", markdownExportPath]);
     expect(markdownExported.stdout[0]).toContain("Exported 1 memories");
     const markdown = readFileSync(markdownExportPath, "utf8");
     expect(markdown).toContain("# Nuzo Memory Export");
+    expect(markdown).toContain('provenance: "{\\"kind\\":\\"cli\\"');
     expect(markdown).toContain("The user prefers portable memory exports.");
 
     const dryRun = await runCli(["memory", "--store", targetStore, "import", exportPath, "--dry-run"]);
@@ -1285,7 +1302,7 @@ describe("nuzo memory cli", () => {
     const integrity = await runCli(["memory", "--store", sourceStore, "integrity", "--json"]);
     expect(JSON.parse(integrity.stdout[0] ?? "{}")).toMatchObject({
       ok: true,
-      schema_version: 2,
+      schema_version: 3,
       memory_count: 1,
       fts_row_count: 1,
       errors: [],
@@ -1463,7 +1480,7 @@ describe("nuzo memory cli", () => {
       store_exists: true,
       integrity: {
         ok: true,
-        schema_version: 2,
+        schema_version: 3,
       },
       git_tracking: {
         status: "skipped",
@@ -1531,6 +1548,7 @@ describe("nuzo memory cli", () => {
       tags: [],
       source: "test:doctor",
       confidence: 1,
+      provenance: null,
       createdAt: now,
       updatedAt: now,
       lastUsedAt: null,

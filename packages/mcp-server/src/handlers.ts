@@ -8,6 +8,7 @@ import type {
   ListMemoriesInput,
   MemoryExportDocument,
   MemoryKind,
+  MemoryProvenance,
   MemoryScope,
   MemoryService,
   NuzoAuthorizationMode,
@@ -41,6 +42,7 @@ export interface RememberToolInput {
   tags: string[];
   source: string;
   confidence?: number;
+  provenance?: MemoryProvenance | null;
 }
 
 export interface RecallToolInput {
@@ -65,6 +67,7 @@ export interface SuggestCaptureToolInput {
   tags: string[];
   source: string;
   confidence?: number;
+  provenance?: MemoryProvenance | null;
   reason: string;
   relationship_mode?: "exact" | "bounded";
 }
@@ -77,6 +80,7 @@ export interface ConfirmCaptureToolInput {
   tags: string[];
   source: string;
   confidence?: number;
+  provenance?: MemoryProvenance | null;
   reason: string;
   confirm: boolean;
   actor: string;
@@ -100,6 +104,7 @@ export interface UpdateToolInput {
   scope?: string;
   tags?: string[];
   confidence?: number;
+  provenance?: MemoryProvenance | null;
 }
 
 export interface HistoryToolInput {
@@ -377,6 +382,7 @@ export type MemoryToolRecord = {
   tags: string[];
   source: string;
   confidence: number;
+  provenance: MemoryProvenance | null;
   created_at: string;
   updated_at: string;
   last_used_at: string | null;
@@ -399,6 +405,7 @@ export type CaptureSuggestionToolDraft = {
   tags: string[];
   source: string;
   confidence: number;
+  provenance: MemoryProvenance | null;
   reason: string;
 };
 
@@ -417,6 +424,9 @@ export function createMemoryToolHandlers(
       };
       if (input.confidence !== undefined) {
         rememberInput.confidence = input.confidence;
+      }
+      if ("provenance" in input) {
+        rememberInput.provenance = input.provenance ?? null;
       }
 
       const memory = await service.remember(rememberInput);
@@ -487,6 +497,9 @@ export function createMemoryToolHandlers(
       if (input.confidence !== undefined) {
         suggestInput.confidence = input.confidence;
       }
+      if ("provenance" in input) {
+        suggestInput.provenance = input.provenance ?? null;
+      }
       if (input.relationship_mode !== undefined) {
         suggestInput.relationshipMode = input.relationship_mode;
       }
@@ -540,6 +553,9 @@ export function createMemoryToolHandlers(
       };
       if (input.confidence !== undefined) {
         confirmInput.confidence = input.confidence;
+      }
+      if ("provenance" in input) {
+        confirmInput.provenance = input.provenance ?? null;
       }
       if (input.target_memory_id !== undefined) {
         confirmInput.targetMemoryId = input.target_memory_id;
@@ -607,6 +623,9 @@ export function createMemoryToolHandlers(
       }
       if (input.confidence !== undefined) {
         updateInput.confidence = input.confidence;
+      }
+      if ("provenance" in input) {
+        updateInput.provenance = input.provenance ?? null;
       }
 
       const memory = await service.update(updateInput);

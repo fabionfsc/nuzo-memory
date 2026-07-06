@@ -1,6 +1,6 @@
 import { invariant, NuzoMemoryError } from "./errors.js";
 import type { PolicyEngine, SecretScanner } from "./ports.js";
-import { memoryEventTypes, memoryKinds, type MemoryScope } from "./types.js";
+import { memoryEventTypes, memoryKinds, memoryProvenanceKinds, type MemoryProvenance, type MemoryScope } from "./types.js";
 import type {
   AuditEventFilter,
   ListMemoriesInput,
@@ -20,6 +20,8 @@ export const memoryLimits = {
   importItems: 1000,
   queryLength: 2000,
   reasonLength: 1000,
+  provenancePathLength: 512,
+  provenanceTextLength: 256,
   scopeLength: 256,
   sourceLength: 256,
   tags: 32,
@@ -96,6 +98,8 @@ export class DefaultPolicyEngine implements PolicyEngine {
     invariant(secretScan.ok, "MEMORY_SECRET_DETECTED", "Memory content looks sensitive.", {
       findings: secretScan.findings,
     });
+
+    await assertProvenance(input.provenance ?? null, this.secretScanner);
   }
 
   async assertCanUpdate(input: UpdateMemoryInput, current: MemoryRecord): Promise<void> {
@@ -107,6 +111,7 @@ export class DefaultPolicyEngine implements PolicyEngine {
       tags: input.tags ?? current.tags,
       source: current.source,
       confidence: input.confidence ?? current.confidence,
+      provenance: "provenance" in input ? input.provenance : current.provenance,
     });
     invariant(input.actor.trim().length > 0, "MEMORY_ACTOR_EMPTY", "Memory actor cannot be empty.");
     invariant(
@@ -264,6 +269,112 @@ function assertTag(tag: string): void {
   invariant(memoryTagPattern.test(tag), "MEMORY_TAG_INVALID", "Memory tag is invalid.", {
     tag,
   });
+}
+
+async function assertProvenance(
+  provenance: MemoryProvenance | null,
+  secretScanner: SecretScanner,
+): Promise<void> {
+  if (provenance === null) {
+    return;
+  }
+
+  invariant(
+    typeof provenance === "object" && !Array.isArray(provenance),
+    "MEMORY_PROVENANCE_INVALID",
+    "Memory provenance is invalid.",
+  );
+  invariant(
+    memoryProvenanceKinds.includes(provenance.kind),
+    "MEMORY_PROVENANCE_KIND_INVALID",
+    "Memory provenance kind is not supported.",
+    { kind: provenance.kind },
+  );
+
+  assertOptionalProvenanceText(provenance.host, "host");
+  assertOptionalProvenanceText(provenance.surface, "surface");
+  assertOptionalProvenanceText(provenance.thread_id, "thread_id");
+  assertOptionalProvenanceText(provenance.action, "action");
+  assertOptionalProvenanceReason(provenance.reason);
+  if (provenance.path !== undefined) {
+    assertProvenancePath(provenance.path);
+  }
+  if (provenance.line !== undefined) {
+    invariant(
+      Number.isInteger(provenance.line) && provenance.line > 0 && provenance.line <= 1_000_000_000,
+      "MEMORY_PROVENANCE_LINE_INVALID",
+      "Memory provenance line must be a positive integer.",
+      { line: provenance.line },
+    );
+  }
+
+  const reasonScan = provenance.reason === undefined
+    ? { ok: true, findings: [] }
+    : await secretScanner.scan(provenance.reason);
+  invariant(reasonScan.ok, "MEMORY_SECRET_DETECTED", "Memory provenance reason looks sensitive.", {
+    findings: reasonScan.findings,
+  });
+}
+
+function assertOptionalProvenanceText(value: string | undefined, field: string): void {
+  if (value === undefined) {
+    return;
+  }
+  invariant(
+    value.trim().length > 0,
+    "MEMORY_PROVENANCE_FIELD_EMPTY",
+    "Memory provenance field cannot be empty.",
+    { field },
+  );
+  invariant(
+    value.length <= memoryLimits.provenanceTextLength,
+    "MEMORY_PROVENANCE_FIELD_TOO_LONG",
+    "Memory provenance field is too long.",
+    { field, maxLength: memoryLimits.provenanceTextLength },
+  );
+  invariant(
+    !/[\0\r\n]/u.test(value),
+    "MEMORY_PROVENANCE_FIELD_INVALID",
+    "Memory provenance field contains unsafe characters.",
+    { field },
+  );
+}
+
+function assertOptionalProvenanceReason(value: string | undefined): void {
+  if (value === undefined) {
+    return;
+  }
+  invariant(
+    value.trim().length > 0,
+    "MEMORY_PROVENANCE_FIELD_EMPTY",
+    "Memory provenance field cannot be empty.",
+    { field: "reason" },
+  );
+  invariant(
+    value.length <= memoryLimits.reasonLength,
+    "MEMORY_PROVENANCE_FIELD_TOO_LONG",
+    "Memory provenance field is too long.",
+    { field: "reason", maxLength: memoryLimits.reasonLength },
+  );
+}
+
+function assertProvenancePath(path: string): void {
+  assertOptionalProvenanceText(path, "path");
+  invariant(
+    path.length <= memoryLimits.provenancePathLength,
+    "MEMORY_PROVENANCE_PATH_TOO_LONG",
+    "Memory provenance path is too long.",
+    { maxLength: memoryLimits.provenancePathLength },
+  );
+  invariant(
+    !path.startsWith("/") &&
+      !path.startsWith("\\\\") &&
+      !/^[A-Za-z]:[\\/]/u.test(path) &&
+      !path.split(/[\\/]+/u).includes(".."),
+    "MEMORY_PROVENANCE_PATH_UNSAFE",
+    "Memory provenance path must be relative and cannot contain parent segments.",
+    { path },
+  );
 }
 
 function assertValidDate(date: Date, field: string): void {

@@ -30,7 +30,7 @@ make the stored text a permanent higher-level instruction, prove that its
 `source` value is authentic, or guarantee that an imported record is safe in a
 different session.
 
-The [Memory Hygiene](../spec/memory-hygiene.md) contract adds target provenance,
+The [Memory Governance](../spec/memory-governance.md) contract adds target provenance,
 confidence-state, review, and challenge metadata. These fields improve audit
 and maintenance. They do not change the trust boundary.
 
