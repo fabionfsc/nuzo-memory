@@ -15,6 +15,7 @@ import {
   type ConfirmCaptureDecision,
   type ConfirmCaptureInput,
   type MemoryConfidenceState,
+  type MemoryRecord,
   type MemoryProvenance,
   type MemoryScope,
   type ForgetMemoryInput,
@@ -76,6 +77,8 @@ interface SuggestCaptureCommandOptions {
   confidence?: number;
   confidenceState?: MemoryConfidenceState | null;
   provenanceJson?: MemoryProvenance | null;
+  reviewAfter?: Date;
+  expiresAt?: Date;
   relationshipMode?: "exact" | "bounded";
   reason: string;
   json: boolean;
@@ -89,6 +92,8 @@ interface ConfirmCaptureCommandOptions {
   confidence?: number;
   confidenceState?: MemoryConfidenceState | null;
   provenanceJson?: MemoryProvenance | null;
+  reviewAfter?: Date;
+  expiresAt?: Date;
   reason: string;
   yes: boolean;
   actor: string;
@@ -135,12 +140,16 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
     .option("--source <source>", "Memory source.", "nuzo:cli")
     .option("--confidence-state <state>", "Human-readable confidence state.", parseConfidenceState)
     .option("--provenance-json <json>", "Structured provenance metadata as JSON.", parseProvenanceJson)
+    .option("--review-after <iso-date>", "ISO timestamp when this memory should be reviewed.", (value) => parseIsoDate(value, "review-after"))
+    .option("--expires-at <iso-date>", "ISO timestamp when this memory should be treated as expired.", (value) => parseIsoDate(value, "expires-at"))
     .action(withErrorHandling(io, async (content: string, commandOptions: {
       kind: MemoryKind;
       tag?: string[];
       source: string;
       confidenceState?: MemoryConfidenceState;
       provenanceJson?: MemoryProvenance | null;
+      reviewAfter?: Date;
+      expiresAt?: Date;
     }) => {
       const options = memory.opts<GlobalOptions>();
       const database = openDatabase(options);
@@ -154,6 +163,8 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
           source: commandOptions.source,
           ...(commandOptions.confidenceState === undefined ? {} : { confidenceState: commandOptions.confidenceState }),
           ...(commandOptions.provenanceJson === undefined ? {} : { provenance: commandOptions.provenanceJson }),
+          ...(commandOptions.reviewAfter === undefined ? {} : { reviewAfter: commandOptions.reviewAfter }),
+          ...(commandOptions.expiresAt === undefined ? {} : { expiresAt: commandOptions.expiresAt }),
         };
         const saved = await service.remember(rememberInput);
         io.stdout(saved.id);
@@ -173,6 +184,8 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
     .option("--confidence <number>", "Capture confidence between 0 and 1.", parseConfidence)
     .option("--confidence-state <state>", "Human-readable confidence state.", parseConfidenceState)
     .option("--provenance-json <json>", "Structured provenance metadata as JSON.", parseProvenanceJson)
+    .option("--review-after <iso-date>", "ISO timestamp when this memory should be reviewed.", (value) => parseIsoDate(value, "review-after"))
+    .option("--expires-at <iso-date>", "ISO timestamp when this memory should be treated as expired.", (value) => parseIsoDate(value, "expires-at"))
     .option("--relationship-mode <mode>", "Capture relationship mode: exact or bounded.", parseRelationshipMode)
     .option("--json", "Print JSON output for scripting.", false)
     .action(withErrorHandling(io, async (
@@ -193,6 +206,8 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
           ...(commandOptions.confidence === undefined ? {} : { confidence: commandOptions.confidence }),
           ...(commandOptions.confidenceState === undefined ? {} : { confidenceState: commandOptions.confidenceState }),
           ...(commandOptions.provenanceJson === undefined ? {} : { provenance: commandOptions.provenanceJson }),
+          ...(commandOptions.reviewAfter === undefined ? {} : { reviewAfter: commandOptions.reviewAfter }),
+          ...(commandOptions.expiresAt === undefined ? {} : { expiresAt: commandOptions.expiresAt }),
           ...(commandOptions.relationshipMode === undefined ? {} : { relationshipMode: commandOptions.relationshipMode }),
         };
         const suggestion = await service.suggestCapture(suggestionInput);
@@ -214,6 +229,8 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
     .option("--confidence <number>", "Capture confidence between 0 and 1.", parseConfidence)
     .option("--confidence-state <state>", "Human-readable confidence state.", parseConfidenceState)
     .option("--provenance-json <json>", "Structured provenance metadata as JSON.", parseProvenanceJson)
+    .option("--review-after <iso-date>", "ISO timestamp when this memory should be reviewed.", (value) => parseIsoDate(value, "review-after"))
+    .option("--expires-at <iso-date>", "ISO timestamp when this memory should be treated as expired.", (value) => parseIsoDate(value, "expires-at"))
     .option("--target-memory-id <id>", "Existing memory ID for update decisions.")
     .option("--expected-revision <number>", "Displayed memory revision for update decisions.", parsePositiveInteger)
     .option("--actor <actor>", "Audit actor.", "nuzo:cli")
@@ -246,6 +263,12 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
         }
         if (commandOptions.provenanceJson !== undefined) {
           confirmInput.provenance = commandOptions.provenanceJson;
+        }
+        if (commandOptions.reviewAfter !== undefined) {
+          confirmInput.reviewAfter = commandOptions.reviewAfter;
+        }
+        if (commandOptions.expiresAt !== undefined) {
+          confirmInput.expiresAt = commandOptions.expiresAt;
         }
         if (commandOptions.targetMemoryId !== undefined) {
           confirmInput.targetMemoryId = commandOptions.targetMemoryId;
@@ -380,10 +403,12 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
     .option("--tag <tag...>", "Filter by tag.")
     .option("--all-scopes", "List every authorized local scope.", false)
     .option("--include-archived", "Include archived memories.", false)
+    .option("--needs-review", "Only list memories whose review_after or expires_at is due.", false)
     .action(withErrorHandling(io, async (commandOptions: {
       tag?: string[];
       allScopes: boolean;
       includeArchived: boolean;
+      needsReview: boolean;
     }) => {
       const options = memory.opts<GlobalOptions>();
       if (commandOptions.allScopes && options.scope !== undefined) {
@@ -397,6 +422,7 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
         const service = createService(database);
         const listInput: ListMemoriesInput = {
           includeArchived: commandOptions.includeArchived,
+          needsReview: commandOptions.needsReview,
         };
         if (!commandOptions.allScopes) {
           listInput.scope = resolveScope(options);
@@ -409,7 +435,8 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
 
         for (const item of memories) {
           const archived = item.archivedAt ? " archived" : "";
-          io.stdout(`${item.id}\trev=${item.revision}\tscope=${item.scope}\t${item.kind}${archived}\t${item.content}`);
+          const lifecycle = formatLifecycleMarkers(item, new Date());
+          io.stdout(`${item.id}\trev=${item.revision}\tscope=${item.scope}\t${item.kind}${archived}${lifecycle}\t${item.content}`);
         }
       } finally {
         database.close();
@@ -427,6 +454,10 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
     .option("--confidence <number>", "Replacement confidence between 0 and 1.", parseConfidence)
     .option("--confidence-state <state>", "Replacement human-readable confidence state.", parseConfidenceState)
     .option("--provenance-json <json>", "Replacement structured provenance metadata as JSON.", parseProvenanceJson)
+    .option("--review-after <iso-date>", "Replacement ISO timestamp for memory review.", (value) => parseIsoDate(value, "review-after"))
+    .option("--clear-review-after", "Clear the memory review timestamp.", false)
+    .option("--expires-at <iso-date>", "Replacement ISO timestamp for memory expiry.", (value) => parseIsoDate(value, "expires-at"))
+    .option("--clear-expires-at", "Clear the memory expiry timestamp.", false)
     .option("--expected-revision <number>", "Only update if the memory is still at this revision.", parsePositiveInteger)
     .action(withErrorHandling(io, async (
       id: string,
@@ -438,9 +469,19 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
         confidence?: number;
         confidenceState?: MemoryConfidenceState;
         provenanceJson?: MemoryProvenance | null;
+        reviewAfter?: Date;
+        clearReviewAfter: boolean;
+        expiresAt?: Date;
+        clearExpiresAt: boolean;
         expectedRevision?: number;
       },
     ) => {
+      if (commandOptions.reviewAfter !== undefined && commandOptions.clearReviewAfter) {
+        throw new NuzoMemoryError("MEMORY_REVIEW_AFTER_CONFLICT", "Use either --review-after or --clear-review-after, not both.");
+      }
+      if (commandOptions.expiresAt !== undefined && commandOptions.clearExpiresAt) {
+        throw new NuzoMemoryError("MEMORY_EXPIRES_AT_CONFLICT", "Use either --expires-at or --clear-expires-at, not both.");
+      }
       const options = memory.opts<GlobalOptions>();
       const database = openDatabase(options);
       try {
@@ -472,6 +513,16 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
         }
         if (commandOptions.provenanceJson !== undefined) {
           updateInput.provenance = commandOptions.provenanceJson;
+        }
+        if (commandOptions.reviewAfter !== undefined) {
+          updateInput.reviewAfter = commandOptions.reviewAfter;
+        } else if (commandOptions.clearReviewAfter) {
+          updateInput.reviewAfter = null;
+        }
+        if (commandOptions.expiresAt !== undefined) {
+          updateInput.expiresAt = commandOptions.expiresAt;
+        } else if (commandOptions.clearExpiresAt) {
+          updateInput.expiresAt = null;
         }
 
         const updated = await service.update(updateInput);
@@ -853,4 +904,15 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
       io.stdout(`Status: ${report.warnings.length === 0 ? "ok" : "warning"}`);
     }));
 
+}
+
+function formatLifecycleMarkers(memory: MemoryRecord, now: Date): string {
+  const markers: string[] = [];
+  if (memory.reviewAfter !== null) {
+    markers.push(memory.reviewAfter <= now ? "needs_review" : `review_after=${memory.reviewAfter.toISOString()}`);
+  }
+  if (memory.expiresAt !== null) {
+    markers.push(memory.expiresAt <= now ? "expired" : `expires_at=${memory.expiresAt.toISOString()}`);
+  }
+  return markers.length === 0 ? "" : ` ${markers.join(" ")}`;
 }

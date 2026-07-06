@@ -143,7 +143,8 @@ It must not cause a host to treat a memory as higher-priority instruction.
 
 ## Review And Expiry
 
-Review should land before automatic expiry.
+Review lifecycle metadata is implemented as explicit record metadata. It marks
+memory that needs attention without mutating or deleting it automatically.
 
 Target fields:
 
@@ -158,8 +159,10 @@ Semantics:
 
 - `review_after` means the memory should be shown as needing review after that
   time, but it does not automatically delete or archive the record.
-- `expires_at` is optional future behavior and should not be introduced until
-  review UX is proven.
+- `expires_at` means the memory should be shown as expired after that time, but
+  it also does not automatically delete or archive the record.
+- A memory is selected by review filters when either `review_after` or
+  `expires_at` is due.
 - Review metadata should be visible in CLI, MCP JSON, export, import, and host
   recall rendering.
 - Review state should be auditable when a user marks a memory still valid,
@@ -208,7 +211,8 @@ Implement this contract in slices:
 2. **Structured provenance**: add bounded optional metadata; preserve `source`.
 3. **Confidence/review state**: add `confidence_state` without removing numeric
    `confidence`.
-4. **Review metadata**: add `review_after` first; defer automatic expiry.
+4. **Review metadata**: add `review_after` and `expires_at`; defer automatic
+   archive/delete behavior.
 5. **Challenge flow**: add CLI/MCP operations or flags with explicit
    confirmation and audit events.
 6. **Recall rendering**: include compact governance metadata in host output.

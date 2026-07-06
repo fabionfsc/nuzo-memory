@@ -31,7 +31,7 @@ function createTestService() {
     policy,
   });
 
-  return { auditLog, service, store };
+  return { auditLog, clock, service, store };
 }
 
 function createRestrictedTestService(scopes: Array<"user:default" | "project:nuzo">) {
@@ -121,6 +121,68 @@ describe("memory service", () => {
       source: "test",
       confidenceState: "certain" as never,
     })).rejects.toMatchObject({ code: "MEMORY_CONFIDENCE_STATE_INVALID" });
+  });
+
+  it("stores, filters, updates, and clears review lifecycle metadata", async () => {
+    const { clock, service } = createTestService();
+    const reviewAfter = new Date("2026-06-11T00:00:00.000Z");
+    const expiresAt = new Date("2026-06-20T00:00:00.000Z");
+
+    const due = await service.remember({
+      content: "Review this deployment note before relying on it.",
+      kind: "project_decision",
+      scope: "project:nuzo",
+      source: "test",
+      reviewAfter,
+      expiresAt,
+    });
+    const future = await service.remember({
+      content: "Review this later deployment note next month.",
+      kind: "project_decision",
+      scope: "project:nuzo",
+      source: "test",
+      reviewAfter: new Date("2026-07-01T00:00:00.000Z"),
+    });
+
+    expect(due.reviewAfter?.toISOString()).toBe(reviewAfter.toISOString());
+    expect(due.expiresAt?.toISOString()).toBe(expiresAt.toISOString());
+    expect(future.reviewAfter?.toISOString()).toBe("2026-07-01T00:00:00.000Z");
+
+    const dueMemories = await service.list({
+      scope: "project:nuzo",
+      needsReview: true,
+    });
+    expect(dueMemories.map((memory) => memory.id)).toEqual([due.id]);
+
+    clock.set(new Date("2026-07-02T00:00:00.000Z"));
+    await expect(service.list({
+      scope: "project:nuzo",
+      needsReview: true,
+    })).resolves.toHaveLength(2);
+
+    const updated = await service.update({
+      id: due.id,
+      actor: "test",
+      reviewAfter: new Date("2026-08-01T00:00:00.000Z"),
+      expiresAt: null,
+    });
+    expect(updated.reviewAfter?.toISOString()).toBe("2026-08-01T00:00:00.000Z");
+    expect(updated.expiresAt).toBeNull();
+
+    const cleared = await service.update({
+      id: updated.id,
+      actor: "test",
+      reviewAfter: null,
+    });
+    expect(cleared.reviewAfter).toBeNull();
+
+    await expect(service.remember({
+      content: "Invalid lifecycle date should be rejected.",
+      kind: "note",
+      scope: "project:nuzo",
+      source: "test",
+      reviewAfter: new Date("not-a-date"),
+    })).rejects.toMatchObject({ code: "MEMORY_DATE_INVALID" });
   });
 
   it("stores, validates, updates, and clears structured provenance", async () => {
@@ -445,6 +507,8 @@ describe("memory service", () => {
           surface: "mcp",
           action: "suggest_capture",
         },
+        reviewAfter: null,
+        expiresAt: null,
         reason: "The user stated a durable response style preference.",
       },
       duplicate: null,
@@ -1313,6 +1377,8 @@ describe("memory service", () => {
       tags: ["export"],
       source: "codex:capture-confirmed",
       confidenceState: "needs_review",
+      reviewAfter: new Date("2026-07-01T00:00:00.000Z"),
+      expiresAt: new Date("2026-08-01T00:00:00.000Z"),
       provenance: {
         kind: "import",
         host: "cli",
@@ -1335,6 +1401,8 @@ describe("memory service", () => {
     expect(document.memories[0]?.content).toBe("The user prefers JSON exports for migrations.");
     expect(document.memories[0]?.source).toBe("codex:capture-confirmed");
     expect(document.memories[0]?.confidence_state).toBe("needs_review");
+    expect(document.memories[0]?.review_after).toBe("2026-07-01T00:00:00.000Z");
+    expect(document.memories[0]?.expires_at).toBe("2026-08-01T00:00:00.000Z");
     expect(document.memories[0]?.provenance).toEqual({
       kind: "import",
       host: "cli",
@@ -1378,6 +1446,8 @@ describe("memory service", () => {
     expect(imported[0]?.memory.content).toBe("The user prefers JSON exports for migrations.");
     expect(imported[0]?.memory.source).toBe("codex:capture-confirmed");
     expect(imported[0]?.memory.confidenceState).toBe("needs_review");
+    expect(imported[0]?.memory.reviewAfter?.toISOString()).toBe("2026-07-01T00:00:00.000Z");
+    expect(imported[0]?.memory.expiresAt?.toISOString()).toBe("2026-08-01T00:00:00.000Z");
     expect(imported[0]?.memory.provenance).toEqual({
       kind: "import",
       host: "cli",

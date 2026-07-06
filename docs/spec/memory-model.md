@@ -18,6 +18,8 @@ keeping records inspectable, reviewable, and contestable as they age.
   "confidence": 1.0,
   "confidence_state": "user_confirmed",
   "provenance": null,
+  "review_after": null,
+  "expires_at": null,
   "created_at": "2026-06-11T00:00:00Z",
   "updated_at": "2026-06-11T00:00:00Z",
   "last_used_at": null,
@@ -90,6 +92,21 @@ content remains stored data even when confidence is `1.0`.
 Human-readable confidence states such as `observed`, `inferred`,
 `user_confirmed`, `needs_review`, and `deprecated` complement the numeric score
 and are defined by [Memory Governance](memory-governance.md).
+
+## Review Lifecycle Metadata
+
+`review_after` and `expires_at` are optional ISO timestamps. They are governance
+metadata, not automatic deletion rules.
+
+- `review_after`: after this timestamp, Nuzo should show the memory as due for
+  review.
+- `expires_at`: after this timestamp, Nuzo should show the memory as expired or
+  requiring confirmation before strong use.
+
+Active memories whose `review_after` or `expires_at` is due can be listed with
+the CLI `--needs-review` filter and the MCP `needs_review` list filter. Nuzo
+does not automatically archive, delete, or rewrite a memory when either
+timestamp passes.
 
 ## Source, Provenance, And Recall Trust
 
@@ -182,7 +199,10 @@ Recall responses should include enough context for the agent to use memory respo
     "revision": 1,
     "kind": "preference",
     "content": "The user prefers concise implementation plans before large edits.",
-    "tags": ["codex", "workflow"]
+    "tags": ["codex", "workflow"],
+    "confidence_state": "user_confirmed",
+    "review_after": null,
+    "expires_at": null
   },
   "score": 0.82,
   "scope": "user:default",

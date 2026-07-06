@@ -45,6 +45,8 @@ function formatMemoryExportItemMetadata(memory: MemoryExportItem): string {
     `confidence: ${memory.confidence}`,
     `confidence_state: ${yamlNullableString(memory.confidence_state ?? null)}`,
     `provenance: ${yamlNullableString(memory.provenance === undefined ? null : JSON.stringify(memory.provenance))}`,
+    `review_after: ${yamlNullableString(memory.review_after ?? null)}`,
+    `expires_at: ${yamlNullableString(memory.expires_at ?? null)}`,
     `created_at: ${yamlString(memory.created_at)}`,
     `updated_at: ${yamlString(memory.updated_at)}`,
     `last_used_at: ${yamlNullableString(memory.last_used_at)}`,

@@ -218,6 +218,8 @@ export function registerMemoryTools(
         confidence: z.number().min(0).max(1).optional(),
         confidence_state: confidenceStateSchema.nullable().optional(),
         provenance: provenanceSchema.nullable().optional(),
+        review_after: exportDateSchema.nullable().optional(),
+        expires_at: exportDateSchema.nullable().optional(),
       },
     },
     withJsonErrorHandling(async (input) => {
@@ -236,6 +238,12 @@ export function registerMemoryTools(
       }
       if (input.provenance !== undefined) {
         rememberInput.provenance = toMemoryProvenance(input.provenance);
+      }
+      if (input.review_after !== undefined) {
+        rememberInput.review_after = input.review_after;
+      }
+      if (input.expires_at !== undefined) {
+        rememberInput.expires_at = input.expires_at;
       }
 
       return jsonToolResult(await handlers.remember(rememberInput));
@@ -306,6 +314,8 @@ export function registerMemoryTools(
         confidence: z.number().min(0).max(1).optional(),
         confidence_state: confidenceStateSchema.nullable().optional(),
         provenance: provenanceSchema.nullable().optional(),
+        review_after: exportDateSchema.nullable().optional(),
+        expires_at: exportDateSchema.nullable().optional(),
         reason: z.string().min(1).max(memoryLimits.reasonLength),
         relationship_mode: z.enum(["exact", "bounded"]).optional(),
       },
@@ -327,6 +337,12 @@ export function registerMemoryTools(
       }
       if (input.provenance !== undefined) {
         suggestInput.provenance = toMemoryProvenance(input.provenance);
+      }
+      if (input.review_after !== undefined) {
+        suggestInput.review_after = input.review_after;
+      }
+      if (input.expires_at !== undefined) {
+        suggestInput.expires_at = input.expires_at;
       }
       if (input.relationship_mode !== undefined) {
         suggestInput.relationship_mode = input.relationship_mode;
@@ -350,6 +366,8 @@ export function registerMemoryTools(
         confidence: z.number().min(0).max(1).optional(),
         confidence_state: confidenceStateSchema.nullable().optional(),
         provenance: provenanceSchema.nullable().optional(),
+        review_after: exportDateSchema.nullable().optional(),
+        expires_at: exportDateSchema.nullable().optional(),
         reason: z.string().min(1).max(memoryLimits.reasonLength),
         confirm: z.boolean().default(false),
         actor: z.string().min(1).max(memoryLimits.sourceLength).default("nuzo:mcp"),
@@ -378,6 +396,12 @@ export function registerMemoryTools(
       if (input.provenance !== undefined) {
         confirmInput.provenance = toMemoryProvenance(input.provenance);
       }
+      if (input.review_after !== undefined) {
+        confirmInput.review_after = input.review_after;
+      }
+      if (input.expires_at !== undefined) {
+        confirmInput.expires_at = input.expires_at;
+      }
       if (input.target_memory_id !== undefined) {
         confirmInput.target_memory_id = input.target_memory_id;
       }
@@ -396,6 +420,7 @@ export function registerMemoryTools(
         scope: scopeSchema.optional(),
         tags: z.array(tagSchema).max(memoryLimits.tags).default([]),
         include_archived: z.boolean().default(false),
+        needs_review: z.boolean().default(false),
         limit: z.number().int().min(1).max(200).default(50),
         cursor: paginationCursorSchema.optional(),
       },
@@ -404,6 +429,7 @@ export function registerMemoryTools(
       const listInput: ListToolInput = {
         tags: input.tags,
         include_archived: input.include_archived,
+        needs_review: input.needs_review,
         limit: input.limit,
       };
       if (input.scope !== undefined) {
@@ -431,6 +457,8 @@ export function registerMemoryTools(
         confidence: z.number().min(0).max(1).optional(),
         confidence_state: confidenceStateSchema.nullable().optional(),
         provenance: provenanceSchema.nullable().optional(),
+        review_after: exportDateSchema.nullable().optional(),
+        expires_at: exportDateSchema.nullable().optional(),
       },
     },
     withJsonErrorHandling(async (input) => {
@@ -460,6 +488,12 @@ export function registerMemoryTools(
       }
       if (input.provenance !== undefined) {
         updateInput.provenance = toMemoryProvenance(input.provenance);
+      }
+      if (input.review_after !== undefined) {
+        updateInput.review_after = input.review_after;
+      }
+      if (input.expires_at !== undefined) {
+        updateInput.expires_at = input.expires_at;
       }
 
       return jsonToolResult(await handlers.update(updateInput));
@@ -637,6 +671,8 @@ export function registerMemoryTools(
               confidence: z.number().min(0).max(1),
               confidence_state: confidenceStateSchema.nullable().optional(),
               provenance: provenanceSchema.nullable().optional(),
+              review_after: exportDateSchema.nullable().optional(),
+              expires_at: exportDateSchema.nullable().optional(),
               created_at: exportDateSchema,
               updated_at: exportDateSchema,
               last_used_at: exportDateSchema.nullable(),

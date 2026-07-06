@@ -126,6 +126,20 @@ describe("MCP protocol contract", () => {
                 }),
               ]),
             },
+            review_after: {
+              anyOf: expect.arrayContaining([
+                expect.objectContaining({
+                  type: "string",
+                }),
+              ]),
+            },
+            expires_at: {
+              anyOf: expect.arrayContaining([
+                expect.objectContaining({
+                  type: "string",
+                }),
+              ]),
+            },
             scope: {
               default: "user:default",
               type: "string",
@@ -138,6 +152,16 @@ describe("MCP protocol contract", () => {
           properties: {
             dry_run: {
               default: true,
+              type: "boolean",
+            },
+          },
+        });
+      expect(tools.tools.find((tool) => tool.name === "memory.list")?.inputSchema)
+        .toMatchObject({
+          type: "object",
+          properties: {
+            needs_review: {
+              default: false,
               type: "boolean",
             },
           },
@@ -158,6 +182,20 @@ describe("MCP protocol contract", () => {
               anyOf: expect.arrayContaining([
                 expect.objectContaining({
                   type: "object",
+                }),
+              ]),
+            },
+            review_after: {
+              anyOf: expect.arrayContaining([
+                expect.objectContaining({
+                  type: "string",
+                }),
+              ]),
+            },
+            expires_at: {
+              anyOf: expect.arrayContaining([
+                expect.objectContaining({
+                  type: "string",
                 }),
               ]),
             },
@@ -392,9 +430,9 @@ describe("MCP protocol contract", () => {
         },
         ok: true,
         schema: {
-          current_version: 4,
+          current_version: 5,
           status: "current",
-          supported_version: 4,
+          supported_version: 5,
         },
         store: {
           writable_check: "writable",

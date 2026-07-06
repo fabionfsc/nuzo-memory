@@ -13,6 +13,8 @@ export function toExportItem(memory: MemoryRecord): MemoryExportItem {
     confidence: memory.confidence,
     confidence_state: memory.confidenceState,
     provenance: memory.provenance,
+    review_after: memory.reviewAfter?.toISOString() ?? null,
+    expires_at: memory.expiresAt?.toISOString() ?? null,
     created_at: memory.createdAt.toISOString(),
     updated_at: memory.updatedAt.toISOString(),
     last_used_at: memory.lastUsedAt?.toISOString() ?? null,
@@ -70,6 +72,8 @@ function assertExportItem(item: unknown, index: number): void {
   }
   getOptionalConfidenceStateField(item, "confidence_state", `memories[${index}]`);
   getOptionalProvenanceField(item, "provenance", `memories[${index}]`);
+  const reviewAfter = getOptionalNullableStringField(item, "review_after", `memories[${index}]`);
+  const expiresAt = getOptionalNullableStringField(item, "expires_at", `memories[${index}]`);
   const createdAt = getStringField(item, "created_at", `memories[${index}]`);
   const updatedAt = getStringField(item, "updated_at", `memories[${index}]`);
   const lastUsedAt = getNullableStringField(item, "last_used_at", `memories[${index}]`);
@@ -82,6 +86,12 @@ function assertExportItem(item: unknown, index: number): void {
   }
   if (archivedAt !== null) {
     parseExportDate(archivedAt, `memories[${index}].archived_at`);
+  }
+  if (reviewAfter !== undefined && reviewAfter !== null) {
+    parseExportDate(reviewAfter, `memories[${index}].review_after`);
+  }
+  if (expiresAt !== undefined && expiresAt !== null) {
+    parseExportDate(expiresAt, `memories[${index}].expires_at`);
   }
 }
 
@@ -97,6 +107,20 @@ function getStringField(record: Record<string, unknown>, field: string, path: st
 }
 
 function getNullableStringField(record: Record<string, unknown>, field: string, path: string): string | null {
+  if (record[field] !== null && typeof record[field] !== "string") {
+    throwInvalidExportField(path, field, "must be a string or null", { value: record[field] });
+  }
+  return record[field];
+}
+
+function getOptionalNullableStringField(
+  record: Record<string, unknown>,
+  field: string,
+  path: string,
+): string | null | undefined {
+  if (!(field in record)) {
+    return undefined;
+  }
   if (record[field] !== null && typeof record[field] !== "string") {
     throwInvalidExportField(path, field, "must be a string or null", { value: record[field] });
   }

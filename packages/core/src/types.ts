@@ -71,6 +71,8 @@ export interface MemoryRecord {
   confidence: number;
   confidenceState: MemoryConfidenceState | null;
   provenance: MemoryProvenance | null;
+  reviewAfter: Date | null;
+  expiresAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
   lastUsedAt: Date | null;
@@ -124,6 +126,8 @@ export interface RememberMemoryInput {
   confidence?: number;
   confidenceState?: MemoryConfidenceState | null;
   provenance?: MemoryProvenance | null;
+  reviewAfter?: Date | null;
+  expiresAt?: Date | null;
 }
 
 export interface SuggestCaptureInput extends RememberMemoryInput {
@@ -149,6 +153,8 @@ export interface CaptureSuggestionDraft {
   confidence: number;
   confidenceState: MemoryConfidenceState | null;
   provenance: MemoryProvenance | null;
+  reviewAfter: Date | null;
+  expiresAt: Date | null;
   reason: string;
 }
 
@@ -225,6 +231,8 @@ export interface ListMemoriesInput {
   scope?: MemoryScope;
   tags?: string[];
   includeArchived?: boolean;
+  needsReview?: boolean;
+  reviewDueAt?: Date;
   limit?: number;
   cursor?: string;
 }
@@ -272,6 +280,8 @@ export interface UpdateMemoryInput {
   confidence?: number;
   confidenceState?: MemoryConfidenceState | null;
   provenance?: MemoryProvenance | null;
+  reviewAfter?: Date | null;
+  expiresAt?: Date | null;
   actor: string;
 }
 
@@ -308,6 +318,8 @@ export interface MemoryExportItem {
   confidence: number;
   confidence_state?: MemoryConfidenceState | null;
   provenance?: MemoryProvenance | null;
+  review_after?: string | null;
+  expires_at?: string | null;
   created_at: string;
   updated_at: string;
   last_used_at: string | null;

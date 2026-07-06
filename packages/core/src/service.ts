@@ -144,6 +144,8 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       confidence: input.confidence ?? 1,
       confidenceState: input.confidenceState ?? "user_confirmed",
       provenance: input.provenance ?? null,
+      reviewAfter: input.reviewAfter ?? null,
+      expiresAt: input.expiresAt ?? null,
       createdAt: now,
       updatedAt: now,
       lastUsedAt: null,
@@ -164,6 +166,8 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
           tags: memory.tags,
           confidenceState: memory.confidenceState,
           provenance: memory.provenance,
+          reviewAfter: memory.reviewAfter?.toISOString() ?? null,
+          expiresAt: memory.expiresAt?.toISOString() ?? null,
         },
         createdAt: now,
       });
@@ -188,7 +192,9 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       input.tags !== undefined ||
       input.confidence !== undefined ||
       "confidenceState" in input ||
-      "provenance" in input;
+      "provenance" in input ||
+      "reviewAfter" in input ||
+      "expiresAt" in input;
     if (!hasChanges) {
       throw new NuzoMemoryError("MEMORY_UPDATE_EMPTY", "At least one memory field must be updated.", {
         id: input.id,
@@ -207,6 +213,8 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       confidence: input.confidence ?? current.confidence,
       confidenceState: "confidenceState" in input ? input.confidenceState ?? null : current.confidenceState,
       provenance: "provenance" in input ? input.provenance ?? null : current.provenance,
+      reviewAfter: "reviewAfter" in input ? input.reviewAfter ?? null : current.reviewAfter,
+      expiresAt: "expiresAt" in input ? input.expiresAt ?? null : current.expiresAt,
       updatedAt: clock.now(),
     };
 
@@ -228,6 +236,8 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
             confidence: input.confidence !== undefined,
             confidenceState: "confidenceState" in input,
             provenance: "provenance" in input,
+            reviewAfter: "reviewAfter" in input,
+            expiresAt: "expiresAt" in input,
           },
           scope: updated.scope,
         },
@@ -292,6 +302,8 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
         confidence: input.confidence ?? 1,
         confidenceState: input.confidenceState ?? "inferred",
         provenance: input.provenance ?? null,
+        reviewAfter: input.reviewAfter ?? null,
+        expiresAt: input.expiresAt ?? null,
         reason: input.reason.trim(),
       };
       const duplicateKey = toCaptureDuplicateKey(draft.content);
@@ -382,6 +394,12 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
         if ("provenance" in input) {
           updateInput.provenance = input.provenance ?? null;
         }
+        if ("reviewAfter" in input) {
+          updateInput.reviewAfter = input.reviewAfter ?? null;
+        }
+        if ("expiresAt" in input) {
+          updateInput.expiresAt = input.expiresAt ?? null;
+        }
         const memory = await updateMemory(updateInput);
         return {
           decision: input.decision,
@@ -420,6 +438,8 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
           source: input.source,
           confidenceState: input.confidenceState ?? "user_confirmed",
           provenance: input.provenance ?? null,
+          reviewAfter: input.reviewAfter ?? null,
+          expiresAt: input.expiresAt ?? null,
         };
         if (input.confidence !== undefined) {
           rememberInput.confidence = input.confidence;
@@ -454,7 +474,11 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
 
     async list(input = {}) {
       await policy.assertCanList(input);
-      return store.list(input);
+      const listInput: ListMemoriesInput = { ...input };
+      if (listInput.needsReview === true && listInput.reviewDueAt === undefined) {
+        listInput.reviewDueAt = clock.now();
+      }
+      return store.list(listInput);
     },
 
     async update(input) {
@@ -523,6 +547,8 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
           confidence: item.confidence,
           confidenceState: item.confidence_state ?? null,
           provenance: item.provenance ?? null,
+          reviewAfter: item.review_after ? parseExportDate(item.review_after, "review_after") : null,
+          expiresAt: item.expires_at ? parseExportDate(item.expires_at, "expires_at") : null,
         });
 
       }
@@ -599,6 +625,8 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
             confidence: item.confidence,
             confidenceState: item.confidence_state ?? null,
             provenance: item.provenance ?? null,
+            reviewAfter: item.review_after ? parseExportDate(item.review_after, "review_after") : null,
+            expiresAt: item.expires_at ? parseExportDate(item.expires_at, "expires_at") : null,
             createdAt: parseExportDate(item.created_at, "created_at"),
             updatedAt: parseExportDate(item.updated_at, "updated_at"),
             lastUsedAt: item.last_used_at ? parseExportDate(item.last_used_at, "last_used_at") : null,
