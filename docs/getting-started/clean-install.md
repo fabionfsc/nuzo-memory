@@ -33,6 +33,17 @@ curl -fsSL https://nuzo.com.br/install.sh | sh
 nuzo setup
 ```
 
+To inspect and verify the installer first:
+
+```bash
+curl -fsSLO https://nuzo.com.br/install.sh
+curl -fsSLO https://nuzo.com.br/install.sh.sha256
+shasum -a 256 -c install.sh.sha256
+less install.sh
+sh install.sh
+nuzo setup
+```
+
 `nuzo setup` detects installed supported hosts. When both Codex and Claude Code
 are available, it lets you choose Codex, Claude Code, or both, then shows the
 planned plugin changes and asks before changing host configuration.

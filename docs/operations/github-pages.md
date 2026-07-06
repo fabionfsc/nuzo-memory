@@ -89,12 +89,14 @@ The site serves the npm-backed one-line installer from:
 
 ```text
 https://nuzo.com.br/install.sh
+https://nuzo.com.br/install.sh.sha256
 ```
 
-The source file is:
+The source files are:
 
 ```text
 docs/install.sh
+docs/install.sh.sha256
 ```
 
 The installer checks Node.js and npm, installs `@nuzo/memory` with npm, validates
@@ -102,6 +104,8 @@ The installer checks Node.js and npm, installs `@nuzo/memory` with npm, validate
 Node.js, npm, or other system packages automatically; missing prerequisites
 fail with guidance. Users still run `nuzo setup` explicitly to review Codex or
 Claude Code changes.
+
+`docs:check` verifies that `docs/install.sh.sha256` matches `docs/install.sh`.
 
 Validate installer behavior locally with:
 

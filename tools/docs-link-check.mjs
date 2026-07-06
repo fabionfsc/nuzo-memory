@@ -209,13 +209,13 @@ function normalizeExternalUrl(value) {
 
 function isIgnoredExternalUrl(value) {
   const url = new URL(value);
-  // The installer is generated from docs/install.sh by MkDocs. During the PR
-  // that introduces or changes it, production may still return 404 until the
-  // Pages deployment succeeds, so validate the source file locally instead.
+  // Installer assets are generated from docs/ by MkDocs. During the PR that
+  // introduces or changes them, production may still return 404 until the Pages
+  // deployment succeeds, so validate the source files locally instead.
   if (
     url.hostname === "nuzo.com.br" &&
-    url.pathname === "/install.sh" &&
-    existsSync(join(docsRoot, "install.sh"))
+    (url.pathname === "/install.sh" || url.pathname === "/install.sh.sha256") &&
+    existsSync(join(docsRoot, url.pathname.slice(1)))
   ) {
     return true;
   }

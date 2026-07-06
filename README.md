@@ -69,6 +69,18 @@ curl -fsSL https://nuzo.com.br/install.sh | sh
 nuzo setup
 ```
 
+If you do not want to pipe a network script directly into the shell, download
+and inspect it first:
+
+```bash
+curl -fsSLO https://nuzo.com.br/install.sh
+curl -fsSLO https://nuzo.com.br/install.sh.sha256
+shasum -a 256 -c install.sh.sha256
+less install.sh
+sh install.sh
+nuzo setup
+```
+
 `nuzo setup` detects Codex and Claude Code. When both are available, it lets
 you choose Codex, Claude Code, or both, then shows the host changes and asks
 before changing host configuration. Open the configured host, confirm Nuzo is
@@ -183,6 +195,7 @@ Nuzo is for memory that also needs lifecycle control:
 - [Clean install walkthrough](docs/getting-started/clean-install.md)
 - [Agent memory loop](docs/getting-started/agent-memory-loop.md)
 - [Privacy and security](docs/operations/privacy-and-security.md)
+- [Threat model](docs/operations/threat-model.md)
 - [MCP tool contract](docs/spec/tools.md)
 - [Roadmap](docs/operations/roadmap.md)
 

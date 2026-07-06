@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import test from "node:test";
 
 import { publicReleaseReferencePaths, readJson, readText } from "./release-shared.mjs";
@@ -147,6 +148,13 @@ test("primary install navigation excludes maintainer and historical evidence", (
   for (const maintainerPage of ["Release Checklist", "Benchmark", "Documentation Audit", "GitHub Pages"]) {
     assert.doesNotMatch(installNavigation, new RegExp(maintainerPage), maintainerPage);
   }
+});
+
+test("published installer checksum matches docs/install.sh", () => {
+  const installer = readText("docs/install.sh");
+  const checksumFile = readText("docs/install.sh.sha256").trim();
+  const expected = createHash("sha256").update(installer).digest("hex");
+  assert.equal(checksumFile, `${expected}  install.sh`);
 });
 
 function escapeRegExp(value) {

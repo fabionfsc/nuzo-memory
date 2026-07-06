@@ -85,6 +85,7 @@ nav:
       - Optional Semantics: operations/optional-semantics.md
       - Runtime Support: operations/runtime-support.md
       - Privacy And Security: operations/privacy-and-security.md
+      - Threat Model: operations/threat-model.md
   - Product:
       - Vision: product/vision.md
       - Positioning: product/positioning.md
