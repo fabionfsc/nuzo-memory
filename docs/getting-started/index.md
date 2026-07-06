@@ -24,20 +24,12 @@ curl -fsSL https://nuzo.com.br/install.sh | sh
 nuzo setup
 ```
 
-Security-conscious install:
+Under the hood, the installer resolves the npm package, downloads the package
+tarball, verifies its npm integrity metadata, installs the verified tarball
+globally, and leaves host configuration to `nuzo setup`.
 
-```bash
-curl -fsSLO https://nuzo.com.br/install.sh
-curl -fsSLO https://nuzo.com.br/install.sh.sha256
-shasum -a 256 -c install.sh.sha256
-less install.sh
-sh install.sh
-nuzo setup
-```
-
-The checksum protects against accidental corruption and lets you verify the
-exact installer published by the site. It does not replace reviewing the script
-or trusting the HTTPS origin.
+If you do not want to pipe a network script directly into the shell, download
+and inspect `https://nuzo.com.br/install.sh` first, then run `sh install.sh`.
 
 `nuzo setup` detects supported local hosts. When both Codex and Claude Code are
 available, it lets you choose Codex, Claude Code, or both, then shows the exact

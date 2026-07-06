@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
 import test from "node:test";
 
 import { publicReleaseReferencePaths, readJson, readText } from "./release-shared.mjs";
@@ -150,11 +149,12 @@ test("primary install navigation excludes maintainer and historical evidence", (
   }
 });
 
-test("published installer checksum matches docs/install.sh", () => {
+test("published installer verifies npm package integrity before install", () => {
   const installer = readText("docs/install.sh");
-  const checksumFile = readText("docs/install.sh.sha256").trim();
-  const expected = createHash("sha256").update(installer).digest("hex");
-  assert.equal(checksumFile, `${expected}  install.sh`);
+  assert.match(installer, /npm view "\$package_spec" version dist\.tarball dist\.integrity --json/u);
+  assert.match(installer, /Verifying npm package integrity/u);
+  assert.match(installer, /npm install --global "\$archive_path"/u);
+  assert.match(readText("docs/getting-started/index.md"), /verifies its npm integrity metadata/u);
 });
 
 function escapeRegExp(value) {

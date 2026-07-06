@@ -33,16 +33,10 @@ curl -fsSL https://nuzo.com.br/install.sh | sh
 nuzo setup
 ```
 
-To inspect and verify the installer first:
-
-```bash
-curl -fsSLO https://nuzo.com.br/install.sh
-curl -fsSLO https://nuzo.com.br/install.sh.sha256
-shasum -a 256 -c install.sh.sha256
-less install.sh
-sh install.sh
-nuzo setup
-```
+The installer downloads the npm package tarball, verifies its npm integrity
+metadata, and installs that verified tarball globally. To inspect the script
+first, download `https://nuzo.com.br/install.sh`, review it locally, then run
+`sh install.sh`.
 
 `nuzo setup` detects installed supported hosts. When both Codex and Claude Code
 are available, it lets you choose Codex, Claude Code, or both, then shows the

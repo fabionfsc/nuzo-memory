@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -56,14 +57,17 @@ const scenarios = [
     forbiddenOutput: ["npm install"],
   },
   {
-    name: "node 22 bookworm installs latest through npm",
+    name: "node 22 bookworm installs verified latest tarball",
     image: "node:22-bookworm",
     fake: { npm: "supported", nuzo: "supported" },
     command: "PATH=/smoke/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin sh docs/install.sh",
     expectedStatus: 0,
     expectedOutput: [
-      "==> Installing @nuzo/memory@latest with npm",
-      "npm install --global @nuzo/memory@latest",
+      "==> Resolving @nuzo/memory@latest from npm",
+      `==> Downloading @nuzo/memory@${releaseVersion}`,
+      "==> Verifying npm package integrity",
+      `==> Installing verified @nuzo/memory@${releaseVersion} with npm`,
+      "npm install --global /tmp/",
       "==> Validating Nuzo",
       "Nuzo installed.",
       "nuzo setup",
@@ -71,14 +75,17 @@ const scenarios = [
     forbiddenOutput: ["nuzo setup invoked"],
   },
   {
-    name: "node 24 alpine installs pinned version through npm",
+    name: "node 24 alpine installs verified pinned tarball",
     image: "node:24-alpine",
     fake: { npm: "supported", nuzo: "supported" },
     command: `PATH=/smoke/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin sh docs/install.sh --version ${releaseVersion}`,
     expectedStatus: 0,
     expectedOutput: [
-      `==> Installing @nuzo/memory@${releaseVersion} with npm`,
-      `npm install --global @nuzo/memory@${releaseVersion}`,
+      `==> Resolving @nuzo/memory@${releaseVersion} from npm`,
+      `==> Downloading @nuzo/memory@${releaseVersion}`,
+      "==> Verifying npm package integrity",
+      `==> Installing verified @nuzo/memory@${releaseVersion} with npm`,
+      "npm install --global /tmp/",
       releaseVersion,
     ],
     forbiddenOutput: ["nuzo setup invoked"],
@@ -90,7 +97,10 @@ const scenarios = [
     command: `sh docs/install.sh --version ${releaseVersion} && nuzo --version`,
     expectedStatus: 0,
     expectedOutput: [
-      `==> Installing @nuzo/memory@${releaseVersion} with npm`,
+      `==> Resolving @nuzo/memory@${releaseVersion} from npm`,
+      `==> Downloading @nuzo/memory@${releaseVersion}`,
+      "==> Verifying npm package integrity",
+      `==> Installing verified @nuzo/memory@${releaseVersion} with npm`,
       "==> Validating Nuzo",
       "Nuzo installed.",
       "nuzo setup",
@@ -104,7 +114,10 @@ const scenarios = [
     command: `sh docs/install.sh --version ${releaseVersion} && nuzo --version`,
     expectedStatus: 0,
     expectedOutput: [
-      `==> Installing @nuzo/memory@${releaseVersion} with npm`,
+      `==> Resolving @nuzo/memory@${releaseVersion} from npm`,
+      `==> Downloading @nuzo/memory@${releaseVersion}`,
+      "==> Verifying npm package integrity",
+      `==> Installing verified @nuzo/memory@${releaseVersion} with npm`,
       "==> Validating Nuzo",
       "Nuzo installed.",
       "nuzo setup",
@@ -181,6 +194,10 @@ function runScenario(scenario) {
 function writeFakes(fakeBin, fake = {}) {
   mkdirSync(fakeBin, { recursive: true });
   writeFileSync(join(fakeBin, ".keep"), "");
+  const fakePackage = "fake nuzo package\n";
+  const fakePackagePath = join(fakeBin, "nuzo-memory.tgz");
+  const fakeIntegrity = `sha512-${createHash("sha512").update(fakePackage).digest("base64")}`;
+  writeFileSync(fakePackagePath, fakePackage);
   if (fake.node === "supported") {
     writeExecutable(join(fakeBin, "node"), [
       "#!/bin/sh",
@@ -199,8 +216,30 @@ function writeFakes(fakeBin, fake = {}) {
     writeExecutable(join(fakeBin, "npm"), [
       "#!/bin/sh",
       "if [ \"$1\" = \"-v\" ]; then printf '10.0.0\\n'; exit 0; fi",
+      "if [ \"$1\" = \"view\" ]; then",
+      "cat <<'EOF'",
+      "{",
+      `  "version": "${releaseVersion}",`,
+      "  \"dist.tarball\": \"https://registry.npmjs.org/@nuzo/memory/-/memory-fake.tgz\",",
+      `  "dist.integrity": "${fakeIntegrity}"`,
+      "}",
+      "EOF",
+      "exit 0",
+      "fi",
       "printf 'npm %s\\n' \"$*\"",
       "exit 0",
+    ]);
+    writeExecutable(join(fakeBin, "curl"), [
+      "#!/bin/sh",
+      "output=''",
+      "while [ \"$#\" -gt 0 ]; do",
+      "  case \"$1\" in",
+      "    -o) output=\"$2\"; shift ;;",
+      "  esac",
+      "  shift",
+      "done",
+      "[ -n \"$output\" ] || exit 1",
+      "cp /smoke/bin/nuzo-memory.tgz \"$output\"",
     ]);
   } else if (fake.npm === "unsupported") {
     writeExecutable(join(fakeBin, "npm"), [
