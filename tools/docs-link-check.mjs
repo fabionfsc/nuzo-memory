@@ -204,7 +204,7 @@ function isIgnoredScheme(value) {
 }
 
 function normalizeExternalUrl(value) {
-  return value.replace(/[.,;:]+$/u, "");
+  return value.replace(/[`.,;:]+$/u, "");
 }
 
 function isIgnoredExternalUrl(value) {
@@ -214,7 +214,7 @@ function isIgnoredExternalUrl(value) {
   // deployment succeeds, so validate the source files locally instead.
   if (
     url.hostname === "nuzo.com.br" &&
-    (url.pathname === "/install.sh" || url.pathname === "/install.sh.sha256") &&
+    url.pathname === "/install.sh" &&
     existsSync(join(docsRoot, url.pathname.slice(1)))
   ) {
     return true;

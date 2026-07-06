@@ -78,19 +78,21 @@ The one-line installer is a convenience wrapper around the public
 checks that `nuzo` is on `PATH`, and leaves host changes to the explicit
 `nuzo setup` command.
 
-For stricter review, download the installer and checksum, verify it, inspect the
-script, and then execute it:
+Before installation, the script resolves the package metadata from npm,
+downloads the package tarball, verifies the tarball against npm's integrity
+metadata, and installs the verified local tarball globally.
+
+For stricter script review, download and inspect the installer before executing
+it:
 
 ```bash
 curl -fsSLO https://nuzo.com.br/install.sh
-curl -fsSLO https://nuzo.com.br/install.sh.sha256
-shasum -a 256 -c install.sh.sha256
 less install.sh
 sh install.sh
 ```
 
-The checksum verifies the file published by the site. It does not remove the
-need to trust the HTTPS origin, npm package provenance, or your local runtime.
+Package integrity verification does not remove the need to trust the HTTPS
+origin, npm registry metadata, npm package provenance, or your local runtime.
 
 ## Semantic Retrieval Boundary
 

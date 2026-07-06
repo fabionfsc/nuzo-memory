@@ -69,17 +69,12 @@ curl -fsSL https://nuzo.com.br/install.sh | sh
 nuzo setup
 ```
 
-If you do not want to pipe a network script directly into the shell, download
-and inspect it first:
+The installer resolves the npm package, downloads the package tarball, verifies
+its npm integrity metadata, installs the verified tarball globally, and leaves
+host configuration to `nuzo setup`.
 
-```bash
-curl -fsSLO https://nuzo.com.br/install.sh
-curl -fsSLO https://nuzo.com.br/install.sh.sha256
-shasum -a 256 -c install.sh.sha256
-less install.sh
-sh install.sh
-nuzo setup
-```
+If you do not want to pipe a network script directly into the shell, download
+and inspect `https://nuzo.com.br/install.sh` first, then run `sh install.sh`.
 
 `nuzo setup` detects Codex and Claude Code. When both are available, it lets
 you choose Codex, Claude Code, or both, then shows the host changes and asks

@@ -36,7 +36,7 @@ nuzo setup</code></pre>
   <p>The installer validates Node.js/npm, installs the same npm package, verifies the CLI, and leaves host configuration to <code>nuzo setup</code>.</p>
   <pre><code>curl -fsSL https://nuzo.com.br/install.sh | sh
 nuzo setup</code></pre>
-  <p><a href="getting-started/#install">Download, verify, and inspect first →</a></p>
+  <p><a href="getting-started/#install">See what the installer verifies →</a></p>
   </article>
 </section>
 
