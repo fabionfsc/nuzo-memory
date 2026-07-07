@@ -98,6 +98,32 @@ function fakeSetupIO(input: string, output: string[]): CliIO {
 }
 
 describe("nuzo memory cli", () => {
+  it("prints read-only host integration discovery", async () => {
+    const text = await runCli(["hosts"]);
+    expect(text.stderr).toEqual([]);
+    expect(text.stdout[0]).toContain("Nuzo host integrations");
+    expect(text.stdout[0]).toContain("Managed setup:");
+    expect(text.stdout[0]).toContain("Codex (codex):");
+    expect(text.stdout[0]).toContain("Claude Code (claude-code):");
+    expect(text.stdout[0]).toContain("Manual MCP:");
+    expect(text.stdout[0]).toContain("Research candidates:");
+
+    const json = await runCli(["hosts", "--json"]);
+    const output = JSON.parse(json.stdout[0] ?? "{}") as {
+      hosts: Array<{ slug: string; support: string; setup_command: string | null }>;
+    };
+    expect(output.hosts).toContainEqual(expect.objectContaining({
+      slug: "codex",
+      support: "managed",
+      setup_command: "nuzo setup --codex --yes",
+    }));
+    expect(output.hosts).toContainEqual(expect.objectContaining({
+      slug: "generic-mcp",
+      support: "manual-mcp",
+      setup_command: null,
+    }));
+  });
+
   it("prints host setup dry-run plans without changing host configuration", async () => {
     const codex = await runCli(["setup", "--codex", "--dry-run"]);
     expect(codex.stderr).toEqual([]);

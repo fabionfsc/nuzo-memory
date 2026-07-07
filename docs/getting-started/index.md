@@ -35,6 +35,9 @@ and inspect `https://nuzo.com.br/install.sh` first, then run `sh install.sh`.
 available, it lets you choose Codex, Claude Code, or both, then shows the exact
 plugin changes and asks before changing host configuration.
 
+Use `nuzo hosts` when you want a read-only inventory of managed hosts, generic
+MCP usage, and future host candidates before choosing a setup path.
+
 For non-interactive setup:
 
 ```bash
