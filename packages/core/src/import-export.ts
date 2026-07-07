@@ -1,7 +1,14 @@
 import { NuzoMemoryError } from "./errors.js";
 import { memoryLimits } from "./policy.js";
-import { memoryConfidenceStates, memoryKinds, memoryProvenanceKinds } from "./types.js";
-import type { MemoryExportDocument, MemoryExportItem, MemoryProvenance, MemoryRecord } from "./types.js";
+import { memoryConfidenceStates, memoryKinds, memoryProvenanceKinds, memoryRelationTypes } from "./types.js";
+import type {
+  MemoryExportDocument,
+  MemoryExportItem,
+  MemoryExportRelationItem,
+  MemoryProvenance,
+  MemoryRecord,
+  MemoryRelationRecord,
+} from "./types.js";
 
 export function toExportItem(memory: MemoryRecord): MemoryExportItem {
   return {
@@ -19,6 +26,24 @@ export function toExportItem(memory: MemoryRecord): MemoryExportItem {
     updated_at: memory.updatedAt.toISOString(),
     last_used_at: memory.lastUsedAt?.toISOString() ?? null,
     archived_at: memory.archivedAt?.toISOString() ?? null,
+  };
+}
+
+export function toExportRelationItem(
+  relation: MemoryRelationRecord,
+  memoryIndexById: ReadonlyMap<string, number>,
+): MemoryExportRelationItem | null {
+  const sourceIndex = memoryIndexById.get(relation.sourceMemoryId);
+  const targetIndex = memoryIndexById.get(relation.targetMemoryId);
+  if (sourceIndex === undefined || targetIndex === undefined) {
+    return null;
+  }
+  return {
+    source_index: sourceIndex,
+    target_index: targetIndex,
+    relation: relation.relation,
+    reason: relation.reason,
+    created_at: relation.createdAt.toISOString(),
   };
 }
 
@@ -48,7 +73,22 @@ export function assertExportDocument(document: MemoryExportDocument): void {
     );
   }
 
-  value.memories.forEach(assertExportItem);
+  const memories = value.memories;
+  memories.forEach(assertExportItem);
+
+  if (value.relations !== undefined) {
+    if (!Array.isArray(value.relations)) {
+      throwInvalidExportField("document", "relations", "must be an array", { value: value.relations });
+    }
+    if (value.relations.length > memoryLimits.importItems) {
+      throw new NuzoMemoryError(
+        "MEMORY_IMPORT_LIMIT_EXCEEDED",
+        "Memory import contains too many relation items.",
+        { maxItems: memoryLimits.importItems },
+      );
+    }
+    value.relations.forEach((relation, index) => assertExportRelationItem(relation, index, memories.length));
+  }
 }
 
 function assertExportItem(item: unknown, index: number): void {
@@ -95,6 +135,33 @@ function assertExportItem(item: unknown, index: number): void {
   }
 }
 
+function assertExportRelationItem(item: unknown, index: number, memoryCount: number): void {
+  if (!isRecord(item)) {
+    throwInvalidExportRelation(index, "item must be an object");
+  }
+  const sourceIndex = getIntegerField(item, "source_index", `relations[${index}]`);
+  const targetIndex = getIntegerField(item, "target_index", `relations[${index}]`);
+  if (sourceIndex < 0 || sourceIndex >= memoryCount) {
+    throwInvalidExportRelation(index, "source_index must reference an exported memory", { sourceIndex });
+  }
+  if (targetIndex < 0 || targetIndex >= memoryCount) {
+    throwInvalidExportRelation(index, "target_index must reference an exported memory", { targetIndex });
+  }
+  if (sourceIndex === targetIndex) {
+    throwInvalidExportRelation(index, "source_index and target_index must differ", { sourceIndex, targetIndex });
+  }
+  const relation = getStringField(item, "relation", `relations[${index}]`);
+  if (!memoryRelationTypes.includes(relation as MemoryExportRelationItem["relation"])) {
+    throwInvalidExportRelation(index, "relation is not supported", { relation });
+  }
+  const reason = getOptionalNullableStringField(item, "reason", `relations[${index}]`);
+  if (reason !== undefined && reason !== null && reason.trim().length === 0) {
+    throwInvalidExportRelation(index, "reason cannot be empty");
+  }
+  const createdAt = getStringField(item, "created_at", `relations[${index}]`);
+  parseExportDate(createdAt, `relations[${index}].created_at`);
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -139,6 +206,14 @@ function getNumberField(record: Record<string, unknown>, field: string, path: st
     throwInvalidExportField(path, field, "must be a finite number", { value: record[field] });
   }
   return record[field];
+}
+
+function getIntegerField(record: Record<string, unknown>, field: string, path: string): number {
+  const value = getNumberField(record, field, path);
+  if (!Number.isInteger(value)) {
+    throwInvalidExportField(path, field, "must be an integer", { value });
+  }
+  return value;
 }
 
 function getOptionalConfidenceStateField(record: Record<string, unknown>, field: string, path: string): void {
@@ -212,6 +287,18 @@ function throwInvalidExportItem(
 ): never {
   throw new NuzoMemoryError("MEMORY_EXPORT_INVALID", "Memory export document is invalid.", {
     path: `memories[${index}]`,
+    reason,
+    ...details,
+  });
+}
+
+function throwInvalidExportRelation(
+  index: number,
+  reason: string,
+  details: Record<string, unknown> = {},
+): never {
+  throw new NuzoMemoryError("MEMORY_EXPORT_INVALID", "Memory export document is invalid.", {
+    path: `relations[${index}]`,
     reason,
     ...details,
   });

@@ -3,9 +3,11 @@ import { decodeMemoryEventCursor, decodeMemoryListCursor } from "../pagination.j
 import type {
   AuditEventFilter,
   ListMemoriesInput,
+  ListMemoryRelationsInput,
   MemoryHistoryInput,
   MemoryEvent,
   MemoryRecord,
+  MemoryRelationRecord,
   RecallMemoriesInput,
   RecallMemoryResult,
 } from "../types.js";
@@ -25,6 +27,7 @@ export class FixedClock implements Clock {
 export class SequentialIdGenerator implements IdGenerator {
   private memoryCounter = 0;
   private eventCounter = 0;
+  private relationCounter = 0;
 
   memoryId(): string {
     this.memoryCounter += 1;
@@ -35,10 +38,16 @@ export class SequentialIdGenerator implements IdGenerator {
     this.eventCounter += 1;
     return `evt_${String(this.eventCounter).padStart(6, "0")}`;
   }
+
+  relationId(): string {
+    this.relationCounter += 1;
+    return `rel_${String(this.relationCounter).padStart(6, "0")}`;
+  }
 }
 
 export class InMemoryStore implements MemoryStore {
   private readonly memories = new Map<string, MemoryRecord>();
+  private readonly relations = new Map<string, MemoryRelationRecord>();
 
   async create(memory: MemoryRecord): Promise<void> {
     this.memories.set(memory.id, cloneMemory(memory));
@@ -110,7 +119,56 @@ export class InMemoryStore implements MemoryStore {
     if (expectedRevision !== undefined && memory.revision !== expectedRevision) {
       return false;
     }
-    return this.memories.delete(id);
+    const deleted = this.memories.delete(id);
+    if (deleted) {
+      for (const relation of this.relations.values()) {
+        if (relation.sourceMemoryId === id || relation.targetMemoryId === id) {
+          this.relations.delete(relation.id);
+        }
+      }
+    }
+    return deleted;
+  }
+
+  async createRelation(relation: MemoryRelationRecord): Promise<boolean> {
+    const duplicate = [...this.relations.values()].some((current) =>
+      current.sourceMemoryId === relation.sourceMemoryId &&
+      current.targetMemoryId === relation.targetMemoryId &&
+      current.relation === relation.relation
+    );
+    if (duplicate) {
+      return false;
+    }
+    this.relations.set(relation.id, cloneRelation(relation));
+    return true;
+  }
+
+  async findRelationById(id: string): Promise<MemoryRelationRecord | null> {
+    const relation = this.relations.get(id);
+    return relation ? cloneRelation(relation) : null;
+  }
+
+  async listRelations(input: ListMemoryRelationsInput): Promise<MemoryRelationRecord[]> {
+    return [...this.relations.values()]
+      .filter((relation) =>
+        relation.sourceMemoryId === input.memoryId ||
+        (input.includeReverse !== false && relation.targetMemoryId === input.memoryId)
+      )
+      .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime() || right.id.localeCompare(left.id))
+      .slice(0, input.limit)
+      .map(cloneRelation);
+  }
+
+  async listRelationsForMemoryIds(memoryIds: readonly string[]): Promise<MemoryRelationRecord[]> {
+    const memoryIdSet = new Set(memoryIds);
+    return [...this.relations.values()]
+      .filter((relation) => memoryIdSet.has(relation.sourceMemoryId) && memoryIdSet.has(relation.targetMemoryId))
+      .sort((left, right) => left.createdAt.getTime() - right.createdAt.getTime() || left.id.localeCompare(right.id))
+      .map(cloneRelation);
+  }
+
+  async deleteRelation(id: string): Promise<boolean> {
+    return this.relations.delete(id);
   }
 }
 
@@ -225,5 +283,12 @@ function cloneEvent(event: MemoryEvent): MemoryEvent {
     ...event,
     payload: { ...event.payload },
     createdAt: new Date(event.createdAt),
+  };
+}
+
+function cloneRelation(relation: MemoryRelationRecord): MemoryRelationRecord {
+  return {
+    ...relation,
+    createdAt: new Date(relation.createdAt),
   };
 }

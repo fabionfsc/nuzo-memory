@@ -430,9 +430,9 @@ describe("MCP protocol contract", () => {
         },
         ok: true,
         schema: {
-          current_version: 5,
+          current_version: 6,
           status: "current",
-          supported_version: 5,
+          supported_version: 6,
         },
         store: {
           writable_check: "writable",

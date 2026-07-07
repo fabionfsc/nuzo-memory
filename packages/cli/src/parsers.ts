@@ -1,8 +1,10 @@
 import {
   memoryEventTypes,
+  memoryRelationTypes,
   type ConfirmCaptureDecision,
   type MemoryConfidenceState,
   type MemoryEvent,
+  type MemoryRelationType,
   type MemoryProvenance,
   type RetrievalMode,
   type SemanticFallbackMode,
@@ -85,6 +87,13 @@ export function parseProvenanceJson(value: string): MemoryProvenance | null {
 export function parseRelationshipMode(value: string): "exact" | "bounded" {
   if (value === "exact" || value === "bounded") return value;
   throw new InvalidArgumentError("Expected relationship mode to be exact or bounded.");
+}
+
+export function parseMemoryRelationType(value: string): MemoryRelationType {
+  if (memoryRelationTypes.includes(value as MemoryRelationType)) {
+    return value as MemoryRelationType;
+  }
+  throw new InvalidArgumentError(`Expected relation to be one of: ${memoryRelationTypes.join(", ")}.`);
 }
 
 export function parseRetrievalMode(value: string): RetrievalMode {

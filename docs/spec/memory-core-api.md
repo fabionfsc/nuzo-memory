@@ -33,10 +33,11 @@ directly instead of depending on internal assertion helpers.
 | `DefaultPolicyEngine` | Default validation, secret scanning, and scope authorization policy. |
 | `RegexSecretScanner` | Built-in local secret scanner used by the default policy. |
 | `SystemClock` | Default wall-clock implementation. |
-| `RandomIdGenerator` | Default memory and event ID generator. |
+| `RandomIdGenerator` | Default memory, relation, and event ID generator. |
 | `memoryConfidenceStates` | Stable human-readable confidence state values. |
 | `memoryKinds` | Stable memory kind values. |
 | `memoryProvenanceKinds` | Stable structured provenance kind values. |
+| `memoryRelationTypes` | Stable explicit memory relation values. |
 | `memoryEventTypes` | Stable audit event type values. |
 | `memoryLimits` | Public validation limits used across CLI and MCP contracts. |
 | `memoryScopePattern` | Scope validation pattern. |
@@ -56,6 +57,8 @@ directly instead of depending on internal assertion helpers.
 | `MemoryRecord` | Canonical memory record. |
 | `MemoryEvent` | Canonical audit event. |
 | `MemoryConfidenceState` | Human-readable confidence state union. |
+| `MemoryRelationRecord` | Canonical explicit relation between two memories. |
+| `MemoryRelationType` | Explicit relation type union. |
 | `MemoryKind` | Memory kind union. |
 | `MemoryProvenance` | Structured provenance metadata. |
 | `MemoryProvenanceKind` | Structured provenance kind union. |
@@ -67,6 +70,9 @@ directly instead of depending on internal assertion helpers.
 | `RecallMemoryResult` | Individual recall result. |
 | `RecallDiagnostics` | Retrieval-mode diagnostics. |
 | `ListMemoriesInput` | List/filter input. |
+| `RelateMemoriesInput` | Explicit memory relation write input. |
+| `ListMemoryRelationsInput` | Relation list input. |
+| `ForgetMemoryRelationInput` | Relation removal input. |
 | `MemoryHistoryInput` | Per-memory audit history pagination input. |
 | `UpdateMemoryInput` | Update input. |
 | `ForgetMemoryInput` | Single-memory archive/delete input. |
@@ -78,6 +84,7 @@ directly instead of depending on internal assertion helpers.
 | `ImportMemoriesResult` | Import result. |
 | `MemoryExportDocument` | Versioned JSON export document. |
 | `MemoryExportItem` | Exported memory item. |
+| `MemoryExportRelationItem` | Exported relation item. |
 | `SuggestCaptureInput` | Capture suggestion input. |
 | `ConfirmCaptureDecision` | Confirmed capture decision union. |
 | `ConfirmCaptureInput` | Confirmed capture input. |

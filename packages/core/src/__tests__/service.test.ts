@@ -123,6 +123,93 @@ describe("memory service", () => {
     })).rejects.toMatchObject({ code: "MEMORY_CONFIDENCE_STATE_INVALID" });
   });
 
+  it("creates, lists, exports, imports, and removes explicit memory relations", async () => {
+    const { auditLog, service } = createTestService();
+    const previous = await service.remember({
+      content: "The deploy flow uses script A.",
+      kind: "project_decision",
+      scope: "project:nuzo",
+      source: "test",
+    });
+    const current = await service.remember({
+      content: "The deploy flow uses script B.",
+      kind: "project_decision",
+      scope: "project:nuzo",
+      source: "test",
+    });
+
+    const relation = await service.relate({
+      sourceMemoryId: current.id,
+      targetMemoryId: previous.id,
+      relation: "supersedes",
+      reason: "Newer deployment decision replaces the older note.",
+      actor: "test",
+    });
+
+    expect(relation).toMatchObject({
+      id: "rel_000001",
+      sourceMemoryId: current.id,
+      targetMemoryId: previous.id,
+      relation: "supersedes",
+      reason: "Newer deployment decision replaces the older note.",
+    });
+    await expect(service.relate({
+      sourceMemoryId: current.id,
+      targetMemoryId: previous.id,
+      relation: "supersedes",
+      actor: "test",
+    })).rejects.toMatchObject({ code: "MEMORY_RELATION_DUPLICATE" });
+    await expect(service.relate({
+      sourceMemoryId: current.id,
+      targetMemoryId: current.id,
+      relation: "related_to",
+      actor: "test",
+    })).rejects.toMatchObject({ code: "MEMORY_RELATION_SELF_INVALID" });
+
+    expect(await service.relations({ memoryId: previous.id })).toMatchObject([
+      { id: relation.id, sourceMemoryId: current.id, targetMemoryId: previous.id },
+    ]);
+
+    const document = await service.exportMemories({
+      scope: "project:nuzo",
+      includeArchived: true,
+      actor: "test",
+    });
+    expect(document.relations).toEqual([{
+      source_index: 0,
+      target_index: 1,
+      relation: "supersedes",
+      reason: "Newer deployment decision replaces the older note.",
+      created_at: "2026-06-12T00:00:00.000Z",
+    }]);
+
+    const target = createTestService();
+    const imported = await target.service.importMemories({
+      document,
+      actor: "test",
+    });
+    expect(imported).toEqual({ imported: 2, skipped: 0, dryRun: false });
+    const importedMemories = await target.service.list({ scope: "project:nuzo" });
+    const importedRelations = await target.service.relations({ memoryId: importedMemories[0]!.id });
+    expect(importedRelations).toHaveLength(1);
+    expect(importedRelations[0]).toMatchObject({
+      relation: "supersedes",
+      reason: "Newer deployment decision replaces the older note.",
+    });
+
+    await service.forgetRelation({
+      id: relation.id,
+      actor: "test",
+      reason: "Cleanup",
+    });
+    expect(await service.relations({ memoryId: current.id })).toEqual([]);
+    expect((await auditLog.list(current.id)).map((event) => event.eventType)).toEqual([
+      "memory.created",
+      "memory.relation.created",
+      "memory.relation.deleted",
+    ]);
+  });
+
   it("stores, filters, updates, and clears review lifecycle metadata", async () => {
     const { clock, service } = createTestService();
     const reviewAfter = new Date("2026-06-11T00:00:00.000Z");
@@ -382,10 +469,10 @@ describe("memory service", () => {
       code: "MEMORY_HISTORY_LIMIT_INVALID",
     });
     await expect(service.audit({
-      eventTypes: Array.from({ length: 8 }, () => "memory.created" as const),
+      eventTypes: Array.from({ length: 10 }, () => "memory.created" as const),
     })).rejects.toMatchObject({
       code: "MEMORY_AUDIT_EVENT_TYPE_LIMIT_EXCEEDED",
-      details: { maxEventTypes: 7 },
+      details: { maxEventTypes: 9 },
     });
   });
 

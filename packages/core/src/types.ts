@@ -43,6 +43,19 @@ export const memoryConfidenceStates = [
   "deprecated",
 ] as const satisfies readonly MemoryConfidenceState[];
 
+export type MemoryRelationType =
+  | "supersedes"
+  | "conflicts_with"
+  | "duplicate_of"
+  | "related_to";
+
+export const memoryRelationTypes = [
+  "supersedes",
+  "conflicts_with",
+  "duplicate_of",
+  "related_to",
+] as const satisfies readonly MemoryRelationType[];
+
 export type MemoryScope =
   | `user:${string}`
   | `project:${string}`
@@ -95,7 +108,9 @@ export type MemoryEventType =
   | "memory.deleted"
   | "memory.imported"
   | "memory.exported"
-  | "memory.recalled";
+  | "memory.recalled"
+  | "memory.relation.created"
+  | "memory.relation.deleted";
 
 export const memoryEventTypes = [
   "memory.created",
@@ -105,6 +120,8 @@ export const memoryEventTypes = [
   "memory.imported",
   "memory.exported",
   "memory.recalled",
+  "memory.relation.created",
+  "memory.relation.deleted",
 ] as const satisfies readonly MemoryEventType[];
 
 export interface AuditEventFilter {
@@ -270,6 +287,35 @@ export interface ForgetMemoriesResult {
   ids: string[];
 }
 
+export interface MemoryRelationRecord {
+  id: string;
+  sourceMemoryId: string;
+  targetMemoryId: string;
+  relation: MemoryRelationType;
+  reason: string | null;
+  createdAt: Date;
+}
+
+export interface RelateMemoriesInput {
+  sourceMemoryId: string;
+  targetMemoryId: string;
+  relation: MemoryRelationType;
+  reason?: string;
+  actor: string;
+}
+
+export interface ListMemoryRelationsInput {
+  memoryId: string;
+  includeReverse?: boolean;
+  limit?: number;
+}
+
+export interface ForgetMemoryRelationInput {
+  id: string;
+  actor: string;
+  reason?: string;
+}
+
 export interface UpdateMemoryInput {
   id: string;
   expectedRevision?: number;
@@ -307,6 +353,7 @@ export interface MemoryExportDocument {
   version: 1;
   exported_at: string;
   memories: MemoryExportItem[];
+  relations?: MemoryExportRelationItem[];
 }
 
 export interface MemoryExportItem {
@@ -324,6 +371,14 @@ export interface MemoryExportItem {
   updated_at: string;
   last_used_at: string | null;
   archived_at: string | null;
+}
+
+export interface MemoryExportRelationItem {
+  source_index: number;
+  target_index: number;
+  relation: MemoryRelationType;
+  reason?: string | null;
+  created_at: string;
 }
 
 export interface RecallMemoryResult {

@@ -65,6 +65,7 @@ function createServiceForDatabase(
 class PrefixedIdGenerator implements IdGenerator {
   private memoryCounter = 0;
   private eventCounter = 0;
+  private relationCounter = 0;
 
   constructor(private readonly prefix: string) {}
 
@@ -77,10 +78,15 @@ class PrefixedIdGenerator implements IdGenerator {
     this.eventCounter += 1;
     return `evt_${this.prefix}_${String(this.eventCounter).padStart(6, "0")}`;
   }
+
+  relationId(): string {
+    this.relationCounter += 1;
+    return `rel_${this.prefix}_${String(this.relationCounter).padStart(6, "0")}`;
+  }
 }
 
 describe("SQLiteMemoryDatabase", () => {
-  it("creates the complete version 5 schema from an empty database", () => {
+  it("creates the complete version 6 schema from an empty database", () => {
     const directory = mkdtempSync(join(tmpdir(), "nuzo-schema-"));
     tempDirectories.push(directory);
     const database = new SQLiteMemoryDatabase({ path: join(directory, "memories.sqlite") });
@@ -107,7 +113,7 @@ describe("SQLiteMemoryDatabase", () => {
 
     const columns = database.database.pragma("table_info(memories)") as Array<{ name: string }>;
 
-    expect(database.getSchemaVersion()).toBe(5);
+    expect(database.getSchemaVersion()).toBe(6);
     expect(database.database.pragma("busy_timeout", { simple: true })).toBe(5000);
     expect(columns.some((column) => column.name === "revision")).toBe(true);
     expect(columns.some((column) => column.name === "provenance")).toBe(true);
@@ -196,7 +202,7 @@ describe("SQLiteMemoryDatabase", () => {
 
     const reopened = new SQLiteMemoryDatabase({ path });
 
-    expect(reopened.getSchemaVersion()).toBe(5);
+    expect(reopened.getSchemaVersion()).toBe(6);
     await expect(reopened.findById(memory.id)).resolves.toMatchObject({
       revision: 1,
       content: "Migration tests preserve fake memory data.",
@@ -266,7 +272,7 @@ describe("SQLiteMemoryDatabase", () => {
 
     expect(inspectSQLiteMemoryStore(path)).toMatchObject({
       ok: true,
-      schemaVersion: 5,
+      schemaVersion: 6,
       integrityCheck: "ok",
       memoryCount: 1,
       activeMemoryCount: 1,
@@ -282,6 +288,47 @@ describe("SQLiteMemoryDatabase", () => {
       missingFtsRows: 1,
       errors: ["1 active memory row(s) are missing from FTS"],
     });
+
+    database.close();
+  });
+
+  it("persists explicit memory relations and cascades hard deletes", async () => {
+    const { database, service } = createTempDatabase();
+    const previous = await service.remember({
+      content: "Old test convention.",
+      kind: "note",
+      scope: "project:nuzo",
+      source: "test",
+    });
+    const current = await service.remember({
+      content: "Current test convention.",
+      kind: "note",
+      scope: "project:nuzo",
+      source: "test",
+    });
+    const relation = await service.relate({
+      sourceMemoryId: current.id,
+      targetMemoryId: previous.id,
+      relation: "supersedes",
+      actor: "test",
+    });
+
+    expect(await service.relations({ memoryId: previous.id })).toMatchObject([
+      { id: relation.id, sourceMemoryId: current.id, targetMemoryId: previous.id },
+    ]);
+
+    const reopenedService = createServiceForDatabase(database, new PrefixedIdGenerator("relations_reopen"));
+    expect(await reopenedService.relations({ memoryId: current.id })).toMatchObject([
+      { id: relation.id, relation: "supersedes" },
+    ]);
+
+    await reopenedService.forget({
+      id: previous.id,
+      mode: "delete",
+      confirm: true,
+      actor: "test",
+    });
+    expect(await reopenedService.relations({ memoryId: current.id })).toEqual([]);
 
     database.close();
   });
@@ -379,15 +426,15 @@ describe("SQLiteMemoryDatabase", () => {
     tempDirectories.push(directory);
     const path = join(directory, "memories.sqlite");
     const database = new Database(path);
-    database.pragma("user_version = 6");
+    database.pragma("user_version = 7");
     database.close();
 
     expect(() => new SQLiteMemoryDatabase({ path })).toThrowError(
       expect.objectContaining({
         code: "MEMORY_SCHEMA_UNSUPPORTED",
         details: {
-          currentVersion: 6,
-          supportedVersion: 5,
+          currentVersion: 7,
+          supportedVersion: 6,
         },
       }),
     );

@@ -5,14 +5,17 @@ import {
   memoryEventTypes,
   memoryKinds,
   memoryProvenanceKinds,
+  memoryRelationTypes,
   type MemoryProvenance,
   type MemoryScope,
 } from "./types.js";
 import type {
   AuditEventFilter,
   ListMemoriesInput,
+  ListMemoryRelationsInput,
   MemoryRecord,
   RecallMemoriesInput,
+  RelateMemoriesInput,
   RememberMemoryInput,
   UpdateMemoryInput,
 } from "./types.js";
@@ -210,6 +213,41 @@ export class DefaultPolicyEngine implements PolicyEngine {
     }
   }
 
+  async assertCanRelate(input: RelateMemoriesInput, source: MemoryRecord, target: MemoryRecord): Promise<void> {
+    this.assertScopeAllowed(source.scope);
+    this.assertScopeAllowed(target.scope);
+    assertRelationType(input.relation);
+    invariant(
+      input.sourceMemoryId !== input.targetMemoryId,
+      "MEMORY_RELATION_SELF_INVALID",
+      "A memory cannot be related to itself.",
+      { id: input.sourceMemoryId },
+    );
+    invariant(input.actor.trim().length > 0, "MEMORY_ACTOR_EMPTY", "Memory actor cannot be empty.");
+    invariant(input.actor.length <= memoryLimits.actorLength, "MEMORY_ACTOR_INVALID", "Memory actor is too long.", {
+      maxLength: memoryLimits.actorLength,
+    });
+    if (input.reason !== undefined) {
+      assertOptionalRelationReason(input.reason);
+      const reasonScan = await this.secretScanner.scan(input.reason);
+      invariant(reasonScan.ok, "MEMORY_SECRET_DETECTED", "Memory relation reason looks sensitive.", {
+        findings: reasonScan.findings,
+      });
+    }
+  }
+
+  async assertCanListRelations(input: ListMemoryRelationsInput, memory: MemoryRecord): Promise<void> {
+    this.assertScopeAllowed(memory.scope);
+    if (input.limit !== undefined) {
+      invariant(
+        Number.isInteger(input.limit) && input.limit > 0 && input.limit <= 200,
+        "MEMORY_RELATION_LIMIT_INVALID",
+        "Relation limit must be 1-200.",
+        { limit: input.limit },
+      );
+    }
+  }
+
   async assertCanAudit(input: AuditEventFilter, currentMemory?: MemoryRecord | null): Promise<void> {
     if (input.scope !== undefined) {
       assertScope(input.scope);
@@ -296,6 +334,29 @@ function assertTag(tag: string): void {
   invariant(memoryTagPattern.test(tag), "MEMORY_TAG_INVALID", "Memory tag is invalid.", {
     tag,
   });
+}
+
+function assertRelationType(relation: string): void {
+  invariant(
+    memoryRelationTypes.includes(relation as (typeof memoryRelationTypes)[number]),
+    "MEMORY_RELATION_UNSUPPORTED",
+    "Memory relation is not supported.",
+    { relation },
+  );
+}
+
+function assertOptionalRelationReason(value: string): void {
+  invariant(
+    value.trim().length > 0,
+    "MEMORY_REASON_EMPTY",
+    "Memory relation reason cannot be empty.",
+  );
+  invariant(
+    value.length <= memoryLimits.reasonLength,
+    "MEMORY_REASON_TOO_LONG",
+    "Memory relation reason is too long.",
+    { maxLength: memoryLimits.reasonLength },
+  );
 }
 
 async function assertProvenance(

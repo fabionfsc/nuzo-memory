@@ -22,6 +22,7 @@ import {
   memoryLimits,
   memoryEventTypes,
   memoryConfidenceStates,
+  memoryRelationTypes,
   memoryScopePattern,
   memoryTagPattern,
   projectScopeFromPath,
@@ -46,6 +47,9 @@ import type {
   HistoryToolInput,
   ImportToolInput,
   ListToolInput,
+  RelateToolInput,
+  RelationsToolInput,
+  UnrelateToolInput,
   RecallToolInput,
   RecallHookToolInput,
   RememberToolInput,
@@ -60,6 +64,7 @@ const tagSchema = z.string().regex(memoryTagPattern);
 const memoryIdSchema = z.string().min(1).max(memoryLimits.identifierLength);
 const exportDateSchema = z.string().max(memoryLimits.dateLength);
 const eventTypeSchema = z.enum(memoryEventTypes);
+const relationTypeSchema = z.enum(memoryRelationTypes);
 const paginationCursorSchema = z.string().min(1).max(memoryLimits.identifierLength * 4);
 const confidenceStateSchema = z.enum(memoryConfidenceStates);
 const provenanceSchema = z.object({
@@ -444,6 +449,74 @@ export function registerMemoryTools(
   );
 
   server.registerTool(
+    "memory.relate",
+    {
+      description: "Create an explicit, manual relation between two local Nuzo memories.",
+      inputSchema: {
+        source_memory_id: memoryIdSchema,
+        target_memory_id: memoryIdSchema,
+        relation: relationTypeSchema,
+        reason: z.string().min(1).max(memoryLimits.reasonLength).optional(),
+        actor: z.string().min(1).max(memoryLimits.actorLength).default("nuzo:mcp"),
+      },
+    },
+    withJsonErrorHandling(async (input) => {
+      const relateInput: RelateToolInput = {
+        source_memory_id: input.source_memory_id,
+        target_memory_id: input.target_memory_id,
+        relation: input.relation,
+        actor: input.actor,
+      };
+      if (input.reason !== undefined) {
+        relateInput.reason = input.reason;
+      }
+      return jsonToolResult(await handlers.relate(relateInput));
+    }, redactForbiddenScopeDetails),
+  );
+
+  server.registerTool(
+    "memory.relations",
+    {
+      description: "List explicit relations for one local Nuzo memory.",
+      inputSchema: {
+        memory_id: memoryIdSchema,
+        include_reverse: z.boolean().default(true),
+        limit: z.number().int().min(1).max(200).default(50),
+      },
+    },
+    withJsonErrorHandling(async (input) => {
+      const relationsInput: RelationsToolInput = {
+        memory_id: input.memory_id,
+        include_reverse: input.include_reverse,
+        limit: input.limit,
+      };
+      return jsonToolResult(await handlers.relations(relationsInput));
+    }, redactForbiddenScopeDetails),
+  );
+
+  server.registerTool(
+    "memory.unrelate",
+    {
+      description: "Remove an explicit memory relation without deleting either memory.",
+      inputSchema: {
+        id: memoryIdSchema,
+        reason: z.string().min(1).max(memoryLimits.reasonLength).optional(),
+        actor: z.string().min(1).max(memoryLimits.actorLength).default("nuzo:mcp"),
+      },
+    },
+    withJsonErrorHandling(async (input) => {
+      const unrelateInput: UnrelateToolInput = {
+        id: input.id,
+        actor: input.actor,
+      };
+      if (input.reason !== undefined) {
+        unrelateInput.reason = input.reason;
+      }
+      return jsonToolResult(await handlers.unrelate(unrelateInput));
+    }, redactForbiddenScopeDetails),
+  );
+
+  server.registerTool(
     "memory.update",
     {
       description: "Update a local Nuzo memory.",
@@ -679,6 +752,15 @@ export function registerMemoryTools(
               archived_at: exportDateSchema.nullable(),
             }),
           ).max(memoryLimits.importItems),
+          relations: z.array(
+            z.object({
+              source_index: z.number().int().min(0),
+              target_index: z.number().int().min(0),
+              relation: relationTypeSchema,
+              reason: z.string().min(1).max(memoryLimits.reasonLength).nullable().optional(),
+              created_at: exportDateSchema,
+            }),
+          ).max(memoryLimits.importItems).optional(),
         }),
         scope: scopeSchema.optional(),
         dry_run: z.boolean().default(false),

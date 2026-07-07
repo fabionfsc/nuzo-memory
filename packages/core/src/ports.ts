@@ -1,12 +1,15 @@
 import type {
   AuditEventFilter,
   ListMemoriesInput,
+  ListMemoryRelationsInput,
   MemoryHistoryInput,
   MemoryEvent,
   MemoryRecord,
+  MemoryRelationRecord,
   RecallMemoriesInput,
   RecallMemoriesResponse,
   RecallMemoryResult,
+  RelateMemoriesInput,
   RememberMemoryInput,
   UpdateMemoryInput,
 } from "./types.js";
@@ -18,6 +21,11 @@ export interface MemoryStore {
   list(filter: ListMemoriesInput): Promise<MemoryRecord[]>;
   archive(id: string, archivedAt: Date, expectedRevision?: number): Promise<boolean>;
   delete(id: string, expectedRevision?: number): Promise<boolean>;
+  createRelation(relation: MemoryRelationRecord): Promise<boolean>;
+  findRelationById(id: string): Promise<MemoryRelationRecord | null>;
+  listRelations(input: ListMemoryRelationsInput): Promise<MemoryRelationRecord[]>;
+  listRelationsForMemoryIds(memoryIds: readonly string[]): Promise<MemoryRelationRecord[]>;
+  deleteRelation(id: string): Promise<boolean>;
 }
 
 export interface SearchIndex {
@@ -59,6 +67,7 @@ export interface Clock {
 export interface IdGenerator {
   memoryId(): string;
   eventId(): string;
+  relationId(): string;
 }
 
 export interface SecretScanner {
@@ -81,5 +90,7 @@ export interface PolicyEngine {
   assertCanForget(input: { id: string }, current: MemoryRecord): Promise<void>;
   assertCanRecall(input: RecallMemoriesInput): Promise<void>;
   assertCanList(input: ListMemoriesInput): Promise<void>;
+  assertCanRelate(input: RelateMemoriesInput, source: MemoryRecord, target: MemoryRecord): Promise<void>;
+  assertCanListRelations(input: ListMemoryRelationsInput, memory: MemoryRecord): Promise<void>;
   assertCanAudit(input: AuditEventFilter, currentMemory?: MemoryRecord | null): Promise<void>;
 }

@@ -59,6 +59,9 @@ The default memory store is:
 - `memory.suggest_capture`
 - `memory.confirm_capture`
 - `memory.list`
+- `memory.relate`
+- `memory.relations`
+- `memory.unrelate`
 - `memory.update`
 - `memory.history`
 - `memory.audit`

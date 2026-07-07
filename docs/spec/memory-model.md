@@ -108,6 +108,38 @@ the CLI `--needs-review` filter and the MCP `needs_review` list filter. Nuzo
 does not automatically archive, delete, or rewrite a memory when either
 timestamp passes.
 
+## Explicit Memory Relations
+
+Memory relations are durable, user-visible links between two memory records.
+They are manual/auditable metadata, not automatic recall authority and not a
+silent write path.
+
+Supported relation types:
+
+- `supersedes`: the source memory replaces or narrows the target memory.
+- `conflicts_with`: the source memory contradicts the target memory and both
+  should be reviewed before strong use.
+- `duplicate_of`: the source memory is a duplicate of the target memory.
+- `related_to`: the source memory is topically related to the target memory.
+
+Relations are directional in storage:
+
+```json
+{
+  "id": "rel_01HZY...",
+  "source_memory_id": "mem_current",
+  "target_memory_id": "mem_previous",
+  "relation": "supersedes",
+  "reason": "Newer deploy decision replaces the older note.",
+  "created_at": "2026-06-11T00:00:00Z"
+}
+```
+
+List and recall surfaces may show compact relation annotations, but recalled
+memory content remains evidence to inspect rather than an instruction to obey.
+Clients should surface conflicts, duplicates, and supersession markers whenever
+they use related memories to guide work.
+
 ## Source, Provenance, And Recall Trust
 
 `source` records attribution supplied by the writer, such as `codex:mcp` or an

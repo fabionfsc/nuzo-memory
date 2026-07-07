@@ -16,6 +16,8 @@ import {
   type ConfirmCaptureInput,
   type MemoryConfidenceState,
   type MemoryRecord,
+  type MemoryRelationRecord,
+  type MemoryRelationType,
   type MemoryProvenance,
   type MemoryScope,
   type ForgetMemoryInput,
@@ -62,6 +64,7 @@ import {
   parseConfirmCaptureDecision,
   parseExportFormat,
   parseIsoDate,
+  parseMemoryRelationType,
   parsePositiveInteger,
   parseProvenanceJson,
   parseRelationshipMode,
@@ -331,7 +334,13 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
           io.stdout(JSON.stringify(response, null, 2));
         } else {
           for (const result of response.results) {
-            io.stdout(`${result.memory.id}\t${result.score.toPrecision(4)}\t${result.memory.content}`);
+            const relations = await service.relations({
+              memoryId: result.memory.id,
+              includeReverse: true,
+              limit: 10,
+            });
+            const relationMarker = formatRelationMarkers(relations, result.memory.id);
+            io.stdout(`${result.memory.id}\t${result.score.toPrecision(4)}${relationMarker}\t${result.memory.content}`);
           }
           if (response.diagnostics.semanticFallbackCode !== null) {
             io.stderr(`Semantic fallback: ${response.diagnostics.semanticFallbackCode}`);
@@ -436,8 +445,98 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
         for (const item of memories) {
           const archived = item.archivedAt ? " archived" : "";
           const lifecycle = formatLifecycleMarkers(item, new Date());
-          io.stdout(`${item.id}\trev=${item.revision}\tscope=${item.scope}\t${item.kind}${archived}${lifecycle}\t${item.content}`);
+          const relations = await service.relations({
+            memoryId: item.id,
+            includeReverse: true,
+            limit: 10,
+          });
+          const relationMarker = formatRelationMarkers(relations, item.id);
+          io.stdout(`${item.id}\trev=${item.revision}\tscope=${item.scope}\t${item.kind}${archived}${lifecycle}${relationMarker}\t${item.content}`);
         }
+      } finally {
+        database.close();
+      }
+    }));
+
+  memory
+    .command("relate")
+    .description("Create an explicit relation between two memories.")
+    .argument("<source-id>", "Source memory ID.")
+    .requiredOption("--target <id>", "Target memory ID.")
+    .requiredOption("--relation <relation>", "Relation: supersedes, conflicts_with, duplicate_of, or related_to.", parseMemoryRelationType)
+    .option("--reason <reason>", "Reason for the relation.")
+    .option("--actor <actor>", "Audit actor.", "nuzo:cli")
+    .action(withErrorHandling(io, async (sourceId: string, commandOptions: {
+      target: string;
+      relation: MemoryRelationType;
+      reason?: string;
+      actor: string;
+    }) => {
+      const options = memory.opts<GlobalOptions>();
+      const database = openDatabase(options);
+      try {
+        const service = createService(database);
+        const relation = await service.relate({
+          sourceMemoryId: sourceId,
+          targetMemoryId: commandOptions.target,
+          relation: commandOptions.relation,
+          actor: commandOptions.actor,
+          ...(commandOptions.reason === undefined ? {} : { reason: commandOptions.reason }),
+        });
+        io.stdout(`${relation.id}\t${formatRelationMarker(relation, relation.sourceMemoryId)}`);
+      } finally {
+        database.close();
+      }
+    }));
+
+  memory
+    .command("relations")
+    .description("List explicit relations for a memory.")
+    .argument("<id>", "Memory ID.")
+    .option("--outgoing-only", "Only list relations where this memory is the source.", false)
+    .option("--limit <number>", "Maximum number of relations.", parsePositiveInteger)
+    .action(withErrorHandling(io, async (id: string, commandOptions: {
+      outgoingOnly: boolean;
+      limit?: number;
+    }) => {
+      const options = memory.opts<GlobalOptions>();
+      const database = openDatabase(options);
+      try {
+        const service = createService(database);
+        const relations = await service.relations({
+          memoryId: id,
+          includeReverse: !commandOptions.outgoingOnly,
+          limit: commandOptions.limit ?? 50,
+        });
+        for (const relation of relations) {
+          const reason = relation.reason === null ? "" : `\treason=${relation.reason}`;
+          io.stdout(`${relation.id}\t${formatRelationMarker(relation, id)}\tcreated=${relation.createdAt.toISOString()}${reason}`);
+        }
+      } finally {
+        database.close();
+      }
+    }));
+
+  memory
+    .command("unrelate")
+    .description("Remove an explicit relation without deleting either memory.")
+    .argument("<id>", "Relation ID.")
+    .option("--reason <reason>", "Reason for removing the relation.")
+    .option("--actor <actor>", "Audit actor.", "nuzo:cli")
+    .action(withErrorHandling(io, async (id: string, commandOptions: {
+      reason?: string;
+      actor: string;
+    }) => {
+      const options = memory.opts<GlobalOptions>();
+      const database = openDatabase(options);
+      try {
+        const service = createService(database);
+        await service.forgetRelation({
+          id,
+          actor: commandOptions.actor,
+          ...(commandOptions.reason === undefined ? {} : { reason: commandOptions.reason }),
+        });
+        io.stdout("Removed");
       } finally {
         database.close();
       }
@@ -915,4 +1014,21 @@ function formatLifecycleMarkers(memory: MemoryRecord, now: Date): string {
     markers.push(memory.expiresAt <= now ? "expired" : `expires_at=${memory.expiresAt.toISOString()}`);
   }
   return markers.length === 0 ? "" : ` ${markers.join(" ")}`;
+}
+
+function formatRelationMarkers(relations: readonly MemoryRelationRecord[], perspectiveMemoryId: string): string {
+  if (relations.length === 0) {
+    return "";
+  }
+  return ` ${relations.map((relation) => `rel=${formatRelationMarker(relation, perspectiveMemoryId)}`).join(" ")}`;
+}
+
+function formatRelationMarker(relation: MemoryRelationRecord, perspectiveMemoryId: string): string {
+  if (relation.sourceMemoryId === perspectiveMemoryId) {
+    return `${relation.relation}->${relation.targetMemoryId}`;
+  }
+  if (relation.targetMemoryId === perspectiveMemoryId) {
+    return `${relation.relation}<-${relation.sourceMemoryId}`;
+  }
+  return `${relation.sourceMemoryId}:${relation.relation}->${relation.targetMemoryId}`;
 }

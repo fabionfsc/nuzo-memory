@@ -600,10 +600,123 @@ Output:
 
 ```json
 {
-  "memories": [],
+  "memories": [
+    {
+      "id": "mem_01HZY...",
+      "revision": 1,
+      "content": "Use npm run check before PR.",
+      "kind": "instruction",
+      "scope": "project:nuzo",
+      "tags": ["workflow"],
+      "source": "nuzo:mcp",
+      "confidence": 1,
+      "confidence_state": "user_confirmed",
+      "provenance": null,
+      "review_after": null,
+      "expires_at": null,
+      "created_at": "2026-06-11T00:00:00Z",
+      "updated_at": "2026-06-11T00:00:00Z",
+      "last_used_at": null,
+      "archived_at": null,
+      "relations": []
+    }
+  ],
   "next_cursor": null,
   "limit": 50,
   "truncated": false
+}
+```
+
+### `memory.relate`
+
+Create an explicit relation between two memories. This is a manual write and is
+audited. It does not create, update, archive, or delete either memory.
+
+Input:
+
+```json
+{
+  "source_memory_id": "mem_current",
+  "target_memory_id": "mem_previous",
+  "relation": "supersedes",
+  "reason": "Newer deploy decision replaces the older note.",
+  "actor": "nuzo:mcp"
+}
+```
+
+Supported relation values are `supersedes`, `conflicts_with`, `duplicate_of`,
+and `related_to`. The source and target must be different memories. Duplicate
+relations with the same source, target, and relation are rejected.
+
+Output:
+
+```json
+{
+  "relation": {
+    "id": "rel_01HZY...",
+    "source_memory_id": "mem_current",
+    "target_memory_id": "mem_previous",
+    "direction": null,
+    "relation": "supersedes",
+    "reason": "Newer deploy decision replaces the older note.",
+    "created_at": "2026-06-11T00:00:00Z"
+  }
+}
+```
+
+### `memory.relations`
+
+List explicit relations for one memory. By default the response includes both
+outgoing and incoming relations.
+
+Input:
+
+```json
+{
+  "memory_id": "mem_current",
+  "include_reverse": true,
+  "limit": 50
+}
+```
+
+Output:
+
+```json
+{
+  "relations": [
+    {
+      "id": "rel_01HZY...",
+      "source_memory_id": "mem_current",
+      "target_memory_id": "mem_previous",
+      "direction": "outgoing",
+      "relation": "supersedes",
+      "reason": "Newer deploy decision replaces the older note.",
+      "created_at": "2026-06-11T00:00:00Z"
+    }
+  ]
+}
+```
+
+### `memory.unrelate`
+
+Remove one explicit relation without deleting either memory.
+
+Input:
+
+```json
+{
+  "id": "rel_01HZY...",
+  "reason": "Relation was incorrect.",
+  "actor": "nuzo:mcp"
+}
+```
+
+Output:
+
+```json
+{
+  "id": "rel_01HZY...",
+  "removed": true
 }
 ```
 
@@ -882,6 +995,12 @@ events using the importing surface as `actor` and records `originalScope`,
 effective `scope`, and archive state in metadata-only payloads.
 
 Imports should be idempotent for exact memory equivalents. If a target store already has a memory with the same scope, kind, normalized content, and normalized tags, the import should skip that item instead of creating a duplicate.
+Export documents may include a top-level `relations` array. Relation items use
+`source_index` and `target_index` to reference the exported `memories` array so
+exports remain portable across stores with different local memory IDs. Import
+recreates a relation only when both referenced memories are imported in the
+same operation; if either memory is skipped as a duplicate, the relation is
+skipped rather than attached to an unconfirmed local equivalent.
 
 Input:
 
@@ -891,7 +1010,8 @@ Input:
     "format": "nuzo-memory-export",
     "version": 1,
     "exported_at": "2026-06-13T00:00:00.000Z",
-    "memories": []
+    "memories": [],
+    "relations": []
   },
   "scope": "user:default",
   "dry_run": true
@@ -993,8 +1113,12 @@ in `0.9.0`.
     "memory.suggest_capture",
     "memory.confirm_capture",
     "memory.list",
+    "memory.relate",
+    "memory.relations",
+    "memory.unrelate",
     "memory.update",
     "memory.history",
+    "memory.audit",
     "memory.forget",
     "memory.forget_many",
     "memory.export",

@@ -1,4 +1,4 @@
-import type { MemoryExportDocument, MemoryExportItem } from "./types.js";
+import type { MemoryExportDocument, MemoryExportItem, MemoryExportRelationItem } from "./types.js";
 
 export function formatMemoryExportMarkdown(document: MemoryExportDocument): string {
   const lines: string[] = [
@@ -11,6 +11,7 @@ export function formatMemoryExportMarkdown(document: MemoryExportDocument): stri
     `version: ${document.version}`,
     `exported_at: ${yamlString(document.exported_at)}`,
     `count: ${document.memories.length}`,
+    `relation_count: ${document.relations?.length ?? 0}`,
     "```",
     "",
     "## Memories",
@@ -30,6 +31,16 @@ export function formatMemoryExportMarkdown(document: MemoryExportDocument): stri
     lines.push(memory.content);
     lines.push("");
   });
+
+  if ((document.relations?.length ?? 0) > 0) {
+    lines.push("## Relations", "");
+    document.relations!.forEach((relation, index) => {
+      lines.push(`### Relation ${index + 1}`);
+      lines.push("");
+      lines.push(formatMemoryExportRelationMetadata(relation));
+      lines.push("");
+    });
+  }
 
   return lines.join("\n");
 }
@@ -61,6 +72,18 @@ function formatTags(tags: string[]): string[] {
   return tags.length === 0
     ? ["  []"]
     : tags.map((tag) => `  - ${yamlString(tag)}`);
+}
+
+function formatMemoryExportRelationMetadata(relation: MemoryExportRelationItem): string {
+  return [
+    "```yaml",
+    `source_index: ${relation.source_index}`,
+    `target_index: ${relation.target_index}`,
+    `relation: ${yamlString(relation.relation)}`,
+    `reason: ${yamlNullableString(relation.reason ?? null)}`,
+    `created_at: ${yamlString(relation.created_at)}`,
+    "```",
+  ].join("\n");
 }
 
 function yamlNullableString(value: string | null): string {
