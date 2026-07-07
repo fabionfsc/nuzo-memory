@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { MemoryRecord, MemoryService } from "@nuzo/memory-core";
+import type { MemoryRecord, MemoryRelationRecord, MemoryService } from "@nuzo/memory-core";
 import {
   createMemoryToolHandlers,
   type MemoryDoctorDiagnostics,
@@ -11,6 +11,7 @@ function createTestHandlers(options: {
   projectScope?: `project:${string}`;
 } = {}) {
   let memory: MemoryRecord | null = null;
+  let relation: MemoryRelationRecord | null = null;
   const calls = {
     remember: 0,
     recall: [] as Array<{
@@ -22,6 +23,9 @@ function createTestHandlers(options: {
     }>,
     suggestCapture: 0,
     update: 0,
+    relate: 0,
+    relations: 0,
+    forgetRelation: 0,
     history: 0,
     forget: 0,
     forgetMany: 0,
@@ -228,6 +232,32 @@ function createTestHandlers(options: {
       }
       return memory ? [memory] : [];
     },
+    async relate(input) {
+      calls.relate += 1;
+      relation = {
+        id: "rel_000001",
+        sourceMemoryId: input.sourceMemoryId,
+        targetMemoryId: input.targetMemoryId,
+        relation: input.relation,
+        reason: input.reason ?? null,
+        createdAt: new Date("2026-06-13T00:10:00.000Z"),
+      };
+      return relation;
+    },
+    async relations(input) {
+      calls.relations += 1;
+      return relation &&
+        (relation.sourceMemoryId === input.memoryId ||
+          (input.includeReverse !== false && relation.targetMemoryId === input.memoryId))
+        ? [relation]
+        : [];
+    },
+    async forgetRelation(input) {
+      calls.forgetRelation += 1;
+      if (relation?.id === input.id) {
+        relation = null;
+      }
+    },
     async update(input) {
       calls.update += 1;
       if (!memory) {
@@ -422,6 +452,49 @@ describe("memory MCP handlers", () => {
       requested_mode: "hybrid",
       effective_mode: "hybrid",
       semantic_fallback_code: null,
+    });
+  });
+
+  it("creates, lists, and removes explicit memory relations", async () => {
+    const { calls, handlers } = createTestHandlers();
+
+    await handlers.remember({
+      content: "Source memory.",
+      kind: "note",
+      scope: "user:default",
+      tags: [],
+      source: "test",
+    });
+
+    const created = await handlers.relate({
+      source_memory_id: "mem_000001",
+      target_memory_id: "mem_000002",
+      relation: "related_to",
+      reason: "Same topic",
+      actor: "test",
+    });
+    expect(created.relation).toMatchObject({
+      id: "rel_000001",
+      relation: "related_to",
+      source_memory_id: "mem_000001",
+      target_memory_id: "mem_000002",
+    });
+
+    const relations = await handlers.relations({
+      memory_id: "mem_000001",
+      include_reverse: true,
+      limit: 50,
+    });
+    expect(relations.relations).toHaveLength(1);
+
+    await handlers.unrelate({
+      id: "rel_000001",
+      actor: "test",
+    });
+    expect(calls).toMatchObject({
+      relate: 1,
+      relations: 1,
+      forgetRelation: 1,
     });
   });
 

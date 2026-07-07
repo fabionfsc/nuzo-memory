@@ -4,6 +4,7 @@ import {
   assertExportDocument,
   parseExportDate,
   toExportItem,
+  toExportRelationItem,
   toImportDuplicateKey,
 } from "./import-export.js";
 import type {
@@ -24,18 +25,22 @@ import type {
   ForgetMemoryInput,
   ForgetMemoriesInput,
   ForgetMemoriesResult,
+  ForgetMemoryRelationInput,
   ImportMemoriesInput,
   ImportMemoriesResult,
   ListMemoriesInput,
+  ListMemoryRelationsInput,
   MemoryHistoryInput,
   MemoryExportDocument,
   MemoryExportItem,
   MemoryEvent,
   MemoryRecord,
+  MemoryRelationRecord,
   MemoryScope,
   RecallMemoriesInput,
   RecallMemoriesResponse,
   RecallMemoryResult,
+  RelateMemoriesInput,
   RememberMemoryInput,
   SuggestCaptureInput,
   UpdateMemoryInput,
@@ -59,6 +64,9 @@ export interface MemoryService {
   recall(input: RecallMemoriesInput): Promise<RecallMemoryResult[]>;
   recallDetailed(input: RecallMemoriesInput): Promise<RecallMemoriesResponse>;
   list(input?: ListMemoriesInput): Promise<MemoryRecord[]>;
+  relate(input: RelateMemoriesInput): Promise<MemoryRelationRecord>;
+  relations(input: ListMemoryRelationsInput): Promise<MemoryRelationRecord[]>;
+  forgetRelation(input: ForgetMemoryRelationInput): Promise<void>;
   update(input: UpdateMemoryInput): Promise<MemoryRecord>;
   history(memoryId: string, input?: MemoryHistoryInput): Promise<MemoryEvent[]>;
   audit(input?: AuditEventFilter): Promise<MemoryEvent[]>;
@@ -246,6 +254,150 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
     });
 
     return updated;
+  }
+
+  async function relateMemories(input: RelateMemoriesInput): Promise<MemoryRelationRecord> {
+    assertMemoryId(input.sourceMemoryId);
+    assertMemoryId(input.targetMemoryId);
+    assertActor(input.actor);
+    assertReason(input.reason);
+
+    const [source, target] = await Promise.all([
+      store.findById(input.sourceMemoryId),
+      store.findById(input.targetMemoryId),
+    ]);
+    if (!source) {
+      throw new NuzoMemoryError("MEMORY_RELATION_SOURCE_NOT_FOUND", "Source memory was not found.", {
+        id: input.sourceMemoryId,
+      });
+    }
+    if (!target) {
+      throw new NuzoMemoryError("MEMORY_RELATION_TARGET_NOT_FOUND", "Target memory was not found.", {
+        id: input.targetMemoryId,
+      });
+    }
+
+    await policy.assertCanRelate(input, source, target);
+
+    const now = clock.now();
+    const relation: MemoryRelationRecord = {
+      id: ids.relationId(),
+      sourceMemoryId: input.sourceMemoryId,
+      targetMemoryId: input.targetMemoryId,
+      relation: input.relation,
+      reason: input.reason?.trim() ?? null,
+      createdAt: now,
+    };
+
+    await runTransaction(async () => {
+      const created = await store.createRelation(relation);
+      if (!created) {
+        throw new NuzoMemoryError(
+          "MEMORY_RELATION_DUPLICATE",
+          "Memory relation already exists.",
+          {
+            sourceMemoryId: relation.sourceMemoryId,
+            targetMemoryId: relation.targetMemoryId,
+            relation: relation.relation,
+          },
+        );
+      }
+      await auditLog.append({
+        id: ids.eventId(),
+        memoryId: relation.sourceMemoryId,
+        eventType: "memory.relation.created",
+        actor: input.actor,
+        payload: {
+          relationId: relation.id,
+          sourceMemoryId: relation.sourceMemoryId,
+          targetMemoryId: relation.targetMemoryId,
+          relation: relation.relation,
+          reason: relation.reason,
+          sourceScope: source.scope,
+          targetScope: target.scope,
+        },
+        createdAt: now,
+      });
+    });
+
+    return relation;
+  }
+
+  async function listRelations(input: ListMemoryRelationsInput): Promise<MemoryRelationRecord[]> {
+    assertMemoryId(input.memoryId);
+    const memory = await store.findById(input.memoryId);
+    if (!memory) {
+      throw new NuzoMemoryError("MEMORY_NOT_FOUND", "Memory was not found.", { id: input.memoryId });
+    }
+    await policy.assertCanListRelations(input, memory);
+    const relations = await store.listRelations({
+      ...input,
+      includeReverse: input.includeReverse ?? true,
+      limit: input.limit ?? 50,
+    });
+    const visibleRelations: MemoryRelationRecord[] = [];
+    for (const relation of relations) {
+      const [source, target] = await Promise.all([
+        store.findById(relation.sourceMemoryId),
+        store.findById(relation.targetMemoryId),
+      ]);
+      if (!source || !target) {
+        continue;
+      }
+      await policy.assertCanListRelations({ memoryId: source.id }, source);
+      await policy.assertCanListRelations({ memoryId: target.id }, target);
+      visibleRelations.push(relation);
+    }
+    return visibleRelations;
+  }
+
+  async function forgetMemoryRelation(input: ForgetMemoryRelationInput): Promise<void> {
+    assertMemoryId(input.id);
+    assertActor(input.actor);
+    assertReason(input.reason);
+
+    const relation = await store.findRelationById(input.id);
+    if (!relation) {
+      throw new NuzoMemoryError("MEMORY_RELATION_NOT_FOUND", "Memory relation was not found.", { id: input.id });
+    }
+    const [source, target] = await Promise.all([
+      store.findById(relation.sourceMemoryId),
+      store.findById(relation.targetMemoryId),
+    ]);
+    if (!source) {
+      throw new NuzoMemoryError("MEMORY_RELATION_SOURCE_NOT_FOUND", "Source memory was not found.", {
+        id: relation.sourceMemoryId,
+      });
+    }
+    if (!target) {
+      throw new NuzoMemoryError("MEMORY_RELATION_TARGET_NOT_FOUND", "Target memory was not found.", {
+        id: relation.targetMemoryId,
+      });
+    }
+    await policy.assertCanListRelations({ memoryId: source.id }, source);
+    await policy.assertCanListRelations({ memoryId: target.id }, target);
+
+    const now = clock.now();
+    await runTransaction(async () => {
+      const deleted = await store.deleteRelation(input.id);
+      if (!deleted) {
+        throw new NuzoMemoryError("MEMORY_RELATION_NOT_FOUND", "Memory relation was not found.", { id: input.id });
+      }
+      await auditLog.append({
+        id: ids.eventId(),
+        memoryId: relation.sourceMemoryId,
+        eventType: "memory.relation.deleted",
+        actor: input.actor,
+        payload: {
+          relationId: relation.id,
+          sourceMemoryId: relation.sourceMemoryId,
+          targetMemoryId: relation.targetMemoryId,
+          relation: relation.relation,
+          reason: input.reason ?? null,
+        },
+        createdAt: now,
+      });
+    });
   }
 
   async function recallMemories(input: RecallMemoriesInput): Promise<RecallMemoriesResponse> {
@@ -481,6 +633,18 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       return store.list(listInput);
     },
 
+    async relate(input) {
+      return relateMemories(input);
+    },
+
+    async relations(input) {
+      return listRelations(input);
+    },
+
+    async forgetRelation(input) {
+      return forgetMemoryRelation(input);
+    },
+
     async update(input) {
       return updateMemory(input);
     },
@@ -529,6 +693,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
         version: 1,
         exported_at: now.toISOString(),
         memories: memories.map(toExportItem),
+        relations: storeExportRelations(memories, await store.listRelationsForMemoryIds(memories.map((memory) => memory.id))),
       };
     },
 
@@ -556,6 +721,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       const planImport = async (): Promise<{
         planned: Array<{
           item: MemoryExportItem;
+          index: number;
           scope: MemoryScope;
           tags: string[];
         }>;
@@ -563,13 +729,14 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       }> => {
         const planned: Array<{
           item: MemoryExportItem;
+          index: number;
           scope: MemoryScope;
           tags: string[];
         }> = [];
         const duplicateKeysByScope = new Map<MemoryScope, Set<string>>();
         let skipped = 0;
 
-        for (const item of input.document.memories) {
+        for (const [index, item] of input.document.memories.entries()) {
           const scope = input.scope ?? item.scope;
           const tags = [...new Set(item.tags)];
           let duplicateKeys = duplicateKeysByScope.get(scope);
@@ -592,11 +759,17 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
           }
 
           duplicateKeys.add(duplicateKey);
-          planned.push({ item, scope, tags });
+          planned.push({ item, index, scope, tags });
         }
 
         return { planned, skipped };
       };
+
+      for (const relation of input.document.relations ?? []) {
+        if (input.document.memories[relation.source_index] === undefined || input.document.memories[relation.target_index] === undefined) {
+          throw new NuzoMemoryError("MEMORY_EXPORT_INVALID", "Memory export relation references a missing memory.");
+        }
+      }
 
       if (input.dryRun === true) {
         const { planned, skipped } = await planImport();
@@ -613,7 +786,8 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
         const plan = await planImport();
         imported = plan.planned.length;
         skipped = plan.skipped;
-        for (const { item, scope, tags } of plan.planned) {
+        const importedMemoryIdByIndex = new Map<number, string>();
+        for (const { item, index, scope, tags } of plan.planned) {
           const memory: MemoryRecord = {
             id: ids.memoryId(),
             revision: 1,
@@ -634,6 +808,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
           };
 
           await store.create(memory);
+          importedMemoryIdByIndex.set(index, memory.id);
           await searchIndex.index(memory);
           await auditLog.append({
             id: ids.eventId(),
@@ -647,6 +822,51 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
             },
             createdAt: clock.now(),
           });
+        }
+        for (const relationItem of input.document.relations ?? []) {
+          const sourceMemoryId = importedMemoryIdByIndex.get(relationItem.source_index);
+          const targetMemoryId = importedMemoryIdByIndex.get(relationItem.target_index);
+          if (sourceMemoryId === undefined || targetMemoryId === undefined) {
+            continue;
+          }
+          const relation: MemoryRelationRecord = {
+            id: ids.relationId(),
+            sourceMemoryId,
+            targetMemoryId,
+            relation: relationItem.relation,
+            reason: relationItem.reason ?? null,
+            createdAt: parseExportDate(relationItem.created_at, "relations.created_at"),
+          };
+          const source = await store.findById(sourceMemoryId);
+          const target = await store.findById(targetMemoryId);
+          if (!source || !target) {
+            continue;
+          }
+          await policy.assertCanRelate({
+            sourceMemoryId,
+            targetMemoryId,
+            relation: relation.relation,
+            ...(relation.reason === null ? {} : { reason: relation.reason }),
+            actor: input.actor,
+          }, source, target);
+          const created = await store.createRelation(relation);
+          if (created) {
+            await auditLog.append({
+              id: ids.eventId(),
+              memoryId: relation.sourceMemoryId,
+              eventType: "memory.relation.created",
+              actor: input.actor,
+              payload: {
+                relationId: relation.id,
+                sourceMemoryId: relation.sourceMemoryId,
+                targetMemoryId: relation.targetMemoryId,
+                relation: relation.relation,
+                reason: relation.reason,
+                imported: true,
+              },
+              createdAt: clock.now(),
+            });
+          }
         }
       });
 
@@ -809,4 +1029,17 @@ function assertCaptureReason(reason: string): void {
     throw new NuzoMemoryError("MEMORY_REASON_EMPTY", "Memory reason cannot be empty.");
   }
   assertReason(reason);
+}
+
+function storeExportRelations(
+  memories: readonly MemoryRecord[],
+  relations: readonly MemoryRelationRecord[],
+) {
+  if (relations.length === 0) {
+    return [];
+  }
+  const memoryIndexById = new Map(memories.map((memory, index) => [memory.id, index]));
+  return relations
+    .map((relation) => toExportRelationItem(relation, memoryIndexById))
+    .filter((relation): relation is NonNullable<typeof relation> => relation !== null);
 }

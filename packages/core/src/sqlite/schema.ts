@@ -1,7 +1,7 @@
 import type Database from "better-sqlite3";
 import { NuzoMemoryError } from "../errors.js";
 
-export const schemaVersion = 5;
+export const schemaVersion = 6;
 
 export function migrate(database: Database.Database): void {
   database.pragma("journal_mode = WAL");
@@ -42,6 +42,11 @@ export function migrate(database: Database.Database): void {
 
   if (currentVersion < 5) {
     migrateToV5(database);
+    database.pragma("user_version = 5");
+  }
+
+  if (currentVersion < 6) {
+    migrateToV6(database);
     database.pragma(`user_version = ${schemaVersion}`);
   }
 }
@@ -117,5 +122,22 @@ function migrateToV5(database: Database.Database): void {
   database.exec(`
     CREATE INDEX IF NOT EXISTS idx_memories_review_after ON memories(review_after);
     CREATE INDEX IF NOT EXISTS idx_memories_expires_at ON memories(expires_at);
+  `);
+}
+
+function migrateToV6(database: Database.Database): void {
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS memory_relations (
+      id TEXT PRIMARY KEY,
+      source_memory_id TEXT NOT NULL REFERENCES memories(id) ON DELETE CASCADE,
+      target_memory_id TEXT NOT NULL REFERENCES memories(id) ON DELETE CASCADE,
+      relation TEXT NOT NULL,
+      reason TEXT,
+      created_at TEXT NOT NULL,
+      UNIQUE(source_memory_id, target_memory_id, relation)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_memory_relations_source ON memory_relations(source_memory_id);
+    CREATE INDEX IF NOT EXISTS idx_memory_relations_target ON memory_relations(target_memory_id);
   `);
 }

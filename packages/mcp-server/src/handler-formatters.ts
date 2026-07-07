@@ -1,6 +1,7 @@
 import type {
   CaptureSuggestionDraft,
   MemoryRecord,
+  MemoryRelationRecord,
   MemoryScope,
   RecallMemoryResult,
 } from "@nuzo/memory-core";
@@ -44,6 +45,23 @@ export function toRecallOutput(result: RecallMemoryResult) {
     expires_at: result.memory.expiresAt?.toISOString() ?? null,
     score: result.score,
     reason: result.reason,
+  };
+}
+
+export function toToolRelation(relation: MemoryRelationRecord, perspectiveMemoryId?: string) {
+  const direction: "incoming" | "outgoing" | null = perspectiveMemoryId === undefined
+    ? null
+    : relation.sourceMemoryId === perspectiveMemoryId
+      ? "outgoing"
+      : "incoming";
+  return {
+    id: relation.id,
+    source_memory_id: relation.sourceMemoryId,
+    target_memory_id: relation.targetMemoryId,
+    direction,
+    relation: relation.relation,
+    reason: relation.reason,
+    created_at: relation.createdAt.toISOString(),
   };
 }
 

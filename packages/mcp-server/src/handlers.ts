@@ -6,6 +6,7 @@ import type {
   ForgetMemoriesInput,
   ImportMemoriesInput,
   ListMemoriesInput,
+  MemoryRelationType,
   MemoryExportDocument,
   MemoryConfidenceState,
   MemoryKind,
@@ -32,6 +33,7 @@ import {
   toSuggestionDraftOutput,
   toToolEvent,
   toToolRecord,
+  toToolRelation,
 } from "./handler-formatters.js";
 
 export { formatIntegrityDiagnostics } from "./handler-doctor.js";
@@ -105,6 +107,26 @@ export interface ListToolInput {
   needs_review?: boolean;
   limit: number;
   cursor?: string;
+}
+
+export interface RelateToolInput {
+  source_memory_id: string;
+  target_memory_id: string;
+  relation: MemoryRelationType;
+  reason?: string;
+  actor: string;
+}
+
+export interface RelationsToolInput {
+  memory_id: string;
+  include_reverse: boolean;
+  limit: number;
+}
+
+export interface UnrelateToolInput {
+  id: string;
+  reason?: string;
+  actor: string;
 }
 
 export interface UpdateToolInput {
@@ -212,6 +234,7 @@ export interface MemoryToolHandlers {
       expires_at: string | null;
       score: number;
       reason: string;
+      relations: MemoryToolRelation[];
     }>;
     retrieval?: {
       requested_mode: "fts" | "semantic" | "hybrid";
@@ -239,6 +262,7 @@ export interface MemoryToolHandlers {
       expires_at: string | null;
       score: number;
       reason: string;
+      relations: MemoryToolRelation[];
     }>;
   }>;
   suggestCapture(input: SuggestCaptureToolInput): Promise<{
@@ -279,6 +303,16 @@ export interface MemoryToolHandlers {
     next_cursor: string | null;
     limit: number;
     truncated: boolean;
+  }>;
+  relate(input: RelateToolInput): Promise<{
+    relation: MemoryToolRelation;
+  }>;
+  relations(input: RelationsToolInput): Promise<{
+    relations: MemoryToolRelation[];
+  }>;
+  unrelate(input: UnrelateToolInput): Promise<{
+    id: string;
+    removed: true;
   }>;
   update(input: UpdateToolInput): Promise<{
     memory: MemoryToolRecord;
@@ -410,6 +444,17 @@ export type MemoryToolRecord = {
   updated_at: string;
   last_used_at: string | null;
   archived_at: string | null;
+  relations?: MemoryToolRelation[];
+};
+
+export type MemoryToolRelation = {
+  id: string;
+  source_memory_id: string;
+  target_memory_id: string;
+  direction: "incoming" | "outgoing" | null;
+  relation: MemoryRelationType;
+  reason: string | null;
+  created_at: string;
 };
 
 export type MemoryToolEvent = {
@@ -491,7 +536,14 @@ export function createMemoryToolHandlers(
       });
 
       const output: Awaited<ReturnType<MemoryToolHandlers["recall"]>> = {
-        results: response.results.map(toRecallOutput),
+        results: await Promise.all(response.results.map(async (result) => ({
+          ...toRecallOutput(result),
+          relations: (await service.relations({
+            memoryId: result.memory.id,
+            includeReverse: true,
+            limit: 10,
+          })).map((relation) => toToolRelation(relation, result.memory.id)),
+        }))),
       };
       if ((input.retrieval_mode ?? "fts") !== "fts") {
         output.retrieval = {
@@ -523,7 +575,14 @@ export function createMemoryToolHandlers(
         scope,
         include_global: true,
         limit,
-        results: results.map(toRecallOutput),
+        results: await Promise.all(results.map(async (result) => ({
+          ...toRecallOutput(result),
+          relations: (await service.relations({
+            memoryId: result.memory.id,
+            includeReverse: true,
+            limit: 10,
+          })).map((relation) => toToolRelation(relation, result.memory.id)),
+        }))),
       };
     },
 
@@ -653,12 +712,55 @@ export function createMemoryToolHandlers(
       const memories = await service.list(listInput);
       const page = memories.slice(0, input.limit);
       return {
-        memories: page.map(toToolRecord),
+        memories: await Promise.all(page.map(async (memory) => ({
+          ...toToolRecord(memory),
+          relations: (await service.relations({
+            memoryId: memory.id,
+            includeReverse: true,
+            limit: 10,
+          })).map((relation) => toToolRelation(relation, memory.id)),
+        }))),
         next_cursor: memories.length > input.limit && page.length > 0
           ? encodeMemoryListCursor(page[page.length - 1]!)
           : null,
         limit: input.limit,
         truncated: memories.length > input.limit,
+      };
+    },
+
+    async relate(input) {
+      const relation = await service.relate({
+        sourceMemoryId: input.source_memory_id,
+        targetMemoryId: input.target_memory_id,
+        relation: input.relation,
+        actor: input.actor,
+        ...(input.reason === undefined ? {} : { reason: input.reason }),
+      });
+      return {
+        relation: toToolRelation(relation),
+      };
+    },
+
+    async relations(input) {
+      const relations = await service.relations({
+        memoryId: input.memory_id,
+        includeReverse: input.include_reverse,
+        limit: input.limit,
+      });
+      return {
+        relations: relations.map((relation) => toToolRelation(relation, input.memory_id)),
+      };
+    },
+
+    async unrelate(input) {
+      await service.forgetRelation({
+        id: input.id,
+        actor: input.actor,
+        ...(input.reason === undefined ? {} : { reason: input.reason }),
+      });
+      return {
+        id: input.id,
+        removed: true,
       };
     },
 

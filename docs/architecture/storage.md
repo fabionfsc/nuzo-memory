@@ -38,7 +38,7 @@ The response must include which scope produced each result.
 
 ## SQLite Tables
 
-The current schema version is `5`. Nuzo stores it in SQLite `user_version` and
+The current schema version is `6`. Nuzo stores it in SQLite `user_version` and
 rejects databases created by newer unsupported Nuzo versions with the
 structured `MEMORY_SCHEMA_UNSUPPORTED` error.
 
@@ -71,6 +71,16 @@ CREATE TABLE memory_events (
   actor TEXT NOT NULL,
   payload TEXT NOT NULL,
   created_at TEXT NOT NULL
+);
+
+CREATE TABLE memory_relations (
+  id TEXT PRIMARY KEY,
+  source_memory_id TEXT NOT NULL REFERENCES memories(id) ON DELETE CASCADE,
+  target_memory_id TEXT NOT NULL REFERENCES memories(id) ON DELETE CASCADE,
+  relation TEXT NOT NULL,
+  reason TEXT,
+  created_at TEXT NOT NULL,
+  UNIQUE(source_memory_id, target_memory_id, relation)
 );
 
 CREATE VIRTUAL TABLE memories_fts USING fts5(
@@ -109,6 +119,8 @@ Every write operation creates an event:
 - `memory.imported`
 - `memory.exported`
 - `memory.recalled`
+- `memory.relation.created`
+- `memory.relation.deleted`
 
 Recall events are opt-in because queries may contain sensitive task context and
 can grow quickly. Normal CLI and MCP recall do not record query text or update
@@ -120,7 +132,7 @@ through the core API.
 SQLite-backed logical mutations commit memory rows, FTS changes, and audit
 events atomically.
 
-- remember, update, forget, and usage-recording recall use one transaction per
+- remember, update, relate, unrelate, forget, and usage-recording recall use one transaction per
   command;
 - import uses one transaction for the complete planned document and rolls back
   every item if any persistence step fails;

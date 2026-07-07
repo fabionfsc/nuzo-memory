@@ -39,9 +39,14 @@ The public memory contract remains:
 - `memory.recall`
 - `memory.recall_hook`
 - `memory.suggest_capture`
+- `memory.confirm_capture`
 - `memory.list`
+- `memory.relate`
+- `memory.relations`
+- `memory.unrelate`
 - `memory.update`
 - `memory.history`
+- `memory.audit`
 - `memory.forget`
 - `memory.forget_many`
 - `memory.export`

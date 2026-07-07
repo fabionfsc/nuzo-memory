@@ -14,12 +14,15 @@ import type { AuditLog, MemoryStore, SearchIndex, TransactionManager } from "../
 import type {
   AuditEventFilter,
   ListMemoriesInput,
+  ListMemoryRelationsInput,
   MemoryHistoryInput,
   MemoryEvent,
   MemoryConfidenceState,
   MemoryKind,
   MemoryProvenance,
   MemoryRecord,
+  MemoryRelationRecord,
+  MemoryRelationType,
   MemoryScope,
   RecallMemoriesInput,
   RecallMemoryResult,
@@ -51,6 +54,15 @@ interface MemoryEventRow {
   event_type: MemoryEvent["eventType"];
   actor: string;
   payload: string;
+  created_at: string;
+}
+
+interface MemoryRelationRow {
+  id: string;
+  source_memory_id: string;
+  target_memory_id: string;
+  relation: MemoryRelationType;
+  reason: string | null;
   created_at: string;
 }
 
@@ -199,6 +211,78 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
       expectedRevision === undefined
         ? this.database.prepare(`DELETE FROM memories WHERE ${where}`).run(id)
         : this.database.prepare(`DELETE FROM memories WHERE ${where}`).run(id, expectedRevision);
+    return result.changes === 1;
+  }
+
+  async createRelation(relation: MemoryRelationRecord): Promise<boolean> {
+    const result = this.database
+      .prepare(
+        `
+          INSERT OR IGNORE INTO memory_relations (
+            id, source_memory_id, target_memory_id, relation, reason, created_at
+          )
+          VALUES (
+            @id, @source_memory_id, @target_memory_id, @relation, @reason, @created_at
+          )
+        `,
+      )
+      .run(toRelationRow(relation));
+    return result.changes === 1;
+  }
+
+  async findRelationById(id: string): Promise<MemoryRelationRecord | null> {
+    const row = this.database.prepare("SELECT * FROM memory_relations WHERE id = ?").get(id) as
+      | MemoryRelationRow
+      | undefined;
+    return row ? fromRelationRow(row) : null;
+  }
+
+  async listRelations(input: ListMemoryRelationsInput): Promise<MemoryRelationRecord[]> {
+    const includeReverse = input.includeReverse !== false;
+    const params: Record<string, unknown> = {
+      memory_id: input.memoryId,
+    };
+    if (input.limit !== undefined) {
+      params.limit = input.limit;
+    }
+    const rows = this.database
+      .prepare(
+        `
+          SELECT *
+          FROM memory_relations
+          WHERE source_memory_id = @memory_id
+            ${includeReverse ? "OR target_memory_id = @memory_id" : ""}
+          ORDER BY created_at DESC, id DESC
+          ${input.limit !== undefined ? "LIMIT @limit" : ""}
+        `,
+      )
+      .all(params) as MemoryRelationRow[];
+    return rows.map(fromRelationRow);
+  }
+
+  async listRelationsForMemoryIds(memoryIds: readonly string[]): Promise<MemoryRelationRecord[]> {
+    if (memoryIds.length === 0) {
+      return [];
+    }
+    const uniqueMemoryIds = [...new Set(memoryIds)];
+    const placeholders = uniqueMemoryIds.map((_, index) => `@id_${index}`);
+    const params = Object.fromEntries(uniqueMemoryIds.map((id, index) => [`id_${index}`, id]));
+    const rows = this.database
+      .prepare(
+        `
+          SELECT *
+          FROM memory_relations
+          WHERE source_memory_id IN (${placeholders.join(", ")})
+            AND target_memory_id IN (${placeholders.join(", ")})
+          ORDER BY created_at ASC, id ASC
+        `,
+      )
+      .all(params) as MemoryRelationRow[];
+    return rows.map(fromRelationRow);
+  }
+
+  async deleteRelation(id: string): Promise<boolean> {
+    const result = this.database.prepare("DELETE FROM memory_relations WHERE id = ?").run(id);
     return result.changes === 1;
   }
 
@@ -492,6 +576,28 @@ function toEventRow(event: MemoryEvent): Record<string, unknown> {
     actor: event.actor,
     payload: JSON.stringify(event.payload),
     created_at: event.createdAt.toISOString(),
+  };
+}
+
+function toRelationRow(relation: MemoryRelationRecord): Record<string, unknown> {
+  return {
+    id: relation.id,
+    source_memory_id: relation.sourceMemoryId,
+    target_memory_id: relation.targetMemoryId,
+    relation: relation.relation,
+    reason: relation.reason,
+    created_at: relation.createdAt.toISOString(),
+  };
+}
+
+function fromRelationRow(row: MemoryRelationRow): MemoryRelationRecord {
+  return {
+    id: row.id,
+    sourceMemoryId: row.source_memory_id,
+    targetMemoryId: row.target_memory_id,
+    relation: row.relation,
+    reason: row.reason,
+    createdAt: new Date(row.created_at),
   };
 }
 

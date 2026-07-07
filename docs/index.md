@@ -9,7 +9,7 @@
   </p>
   <div class="nuzo-trust-strip">
   <span><strong>1.0.0</strong> stable release</span>
-  <span><strong>14</strong> MCP tools</span>
+  <span><strong>17</strong> MCP tools</span>
   <span><strong>0</strong> telemetry by default</span>
   </div>
   </div>

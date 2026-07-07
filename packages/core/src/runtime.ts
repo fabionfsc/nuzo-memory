@@ -430,4 +430,8 @@ export class RandomIdGenerator implements IdGenerator {
   eventId(): string {
     return `evt_${randomUUID()}`;
   }
+
+  relationId(): string {
+    return `rel_${randomUUID()}`;
+  }
 }
