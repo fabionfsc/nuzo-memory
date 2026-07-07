@@ -95,11 +95,28 @@ Nuzo should not promise migration from private native memory stores unless the h
 
 ## Host Matrix
 
-| Host | Current fit | Extension path | Nuzo package direction | Notes |
-| --- | --- | --- | --- | --- |
-| Codex | Supported plugin target. | Codex plugins bundle the Nuzo MCP server, skill, and command hooks for `SessionStart` and `UserPromptSubmit`. | `packages/codex-plugin` | Users must review and trust new or changed plugin hooks. |
-| Claude Code | Supported plugin target. | Claude Code plugins bundle the same MCP server, skill, and lifecycle events. | `packages/claude-code-plugin` | Plugin enablement and hook state remain controlled by Claude Code. |
-| Other MCP-compatible agents | Future compatible target. | Direct MCP server configuration. | No package until a real host contract exists. | Support through `packages/mcp-server` first. |
+`nuzo hosts` exposes this support model from the CLI. It is read-only and
+separates managed setup from generic MCP compatibility and future validation
+candidates.
+
+Support levels:
+
+- `managed`: `nuzo setup` can configure the host today.
+- `manual-mcp`: the host can use Nuzo when the user manually configures the
+  stdio MCP server.
+- `research`: candidate for future validation; not a supported managed setup
+  target yet.
+
+| Host | Support level | Current fit | Extension path | Nuzo package direction | Notes |
+| --- | --- | --- | --- | --- | --- |
+| Codex | managed | Supported plugin target. | Codex plugins bundle the Nuzo MCP server, skill, and command hooks for `SessionStart` and `UserPromptSubmit`. | `packages/codex-plugin` | Users must review and trust new or changed plugin hooks. |
+| Claude Code | managed | Supported plugin target. | Claude Code plugins bundle the same MCP server, skill, and lifecycle events. | `packages/claude-code-plugin` | Plugin enablement and hook state remain controlled by Claude Code. |
+| Generic MCP host | manual-mcp | Compatible when the host can launch a local stdio MCP server. | User-managed MCP configuration. | `packages/mcp-server` | Use `nuzo-mcp-server`; Nuzo should not mutate unknown host config. |
+| OpenCode | research | Candidate for future validation. | Start with manual MCP; add managed setup only after host config, permission, and lifecycle behavior are tested. | No package until validated. | Do not claim managed support yet. |
+| Gemini CLI | research | Candidate for future validation. | Start with manual MCP; add managed setup only after host config, permission, and lifecycle behavior are tested. | No package until validated. | Do not claim managed support yet. |
+| Cursor | research | Candidate for future validation. | Start with manual MCP; add managed setup only after host config, permission, and lifecycle behavior are tested. | No package until validated. | Do not claim managed support yet. |
+| Windsurf | research | Candidate for future validation. | Start with manual MCP; add managed setup only after host config, permission, and lifecycle behavior are tested. | No package until validated. | Do not claim managed support yet. |
+| VS Code Copilot | research | Candidate for future validation. | Start with manual MCP; add managed setup only after host config, permission, and lifecycle behavior are tested. | No package until validated. | Do not claim managed support yet. |
 
 ## Codex Notes
 
@@ -209,7 +226,12 @@ Before adding a new host package:
 3. Confirm how local processes are launched and how environment variables are passed.
 4. Confirm where user-owned state should live.
 5. Confirm how the host handles permissions, approvals, and tool visibility.
-6. Keep the host package thin and route all memory behavior through MCP/core.
+6. Confirm whether the host has lifecycle hooks or only direct MCP tool access.
+7. Confirm whether it can receive read-only session-start context without
+   creating a silent write path.
+8. Add a dry-run setup plan and fixture tests before any host config mutation.
+9. Add docs that clearly distinguish managed setup from manual MCP usage.
+10. Keep the host package thin and route all memory behavior through MCP/core.
 
 ## Source References
 

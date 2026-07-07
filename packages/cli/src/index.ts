@@ -14,6 +14,14 @@ export {
   type HostTargetCommandOptions,
   type SetupCommandOptions,
 } from "./host-targets.js";
+export {
+  detectHostIntegrations,
+  formatHostIntegrationStatus,
+  listHostIntegrations,
+  type HostIntegration,
+  type HostIntegrationStatus,
+  type HostIntegrationSupport,
+} from "./host-registry.js";
 
 if (isMain()) {
   process.exitCode = await runCliProcess(process.argv);

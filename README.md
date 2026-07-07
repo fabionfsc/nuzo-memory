@@ -81,6 +81,15 @@ you choose Codex, Claude Code, or both, then shows the host changes and asks
 before changing host configuration. Open the configured host, confirm Nuzo is
 enabled, trust the two Nuzo read-only recall hooks, then start a new session.
 
+To inspect the current integration surface without changing anything:
+
+```bash
+nuzo hosts
+```
+
+This read-only command lists managed setup hosts, generic MCP usage, and future
+host candidates separately.
+
 For non-interactive setup:
 
 ```bash

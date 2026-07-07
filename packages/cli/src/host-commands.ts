@@ -6,6 +6,7 @@ import {
   runHostBootstrap,
 } from "./host-bootstrap.js";
 import { formatHostUpdateResult, runHostUpdate } from "./host-update.js";
+import { detectHostIntegrations, formatHostIntegrationStatus } from "./host-registry.js";
 import { recordManagedHosts } from "./managed-hosts.js";
 import {
   setupHostsFromOptions,
@@ -16,6 +17,23 @@ import {
 import type { CliIO } from "./cli-io.js";
 
 export function registerHostCommands(program: Command, io: CliIO): void {
+  program
+    .command("hosts")
+    .description("List Nuzo host integration support and local detection.")
+    .option("--json", "Print JSON output for scripting.", false)
+    .addHelpText("after", `
+
+Examples:
+  # Inspect supported and candidate host integrations
+  $ nuzo hosts
+
+  # Produce machine-readable host support data
+  $ nuzo hosts --json
+`)
+    .action(withErrorHandling(io, async (commandOptions: { json: boolean }) => {
+      io.stdout(formatHostIntegrationStatus(detectHostIntegrations(), commandOptions.json));
+    }));
+
   program
     .command("setup")
     .description("Configure Nuzo for installed agent hosts.")

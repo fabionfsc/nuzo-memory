@@ -21,8 +21,14 @@ After installing the global package, use one-time host setup when you want
 Nuzo to configure Codex, Claude Code, or both:
 
 ```bash
+nuzo hosts
 nuzo setup
 ```
+
+`nuzo hosts` is read-only. It reports managed setup support, local CLI
+detection, the generic MCP path, and future host candidates. It does not write
+host configuration and is safe to run before setup, after upgrades, or while
+evaluating another MCP-compatible agent.
 
 When both supported hosts are detected, `nuzo setup` asks whether to configure
 Codex, Claude Code, or both before showing the final plan and confirmation.
@@ -59,6 +65,7 @@ installed by an update.
 ```bash
 nuzo memory init
 nuzo memory init --project
+nuzo hosts
 nuzo memory remember "The project uses SQLite for local storage." --kind project_decision --tag storage
 nuzo memory suggest-capture "The user prefers concise final answers." --kind preference --reason "Durable response style preference."
 nuzo memory recall "local storage"
