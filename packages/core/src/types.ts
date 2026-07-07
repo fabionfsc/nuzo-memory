@@ -109,6 +109,7 @@ export type MemoryEventType =
   | "memory.imported"
   | "memory.exported"
   | "memory.recalled"
+  | "memory.challenged"
   | "memory.relation.created"
   | "memory.relation.deleted";
 
@@ -120,6 +121,7 @@ export const memoryEventTypes = [
   "memory.imported",
   "memory.exported",
   "memory.recalled",
+  "memory.challenged",
   "memory.relation.created",
   "memory.relation.deleted",
 ] as const satisfies readonly MemoryEventType[];
@@ -314,6 +316,47 @@ export interface ForgetMemoryRelationInput {
   id: string;
   actor: string;
   reason?: string;
+}
+
+export type MemoryChallengeOutcome =
+  | "valid"
+  | "needs_review"
+  | "stale"
+  | "incorrect"
+  | "superseded";
+
+export const memoryChallengeOutcomes = [
+  "valid",
+  "needs_review",
+  "stale",
+  "incorrect",
+  "superseded",
+] as const satisfies readonly MemoryChallengeOutcome[];
+
+export interface InspectMemoryInput {
+  id: string;
+  historyLimit?: number;
+}
+
+export interface MemoryInspection {
+  memory: MemoryRecord;
+  relations: MemoryRelationRecord[];
+  events: MemoryEvent[];
+}
+
+export interface ChallengeMemoryInput {
+  id: string;
+  outcome: MemoryChallengeOutcome;
+  reason: string;
+  actor: string;
+  expectedRevision?: number;
+  supersededByMemoryId?: string;
+}
+
+export interface ChallengeMemoryResult {
+  memory: MemoryRecord;
+  relation: MemoryRelationRecord | null;
+  outcome: MemoryChallengeOutcome;
 }
 
 export interface UpdateMemoryInput {

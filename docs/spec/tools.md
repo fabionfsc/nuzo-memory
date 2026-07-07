@@ -627,6 +627,111 @@ Output:
 }
 ```
 
+### `memory.show`
+
+Inspect one memory with full metadata, explicit relations, and recent audit
+events. This is a read-only detail view intended for review, debugging, and
+challenge flows after a compact list or recall result.
+
+Input:
+
+```json
+{
+  "id": "mem_01HZY...",
+  "history_limit": 50
+}
+```
+
+Output:
+
+```json
+{
+  "memory": {
+    "id": "mem_01HZY...",
+    "revision": 1,
+    "content": "Use npm run check before PR.",
+    "kind": "instruction",
+    "scope": "project:nuzo",
+    "tags": ["workflow"],
+    "source": "nuzo:mcp",
+    "confidence": 1,
+    "confidence_state": "user_confirmed",
+    "provenance": null,
+    "review_after": null,
+    "expires_at": null,
+    "created_at": "2026-06-11T00:00:00Z",
+    "updated_at": "2026-06-11T00:00:00Z",
+    "last_used_at": null,
+    "archived_at": null,
+    "relations": []
+  },
+  "relations": [],
+  "events": [
+    {
+      "id": "evt_01HZY...",
+      "memory_id": "mem_01HZY...",
+      "event_type": "memory.created",
+      "actor": "nuzo:mcp",
+      "payload": {
+        "scope": "project:nuzo"
+      },
+      "created_at": "2026-06-11T00:00:00Z"
+    }
+  ]
+}
+```
+
+### `memory.challenge`
+
+Record an explicit review decision for one memory. Challenge never deletes
+memory content and never writes inferred memory. It updates review/confidence
+metadata and appends a `memory.challenged` audit event.
+
+Supported outcomes:
+
+- `valid`: mark the memory as user-confirmed and clear `review_after`;
+- `needs_review`: mark the memory as needing review now;
+- `stale`: mark the memory as deprecated and needing review now;
+- `incorrect`: mark the memory as deprecated and needing review now;
+- `superseded`: mark the memory as deprecated and create a `supersedes`
+  relation from `superseded_by_memory_id` to this memory.
+
+Input:
+
+```json
+{
+  "id": "mem_previous",
+  "outcome": "superseded",
+  "reason": "A newer deploy decision replaced this note.",
+  "actor": "nuzo:mcp",
+  "expected_revision": 2,
+  "superseded_by_memory_id": "mem_current"
+}
+```
+
+Output:
+
+```json
+{
+  "memory": {
+    "id": "mem_previous",
+    "revision": 3,
+    "confidence_state": "deprecated",
+    "review_after": "2026-06-11T00:00:00Z"
+  },
+  "outcome": "superseded",
+  "relation": {
+    "id": "rel_01HZY...",
+    "source_memory_id": "mem_current",
+    "target_memory_id": "mem_previous",
+    "direction": "incoming",
+    "relation": "supersedes",
+    "reason": "A newer deploy decision replaced this note.",
+    "created_at": "2026-06-11T00:00:00Z"
+  }
+}
+```
+
 ### `memory.relate`
 
 Create an explicit relation between two memories. This is a manual write and is
@@ -1113,6 +1218,8 @@ in `0.9.0`.
     "memory.suggest_capture",
     "memory.confirm_capture",
     "memory.list",
+    "memory.show",
+    "memory.challenge",
     "memory.relate",
     "memory.relations",
     "memory.unrelate",

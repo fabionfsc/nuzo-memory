@@ -1,6 +1,8 @@
 import {
   memoryEventTypes,
+  memoryChallengeOutcomes,
   memoryRelationTypes,
+  type MemoryChallengeOutcome,
   type ConfirmCaptureDecision,
   type MemoryConfidenceState,
   type MemoryEvent,
@@ -94,6 +96,13 @@ export function parseMemoryRelationType(value: string): MemoryRelationType {
     return value as MemoryRelationType;
   }
   throw new InvalidArgumentError(`Expected relation to be one of: ${memoryRelationTypes.join(", ")}.`);
+}
+
+export function parseMemoryChallengeOutcome(value: string): MemoryChallengeOutcome {
+  if (memoryChallengeOutcomes.includes(value as MemoryChallengeOutcome)) {
+    return value as MemoryChallengeOutcome;
+  }
+  throw new InvalidArgumentError(`Expected challenge outcome to be one of: ${memoryChallengeOutcomes.join(", ")}.`);
 }
 
 export function parseRetrievalMode(value: string): RetrievalMode {

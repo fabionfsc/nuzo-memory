@@ -117,7 +117,7 @@ Configure the following as a stdio MCP server:
 npm exec --yes --package=@nuzo/memory@1.0.0 -- nuzo-mcp-server
 ```
 
-The server exposes the [17 Nuzo memory tools](../spec/tools.md). A host should
+The server exposes the [19 Nuzo memory tools](../spec/tools.md). A host should
 call `memory.suggest_capture`, show the draft to the user, and call
 `memory.confirm_capture` only after an explicit decision.
 

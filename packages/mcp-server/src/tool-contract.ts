@@ -5,6 +5,8 @@ export const memoryToolNames = [
   "memory.suggest_capture",
   "memory.confirm_capture",
   "memory.list",
+  "memory.show",
+  "memory.challenge",
   "memory.relate",
   "memory.relations",
   "memory.unrelate",

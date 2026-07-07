@@ -140,6 +140,26 @@ memory content remains evidence to inspect rather than an instruction to obey.
 Clients should surface conflicts, duplicates, and supersession markers whenever
 they use related memories to guide work.
 
+## Inspection And Challenge
+
+Nuzo exposes a progressive inspection flow:
+
+1. compact `memory.list` or `memory.recall` results;
+2. `memory.show` for one record with full metadata, relations, and audit events;
+3. `memory.challenge` for an explicit review decision.
+
+Challenge outcomes are:
+
+- `valid`: revalidated by the user;
+- `needs_review`: should be checked before strong use;
+- `stale`: likely outdated;
+- `incorrect`: known wrong;
+- `superseded`: replaced by another memory.
+
+Challenge does not delete content and does not create inferred memory. It only
+updates confidence/review metadata, appends `memory.challenged`, and, for
+`superseded`, creates an explicit `supersedes` relation.
+
 ## Source, Provenance, And Recall Trust
 
 `source` records attribution supplied by the writer, such as `codex:mcp` or an

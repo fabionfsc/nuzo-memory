@@ -210,6 +210,98 @@ describe("memory service", () => {
     ]);
   });
 
+  it("inspects and challenges memories without deleting content", async () => {
+    const { auditLog, clock, service } = createTestService();
+    const oldMemory = await service.remember({
+      content: "The repo deploy flow uses script A.",
+      kind: "project_decision",
+      scope: "project:nuzo",
+      source: "test",
+    });
+    const newMemory = await service.remember({
+      content: "The repo deploy flow uses script B.",
+      kind: "project_decision",
+      scope: "project:nuzo",
+      source: "test",
+    });
+
+    const needsReview = await service.challenge({
+      id: oldMemory.id,
+      expectedRevision: oldMemory.revision,
+      outcome: "needs_review",
+      reason: "Need to verify whether this is still true.",
+      actor: "test",
+    });
+    expect(needsReview).toMatchObject({
+      outcome: "needs_review",
+      relation: null,
+      memory: {
+        id: oldMemory.id,
+        revision: 2,
+        confidenceState: "needs_review",
+      },
+    });
+    expect(needsReview.memory.reviewAfter?.toISOString()).toBe("2026-06-12T00:00:00.000Z");
+
+    const inspection = await service.inspect({ id: oldMemory.id, historyLimit: 10 });
+    expect(inspection.memory.content).toBe("The repo deploy flow uses script A.");
+    expect(inspection.relations).toEqual([]);
+    expect(inspection.events.map((event) => event.eventType)).toEqual([
+      "memory.created",
+      "memory.updated",
+      "memory.challenged",
+    ]);
+
+    clock.set(new Date("2026-06-13T00:00:00.000Z"));
+    const superseded = await service.challenge({
+      id: oldMemory.id,
+      expectedRevision: needsReview.memory.revision,
+      outcome: "superseded",
+      supersededByMemoryId: newMemory.id,
+      reason: "Script B replaced script A.",
+      actor: "test",
+    });
+    expect(superseded.memory).toMatchObject({
+      revision: 3,
+      confidenceState: "deprecated",
+    });
+    expect(superseded.relation).toMatchObject({
+      id: "rel_000001",
+      sourceMemoryId: newMemory.id,
+      targetMemoryId: oldMemory.id,
+      relation: "supersedes",
+      reason: "Script B replaced script A.",
+    });
+
+    clock.set(new Date("2026-06-14T00:00:00.000Z"));
+    const valid = await service.challenge({
+      id: oldMemory.id,
+      expectedRevision: superseded.memory.revision,
+      outcome: "valid",
+      reason: "User revalidated the older record for a legacy branch.",
+      actor: "test",
+    });
+    expect(valid.memory.confidenceState).toBe("user_confirmed");
+    expect(valid.memory.reviewAfter).toBeNull();
+
+    await expect(service.challenge({
+      id: oldMemory.id,
+      outcome: "superseded",
+      reason: "Missing target.",
+      actor: "test",
+    })).rejects.toMatchObject({ code: "MEMORY_SUPERSEDING_MEMORY_REQUIRED" });
+
+    expect((await auditLog.list(oldMemory.id)).map((event) => event.eventType)).toEqual([
+      "memory.created",
+      "memory.updated",
+      "memory.challenged",
+      "memory.updated",
+      "memory.challenged",
+      "memory.updated",
+      "memory.challenged",
+    ]);
+  });
+
   it("stores, filters, updates, and clears review lifecycle metadata", async () => {
     const { clock, service } = createTestService();
     const reviewAfter = new Date("2026-06-11T00:00:00.000Z");
@@ -469,10 +561,10 @@ describe("memory service", () => {
       code: "MEMORY_HISTORY_LIMIT_INVALID",
     });
     await expect(service.audit({
-      eventTypes: Array.from({ length: 10 }, () => "memory.created" as const),
+      eventTypes: Array.from({ length: 11 }, () => "memory.created" as const),
     })).rejects.toMatchObject({
       code: "MEMORY_AUDIT_EVENT_TYPE_LIMIT_EXCEEDED",
-      details: { maxEventTypes: 9 },
+      details: { maxEventTypes: 10 },
     });
   });
 

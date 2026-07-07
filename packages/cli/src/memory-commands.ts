@@ -15,6 +15,9 @@ import {
   type ConfirmCaptureDecision,
   type ConfirmCaptureInput,
   type MemoryConfidenceState,
+  type MemoryChallengeOutcome,
+  type MemoryEvent,
+  type MemoryInspection,
   type MemoryRecord,
   type MemoryRelationRecord,
   type MemoryRelationType,
@@ -26,7 +29,6 @@ import {
   type ExportMemoriesInput,
   type ImportMemoriesInput,
   type AuditEventFilter,
-  type MemoryEvent,
   type RetrievalMode,
   type SemanticFallbackMode,
 } from "@nuzo/memory-core";
@@ -64,6 +66,7 @@ import {
   parseConfirmCaptureDecision,
   parseExportFormat,
   parseIsoDate,
+  parseMemoryChallengeOutcome,
   parseMemoryRelationType,
   parsePositiveInteger,
   parseProvenanceJson,
@@ -537,6 +540,79 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
           ...(commandOptions.reason === undefined ? {} : { reason: commandOptions.reason }),
         });
         io.stdout("Removed");
+      } finally {
+        database.close();
+      }
+    }));
+
+  memory
+    .command("show")
+    .description("Show one memory with provenance, lifecycle, relations, and recent audit events.")
+    .argument("<id>", "Memory ID.")
+    .option("--history-limit <number>", "Maximum number of audit events.", parsePositiveInteger)
+    .option("--json", "Print JSON output for scripting.", false)
+    .action(withErrorHandling(io, async (id: string, commandOptions: {
+      historyLimit?: number;
+      json: boolean;
+    }) => {
+      const options = memory.opts<GlobalOptions>();
+      const database = openDatabase(options);
+      try {
+        const service = createService(database);
+        const inspection = await service.inspect({
+          id,
+          historyLimit: commandOptions.historyLimit ?? 50,
+        });
+        io.stdout(formatMemoryInspection(inspection, commandOptions.json));
+      } finally {
+        database.close();
+      }
+    }));
+
+  memory
+    .command("challenge")
+    .description("Mark a memory as valid, needing review, stale, incorrect, or superseded.")
+    .argument("<id>", "Memory ID.")
+    .requiredOption("--outcome <outcome>", "Outcome: valid, needs_review, stale, incorrect, or superseded.", parseMemoryChallengeOutcome)
+    .requiredOption("--reason <reason>", "Reason for the challenge.")
+    .option("--superseded-by <id>", "Memory ID that supersedes this memory. Required for outcome superseded.")
+    .option("--expected-revision <number>", "Only challenge if the memory is still at this revision.", parsePositiveInteger)
+    .option("--actor <actor>", "Audit actor.", "nuzo:cli")
+    .option("--json", "Print JSON output for scripting.", false)
+    .action(withErrorHandling(io, async (id: string, commandOptions: {
+      outcome: MemoryChallengeOutcome;
+      reason: string;
+      supersededBy?: string;
+      expectedRevision?: number;
+      actor: string;
+      json: boolean;
+    }) => {
+      const options = memory.opts<GlobalOptions>();
+      const database = openDatabase(options);
+      try {
+        const service = createService(database);
+        const result = await service.challenge({
+          id,
+          outcome: commandOptions.outcome,
+          reason: commandOptions.reason,
+          actor: commandOptions.actor,
+          ...(commandOptions.expectedRevision === undefined ? {} : { expectedRevision: commandOptions.expectedRevision }),
+          ...(commandOptions.supersededBy === undefined ? {} : { supersededByMemoryId: commandOptions.supersededBy }),
+        });
+        const output = {
+          id: result.memory.id,
+          outcome: result.outcome,
+          revision: result.memory.revision,
+          confidence_state: result.memory.confidenceState,
+          review_after: result.memory.reviewAfter?.toISOString() ?? null,
+          relation: result.relation === null ? null : toCliRelation(result.relation, result.memory.id),
+        };
+        if (commandOptions.json) {
+          io.stdout(JSON.stringify(output, null, 2));
+        } else {
+          const relation = output.relation === null ? "" : ` relation=${output.relation.id}:${output.relation.relation}->${output.relation.target_memory_id}`;
+          io.stdout(`Challenged\t${output.id}\toutcome=${output.outcome}\trev=${output.revision}\tconfidence_state=${output.confidence_state ?? "none"}\treview_after=${output.review_after ?? "none"}${relation}`);
+        }
       } finally {
         database.close();
       }
@@ -1031,4 +1107,95 @@ function formatRelationMarker(relation: MemoryRelationRecord, perspectiveMemoryI
     return `${relation.relation}<-${relation.sourceMemoryId}`;
   }
   return `${relation.sourceMemoryId}:${relation.relation}->${relation.targetMemoryId}`;
+}
+
+function formatMemoryInspection(inspection: MemoryInspection, json: boolean): string {
+  const output = {
+    memory: toCliMemory(inspection.memory),
+    relations: inspection.relations.map((relation) => toCliRelation(relation, inspection.memory.id)),
+    events: inspection.events.map(toCliEvent),
+  };
+  if (json) {
+    return JSON.stringify(output, null, 2);
+  }
+  const memory = inspection.memory;
+  const lines = [
+    `ID: ${memory.id}`,
+    `Revision: ${memory.revision}`,
+    `Scope: ${memory.scope}`,
+    `Kind: ${memory.kind}`,
+    `Tags: ${memory.tags.length > 0 ? memory.tags.join(", ") : "none"}`,
+    `Source: ${memory.source}`,
+    `Confidence: ${memory.confidence}`,
+    `Confidence state: ${memory.confidenceState ?? "none"}`,
+    `Review after: ${memory.reviewAfter?.toISOString() ?? "none"}`,
+    `Expires at: ${memory.expiresAt?.toISOString() ?? "none"}`,
+    `Created at: ${memory.createdAt.toISOString()}`,
+    `Updated at: ${memory.updatedAt.toISOString()}`,
+    `Last used at: ${memory.lastUsedAt?.toISOString() ?? "none"}`,
+    `Archived at: ${memory.archivedAt?.toISOString() ?? "none"}`,
+    `Provenance: ${memory.provenance === null ? "none" : JSON.stringify(memory.provenance)}`,
+    `Content: ${memory.content}`,
+    "Relations:",
+  ];
+  if (inspection.relations.length === 0) {
+    lines.push("- none");
+  } else {
+    for (const relation of inspection.relations) {
+      lines.push(`- ${relation.id}: ${formatRelationMarker(relation, memory.id)}${relation.reason === null ? "" : ` (${relation.reason})`}`);
+    }
+  }
+  lines.push("Events:");
+  if (inspection.events.length === 0) {
+    lines.push("- none");
+  } else {
+    for (const event of inspection.events) {
+      lines.push(`- ${event.createdAt.toISOString()} ${event.eventType} ${event.actor} ${JSON.stringify(event.payload)}`);
+    }
+  }
+  return lines.join("\n");
+}
+
+function toCliMemory(memory: MemoryRecord) {
+  return {
+    id: memory.id,
+    revision: memory.revision,
+    scope: memory.scope,
+    kind: memory.kind,
+    content: memory.content,
+    tags: memory.tags,
+    source: memory.source,
+    confidence: memory.confidence,
+    confidence_state: memory.confidenceState,
+    provenance: memory.provenance,
+    review_after: memory.reviewAfter?.toISOString() ?? null,
+    expires_at: memory.expiresAt?.toISOString() ?? null,
+    created_at: memory.createdAt.toISOString(),
+    updated_at: memory.updatedAt.toISOString(),
+    last_used_at: memory.lastUsedAt?.toISOString() ?? null,
+    archived_at: memory.archivedAt?.toISOString() ?? null,
+  };
+}
+
+function toCliRelation(relation: MemoryRelationRecord, perspectiveMemoryId: string) {
+  return {
+    id: relation.id,
+    source_memory_id: relation.sourceMemoryId,
+    target_memory_id: relation.targetMemoryId,
+    direction: relation.sourceMemoryId === perspectiveMemoryId ? "outgoing" : "incoming",
+    relation: relation.relation,
+    reason: relation.reason,
+    created_at: relation.createdAt.toISOString(),
+  };
+}
+
+function toCliEvent(event: MemoryEvent) {
+  return {
+    id: event.id,
+    memory_id: event.memoryId,
+    event_type: event.eventType,
+    actor: event.actor,
+    payload: event.payload,
+    created_at: event.createdAt.toISOString(),
+  };
 }
