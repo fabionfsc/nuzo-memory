@@ -35,6 +35,7 @@ directly instead of depending on internal assertion helpers.
 | `SystemClock` | Default wall-clock implementation. |
 | `RandomIdGenerator` | Default memory, relation, and event ID generator. |
 | `memoryConfidenceStates` | Stable human-readable confidence state values. |
+| `memoryChallengeOutcomes` | Stable challenge/review outcome values. |
 | `memoryKinds` | Stable memory kind values. |
 | `memoryProvenanceKinds` | Stable structured provenance kind values. |
 | `memoryRelationTypes` | Stable explicit memory relation values. |
@@ -57,6 +58,7 @@ directly instead of depending on internal assertion helpers.
 | `MemoryRecord` | Canonical memory record. |
 | `MemoryEvent` | Canonical audit event. |
 | `MemoryConfidenceState` | Human-readable confidence state union. |
+| `MemoryChallengeOutcome` | Challenge/review outcome union. |
 | `MemoryRelationRecord` | Canonical explicit relation between two memories. |
 | `MemoryRelationType` | Explicit relation type union. |
 | `MemoryKind` | Memory kind union. |
@@ -70,6 +72,10 @@ directly instead of depending on internal assertion helpers.
 | `RecallMemoryResult` | Individual recall result. |
 | `RecallDiagnostics` | Retrieval-mode diagnostics. |
 | `ListMemoriesInput` | List/filter input. |
+| `InspectMemoryInput` | Detail inspection input. |
+| `MemoryInspection` | Detail inspection result. |
+| `ChallengeMemoryInput` | Challenge/review input. |
+| `ChallengeMemoryResult` | Challenge/review result. |
 | `RelateMemoriesInput` | Explicit memory relation write input. |
 | `ListMemoryRelationsInput` | Relation list input. |
 | `ForgetMemoryRelationInput` | Relation removal input. |

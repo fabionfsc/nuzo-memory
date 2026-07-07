@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { MemoryRecord, MemoryRelationRecord, MemoryService } from "@nuzo/memory-core";
+import type { MemoryEvent, MemoryRecord, MemoryRelationRecord, MemoryService } from "@nuzo/memory-core";
 import {
   createMemoryToolHandlers,
   type MemoryDoctorDiagnostics,
@@ -23,6 +23,8 @@ function createTestHandlers(options: {
     }>,
     suggestCapture: 0,
     update: 0,
+    inspect: 0,
+    challenge: 0,
     relate: 0,
     relations: 0,
     forgetRelation: 0,
@@ -231,6 +233,59 @@ function createTestHandlers(options: {
         return [];
       }
       return memory ? [memory] : [];
+    },
+    async inspect(input) {
+      calls.inspect += 1;
+      if (!memory || memory.id !== input.id) {
+        throw new Error("No memory");
+      }
+      const events: MemoryEvent[] = [
+        {
+          id: "evt_000001",
+          memoryId: memory.id,
+          eventType: "memory.created",
+          actor: "test",
+          payload: { scope: memory.scope },
+          createdAt: new Date("2026-06-13T00:00:00.000Z"),
+        },
+      ];
+      return {
+        memory,
+        relations: relation ? [relation] : [],
+        events,
+      };
+    },
+    async challenge(input) {
+      calls.challenge += 1;
+      if (!memory || memory.id !== input.id) {
+        throw new Error("No memory");
+      }
+      memory = {
+        ...memory,
+        revision: memory.revision + 1,
+        confidenceState: input.outcome === "valid"
+          ? "user_confirmed"
+          : input.outcome === "needs_review"
+            ? "needs_review"
+            : "deprecated",
+        reviewAfter: input.outcome === "valid" ? null : new Date("2026-06-13T00:20:00.000Z"),
+        updatedAt: new Date("2026-06-13T00:20:00.000Z"),
+      };
+      if (input.outcome === "superseded" && input.supersededByMemoryId !== undefined) {
+        relation = {
+          id: "rel_000001",
+          sourceMemoryId: input.supersededByMemoryId,
+          targetMemoryId: input.id,
+          relation: "supersedes",
+          reason: input.reason,
+          createdAt: new Date("2026-06-13T00:20:00.000Z"),
+        };
+      }
+      return {
+        memory,
+        outcome: input.outcome,
+        relation,
+      };
     },
     async relate(input) {
       calls.relate += 1;
@@ -495,6 +550,53 @@ describe("memory MCP handlers", () => {
       relate: 1,
       relations: 1,
       forgetRelation: 1,
+    });
+  });
+
+  it("shows and challenges memories through tool-shaped inputs", async () => {
+    const { calls, handlers } = createTestHandlers();
+
+    await handlers.remember({
+      content: "Old deployment flow.",
+      kind: "project_decision",
+      scope: "project:nuzo",
+      tags: ["deploy"],
+      source: "test",
+    });
+
+    const shown = await handlers.show({
+      id: "mem_000001",
+      history_limit: 50,
+    });
+    expect(shown).toMatchObject({
+      memory: {
+        id: "mem_000001",
+        content: "Old deployment flow.",
+      },
+      events: [
+        { event_type: "memory.created" },
+      ],
+    });
+
+    const challenged = await handlers.challenge({
+      id: "mem_000001",
+      outcome: "needs_review",
+      reason: "Verify before using.",
+      actor: "test",
+      expected_revision: 1,
+    });
+    expect(challenged).toMatchObject({
+      outcome: "needs_review",
+      memory: {
+        id: "mem_000001",
+        revision: 2,
+        confidence_state: "needs_review",
+      },
+      relation: null,
+    });
+    expect(calls).toMatchObject({
+      inspect: 1,
+      challenge: 1,
     });
   });
 

@@ -21,6 +21,7 @@ import {
   inspectRuntimeFileSafety,
   memoryLimits,
   memoryEventTypes,
+  memoryChallengeOutcomes,
   memoryConfidenceStates,
   memoryRelationTypes,
   memoryScopePattern,
@@ -47,6 +48,8 @@ import type {
   HistoryToolInput,
   ImportToolInput,
   ListToolInput,
+  ShowToolInput,
+  ChallengeToolInput,
   RelateToolInput,
   RelationsToolInput,
   UnrelateToolInput,
@@ -64,6 +67,7 @@ const tagSchema = z.string().regex(memoryTagPattern);
 const memoryIdSchema = z.string().min(1).max(memoryLimits.identifierLength);
 const exportDateSchema = z.string().max(memoryLimits.dateLength);
 const eventTypeSchema = z.enum(memoryEventTypes);
+const challengeOutcomeSchema = z.enum(memoryChallengeOutcomes);
 const relationTypeSchema = z.enum(memoryRelationTypes);
 const paginationCursorSchema = z.string().min(1).max(memoryLimits.identifierLength * 4);
 const confidenceStateSchema = z.enum(memoryConfidenceStates);
@@ -446,6 +450,54 @@ export function registerMemoryTools(
 
       return jsonToolResult(await handlers.list(listInput));
     }),
+  );
+
+  server.registerTool(
+    "memory.show",
+    {
+      description: "Inspect one local Nuzo memory with relations and recent audit events.",
+      inputSchema: {
+        id: memoryIdSchema,
+        history_limit: z.number().int().min(1).max(200).default(50),
+      },
+    },
+    withJsonErrorHandling(async (input) => {
+      const showInput: ShowToolInput = {
+        id: input.id,
+        history_limit: input.history_limit,
+      };
+      return jsonToolResult(await handlers.show(showInput));
+    }, redactForbiddenScopeDetails),
+  );
+
+  server.registerTool(
+    "memory.challenge",
+    {
+      description: "Mark one memory as valid, needing review, stale, incorrect, or superseded. This never deletes memory content.",
+      inputSchema: {
+        id: memoryIdSchema,
+        outcome: challengeOutcomeSchema,
+        reason: z.string().min(1).max(memoryLimits.reasonLength),
+        actor: z.string().min(1).max(memoryLimits.actorLength).default("nuzo:mcp"),
+        expected_revision: z.number().int().min(1).optional(),
+        superseded_by_memory_id: memoryIdSchema.optional(),
+      },
+    },
+    withJsonErrorHandling(async (input) => {
+      const challengeInput: ChallengeToolInput = {
+        id: input.id,
+        outcome: input.outcome,
+        reason: input.reason,
+        actor: input.actor,
+      };
+      if (input.expected_revision !== undefined) {
+        challengeInput.expected_revision = input.expected_revision;
+      }
+      if (input.superseded_by_memory_id !== undefined) {
+        challengeInput.superseded_by_memory_id = input.superseded_by_memory_id;
+      }
+      return jsonToolResult(await handlers.challenge(challengeInput));
+    }, redactForbiddenScopeDetails),
   );
 
   server.registerTool(

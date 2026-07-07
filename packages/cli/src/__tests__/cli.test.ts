@@ -591,6 +591,106 @@ describe("nuzo memory cli", () => {
     expect(afterClear.stdout).toEqual([]);
   });
 
+  it("shows and challenges memories from the CLI", async () => {
+    const store = createStorePath();
+    const previous = await runCli([
+      "memory",
+      "--store",
+      store,
+      "remember",
+      "The deploy flow uses script A.",
+      "--kind",
+      "project_decision",
+    ]);
+    const previousId = previous.stdout[0] ?? "";
+    const current = await runCli([
+      "memory",
+      "--store",
+      store,
+      "remember",
+      "The deploy flow uses script B.",
+      "--kind",
+      "project_decision",
+    ]);
+    const currentId = current.stdout[0] ?? "";
+
+    const challenge = await runCli([
+      "memory",
+      "--store",
+      store,
+      "challenge",
+      previousId,
+      "--outcome",
+      "needs_review",
+      "--reason",
+      "Need to re-check this before relying on it.",
+      "--expected-revision",
+      "1",
+      "--json",
+    ]);
+    expect(JSON.parse(challenge.stdout[0] ?? "{}")).toMatchObject({
+      id: previousId,
+      outcome: "needs_review",
+      revision: 2,
+      confidence_state: "needs_review",
+    });
+
+    const show = await runCli([
+      "memory",
+      "--store",
+      store,
+      "show",
+      previousId,
+      "--json",
+    ]);
+    const showOutput = JSON.parse(show.stdout[0] ?? "{}") as {
+      memory: { id: string; revision: number; confidence_state: string };
+      relations: unknown[];
+      events: Array<{ event_type: string }>;
+    };
+    expect(showOutput).toMatchObject({
+      memory: {
+        id: previousId,
+        revision: 2,
+        confidence_state: "needs_review",
+      },
+      relations: [],
+    });
+    expect(showOutput.events.map((event) => event.event_type).sort()).toEqual([
+      "memory.challenged",
+      "memory.created",
+      "memory.updated",
+    ]);
+
+    const superseded = await runCli([
+      "memory",
+      "--store",
+      store,
+      "challenge",
+      previousId,
+      "--outcome",
+      "superseded",
+      "--superseded-by",
+      currentId,
+      "--reason",
+      "Script B replaced script A.",
+      "--expected-revision",
+      "2",
+      "--json",
+    ]);
+    expect(JSON.parse(superseded.stdout[0] ?? "{}")).toMatchObject({
+      id: previousId,
+      outcome: "superseded",
+      revision: 3,
+      confidence_state: "deprecated",
+      relation: {
+        source_memory_id: currentId,
+        target_memory_id: previousId,
+        relation: "supersedes",
+      },
+    });
+  });
+
   it("prints duplicate capture suggestions as JSON", async () => {
     const store = createStorePath();
     await runCli([

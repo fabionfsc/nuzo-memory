@@ -119,6 +119,7 @@ Every write operation creates an event:
 - `memory.imported`
 - `memory.exported`
 - `memory.recalled`
+- `memory.challenged`
 - `memory.relation.created`
 - `memory.relation.deleted`
 
@@ -132,7 +133,7 @@ through the core API.
 SQLite-backed logical mutations commit memory rows, FTS changes, and audit
 events atomically.
 
-- remember, update, relate, unrelate, forget, and usage-recording recall use one transaction per
+- remember, update, challenge, relate, unrelate, forget, and usage-recording recall use one transaction per
   command;
 - import uses one transaction for the complete planned document and rolls back
   every item if any persistence step fails;

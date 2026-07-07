@@ -18,6 +18,8 @@ import type {
 } from "./ports.js";
 import type {
   AuditEventFilter,
+  ChallengeMemoryInput,
+  ChallengeMemoryResult,
   ConfirmCaptureInput,
   ConfirmCaptureResult,
   CaptureSuggestionResult,
@@ -28,12 +30,14 @@ import type {
   ForgetMemoryRelationInput,
   ImportMemoriesInput,
   ImportMemoriesResult,
+  InspectMemoryInput,
   ListMemoriesInput,
   ListMemoryRelationsInput,
   MemoryHistoryInput,
   MemoryExportDocument,
   MemoryExportItem,
   MemoryEvent,
+  MemoryInspection,
   MemoryRecord,
   MemoryRelationRecord,
   MemoryScope,
@@ -45,6 +49,7 @@ import type {
   SuggestCaptureInput,
   UpdateMemoryInput,
 } from "./types.js";
+import { memoryChallengeOutcomes } from "./types.js";
 import { memoryLimits } from "./policy.js";
 
 export interface MemoryServiceDependencies {
@@ -61,6 +66,8 @@ export interface MemoryService {
   suggestCapture(input: SuggestCaptureInput): Promise<CaptureSuggestionResult>;
   confirmCapture(input: ConfirmCaptureInput): Promise<ConfirmCaptureResult>;
   remember(input: RememberMemoryInput): Promise<MemoryRecord>;
+  inspect(input: InspectMemoryInput): Promise<MemoryInspection>;
+  challenge(input: ChallengeMemoryInput): Promise<ChallengeMemoryResult>;
   recall(input: RecallMemoriesInput): Promise<RecallMemoryResult[]>;
   recallDetailed(input: RecallMemoriesInput): Promise<RecallMemoriesResponse>;
   list(input?: ListMemoriesInput): Promise<MemoryRecord[]>;
@@ -400,6 +407,188 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
     });
   }
 
+  async function inspectMemory(input: InspectMemoryInput): Promise<MemoryInspection> {
+    assertMemoryId(input.id);
+    assertPageInput({ limit: input.historyLimit ?? 50 });
+    const memory = await store.findById(input.id);
+    if (!memory) {
+      throw new NuzoMemoryError("MEMORY_NOT_FOUND", "Memory was not found.", { id: input.id });
+    }
+    await policy.assertCanList({ scope: memory.scope, includeArchived: true });
+    const [relations, events] = await Promise.all([
+      listRelations({ memoryId: input.id, includeReverse: true, limit: 50 }),
+      auditLog.list(input.id, { limit: input.historyLimit ?? 50 }),
+    ]);
+    return {
+      memory,
+      relations,
+      events,
+    };
+  }
+
+  async function challengeMemory(input: ChallengeMemoryInput): Promise<ChallengeMemoryResult> {
+    assertMemoryId(input.id);
+    assertActor(input.actor);
+    assertCaptureReason(input.reason);
+    if (!memoryChallengeOutcomes.includes(input.outcome)) {
+      throw new NuzoMemoryError("MEMORY_CHALLENGE_OUTCOME_INVALID", "Memory challenge outcome is invalid.", {
+        outcome: input.outcome,
+      });
+    }
+
+    const current = await store.findById(input.id);
+    if (!current) {
+      throw new NuzoMemoryError("MEMORY_NOT_FOUND", "Memory was not found.", { id: input.id });
+    }
+    assertExpectedRevision(input.expectedRevision, current);
+
+    let supersedingMemory: MemoryRecord | null = null;
+    if (input.outcome === "superseded") {
+      if (input.supersededByMemoryId === undefined) {
+        throw new NuzoMemoryError(
+          "MEMORY_SUPERSEDING_MEMORY_REQUIRED",
+          "Superseded challenges require the superseding memory ID.",
+          { id: input.id },
+        );
+      }
+      assertMemoryId(input.supersededByMemoryId);
+      if (input.supersededByMemoryId === input.id) {
+        throw new NuzoMemoryError("MEMORY_RELATION_SELF_INVALID", "A memory cannot supersede itself.", {
+          id: input.id,
+        });
+      }
+      supersedingMemory = await store.findById(input.supersededByMemoryId);
+      if (!supersedingMemory) {
+        throw new NuzoMemoryError("MEMORY_RELATION_SOURCE_NOT_FOUND", "Superseding memory was not found.", {
+          id: input.supersededByMemoryId,
+        });
+      }
+      await policy.assertCanRelate({
+        sourceMemoryId: supersedingMemory.id,
+        targetMemoryId: current.id,
+        relation: "supersedes",
+        reason: input.reason,
+        actor: input.actor,
+      }, supersedingMemory, current);
+    }
+
+    const now = clock.now();
+    const confidenceState = input.outcome === "valid"
+      ? "user_confirmed"
+      : input.outcome === "needs_review"
+        ? "needs_review"
+        : "deprecated";
+    const reviewAfter = input.outcome === "valid" ? null : now;
+    const updateInput: UpdateMemoryInput = {
+      id: input.id,
+      confidenceState,
+      reviewAfter,
+      actor: input.actor,
+    };
+    if (input.expectedRevision !== undefined) {
+      updateInput.expectedRevision = input.expectedRevision;
+    }
+    await policy.assertCanUpdate(updateInput, current);
+
+    const updated: MemoryRecord = {
+      ...current,
+      revision: current.revision + 1,
+      confidenceState,
+      reviewAfter,
+      updatedAt: now,
+    };
+    let createdRelation: MemoryRelationRecord | null = null;
+
+    await runTransaction(async () => {
+      const committed = await store.update(updated, current.revision);
+      assertRevisionCommitted(committed, input.id, current.revision);
+      await searchIndex.index(updated);
+      await auditLog.append({
+        id: ids.eventId(),
+        memoryId: updated.id,
+        eventType: "memory.updated",
+        actor: input.actor,
+        payload: {
+          changed: {
+            content: false,
+            kind: false,
+            scope: false,
+            tags: false,
+            confidence: false,
+            confidenceState: true,
+            provenance: false,
+            reviewAfter: true,
+            expiresAt: false,
+          },
+          scope: updated.scope,
+        },
+        createdAt: now,
+      });
+      if (input.outcome === "superseded" && supersedingMemory !== null) {
+        const relation: MemoryRelationRecord = {
+          id: ids.relationId(),
+          sourceMemoryId: supersedingMemory.id,
+          targetMemoryId: updated.id,
+          relation: "supersedes",
+          reason: input.reason.trim(),
+          createdAt: now,
+        };
+        const created = await store.createRelation(relation);
+        if (!created) {
+          throw new NuzoMemoryError(
+            "MEMORY_RELATION_DUPLICATE",
+            "Memory relation already exists.",
+            {
+              sourceMemoryId: relation.sourceMemoryId,
+              targetMemoryId: relation.targetMemoryId,
+              relation: relation.relation,
+            },
+          );
+        }
+        createdRelation = relation;
+        await auditLog.append({
+          id: ids.eventId(),
+          memoryId: relation.sourceMemoryId,
+          eventType: "memory.relation.created",
+          actor: input.actor,
+          payload: {
+            relationId: relation.id,
+            sourceMemoryId: relation.sourceMemoryId,
+            targetMemoryId: relation.targetMemoryId,
+            relation: relation.relation,
+            reason: relation.reason,
+            sourceScope: supersedingMemory.scope,
+            targetScope: updated.scope,
+          },
+          createdAt: now,
+        });
+      }
+      await auditLog.append({
+        id: ids.eventId(),
+        memoryId: updated.id,
+        eventType: "memory.challenged",
+        actor: input.actor,
+        payload: {
+          outcome: input.outcome,
+          reason: input.reason.trim(),
+          previousConfidenceState: current.confidenceState,
+          confidenceState: updated.confidenceState,
+          reviewAfter: updated.reviewAfter?.toISOString() ?? null,
+          supersededByMemoryId: input.supersededByMemoryId ?? null,
+          relationId: createdRelation?.id ?? null,
+          scope: updated.scope,
+        },
+        createdAt: now,
+      });
+    });
+
+    return {
+      memory: updated,
+      relation: createdRelation,
+      outcome: input.outcome,
+    };
+  }
+
   async function recallMemories(input: RecallMemoriesInput): Promise<RecallMemoriesResponse> {
     await policy.assertCanRecall(input);
     const requestedMode = input.retrievalMode ?? "fts";
@@ -614,6 +803,14 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
 
     async remember(input) {
       return rememberMemory(input);
+    },
+
+    async inspect(input) {
+      return inspectMemory(input);
+    },
+
+    async challenge(input) {
+      return challengeMemory(input);
     },
 
     async recall(input) {

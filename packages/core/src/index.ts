@@ -118,6 +118,7 @@ export type {
 } from "./sqlite/maintenance.js";
 export {
   memoryEventTypes,
+  memoryChallengeOutcomes,
   memoryConfidenceStates,
   memoryKinds,
   memoryProvenanceKinds,
@@ -125,6 +126,8 @@ export {
 } from "./types.js";
 export type {
   AuditEventFilter,
+  ChallengeMemoryInput,
+  ChallengeMemoryResult,
   CaptureRelationship,
   CaptureRelationshipCandidate,
   CaptureRelationshipEvidence,
@@ -141,15 +144,18 @@ export type {
   ForgetMemoryRelationInput,
   ImportMemoriesInput,
   ImportMemoriesResult,
+  InspectMemoryInput,
   ListMemoriesInput,
   ListMemoryRelationsInput,
   MemoryHistoryInput,
+  MemoryInspection,
   MemoryEvent,
   MemoryEventType,
   MemoryExportDocument,
   MemoryExportItem,
   MemoryExportRelationItem,
   MemoryConfidenceState,
+  MemoryChallengeOutcome,
   MemoryKind,
   MemoryProvenance,
   MemoryProvenanceKind,

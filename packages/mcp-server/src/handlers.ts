@@ -1,5 +1,6 @@
 import type {
   AuditEventFilter,
+  MemoryChallengeOutcome,
   ConfirmCaptureDecision,
   ConfirmCaptureInput,
   ForgetMemoryInput,
@@ -107,6 +108,20 @@ export interface ListToolInput {
   needs_review?: boolean;
   limit: number;
   cursor?: string;
+}
+
+export interface ShowToolInput {
+  id: string;
+  history_limit: number;
+}
+
+export interface ChallengeToolInput {
+  id: string;
+  outcome: MemoryChallengeOutcome;
+  reason: string;
+  actor: string;
+  expected_revision?: number;
+  superseded_by_memory_id?: string;
 }
 
 export interface RelateToolInput {
@@ -303,6 +318,16 @@ export interface MemoryToolHandlers {
     next_cursor: string | null;
     limit: number;
     truncated: boolean;
+  }>;
+  show(input: ShowToolInput): Promise<{
+    memory: MemoryToolRecord;
+    relations: MemoryToolRelation[];
+    events: MemoryToolEvent[];
+  }>;
+  challenge(input: ChallengeToolInput): Promise<{
+    memory: MemoryToolRecord;
+    outcome: MemoryChallengeOutcome;
+    relation: MemoryToolRelation | null;
   }>;
   relate(input: RelateToolInput): Promise<{
     relation: MemoryToolRelation;
@@ -725,6 +750,37 @@ export function createMemoryToolHandlers(
           : null,
         limit: input.limit,
         truncated: memories.length > input.limit,
+      };
+    },
+
+    async show(input) {
+      const inspection = await service.inspect({
+        id: input.id,
+        historyLimit: input.history_limit,
+      });
+      return {
+        memory: {
+          ...toToolRecord(inspection.memory),
+          relations: inspection.relations.map((relation) => toToolRelation(relation, inspection.memory.id)),
+        },
+        relations: inspection.relations.map((relation) => toToolRelation(relation, inspection.memory.id)),
+        events: inspection.events.map(toToolEvent),
+      };
+    },
+
+    async challenge(input) {
+      const result = await service.challenge({
+        id: input.id,
+        outcome: input.outcome,
+        reason: input.reason,
+        actor: input.actor,
+        ...(input.expected_revision === undefined ? {} : { expectedRevision: input.expected_revision }),
+        ...(input.superseded_by_memory_id === undefined ? {} : { supersededByMemoryId: input.superseded_by_memory_id }),
+      });
+      return {
+        memory: toToolRecord(result.memory),
+        outcome: result.outcome,
+        relation: result.relation === null ? null : toToolRelation(result.relation, result.memory.id),
       };
     },
 
