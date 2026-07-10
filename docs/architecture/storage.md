@@ -126,7 +126,10 @@ Every write operation creates an event:
 Recall events are opt-in because queries may contain sensitive task context and
 can grow quickly. Normal CLI and MCP recall do not record query text or update
 `last_used_at` by default. A caller must explicitly request usage recording
-through the core API.
+through the core API. When enabled, new `memory.recalled` events retain a
+SHA-256 query hash, hash-algorithm marker, score, and scope instead of the full
+query. Existing events are not rewritten during migration and may retain the
+legacy `query` field.
 
 ## Transaction Guarantees
 

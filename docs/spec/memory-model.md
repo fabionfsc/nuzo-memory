@@ -173,9 +173,16 @@ provenance for explicit writes, confirmed capture, imports, CLI actions, MCP
 actions, and host integrations.
 
 Audit payloads are metadata-only. They may include scope, tags, kind, count,
-reason, changed fields, query, or score, but they must not retain memory
-content. This keeps hard-deleted memory content deleted while preserving enough
-history to verify that a delete occurred.
+reason, changed fields, a query hash, or score, but they must not retain memory
+content or full recall queries. This keeps hard-deleted memory content deleted
+and avoids copying sensitive prompt text into the audit log while preserving
+enough history to verify that an operation occurred.
+
+Opt-in `memory.recalled` events use a lowercase, 64-character SHA-256
+`queryHash` plus `queryHashAlgorithm: "sha256"` for correlation. The hash is
+not encryption and must not be treated as secret or as proof of the original
+query. Existing events created by earlier Nuzo versions may still contain a
+legacy `query` field; migrations leave those historical payloads unchanged.
 
 During recall, every memory's content is treated as untrusted stored data.
 This includes explicit user writes, confirmed capture, imported memories, and
