@@ -946,7 +946,7 @@ Input:
 ```
 
 All filters are optional. `limit` defaults to `50` and must be an integer
-between `1` and `200`. The `event_type` array accepts at most seven values from:
+between `1` and `200`. The `event_type` array accepts at most 10 values from:
 
 - `memory.created`;
 - `memory.updated`;
@@ -954,7 +954,10 @@ between `1` and `200`. The `event_type` array accepts at most seven values from:
 - `memory.deleted`;
 - `memory.imported`;
 - `memory.exported`;
-- `memory.recalled`.
+- `memory.recalled`;
+- `memory.challenged`;
+- `memory.relation.created`;
+- `memory.relation.deleted`.
 
 Output:
 
