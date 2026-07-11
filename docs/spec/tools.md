@@ -1302,8 +1302,30 @@ nuzo memory export --path ./memories.memory.export.json
 nuzo memory export --path ./memories.memory.export.md
 nuzo memory import ./memories.memory.export.json --dry-run
 nuzo memory doctor
+nuzo memory doctor --privacy
+nuzo memory doctor --privacy --json
 nuzo memory doctor --scan-secrets
 ```
+
+`nuzo memory doctor --privacy` is a CLI-only, read-only projection of the
+shared doctor diagnostics. Its JSON contract includes:
+
+- `profile: "privacy"` and `read_only: true`;
+- storage initialization, store-source provenance, effective scope, and local
+  administrator mode without the store path;
+- network and recall-event-recording state;
+- permission semantics and counts for unsafe paths, stale artifacts, and
+  unexpected files without their paths;
+- Git status and tracked-memory count;
+- semantic index and local model-directory presence;
+- secret-scan status and bounded finding counts;
+- stable `findings` entries with `code`, `count`, and remediation `guidance`;
+- top-level `status: "ok" | "warning"`.
+
+The privacy profile never prints raw configuration values, memory content,
+matched secret fragments, or reversible fingerprints. `--scan-secrets` remains
+an explicit opt-in and can be combined with `--privacy`. Neither form repairs,
+deletes, chmods, or rewrites local state.
 
 `project:auto` values written literally by versions before `0.2.1` cannot be
 assigned automatically because the original project path was not stored.

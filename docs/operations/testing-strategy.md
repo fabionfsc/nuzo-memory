@@ -46,7 +46,9 @@ packaging validation, and runtime diagnostics instead of copying lists by hand.
 - normal recall does not persist query text or usage metadata unless the core
   caller explicitly opts in, and opt-in recall events persist only a query hash
   plus bounded recall metadata rather than the full query;
-- doctor reports tracked memory files.
+- doctor reports tracked memory files;
+- the privacy doctor profile exposes bounded counts and stable finding codes
+  without local paths, raw config values, memory content, or secret fragments;
 - MCP doctor reports aggregate store health without exposing memory content.
 - staged npm artifacts complete real installed CLI and stdio MCP lifecycle
   flows for capture suggestion, confirmed writes, recall hooks, the exact
