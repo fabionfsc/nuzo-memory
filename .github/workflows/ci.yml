@@ -71,6 +71,9 @@ jobs:
       - name: Run capture intelligence bounded benchmark
         run: npm run benchmark:capture -- --expect bounded
 
+      - name: Run capture intelligence dense-store benchmark
+        run: npm run benchmark:capture -- --expect bounded --store-size dense
+
       - name: Run optional semantics benchmark
         run: npm run benchmark:semantics
 

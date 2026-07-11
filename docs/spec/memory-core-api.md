@@ -139,6 +139,8 @@ injection, or runtime packaging.
 | `schemaVersion` | Advanced public | Current SQLite schema version. |
 | `migrate` | Advanced public | Apply SQLite migrations to a database handle. |
 | `MemoryStore` | Advanced public | Storage port. |
+| `CaptureCandidateLookupInput` | Advanced public | Optional storage-prefilter request for deterministic duplicate lookup and bounded relationship candidates. |
+| `CaptureCandidateLookupResult` | Advanced public | Duplicate, bounded candidates, and explicit search-completeness result returned by a storage prefilter. |
 | `SearchIndex` | Advanced public | Search port. |
 | `AuditLog` | Advanced public | Audit-log port. |
 | `TransactionManager` | Advanced public | Transaction port. |

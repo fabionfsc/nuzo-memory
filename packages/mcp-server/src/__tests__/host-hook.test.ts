@@ -441,8 +441,8 @@ describe("host recall hooks", () => {
         integrity: {
           ok: true,
           status: "ok",
-          schema_version: 6,
-          supported_schema_version: 6,
+          schema_version: 7,
+          supported_schema_version: 7,
           missing_fts_rows: 0,
           orphan_fts_rows: 0,
           errors: [],

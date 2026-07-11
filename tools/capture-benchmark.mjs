@@ -17,6 +17,11 @@ const expectation = optionValue("--expect") ?? "baseline";
 if (!new Set(["baseline", "bounded"]).has(expectation)) {
   throw new Error("--expect must be baseline or bounded");
 }
+const storeSize = optionValue("--store-size") ?? "small";
+if (!new Set(["small", "dense"]).has(storeSize)) {
+  throw new Error("--store-size must be small or dense");
+}
+const denseNoiseCount = storeSize === "dense" ? 2_000 : 0;
 
 const coreModuleSpecifier = coreModulePath === undefined
   ? new URL("../packages/core/dist/index.js", import.meta.url).href
@@ -72,6 +77,13 @@ const fixtures = [
     "note",
     "project:nuzo",
     ["capture-noise", `noise-${index}`],
+  )),
+  ...Array.from({ length: denseNoiseCount }, (_, index) => fixture(
+    `capture-dense-noise-${index}`,
+    `Zqxv filler ${index} retains an ephemeral pane coordinate and transient cursor marker.`,
+    "note",
+    "project:nuzo",
+    ["dense-noise", `dense-row-${index}`],
   )),
 ];
 
@@ -277,6 +289,8 @@ try {
     benchmark: "nuzo-capture-intelligence",
     version: 1,
     expectation,
+    storeSize,
+    denseNoiseCount,
     coreModule: coreModulePath ?? "workspace",
     store: keepStore ? storePath : "temporary",
     fixtures: fixtures.length,
@@ -309,6 +323,11 @@ function fixture(key, content, kind, scope, tags) {
 }
 
 function captureCase(label, group, content, kind, scope, expectedRelationship, options = {}) {
+  const boundedExpectedRelationship = storeSize === "dense" &&
+    scope === "project:nuzo" &&
+    expectedRelationship === "independent"
+    ? "uncertain"
+    : expectedRelationship;
   return {
     label,
     group,
@@ -316,8 +335,8 @@ function captureCase(label, group, content, kind, scope, expectedRelationship, o
     kind,
     scope,
     tags: options.tags ?? ["benchmark-capture"],
-    reason: `Synthetic ${expectedRelationship} capture fixture.`,
-    expectedRelationship,
+    reason: `Synthetic ${boundedExpectedRelationship} capture fixture.`,
+    expectedRelationship: boundedExpectedRelationship,
     baselineOutcome: expectedRelationship === "exact_duplicate" ? "exact_duplicate" : "legacy_ready",
     expectedPrimary: options.expectedPrimary,
     allowedCandidates: options.allowedCandidates ?? (options.expectedPrimary ? [options.expectedPrimary] : []),
@@ -706,7 +725,8 @@ function passesThresholds(summary, limits) {
 
 function printHumanReport(report) {
   console.log("Nuzo capture intelligence benchmark");
-  console.log(`expectation=${report.expectation} fixtures=${report.fixtures} cases=${report.cases}`);
+  console.log(`expectation=${report.expectation} store_size=${report.storeSize} fixtures=${report.fixtures} cases=${report.cases}`);
+  console.log(`dense_noise=${report.denseNoiseCount}`);
   console.log(`target_relationship_accuracy=${formatPercent(report.summary.targetRelationshipAccuracy)} profile_accuracy=${formatPercent(report.summary.profileAccuracy)} contract_coverage=${formatPercent(report.summary.contractCoverage)}`);
   console.log(`exact_duplicate_recall=${formatPercent(report.summary.exactDuplicateRecall)} primary_accuracy=${formatPercent(report.summary.primaryAccuracy)} policy_accuracy=${formatPercent(report.summary.policyAccuracy)}`);
   console.log(`safety=${formatPercent(report.summary.safetyRate)} zero_writes=${formatPercent(report.summary.zeroWriteRate)} unexpected_candidates=${formatPercent(report.summary.unexpectedCandidateRate)}`);

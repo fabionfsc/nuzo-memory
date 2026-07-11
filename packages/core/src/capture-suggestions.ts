@@ -14,7 +14,8 @@ export function toCaptureDuplicateKey(content: string): string {
   return normalizeContent(content).toLowerCase();
 }
 
-const captureCandidateLimit = 20;
+export const captureCandidateLimit = 20;
+export const captureExhaustiveScanLimit = 100;
 const captureReturnedLimit = 3;
 const captureTermLimit = 8;
 const captureReasonLimit = 1_000;
@@ -23,6 +24,7 @@ interface BoundedCaptureSuggestionInput {
   draft: CaptureSuggestionResult["draft"];
   duplicate: MemoryRecord | null;
   memories: MemoryRecord[];
+  searchExhaustive: boolean;
 }
 
 interface CaptureCandidateScore {
@@ -70,14 +72,16 @@ export function buildBoundedCaptureSuggestion(input: BoundedCaptureSuggestionInp
     .filter((candidate) => candidate.score >= 4)
     .sort(compareCaptureCandidateScores);
   const evaluated = scored.slice(0, captureCandidateLimit);
-  const searchExhaustive = scored.length <= captureCandidateLimit;
+  const searchExhaustive = input.searchExhaustive && scored.length <= captureCandidateLimit;
   const vague = isAmbiguousDraft(input.draft.content);
   const evidenceCandidates = evaluated;
   const relationshipCandidates = evidenceCandidates.filter((candidate) => (
     isUpdateCandidate(candidate) || isRelatedCandidate(candidate)
   ));
   const returnedCandidates = relationshipCandidates.slice(0, captureReturnedLimit).map(toRelationshipCandidate);
-  const evidenceTruncated = evidenceCandidates.length > captureReturnedLimit || scored.length > captureCandidateLimit;
+  const evidenceTruncated = !input.searchExhaustive ||
+    evidenceCandidates.length > captureReturnedLimit ||
+    scored.length > captureCandidateLimit;
 
   if (vague) {
     return boundedResult({

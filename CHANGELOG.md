@@ -8,6 +8,9 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ### Changed
 
+- Dense capture-suggestion scopes now use an indexed exact-duplicate lookup
+  and bounded SQLite FTS prefilter instead of materializing every active memory;
+  non-exhaustive evidence continues to fail closed as `uncertain`.
 - Public presentation now uses a polished post-1.0 landing page, README, and
   package README narrative for clearer first-time evaluation.
 

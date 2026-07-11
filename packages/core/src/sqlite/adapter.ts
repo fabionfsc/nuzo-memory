@@ -8,9 +8,17 @@ import {
   fstatSync,
   openSync,
 } from "node:fs";
+import { toCaptureDuplicateKey } from "../capture-suggestions.js";
 import { NuzoMemoryError } from "../errors.js";
 import { decodeMemoryEventCursor, decodeMemoryListCursor } from "../pagination.js";
-import type { AuditLog, MemoryStore, SearchIndex, TransactionManager } from "../ports.js";
+import type {
+  AuditLog,
+  CaptureCandidateLookupInput,
+  CaptureCandidateLookupResult,
+  MemoryStore,
+  SearchIndex,
+  TransactionManager,
+} from "../ports.js";
 import type {
   AuditEventFilter,
   ListMemoriesInput,
@@ -35,6 +43,7 @@ interface MemoryRow {
   scope: MemoryScope;
   kind: MemoryKind;
   content: string;
+  capture_key: string | null;
   tags: string;
   source: string;
   confidence: number;
@@ -139,11 +148,11 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
       .prepare(
         `
           INSERT INTO memories (
-            id, scope, kind, content, tags, source, confidence, confidence_state, provenance,
+            id, scope, kind, content, capture_key, tags, source, confidence, confidence_state, provenance,
             review_after, expires_at, created_at, updated_at, last_used_at, archived_at
           )
           VALUES (
-            @id, @scope, @kind, @content, @tags, @source, @confidence, @confidence_state, @provenance,
+            @id, @scope, @kind, @content, @capture_key, @tags, @source, @confidence, @confidence_state, @provenance,
             @review_after, @expires_at, @created_at, @updated_at, @last_used_at, @archived_at
           )
         `,
@@ -161,6 +170,7 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
               scope = @scope,
               kind = @kind,
               content = @content,
+              capture_key = @capture_key,
               tags = @tags,
               source = @source,
               confidence = @confidence,
@@ -187,6 +197,53 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
       | MemoryRow
       | undefined;
     return row ? fromMemoryRow(row) : null;
+  }
+
+  async findCaptureCandidates(input: CaptureCandidateLookupInput): Promise<CaptureCandidateLookupResult> {
+    const duplicateRow = this.database.prepare(`
+      SELECT *
+      FROM memories
+      WHERE scope = @scope
+        AND archived_at IS NULL
+        AND capture_key = @capture_key
+      ORDER BY id ASC
+      LIMIT 1
+    `).get({ scope: input.scope, capture_key: input.duplicateKey }) as MemoryRow | undefined;
+    const duplicate = duplicateRow ? fromMemoryRow(duplicateRow) : null;
+    if (!input.includeCandidates || duplicate !== null) {
+      return { duplicate, candidates: [], searchExhaustive: true };
+    }
+
+    const activeCount = Number((this.database.prepare(`
+      SELECT COUNT(*) AS count
+      FROM memories
+      WHERE scope = @scope AND archived_at IS NULL
+    `).get({ scope: input.scope }) as { count: number | bigint }).count);
+    if (activeCount <= input.exhaustiveScanLimit) {
+      const rows = this.database.prepare(`
+        SELECT *
+        FROM memories
+        WHERE scope = @scope AND archived_at IS NULL
+        ORDER BY id ASC
+      `).all({ scope: input.scope }) as MemoryRow[];
+      return { duplicate: null, candidates: rows.map(fromMemoryRow), searchExhaustive: true };
+    }
+
+    const query = toFtsQuery(`${input.query} ${input.tags.join(" ")}`);
+    if (!query) {
+      return { duplicate: null, candidates: [], searchExhaustive: false };
+    }
+    const rows = this.database.prepare(`
+      SELECT m.*
+      FROM memories_fts
+      JOIN memories m ON m.id = memories_fts.id
+      WHERE memories_fts MATCH @query
+        AND m.scope = @scope
+        AND m.archived_at IS NULL
+      ORDER BY bm25(memories_fts, 0.0, 0.0, 1.0, 5.0), m.id ASC
+      LIMIT @limit
+    `).all({ query, scope: input.scope, limit: input.candidateLimit }) as MemoryRow[];
+    return { duplicate: null, candidates: rows.map(fromMemoryRow), searchExhaustive: false };
   }
 
   async archive(id: string, archivedAt: Date, expectedRevision?: number): Promise<boolean> {
@@ -533,6 +590,7 @@ function toMemoryRow(memory: MemoryRecord): Record<string, unknown> {
     scope: memory.scope,
     kind: memory.kind,
     content: memory.content,
+    capture_key: toCaptureDuplicateKey(memory.content),
     tags: JSON.stringify(memory.tags),
     source: memory.source,
     confidence: memory.confidence,

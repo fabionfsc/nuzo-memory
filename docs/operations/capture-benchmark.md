@@ -46,6 +46,13 @@ Exercise the bounded contract gate:
 npm run benchmark:capture -- --expect bounded
 ```
 
+Exercise the indexed dense-scope gate with 2,000 additional same-scope noise
+records:
+
+```bash
+npm run benchmark:capture -- --expect bounded --store-size dense
+```
+
 The bounded command intentionally exits non-zero on `v0.5.0`, because that
 release implements exact duplicate detection but not the opt-in relationship
 contract. The released bounded implementation must pass this profile through
@@ -103,6 +110,11 @@ Coverage includes:
 - 24 dense related candidates that exercise the 20-evaluated/3-returned
   evidence bounds;
 - 30 unrelated filler memories for a medium local store.
+- an opt-in dense profile with 2,000 additional same-scope filler records;
+- fail-closed `uncertain` outcomes for otherwise independent drafts when the
+  dense prefilter is non-exhaustive;
+- exact, update, and related evidence that remains correct through the dense
+  indexed prefilter.
 
 The relationship expectations describe evidence, not permission to write.
 Every suggestion case remains unconfirmed and read-only.
@@ -190,6 +202,35 @@ The implementation shipped after #127 reports 100% target accuracy, 100%
 bounded-contract coverage, 100% safety, zero memory or audit writes, and no
 scope, archived, bound, or unexpected-candidate violations under `--expect
 bounded`.
+
+## Dense Retrieval Baseline And Result
+
+Issue #260 used a separate 10,001-record synthetic SQLite scope to measure the
+allocation problem directly. Before the indexed prefilter, one bounded capture
+suggestion called the generic list path once, materialized all 10,001 records,
+and took 786.74 ms on the measurement host. With schema version 7 and the same
+canonical FTS data, the suggestion made no full-scope list call, evaluated one
+prefiltered relationship candidate, and took 7.62 ms. These latency values are
+machine-dependent; the row-allocation behavior and completeness markers are
+the contractual result.
+
+The reproducible `--store-size dense` profile uses 2,074 total fixtures and 37
+cases. On the implementation measurement it reported:
+
+```text
+target relationship accuracy = 100.0%
+profile accuracy = 100.0%
+exact duplicate recall = 100.0%
+expected primary accuracy = 100.0%
+safety = 100.0%
+zero writes = 100.0%
+average latency = 2.22 ms
+maximum latency = 4.79 ms
+```
+
+Dense same-scope cases that have no returned relationship evidence expect
+`uncertain`, not `independent`. The empty-scope case remains exhaustive and can
+still establish independence.
 
 ## Change Control
 

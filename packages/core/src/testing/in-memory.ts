@@ -1,4 +1,13 @@
-import type { AuditLog, Clock, IdGenerator, MemoryStore, SearchIndex } from "../ports.js";
+import { toCaptureDuplicateKey } from "../capture-suggestions.js";
+import type {
+  AuditLog,
+  CaptureCandidateLookupInput,
+  CaptureCandidateLookupResult,
+  Clock,
+  IdGenerator,
+  MemoryStore,
+  SearchIndex,
+} from "../ports.js";
 import { decodeMemoryEventCursor, decodeMemoryListCursor } from "../pagination.js";
 import type {
   AuditEventFilter,
@@ -65,6 +74,31 @@ export class InMemoryStore implements MemoryStore {
   async findById(id: string): Promise<MemoryRecord | null> {
     const memory = this.memories.get(id);
     return memory ? cloneMemory(memory) : null;
+  }
+
+  async findCaptureCandidates(input: CaptureCandidateLookupInput): Promise<CaptureCandidateLookupResult> {
+    const active = [...this.memories.values()]
+      .filter((memory) => memory.archivedAt === null && memory.scope === input.scope)
+      .sort((left, right) => left.id.localeCompare(right.id));
+    const duplicate = active.find((memory) => toCaptureDuplicateKey(memory.content) === input.duplicateKey) ?? null;
+    if (!input.includeCandidates || duplicate !== null) {
+      return { duplicate: duplicate ? cloneMemory(duplicate) : null, candidates: [], searchExhaustive: true };
+    }
+    if (active.length <= input.exhaustiveScanLimit) {
+      return { duplicate: null, candidates: active.map(cloneMemory), searchExhaustive: true };
+    }
+
+    const queryTerms = captureLookupTerms(`${input.query} ${input.tags.join(" ")}`);
+    const candidates = active
+      .map((memory) => ({
+        memory,
+        score: captureLookupOverlap(queryTerms, `${memory.content} ${memory.tags.join(" ")}`),
+      }))
+      .filter((candidate) => candidate.score > 0)
+      .sort((left, right) => right.score - left.score || left.memory.id.localeCompare(right.memory.id))
+      .slice(0, input.candidateLimit)
+      .map((candidate) => cloneMemory(candidate.memory));
+    return { duplicate: null, candidates, searchExhaustive: false };
   }
 
   async list(filter: ListMemoriesInput): Promise<MemoryRecord[]> {
@@ -170,6 +204,20 @@ export class InMemoryStore implements MemoryStore {
   async deleteRelation(id: string): Promise<boolean> {
     return this.relations.delete(id);
   }
+}
+
+function captureLookupTerms(value: string): Set<string> {
+  return new Set(value
+    .normalize("NFKD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .split(/[^\p{L}\p{N}_]+/u)
+    .filter((term) => term.length > 1));
+}
+
+function captureLookupOverlap(queryTerms: ReadonlySet<string>, value: string): number {
+  const candidateTerms = captureLookupTerms(value);
+  return [...queryTerms].filter((term) => candidateTerms.has(term)).length;
 }
 
 export class InMemorySearchIndex implements SearchIndex {

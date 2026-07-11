@@ -56,6 +56,8 @@ const typeExports = [
   "AuditLog",
   "ChallengeMemoryInput",
   "ChallengeMemoryResult",
+  "CaptureCandidateLookupInput",
+  "CaptureCandidateLookupResult",
   "CaptureRelationship",
   "CaptureRelationshipCandidate",
   "CaptureRelationshipEvidence",
