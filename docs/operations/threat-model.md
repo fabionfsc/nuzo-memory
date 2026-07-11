@@ -67,9 +67,12 @@ Normal CLI and MCP recall do not persist query text or usage metadata by
 default. Recall usage recording is opt-in because real prompts can contain
 secrets, personal data, or sensitive project context.
 
-If recall event recording is enabled, keep audit access scoped and treat the
-audit store as sensitive metadata. A future hardening task should prefer
-redacted query previews or query hashes over full query retention.
+If recall event recording is enabled, new events retain a SHA-256 query hash,
+score, and scope instead of the full query. Keep audit access scoped and treat
+the audit store as sensitive metadata: a deterministic hash is useful for
+correlation but does not hide predictable query text from offline guessing.
+Events created by older Nuzo versions may still contain the legacy full-query
+field and are not rewritten automatically.
 
 ## Installer Boundary
 

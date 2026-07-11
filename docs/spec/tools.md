@@ -946,7 +946,7 @@ Input:
 ```
 
 All filters are optional. `limit` defaults to `50` and must be an integer
-between `1` and `200`. The `event_type` array accepts at most seven values from:
+between `1` and `200`. The `event_type` array accepts at most 10 values from:
 
 - `memory.created`;
 - `memory.updated`;
@@ -954,7 +954,10 @@ between `1` and `200`. The `event_type` array accepts at most seven values from:
 - `memory.deleted`;
 - `memory.imported`;
 - `memory.exported`;
-- `memory.recalled`.
+- `memory.recalled`;
+- `memory.challenged`;
+- `memory.relation.created`;
+- `memory.relation.deleted`.
 
 Output:
 
@@ -980,6 +983,24 @@ Output:
 
 `memory_id: null` means the event applies to the store or operation rather
 than one memory record. Export events are global events.
+
+When opt-in recall usage recording creates a `memory.recalled` event, its
+payload has this shape:
+
+```json
+{
+  "queryHash": "ff69922274ea614baa14ce1a4e065af177b7efe53f5533169d5bdb0baecf5194",
+  "queryHashAlgorithm": "sha256",
+  "score": 0.91,
+  "scope": "project:abc123"
+}
+```
+
+New recall events never retain the full query. The deterministic hash supports
+correlation but is not encryption and does not protect predictable input from
+offline guessing. Existing events created by earlier versions may still expose
+the legacy `query` field because Nuzo does not rewrite historical audit
+payloads during migration.
 
 Restricted runtime mode must not reveal unauthorized scopes. A restricted
 session may query audit by an authorized `scope` or by a `memory_id` whose

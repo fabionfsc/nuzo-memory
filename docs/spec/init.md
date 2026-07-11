@@ -179,7 +179,11 @@ file contents, credentials, environment values, or memory content.
 
 `privacy.record_recall_events` controls whether normal CLI recall updates
 `last_used_at` and appends `memory.recalled` audit events. It defaults to
-`false`. `privacy.allow_network` must remain `false` in config version 1.
+`false`. New recall events store a SHA-256 query hash, hash-algorithm marker,
+score, and scope instead of the full query. Existing events from older versions
+are left unchanged and may retain their legacy `query` payload. The hash is a
+correlation identifier, not encryption. `privacy.allow_network` must remain
+`false` in config version 1.
 
 For compatibility, version 1 config files that omit `recall` or `privacy` use
 the safe built-in defaults: limit `8`, no global inclusion, no recall-event

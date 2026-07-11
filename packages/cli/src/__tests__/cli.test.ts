@@ -320,6 +320,10 @@ describe("nuzo memory cli", () => {
     expect(expanded.stdout).toHaveLength(2);
     const history = await runCli(["memory", "history", first.stdout[0] ?? ""]);
     expect(history.stdout.some((line) => line.includes("memory.recalled"))).toBe(true);
+    const recalledEvent = history.stdout.find((line) => line.includes("memory.recalled")) ?? "";
+    expect(recalledEvent).toContain('"queryHash"');
+    expect(recalledEvent).toContain('"queryHashAlgorithm":"sha256"');
+    expect(recalledEvent).not.toContain("configured recall memory");
   });
 
   it("applies shared runtime environment overrides", async () => {

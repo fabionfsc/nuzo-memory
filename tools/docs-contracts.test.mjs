@@ -99,6 +99,23 @@ test("public MCP tool count and names derive from the runtime contract", () => {
   }
 });
 
+test("public audit event filters derive from the core event contract", () => {
+  const source = readText("packages/core/src/types.ts");
+  const eventArray = source.match(/export const memoryEventTypes = \[([\s\S]*?)\] as const/u)?.[1] ?? "";
+  const eventTypes = [...eventArray.matchAll(/"(memory\.[^"]+)"/gu)].map((match) => match[1]);
+  assert.ok(eventTypes.length > 0, "core must expose at least one memory event type");
+
+  const toolSpec = readText("docs/spec/tools.md");
+  const auditStart = toolSpec.indexOf("### `memory.audit`");
+  const auditEnd = toolSpec.indexOf("### `memory.forget`", auditStart);
+  assert.ok(auditStart >= 0 && auditEnd > auditStart, "memory.audit documentation section must exist");
+  const auditSpec = toolSpec.slice(auditStart, auditEnd);
+  assert.match(auditSpec, new RegExp(`at most ${eventTypes.length} values`, "u"));
+  for (const eventType of eventTypes) {
+    assert.match(auditSpec, new RegExp("`" + escapeRegExp(eventType) + "`", "u"), eventType);
+  }
+});
+
 test("normal installation recommends only the unified runtime package", () => {
   for (const path of userEntryPoints) {
     const content = readText(path);
