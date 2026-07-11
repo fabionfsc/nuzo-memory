@@ -45,6 +45,7 @@ import {
   toDoctorOutput,
   toIntegrityOutput,
 } from "./doctor.js";
+import { formatPrivacyDoctorReport, toPrivacyDoctorOutput } from "./privacy-doctor.js";
 import { ensureStoreDirectory, writePrivateFile } from "./filesystem.js";
 import { initializeMemory, type InitCommandOptions } from "./init-command.js";
 import {
@@ -1038,11 +1039,18 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
   memory
     .command("doctor")
     .description("Check the local memory environment.")
+    .option("--privacy", "Print a redacted, read-only privacy posture report.", false)
     .option("--scan-secrets", "Explicitly scan active memory records for high-confidence secret patterns.", false)
     .option("--json", "Print JSON output for scripting.", false)
-    .action(withErrorHandling(io, async (commandOptions: { json: boolean; scanSecrets: boolean }) => {
+    .action(withErrorHandling(io, async (commandOptions: { json: boolean; privacy: boolean; scanSecrets: boolean }) => {
       const options = memory.opts<GlobalOptions>();
       const report = await createDoctorReport(options, commandOptions.scanSecrets);
+      if (commandOptions.privacy) {
+        io.stdout(commandOptions.json
+          ? JSON.stringify(toPrivacyDoctorOutput(report), null, 2)
+          : formatPrivacyDoctorReport(report));
+        return;
+      }
       if (commandOptions.json) {
         io.stdout(JSON.stringify(toDoctorOutput(report), null, 2));
         return;
