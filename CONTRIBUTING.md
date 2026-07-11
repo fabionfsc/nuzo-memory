@@ -15,6 +15,11 @@ Read:
 5. `docs/operations/roadmap.md`
 6. `docs/operations/spec-driven-workflow.md`
 
+For installation results, support, or product feedback that does not yet need
+a code contribution, use the public
+[feedback guide](https://nuzo.com.br/operations/feedback/) and its focused
+GitHub forms. Reports must use fake data and sanitized diagnostics.
+
 ## Contribution Rules
 
 - Keep business logic in `packages/core`.

@@ -1,0 +1,62 @@
+name: Installation Feedback
+description: Report a clean-install success, blocker, or confusing step using fake data only.
+title: "[Install]: "
+labels:
+  - area:release
+  - area:docs
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for trying Nuzo. Do not attach memory databases, exports, credentials, tokens, private host configuration, or personal conversation content.
+  - type: dropdown
+    id: outcome
+    attributes:
+      label: Outcome
+      options:
+        - Installation and verification succeeded
+        - Installation succeeded but verification failed
+        - Installation failed
+        - Instructions were unclear
+    validations:
+      required: true
+  - type: dropdown
+    id: path
+    attributes:
+      label: Installation path
+      options:
+        - npm global package
+        - nuzo.com.br installer
+        - Codex setup
+        - Claude Code setup
+        - Generic MCP host
+        - CLI-only demo
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Sanitized environment
+      description: Do not include usernames, home paths, tokens, or private configuration.
+      value: |
+        - OS and architecture:
+        - Node version:
+        - npm version:
+        - Nuzo version:
+        - Host version, if applicable:
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: What happened?
+      description: Include the step, expected result, actual result, and sanitized error text. Use fake data.
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety confirmation
+      options:
+        - label: I used fake data and removed credentials, private paths, memory content, and personal information.
+          required: true

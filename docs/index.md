@@ -4,8 +4,8 @@
   <h1>Local memory for AI agents.</h1>
   <p class="nuzo-lead">Nuzo gives Codex, Claude Code, and MCP-compatible hosts durable memory that stays local, inspectable, editable, exportable, and deletable.</p>
   <p class="nuzo-actions">
-    <a href="getting-started/" class="nuzo-button">Start in 60 seconds</a>
-    <a href="#see-the-loop" class="nuzo-button nuzo-button--secondary">See the memory loop</a>
+    <a href="getting-started/sixty-second-demo/" class="nuzo-button">Run the 60-second demo</a>
+    <a href="product/why-nuzo/" class="nuzo-button nuzo-button--secondary">Why Nuzo?</a>
   </p>
   <div class="nuzo-trust-strip">
   <span><strong>1.0.0</strong> stable release</span>
@@ -163,6 +163,18 @@ nuzo memory manage</code></pre>
   </article>
 </section>
 
+## Use The Smallest Tool That Fits
+
+Keep durable team instructions in `AGENTS.md`. A short `MEMORY.md` is enough
+when manual curation and file history meet the need. Use native assistant
+memory when convenience inside one host matters most. Choose Nuzo when
+individual records need local ownership, bounded cross-host recall,
+provenance, review, relations, audit, export, and explicit write confirmation.
+
+Read [Why Nuzo?](product/why-nuzo.md) for the decision guide and the
+[competitive landscape](product/competitive-landscape.md) for a sourced,
+dated comparison with adjacent memory systems.
+
 ## Current Release
 
 Nuzo `1.0.0` is the current public release.
@@ -178,3 +190,7 @@ Start with the [installation overview](getting-started/index.md), read the
 [MCP tool contract](spec/tools.md). Internal architecture, specifications,
 benchmarks, and release procedures remain available under the maintainer
 sections of this site.
+
+Installation friction and product feedback belong in the public
+[feedback path](operations/feedback.md); never attach real memory data or
+credentials to an issue.

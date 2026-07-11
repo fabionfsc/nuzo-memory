@@ -1,5 +1,8 @@
 blank_issues_enabled: true
 contact_links:
+  - name: Feedback And Support Guide
+    url: https://nuzo.com.br/operations/feedback/
+    about: Choose a safe report type and see which diagnostics to include.
   - name: Documentation
     url: https://nuzo.com.br/
     about: Read the current Nuzo documentation.

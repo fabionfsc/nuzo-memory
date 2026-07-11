@@ -4,6 +4,11 @@ Nuzo `1.0.0` is the current public release. For Codex and Claude Code, use the
 global npm package first. It installs the local management CLI and lets Nuzo
 configure supported host plugins from one place.
 
+If you want to evaluate the storage and lifecycle boundary before configuring
+a host, start with the [60-second disposable CLI demo](sixty-second-demo.md).
+If you are deciding whether Nuzo adds value beyond a file or native host
+memory, read [Why Nuzo?](../product/why-nuzo.md).
+
 ## Install
 
 Prerequisites: Node.js 22 LTS or 24 LTS, npm 10 or newer, and a current Codex

@@ -2,6 +2,10 @@
 
 Nuzo is a local-first memory layer for AI agents that need explicit user control, auditability, and interoperability.
 
+For the practical decision between Nuzo, repository files, and native memory,
+start with [Why Nuzo?](why-nuzo.md). For adjacent platforms, see the
+[competitive landscape](competitive-landscape.md).
+
 It is not meant to compete with every built-in memory feature in AI assistants. Built-in memory can be useful when it is available, but it is usually tied to one product surface, one account, and one vendor-controlled implementation. Nuzo focuses on the cases where users and agent builders need memory they can inspect, edit, export, delete, and connect to multiple tools.
 
 ## Built-In Assistant Memory vs Nuzo

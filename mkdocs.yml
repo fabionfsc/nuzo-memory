@@ -76,6 +76,7 @@ nav:
   - Home: index.md
   - Install And Use:
       - Overview: getting-started/index.md
+      - 60-Second Demo: getting-started/sixty-second-demo.md
       - Fresh Installation: getting-started/clean-install.md
       - Agent Memory Loop: getting-started/agent-memory-loop.md
       - Codex Plugin: operations/codex-plugin.md
@@ -86,7 +87,9 @@ nav:
       - Runtime Support: operations/runtime-support.md
       - Privacy And Security: operations/privacy-and-security.md
       - Threat Model: operations/threat-model.md
+      - Feedback And Support: operations/feedback.md
   - Product:
+      - Why Nuzo?: product/why-nuzo.md
       - Vision: product/vision.md
       - Positioning: product/positioning.md
       - Competitive Landscape: product/competitive-landscape.md
@@ -121,6 +124,7 @@ nav:
           - Release Checklist: operations/release-checklist.md
           - 1.0.0 Release Readiness Audit: operations/release-readiness-1.0.0.md
           - Post-Release Validation: operations/post-release-validation.md
+          - Public Launch Playbook: operations/public-launch.md
           - GitHub Pages: operations/github-pages.md
       - Engineering Quality:
           - Coding Standards: operations/coding-standards.md

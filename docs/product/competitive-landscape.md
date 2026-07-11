@@ -1,13 +1,37 @@
 # Competitive Landscape
 
+Last reviewed: 2026-07-11. Product capabilities change; follow the linked
+official documentation before making an integration decision.
+
 Nuzo should continue only if it stays focused.
 
 The agent memory space is real, but it is not empty. Large AI vendors are adding native memory, and dedicated memory platforms already target agent workflows.
 
+## Choose By Operating Model
+
+These products overlap around durable agent context, but they optimize for
+different operating models. The table describes documented defaults and core
+abstractions, not every deployment option.
+
+| Option | Best fit | Default memory shape | Infrastructure boundary | Main tradeoff relative to Nuzo |
+| --- | --- | --- | --- | --- |
+| `AGENTS.md` or `MEMORY.md` | Small, durable instructions or manually curated notes. | One or more files. | Repository or local filesystem. | Simple and reviewable, but no record-level retrieval, provenance, audit, or lifecycle contract. |
+| Native host memory | Convenience inside one assistant product. | Host-defined. | Host/account-defined. | Lowest integration friction, but portability and inspection follow the host's public surface. |
+| Nuzo | Local coding-agent memory that needs explicit writes, audit, and cross-host MCP access. | Scoped records in local SQLite; optional derived local semantic index. | User's machine by default. | Deliberately avoids managed sync, multi-tenant service operation, and silent ingestion. |
+| Mem0 Codex/Claude integrations | Cloud-backed memory with direct hosted MCP and agent workflow integrations. | Platform-managed memories and search. | Mem0 account, API key, and hosted MCP in its documented Codex path. | Broader managed platform convenience; Nuzo instead defaults to no account, API key, or network. |
+| Zep | Application and enterprise context built from users, threads, business data, and temporal facts. | Temporal context/knowledge graphs with facts, entities, episodes, summaries, and observations. | Managed Context Lake and SDK/API integration; Graphiti is the related open-source graph framework. | Much broader temporal graph and application context system; Nuzo is a smaller local coding-agent layer. |
+| Letta | Memory-first agents whose persistent context is part of the agent architecture. | Always-visible memory blocks plus other context tiers. | Letta agent runtime/API; blocks are agent-managed and read-write by default, with read-only support. | Stronger agent-owned memory model; Nuzo keeps inferred capture behind user confirmation by default. |
+
+This is not a universal ranking. If a team needs managed multi-user context,
+automatic conversation ingestion, or temporal graph extraction, Nuzo is
+probably the smaller and less suitable system. If the requirement is a local,
+inspectable ledger for coding agents, the smaller boundary is the point.
+
 ## Market Signals
 
 - MCP is becoming a common integration layer for AI applications and agent tools.
-- Codex supports MCP, plugins, and built-in memories.
+- Codex exposes durable repository guidance, plugins, hooks, and MCP extension
+  surfaces; those have different scopes from a record-level memory store.
 - Claude Code supports MCP, plugins, skills, hooks, and plugin-provided MCP servers.
 - Mem0 already provides memory plugins for Codex and Claude Code.
 - Zep, Letta, LangGraph, and related projects show that agent memory is an active product and research category.
@@ -107,15 +131,23 @@ easy to install and prove in real agent workflows:
 - silent capture of inferred memories;
 - host-specific memory formats that bypass MCP/core.
 
-## References
+## Source Discipline
+
+Comparison claims should cite first-party product documentation and carry a
+review date. Avoid inferred claims about private storage, security posture,
+pricing, scale, or host endorsement. “Local-first” describes Nuzo's default
+data path; it is not a blanket security guarantee.
+
+## Official References
 
 - [MCP introduction](https://modelcontextprotocol.io/docs/getting-started/intro)
 - [Codex MCP](https://developers.openai.com/codex/mcp)
 - [Codex plugins](https://developers.openai.com/codex/plugins)
-- [Codex memories](https://developers.openai.com/codex/memories)
+- [Codex customization](https://developers.openai.com/codex/concepts/customization)
 - [Claude Code plugins](https://code.claude.com/docs/en/plugins)
 - [Claude Code MCP](https://code.claude.com/docs/en/mcp)
 - [Mem0 Codex integration](https://docs.mem0.ai/integrations/codex)
 - [Mem0 Claude Code integration](https://docs.mem0.ai/integrations/claude-code)
-- [Zep overview](https://help.getzep.com/overview)
-- [Letta Agent memory](https://docs.letta.com/letta-agent/memory)
+- [Zep key concepts](https://help.getzep.com/concepts)
+- [Zep and Graphiti](https://help.getzep.com/zep-vs-graphiti)
+- [Letta memory blocks](https://docs.letta.com/guides/core-concepts/memory/memory-blocks)
