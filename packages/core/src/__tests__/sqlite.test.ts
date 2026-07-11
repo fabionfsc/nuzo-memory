@@ -86,7 +86,7 @@ class PrefixedIdGenerator implements IdGenerator {
 }
 
 describe("SQLiteMemoryDatabase", () => {
-  it("creates the complete version 6 schema from an empty database", () => {
+  it("creates the complete version 7 schema from an empty database", () => {
     const directory = mkdtempSync(join(tmpdir(), "nuzo-schema-"));
     tempDirectories.push(directory);
     const database = new SQLiteMemoryDatabase({ path: join(directory, "memories.sqlite") });
@@ -104,6 +104,7 @@ describe("SQLiteMemoryDatabase", () => {
             'idx_memories_archived_at',
             'idx_memories_review_after',
             'idx_memories_expires_at',
+            'idx_memories_active_capture_key',
             'idx_memory_events_memory_id'
           )
           ORDER BY name
@@ -113,14 +114,16 @@ describe("SQLiteMemoryDatabase", () => {
 
     const columns = database.database.pragma("table_info(memories)") as Array<{ name: string }>;
 
-    expect(database.getSchemaVersion()).toBe(6);
+    expect(database.getSchemaVersion()).toBe(7);
     expect(database.database.pragma("busy_timeout", { simple: true })).toBe(5000);
     expect(columns.some((column) => column.name === "revision")).toBe(true);
     expect(columns.some((column) => column.name === "provenance")).toBe(true);
     expect(columns.some((column) => column.name === "confidence_state")).toBe(true);
     expect(columns.some((column) => column.name === "review_after")).toBe(true);
     expect(columns.some((column) => column.name === "expires_at")).toBe(true);
+    expect(columns.some((column) => column.name === "capture_key")).toBe(true);
     expect(objects).toEqual([
+      { name: "idx_memories_active_capture_key", type: "index" },
       { name: "idx_memories_archived_at", type: "index" },
       { name: "idx_memories_expires_at", type: "index" },
       { name: "idx_memories_review_after", type: "index" },
@@ -147,6 +150,130 @@ describe("SQLiteMemoryDatabase", () => {
     } finally {
       process.umask(previousUmask);
     }
+  });
+
+  it("migrates version 6 stores with deterministic capture keys and active indexes", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "nuzo-capture-key-migration-"));
+    tempDirectories.push(directory);
+    const path = join(directory, "memories.sqlite");
+    const legacy = new Database(path);
+    legacy.exec(`
+      CREATE TABLE memories (
+        id TEXT PRIMARY KEY,
+        revision INTEGER NOT NULL DEFAULT 1,
+        scope TEXT NOT NULL,
+        kind TEXT NOT NULL,
+        content TEXT NOT NULL,
+        tags TEXT NOT NULL DEFAULT '[]',
+        source TEXT NOT NULL,
+        confidence REAL NOT NULL DEFAULT 1.0,
+        confidence_state TEXT,
+        provenance TEXT,
+        review_after TEXT,
+        expires_at TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        last_used_at TEXT,
+        archived_at TEXT
+      );
+      INSERT INTO memories (
+        id, scope, kind, content, tags, source, confidence, confidence_state,
+        created_at, updated_at
+      ) VALUES (
+        'mem_legacy_capture', 'project:nuzo', 'instruction',
+        '  Run   strict capture validation.  ', '[]', 'test:migration', 1.0,
+        'user_confirmed', '2026-07-11T00:00:00.000Z', '2026-07-11T00:00:00.000Z'
+      );
+      PRAGMA user_version = 6;
+    `);
+    legacy.close();
+
+    const database = new SQLiteMemoryDatabase({ path });
+    expect(database.getSchemaVersion()).toBe(7);
+    const columns = database.database.pragma("table_info(memories)") as Array<{ name: string }>;
+    expect(columns.some((column) => column.name === "capture_key")).toBe(true);
+    await expect(database.findCaptureCandidates({
+      scope: "project:nuzo",
+      duplicateKey: "run strict capture validation.",
+      query: "Run strict capture validation.",
+      tags: [],
+      includeCandidates: false,
+      candidateLimit: 20,
+      exhaustiveScanLimit: 100,
+    })).resolves.toMatchObject({
+      duplicate: { id: "mem_legacy_capture" },
+      candidates: [],
+      searchExhaustive: true,
+    });
+    database.close();
+  });
+
+  it("uses indexed exact lookup and bounded FTS prefilter for dense capture scopes", async () => {
+    const { database, service } = createTempDatabase();
+    for (let index = 0; index < 125; index += 1) {
+      await service.remember({
+        content: `Synthetic editor state ${index} records temporary window layout and cursor position.`,
+        kind: "note",
+        scope: "project:dense",
+        tags: ["synthetic", `row-${index}`],
+        source: "test:dense-sqlite",
+      });
+    }
+    const related = await service.remember({
+      content: "Production deployment requires an explicit rollback checklist and service owner.",
+      kind: "instruction",
+      scope: "project:dense",
+      tags: ["deploy", "rollback"],
+      source: "test:dense-sqlite",
+    });
+
+    const queryPlan = database.database.prepare(`
+      EXPLAIN QUERY PLAN
+      SELECT * FROM memories
+      WHERE scope = @scope AND archived_at IS NULL AND capture_key = @capture_key
+      ORDER BY id ASC LIMIT 1
+    `).all({
+      scope: "project:dense",
+      capture_key: "production deployment requires an explicit rollback checklist and service owner.",
+    }) as Array<{ detail: string }>;
+    expect(queryPlan.some((step) => step.detail.includes("idx_memories_active_capture_key"))).toBe(true);
+    const scopeCountPlan = database.database.prepare(`
+      EXPLAIN QUERY PLAN
+      SELECT COUNT(*) FROM memories
+      WHERE scope = @scope AND archived_at IS NULL
+    `).all({ scope: "project:dense" }) as Array<{ detail: string }>;
+    expect(scopeCountPlan.some((step) => step.detail.includes("idx_memories_active_capture_key"))).toBe(true);
+
+    const lookup = await database.findCaptureCandidates({
+      scope: "project:dense",
+      duplicateKey: "no duplicate",
+      query: "Production deployment needs a rollback checklist and an owner.",
+      tags: ["deploy"],
+      includeCandidates: true,
+      candidateLimit: 20,
+      exhaustiveScanLimit: 100,
+    });
+    expect(lookup).toMatchObject({
+      duplicate: null,
+      searchExhaustive: false,
+      candidates: expect.arrayContaining([expect.objectContaining({ id: related.id })]),
+    });
+    expect(lookup.candidates).toHaveLength(1);
+
+    await expect(database.findCaptureCandidates({
+      scope: "project:dense",
+      duplicateKey: "production deployment requires an explicit rollback checklist and service owner.",
+      query: related.content,
+      tags: [],
+      includeCandidates: false,
+      candidateLimit: 20,
+      exhaustiveScanLimit: 100,
+    })).resolves.toMatchObject({
+      duplicate: { id: related.id },
+      candidates: [],
+      searchExhaustive: true,
+    });
+    database.close();
   });
 
   it.skipIf(process.platform === "win32")("refuses to open a SQLite store through a symbolic link", () => {
@@ -202,7 +329,7 @@ describe("SQLiteMemoryDatabase", () => {
 
     const reopened = new SQLiteMemoryDatabase({ path });
 
-    expect(reopened.getSchemaVersion()).toBe(6);
+    expect(reopened.getSchemaVersion()).toBe(7);
     await expect(reopened.findById(memory.id)).resolves.toMatchObject({
       revision: 1,
       content: "Migration tests preserve fake memory data.",
@@ -272,7 +399,7 @@ describe("SQLiteMemoryDatabase", () => {
 
     expect(inspectSQLiteMemoryStore(path)).toMatchObject({
       ok: true,
-      schemaVersion: 6,
+      schemaVersion: 7,
       integrityCheck: "ok",
       memoryCount: 1,
       activeMemoryCount: 1,
@@ -426,15 +553,15 @@ describe("SQLiteMemoryDatabase", () => {
     tempDirectories.push(directory);
     const path = join(directory, "memories.sqlite");
     const database = new Database(path);
-    database.pragma("user_version = 7");
+    database.pragma("user_version = 8");
     database.close();
 
     expect(() => new SQLiteMemoryDatabase({ path })).toThrowError(
       expect.objectContaining({
         code: "MEMORY_SCHEMA_UNSUPPORTED",
         details: {
-          currentVersion: 7,
-          supportedVersion: 6,
+          currentVersion: 8,
+          supportedVersion: 7,
         },
       }),
     );

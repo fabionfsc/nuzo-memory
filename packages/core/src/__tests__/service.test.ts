@@ -884,6 +884,117 @@ describe("memory service", () => {
     await expect(service.list({ scope: "project:nuzo" })).resolves.toHaveLength(21);
   });
 
+  it("prefilters dense capture scopes while preserving related and exact evidence", async () => {
+    const { service } = createTestService();
+    for (let index = 0; index < 125; index += 1) {
+      await service.remember({
+        content: `Synthetic editor state ${index} records temporary window layout and cursor position.`,
+        kind: "note",
+        scope: "project:dense",
+        tags: ["synthetic", `row-${index}`],
+        source: "test:dense",
+      });
+    }
+    const related = await service.remember({
+      content: "Production deployment requires an explicit rollback checklist and service owner.",
+      kind: "instruction",
+      scope: "project:dense",
+      tags: ["deploy", "rollback"],
+      source: "test:dense",
+    });
+
+    const suggestion = await service.suggestCapture({
+      content: "Production deployment needs a rollback checklist and an owner.",
+      kind: "instruction",
+      scope: "project:dense",
+      tags: ["deploy"],
+      source: "test:dense",
+      reason: "Dense relationship lookup remains bounded.",
+      relationshipMode: "bounded",
+    });
+    expect(suggestion).toMatchObject({
+      relationship: "related",
+      relationshipEvidence: {
+        primaryMemoryId: related.id,
+        searchExhaustive: false,
+        evidenceTruncated: true,
+      },
+    });
+    expect(suggestion.relationshipEvidence?.evaluatedCount).toBeLessThanOrEqual(20);
+
+    const independent = await service.suggestCapture({
+      content: "Rust source files use cargo fmt before review.",
+      kind: "instruction",
+      scope: "project:dense",
+      source: "test:dense",
+      reason: "Dense independent lookup must fail closed.",
+      relationshipMode: "bounded",
+    });
+    expect(independent).toMatchObject({
+      relationship: "uncertain",
+      relationshipEvidence: {
+        primaryMemoryId: null,
+        searchExhaustive: false,
+        evidenceTruncated: true,
+      },
+    });
+
+    const duplicate = await service.suggestCapture({
+      content: "  production deployment requires an explicit rollback checklist and service owner.  ",
+      kind: "note",
+      scope: "project:dense",
+      source: "test:dense",
+      reason: "Exact lookup remains deterministic in a dense scope.",
+      relationshipMode: "bounded",
+    });
+    expect(duplicate).toMatchObject({
+      relationship: "exact_duplicate",
+      duplicate: { id: related.id },
+      relationshipEvidence: {
+        primaryMemoryId: related.id,
+        evaluatedCount: 1,
+        searchExhaustive: true,
+        evidenceTruncated: false,
+      },
+    });
+  });
+
+  it("fails closed when a custom capture prefilter violates scope and result bounds", async () => {
+    const { service, store } = createTestService();
+    const forbidden = await service.remember({
+      content: "Another project stores a forbidden capture candidate.",
+      kind: "note",
+      scope: "project:other",
+      source: "test:adapter",
+    });
+    store.findCaptureCandidates = async () => ({
+      duplicate: forbidden,
+      candidates: Array.from({ length: 125 }, () => forbidden),
+      searchExhaustive: true,
+    });
+
+    const suggestion = await service.suggestCapture({
+      content: "Another project stores a forbidden capture candidate.",
+      kind: "note",
+      scope: "project:nuzo",
+      source: "test:adapter",
+      reason: "A custom adapter result must not cross the authorized scope.",
+      relationshipMode: "bounded",
+    });
+
+    expect(suggestion).toMatchObject({
+      duplicate: null,
+      relationship: "uncertain",
+      relationshipEvidence: {
+        primaryMemoryId: null,
+        evaluatedCount: 0,
+        searchExhaustive: false,
+        evidenceTruncated: true,
+        candidates: [],
+      },
+    });
+  });
+
   it("applies remember policy to capture suggestions", async () => {
     const { service } = createRestrictedTestService(["project:nuzo"]);
 

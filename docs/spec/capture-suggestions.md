@@ -264,6 +264,14 @@ creation-ready.
 - Exact normalized duplicate lookup is deterministic and happens before
   ranked evaluation. It must not become a best-effort result hidden by the
   ranked candidate cap.
+- The built-in SQLite adapter stores the normalized exact key and resolves it
+  through an active same-scope partial index. This lookup remains exhaustive
+  at every supported scope size.
+- Relationship retrieval is exhaustive for built-in SQLite scopes with at
+  most 100 active records. Larger scopes use an indexed FTS prefilter that
+  returns at most 20 records and sets `searchExhaustive: false`, even when the
+  prefilter returns fewer than 20 rows. This prevents a best-effort lookup from
+  claiming independence.
 - Ranked evaluation considers at most 20 candidates and returns at most 3,
   ordered from strongest to weakest evidence. Equivalent evidence is ordered
   by memory ID ascending so repeated evaluation is deterministic.
@@ -292,6 +300,15 @@ creation-ready.
 The evidence version starts at `1`. Additive fields may be introduced within
 that version, but changing relationship meaning, limits, required fields, or
 status mapping requires an explicit contract and versioning decision.
+
+The `MemoryStore.findCaptureCandidates` port capability is optional for
+compatibility with existing library adapters. When absent, core falls back to
+the legacy exhaustive same-scope list. Custom adapters can adopt the new
+capability independently, but they must return `searchExhaustive: false`
+whenever their prefilter cannot prove that no omitted record could change the
+decision. Core filters archived and cross-scope adapter results, caps exhaustive
+results at 100 and non-exhaustive results at 20, and degrades completeness to
+false when an adapter violates those invariants.
 
 ### Compatibility And Failure Safety
 

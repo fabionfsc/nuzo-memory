@@ -15,6 +15,8 @@ export type {
 } from "./policy.js";
 export type {
   AuditLog,
+  CaptureCandidateLookupInput,
+  CaptureCandidateLookupResult,
   Clock,
   EmbeddingProvider,
   EmbeddingProviderDescriptor,

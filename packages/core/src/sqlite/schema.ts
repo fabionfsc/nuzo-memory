@@ -1,7 +1,8 @@
 import type Database from "better-sqlite3";
+import { toCaptureDuplicateKey } from "../capture-suggestions.js";
 import { NuzoMemoryError } from "../errors.js";
 
-export const schemaVersion = 6;
+export const schemaVersion = 7;
 
 export function migrate(database: Database.Database): void {
   database.pragma("journal_mode = WAL");
@@ -47,6 +48,11 @@ export function migrate(database: Database.Database): void {
 
   if (currentVersion < 6) {
     migrateToV6(database);
+    database.pragma("user_version = 6");
+  }
+
+  if (currentVersion < 7) {
+    migrateToV7(database);
     database.pragma(`user_version = ${schemaVersion}`);
   }
 }
@@ -139,5 +145,26 @@ function migrateToV6(database: Database.Database): void {
 
     CREATE INDEX IF NOT EXISTS idx_memory_relations_source ON memory_relations(source_memory_id);
     CREATE INDEX IF NOT EXISTS idx_memory_relations_target ON memory_relations(target_memory_id);
+  `);
+}
+
+function migrateToV7(database: Database.Database): void {
+  const columns = database.pragma("table_info(memories)") as Array<{ name: string }>;
+  if (!columns.some((column) => column.name === "capture_key")) {
+    database.exec("ALTER TABLE memories ADD COLUMN capture_key TEXT;");
+  }
+
+  const rows = database.prepare("SELECT id, content FROM memories WHERE capture_key IS NULL").all() as Array<{
+    id: string;
+    content: string;
+  }>;
+  const updateCaptureKey = database.prepare("UPDATE memories SET capture_key = ? WHERE id = ?");
+  for (const row of rows) {
+    updateCaptureKey.run(toCaptureDuplicateKey(row.content), row.id);
+  }
+
+  database.exec(`
+    CREATE INDEX IF NOT EXISTS idx_memories_active_capture_key
+      ON memories(scope, capture_key, id) WHERE archived_at IS NULL;
   `);
 }

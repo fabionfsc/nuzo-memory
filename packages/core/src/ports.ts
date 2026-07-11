@@ -6,6 +6,7 @@ import type {
   MemoryEvent,
   MemoryRecord,
   MemoryRelationRecord,
+  MemoryScope,
   RecallMemoriesInput,
   RecallMemoriesResponse,
   RecallMemoryResult,
@@ -14,10 +15,27 @@ import type {
   UpdateMemoryInput,
 } from "./types.js";
 
+export interface CaptureCandidateLookupInput {
+  scope: MemoryScope;
+  duplicateKey: string;
+  query: string;
+  tags: readonly string[];
+  includeCandidates: boolean;
+  candidateLimit: number;
+  exhaustiveScanLimit: number;
+}
+
+export interface CaptureCandidateLookupResult {
+  duplicate: MemoryRecord | null;
+  candidates: MemoryRecord[];
+  searchExhaustive: boolean;
+}
+
 export interface MemoryStore {
   create(memory: MemoryRecord): Promise<void>;
   update(memory: MemoryRecord, expectedRevision?: number): Promise<boolean>;
   findById(id: string): Promise<MemoryRecord | null>;
+  findCaptureCandidates?(input: CaptureCandidateLookupInput): Promise<CaptureCandidateLookupResult>;
   list(filter: ListMemoriesInput): Promise<MemoryRecord[]>;
   archive(id: string, archivedAt: Date, expectedRevision?: number): Promise<boolean>;
   delete(id: string, expectedRevision?: number): Promise<boolean>;

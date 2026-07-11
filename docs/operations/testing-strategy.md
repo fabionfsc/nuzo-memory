@@ -90,10 +90,12 @@ Each migration should be tested from:
 - the immediately previous schema;
 - a small realistic fixture.
 
-For schema version 2, migration tests verify an empty database, reopen a
-populated store to confirm idempotency, and reject a fixture with a newer
-unsupported `user_version`. Future schema bumps should add a fixture for the
-immediately previous schema before changing `schemaVersion`.
+Migration tests verify an empty database, reopen a populated store to confirm
+idempotency, and reject a fixture with a newer unsupported `user_version`.
+Schema version 7 also opens an explicit version 6 fixture, backfills normalized
+capture keys, creates the active exact-key index, and proves indexed
+duplicate lookup after migration. Future schema bumps should add a fixture for
+the immediately previous schema before changing `schemaVersion`.
 
 ## Manual Smoke Test
 

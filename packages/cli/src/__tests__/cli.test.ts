@@ -1491,7 +1491,7 @@ describe("nuzo memory cli", () => {
     const integrity = await runCli(["memory", "--store", sourceStore, "integrity", "--json"]);
     expect(JSON.parse(integrity.stdout[0] ?? "{}")).toMatchObject({
       ok: true,
-      schema_version: 6,
+      schema_version: 7,
       memory_count: 1,
       fts_row_count: 1,
       errors: [],
@@ -1669,7 +1669,7 @@ describe("nuzo memory cli", () => {
       store_exists: true,
       integrity: {
         ok: true,
-        schema_version: 6,
+        schema_version: 7,
       },
       git_tracking: {
         status: "skipped",

@@ -430,6 +430,13 @@ For `independent`, `primary_memory_id` is `null`, `candidates` is empty,
 ambiguous, or a non-exhaustive search cannot safely establish independence,
 the result must be `uncertain` instead.
 
+The built-in SQLite runtime resolves exact duplicates through a normalized
+active same-scope index. Relationship retrieval is exhaustive for scopes with
+at most 100 active memories. Larger scopes use an indexed FTS prefilter of at
+most 20 records and always return `search_exhaustive: false`; finding an update
+or related candidate remains possible, but the absence of one cannot produce
+`independent`.
+
 An exact duplicate short-circuits broader classification and returns exactly
 one bounded candidate with `evaluated_count: 1`, `search_exhaustive: true`, and
 `evidence_truncated: false`.

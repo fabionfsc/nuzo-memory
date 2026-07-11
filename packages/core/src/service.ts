@@ -1,5 +1,10 @@
 import { NuzoMemoryError } from "./errors.js";
-import { buildBoundedCaptureSuggestion, toCaptureDuplicateKey } from "./capture-suggestions.js";
+import {
+  buildBoundedCaptureSuggestion,
+  captureCandidateLimit,
+  captureExhaustiveScanLimit,
+  toCaptureDuplicateKey,
+} from "./capture-suggestions.js";
 import {
   assertExportDocument,
   parseExportDate,
@@ -9,6 +14,8 @@ import {
 } from "./import-export.js";
 import type {
   AuditLog,
+  CaptureCandidateLookupInput,
+  CaptureCandidateLookupResult,
   Clock,
   IdGenerator,
   MemoryStore,
@@ -629,6 +636,50 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
     return response;
   }
 
+  async function findCaptureCandidates(
+    input: CaptureCandidateLookupInput,
+  ): Promise<CaptureCandidateLookupResult> {
+    if (store.findCaptureCandidates !== undefined) {
+      return normalizeCaptureCandidateLookup(input, await store.findCaptureCandidates(input));
+    }
+
+    const memories = await store.list({ scope: input.scope });
+    const duplicate = memories.find((memory) => (
+      memory.archivedAt === null &&
+      toCaptureDuplicateKey(memory.content) === input.duplicateKey
+    )) ?? null;
+    return {
+      duplicate,
+      candidates: input.includeCandidates ? memories : [],
+      searchExhaustive: true,
+    };
+  }
+
+  function normalizeCaptureCandidateLookup(
+    input: CaptureCandidateLookupInput,
+    result: CaptureCandidateLookupResult,
+  ): CaptureCandidateLookupResult {
+    const duplicateValid = result.duplicate === null || (
+      result.duplicate.archivedAt === null &&
+      result.duplicate.scope === input.scope &&
+      toCaptureDuplicateKey(result.duplicate.content) === input.duplicateKey
+    );
+    const duplicate = duplicateValid ? result.duplicate : null;
+    const authorizedCandidates = result.candidates.filter((memory) => (
+      memory.archivedAt === null && memory.scope === input.scope
+    ));
+    const resultLimit = result.searchExhaustive
+      ? input.exhaustiveScanLimit
+      : input.candidateLimit;
+    const limitsValid = result.candidates.length <= resultLimit;
+    const candidatesValid = authorizedCandidates.length === result.candidates.length;
+    return {
+      duplicate,
+      candidates: authorizedCandidates.slice(0, resultLimit),
+      searchExhaustive: result.searchExhaustive && duplicateValid && candidatesValid && limitsValid,
+    };
+  }
+
   return {
     async suggestCapture(input) {
       assertCaptureReason(input.reason);
@@ -648,22 +699,31 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
         reason: input.reason.trim(),
       };
       const duplicateKey = toCaptureDuplicateKey(draft.content);
-      const memories = await store.list({ scope: draft.scope });
-      const duplicate = memories.find((memory) => (
-        memory.archivedAt === null &&
-        toCaptureDuplicateKey(memory.content) === duplicateKey
-      )) ?? null;
+      const lookup = await findCaptureCandidates({
+        scope: draft.scope,
+        duplicateKey,
+        query: draft.content,
+        tags: draft.tags,
+        includeCandidates: input.relationshipMode === "bounded",
+        candidateLimit: captureCandidateLimit,
+        exhaustiveScanLimit: captureExhaustiveScanLimit,
+      });
 
       if (input.relationshipMode === "bounded") {
-        return buildBoundedCaptureSuggestion({ draft, duplicate, memories });
+        return buildBoundedCaptureSuggestion({
+          draft,
+          duplicate: lookup.duplicate,
+          memories: lookup.candidates,
+          searchExhaustive: lookup.searchExhaustive,
+        });
       }
 
       return {
-        status: duplicate ? "duplicate" : "ready",
+        status: lookup.duplicate ? "duplicate" : "ready",
         memoryWrites: false,
         requiresConfirmation: true,
         draft,
-        duplicate,
+        duplicate: lookup.duplicate,
       };
     },
 
@@ -755,11 +815,15 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       if (input.decision === "create" || input.decision === "keep_separate") {
         if (input.decision === "create") {
           const duplicateKey = toCaptureDuplicateKey(input.content);
-          const memories = await store.list({ scope: input.scope });
-          const duplicate = memories.find((memory) => (
-            memory.archivedAt === null &&
-            toCaptureDuplicateKey(memory.content) === duplicateKey
-          )) ?? null;
+          const duplicate = (await findCaptureCandidates({
+            scope: input.scope,
+            duplicateKey,
+            query: input.content,
+            tags: input.tags ?? [],
+            includeCandidates: false,
+            candidateLimit: captureCandidateLimit,
+            exhaustiveScanLimit: captureExhaustiveScanLimit,
+          })).duplicate;
           if (duplicate) {
             return {
               decision: input.decision,

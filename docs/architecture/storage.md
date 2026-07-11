@@ -38,7 +38,7 @@ The response must include which scope produced each result.
 
 ## SQLite Tables
 
-The current schema version is `6`. Nuzo stores it in SQLite `user_version` and
+The current schema version is `7`. Nuzo stores it in SQLite `user_version` and
 rejects databases created by newer unsupported Nuzo versions with the
 structured `MEMORY_SCHEMA_UNSUPPORTED` error.
 
@@ -51,6 +51,7 @@ CREATE TABLE memories (
   scope TEXT NOT NULL,
   kind TEXT NOT NULL,
   content TEXT NOT NULL,
+  capture_key TEXT,
   tags TEXT NOT NULL DEFAULT '[]',
   source TEXT NOT NULL,
   confidence REAL NOT NULL DEFAULT 1.0,
@@ -90,6 +91,23 @@ CREATE VIRTUAL TABLE memories_fts USING fts5(
   tags
 );
 ```
+
+Schema version 7 backfills `capture_key` with the exact-capture normalization
+of each memory's content and maintains it on canonical creates and updates. A
+partial index covers active-memory scope counts through its `scope` prefix and
+deterministic same-scope duplicate lookup through the complete key:
+
+```sql
+CREATE INDEX idx_memories_active_capture_key
+  ON memories(scope, capture_key, id) WHERE archived_at IS NULL;
+```
+
+Capture relationship lookup scans all active records only while the scope has
+at most 100 records. Larger scopes use SQLite FTS to return at most 20
+prefiltered records and explicitly report a non-exhaustive search. Exact
+duplicates never depend on the FTS candidate cap. This bounds application-row
+allocation while preserving the fail-closed rule that non-exhaustive evidence
+cannot establish independence.
 
 ## Optional Semantic Sidecar
 
