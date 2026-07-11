@@ -69,10 +69,22 @@ memory tools.
 The scanner includes npm access-token prefixes in addition to the provider
 patterns above.
 
+Inspect the redacted local privacy posture without scanning memory content:
+
+```bash
+nuzo memory doctor --privacy
+```
+
+This read-only profile reports counts and stable finding codes for filesystem,
+Git, recall-audit, and semantic-derived-data risks. It does not print store or
+finding paths, raw configuration values, memory content, or matched fragments.
+Use the normal doctor report locally when a finding requires path-level
+remediation.
+
 Run an explicit local scan of active records with:
 
 ```bash
-nuzo memory doctor --scan-secrets
+nuzo memory doctor --privacy --scan-secrets
 ```
 
 The report returns only record counts and finding categories. It never prints

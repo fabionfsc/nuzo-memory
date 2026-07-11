@@ -1,10 +1,11 @@
 import { spawnSync } from "node:child_process";
 import { homedir } from "node:os";
-import { dirname } from "node:path";
+import { dirname, join } from "node:path";
 import {
   inspectRuntimeFileSafety,
   inspectSQLiteMemoryStore,
   RegexSecretScanner,
+  semanticIndexPathFor,
   SQLiteMemoryDatabase,
   type MemoryScope,
   type NuzoRuntimeConfig,
@@ -25,6 +26,11 @@ export interface DoctorReport {
   provenance: NuzoRuntimeConfig["provenance"];
   adjustments: NuzoRuntimeConfig["adjustments"];
   network: "disabled";
+  recallEventRecording: boolean;
+  semantic: {
+    indexPresent: boolean;
+    modelDirectoryPresent: boolean;
+  };
   gitTracking: GitTrackingReport;
   integrity: SQLiteIntegrityReport;
   fileSafety: RuntimeFileSafetyReport;
@@ -47,6 +53,7 @@ export async function createDoctorReport(
   scanSecrets = false,
 ): Promise<DoctorReport> {
   const runtime = resolveRuntimeConfig(options);
+  const home = process.env.HOME ?? homedir();
   const storePath = runtime.storePath;
   const storeDirectory = dirname(storePath);
   const gitTracking = findTrackedMemoryFiles();
@@ -54,7 +61,7 @@ export async function createDoctorReport(
   const fileSafety = inspectRuntimeFileSafety({
     storePath,
     projectRoot: runtime.projectRoot,
-    home: process.env.HOME ?? homedir(),
+    home,
   });
   let secretScan: DoctorSecretScanReport = {
     status: "not_requested",
@@ -111,6 +118,11 @@ export async function createDoctorReport(
     provenance: runtime.provenance,
     adjustments: runtime.adjustments,
     network: "disabled",
+    recallEventRecording: runtime.privacy.recordRecallEvents,
+    semantic: {
+      indexPresent: pathExists(semanticIndexPathFor(storePath)),
+      modelDirectoryPresent: pathExists(join(home, ".nuzo", "models")),
+    },
     gitTracking,
     integrity,
     fileSafety,

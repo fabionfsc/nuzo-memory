@@ -649,6 +649,13 @@ describe("SQLiteMemoryDatabase", () => {
 
     const events = await database.list(memory.id);
     expect(events.map((event) => event.eventType)).toEqual(["memory.created", "memory.recalled"]);
+    expect(events[1]?.payload).toEqual({
+      queryHash: "f6276cec4eb85cc77bb6bd4e351860f5ec09bbda8e0bc33aedab589c36e14e7a",
+      queryHashAlgorithm: "sha256",
+      score: results[0]?.score,
+      scope: "user:default",
+    });
+    expect(JSON.stringify(events[1]?.payload)).not.toContain("SQLite prototypes");
 
     database.close();
   });

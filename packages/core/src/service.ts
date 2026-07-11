@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { NuzoMemoryError } from "./errors.js";
 import {
   buildBoundedCaptureSuggestion,
@@ -612,6 +613,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
 
     if (input.recordUsage !== true) return response;
     const now = clock.now();
+    const queryHash = hashRecallQuery(input.query);
     await runTransaction(async () => {
       for (const result of response.results) {
         const current = await store.findById(result.memory.id);
@@ -628,7 +630,12 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
           memoryId: current.id,
           eventType: "memory.recalled",
           actor: "core",
-          payload: { query: input.query, score: result.score, scope: current.scope },
+          payload: {
+            queryHash,
+            queryHashAlgorithm: "sha256",
+            score: result.score,
+            scope: current.scope,
+          },
           createdAt: now,
         });
       }
@@ -1209,6 +1216,10 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       };
     },
   };
+}
+
+function hashRecallQuery(query: string): string {
+  return createHash("sha256").update(query, "utf8").digest("hex");
 }
 
 function assertExpectedRevision(expectedRevision: number | undefined, memory: MemoryRecord): void {

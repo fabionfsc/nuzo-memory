@@ -12,7 +12,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { SQLiteMemoryDatabase } from "@nuzo/memory-core";
+import { semanticIndexPathFor, SQLiteMemoryDatabase } from "@nuzo/memory-core";
 import { createProgram, setupHostsFromOptions, type CliIO, type SetupCommandOptions } from "../index.js";
 
 let tempDirectories: string[] = [];
@@ -320,6 +320,10 @@ describe("nuzo memory cli", () => {
     expect(expanded.stdout).toHaveLength(2);
     const history = await runCli(["memory", "history", first.stdout[0] ?? ""]);
     expect(history.stdout.some((line) => line.includes("memory.recalled"))).toBe(true);
+    const recalledEvent = history.stdout.find((line) => line.includes("memory.recalled")) ?? "";
+    expect(recalledEvent).toContain('"queryHash"');
+    expect(recalledEvent).toContain('"queryHashAlgorithm":"sha256"');
+    expect(recalledEvent).not.toContain("configured recall memory");
   });
 
   it("applies shared runtime environment overrides", async () => {
@@ -1646,6 +1650,71 @@ describe("nuzo memory cli", () => {
     expect(text).toContain("Status: warning");
   });
 
+  it("reports redacted privacy posture without exposing local paths", async () => {
+    const store = createStorePath();
+    await runCli(["memory", "--store", store, "init"]);
+
+    const output = await runCli(["memory", "--store", store, "doctor", "--privacy"], {
+      NUZO_DOCTOR_SKIP_GIT: "1",
+    });
+    const text = output.stdout.join("\n");
+
+    expect(text).toContain("Nuzo privacy report (read-only)");
+    expect(text).toContain("Storage: initialized");
+    expect(text).toContain("Network: disabled");
+    expect(text).toContain("Recall event recording: disabled");
+    expect(text).toContain("Semantic index: not present");
+    expect(text).toContain("Secret scan: not requested");
+    expect(text).toContain("Status: ok");
+    expect(text).not.toContain(store);
+    expect(text).not.toContain(testHome);
+  });
+
+  it("returns stable privacy JSON with bounded findings", async () => {
+    await runCli(["memory", "init"]);
+    const configPath = join(testHome, ".nuzo", "config.json");
+    const config = JSON.parse(readFileSync(configPath, "utf8")) as {
+      privacy: { record_recall_events: boolean };
+    };
+    config.privacy.record_recall_events = true;
+    writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
+
+    const store = createStorePath();
+    await runCli(["memory", "--store", store, "init"]);
+    const semanticPath = semanticIndexPathFor(store);
+    writeFileSync(semanticPath, "derived test sidecar", { encoding: "utf8", mode: 0o600 });
+
+    const output = await runCli(["memory", "--store", store, "doctor", "--privacy", "--json"], {
+      NUZO_DOCTOR_SKIP_GIT: "1",
+    });
+    const serialized = output.stdout[0] ?? "";
+    const report = JSON.parse(serialized) as {
+      findings: Array<{ code: string; count: number; guidance: string }>;
+    };
+
+    expect(report).toMatchObject({
+      profile: "privacy",
+      read_only: true,
+      storage: {
+        initialized: true,
+        store_source: "option",
+        authorization_mode: "administrator",
+      },
+      network: { enabled: false },
+      recall_audit: { enabled: true },
+      git: { status: "skipped", tracked_memory_files: 0 },
+      semantics: { index_present: true },
+      secret_scan: { status: "not_requested", scanned_records: 0, flagged_records: 0 },
+      status: "warning",
+    });
+    expect(report.findings).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: "recall_audit_enabled", count: 1 }),
+      expect.objectContaining({ code: "semantic_index_present", count: 1 }),
+    ]));
+    expect(serialized).not.toContain(store);
+    expect(serialized).not.toContain(testHome);
+  });
+
   it("skips Git tracking when requested by restricted environments", async () => {
     const store = createStorePath();
     await runCli(["memory", "--store", store, "init"]);
@@ -1766,6 +1835,25 @@ describe("nuzo memory cli", () => {
       scanned_records: 1,
       flagged_records: 1,
       findings_by_kind: { github_token: 1 },
+    });
+
+    const privacy = await runCli([
+      "memory", "--store", store, "doctor", "--privacy", "--scan-secrets", "--json",
+    ], {
+      NUZO_DOCTOR_SKIP_GIT: "1",
+    });
+    const privacySerialized = privacy.stdout[0] ?? "";
+    expect(privacySerialized).not.toContain(secretContent);
+    expect(privacySerialized).not.toContain(store);
+    expect(JSON.parse(privacySerialized)).toMatchObject({
+      secret_scan: {
+        status: "completed",
+        scanned_records: 1,
+        flagged_records: 1,
+        findings_by_kind: { github_token: 1 },
+      },
+      findings: [expect.objectContaining({ code: "secret_patterns_detected", count: 1 })],
+      status: "warning",
     });
   });
 });

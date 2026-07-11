@@ -484,6 +484,13 @@ describe("memory service", () => {
 
     const events = await auditLog.list(memory.id);
     expect(events.map((event) => event.eventType)).toEqual(["memory.created", "memory.recalled"]);
+    expect(events[1]?.payload).toEqual({
+      queryHash: "ff69922274ea614baa14ce1a4e065af177b7efe53f5533169d5bdb0baecf5194",
+      queryHashAlgorithm: "sha256",
+      score: results[0]?.score,
+      scope: "project:nuzo",
+    });
+    expect(JSON.stringify(events[1]?.payload)).not.toContain("read-only hooks");
   });
 
   it("queries bounded store-wide audit events with filters", async () => {

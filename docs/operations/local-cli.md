@@ -163,11 +163,33 @@ integrity, and runtime file hygiene:
 nuzo memory doctor
 ```
 
+Use the privacy profile before trusting a store with real memory data or when
+you need a redacted report for automation:
+
+```bash
+nuzo memory doctor --privacy
+nuzo memory doctor --privacy --json
+```
+
+The privacy profile reports initialized storage, store-source provenance,
+effective scope and authorization mode, network state, opt-in recall-event
+recording, filesystem finding counts, tracked-memory counts, semantic sidecar
+and model-directory presence, and secret-scan status. It omits store and
+finding paths, raw configuration values, memory content, matched fragments,
+and reversible fingerprints. Stable finding codes include
+`tracked_memory_files`, `unsafe_runtime_paths`, `recall_audit_enabled`,
+`semantic_index_present`, and `secret_patterns_detected`.
+
+The report is diagnostic only: `read_only` is always `true`, and doctor never
+deletes, chmods, repairs, or rewrites a path. Use the standard doctor view when
+you intentionally need local paths for remediation.
+
 Add `--scan-secrets` only when you intentionally want a full scan of active
 memory records:
 
 ```bash
 nuzo memory doctor --scan-secrets --json
+nuzo memory doctor --privacy --scan-secrets --json
 ```
 
 The scan reports counts and finding kinds, never memory content or matched
