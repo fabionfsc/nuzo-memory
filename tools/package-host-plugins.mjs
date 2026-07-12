@@ -8,7 +8,8 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const outputRoot = join(repositoryRoot, "build", "plugins");
 const memoryPackage = readJson(join(repositoryRoot, "packages", "memory", "package.json"));
 const packageSpec = `${memoryPackage.name}@${memoryPackage.version}`;
-const hookCommand = `npm exec --yes --package=${packageSpec} -- nuzo-memory-hook`;
+const pluginRoot = "${CLAUDE_PLUGIN_ROOT}";
+const hookCommand = `npm exec --yes --prefix=${pluginRoot} --package=${packageSpec} -- nuzo-memory-hook`;
 
 if (memoryPackage.version === "0.0.0") {
   console.warn("Packaging pre-release plugin artifacts against unpublished Nuzo package version 0.0.0.");
@@ -28,6 +29,7 @@ const artifacts = [
         nuzo: {
           command: "npm",
           args: ["exec", "--yes", `--package=${packageSpec}`, "--", "nuzo-mcp-server"],
+          cwd: ".",
         },
       },
     },
@@ -44,7 +46,7 @@ const artifacts = [
         nuzo: {
           command: "npm",
           args: ["exec", "--yes", `--package=${packageSpec}`, "--", "nuzo-mcp-server"],
-          cwd: "${CLAUDE_PLUGIN_ROOT}",
+          cwd: pluginRoot,
           env: {
             NUZO_PROJECT_ROOT: "${CLAUDE_PROJECT_DIR}",
           },

@@ -220,6 +220,11 @@ with pinned Codex and Claude Code CLIs and runs `npm run smoke:host-canary`.
 Published-package smokes remain post-release checks because they require the
 new version to exist in the npm registry.
 
+Published host canaries create their SQLite fixture with the published CLI and
+inspect post-hook history with that same runtime. This keeps the source schema
+out of a public-version continuity test and prevents false failures after a
+new migration lands on `main`.
+
 Installed artifact validation also runs a cost-conscious OS/architecture
 matrix on Node.js 22 LTS and 24 LTS:
 
@@ -345,7 +350,10 @@ the host-facing metadata loads as `Nuzo`, reads its bundled MCP config, and
 validates continuity through staged npm tarballs before publication. It still
 asserts the version-pinned command in the generated config. After publication,
 `NUZO_PLUGIN_SMOKE_PUBLISHED=1 npm run smoke:codex-plugin` validates the exact
-public command that the plugin exposes.
+public command that the plugin exposes. Published hook canaries launch from the
+repository root, while npm resolution is anchored at the plugin root, so a
+user's npm workspace cannot shadow the pinned runtime. Codex MCP uses `.` as a
+plugin-relative cwd; hook commands use `${CLAUDE_PLUGIN_ROOT}`.
 
 The continuity assertion covers the `0.2.0` Codex task-start recall contract:
 a first MCP session writes a fake confirmed memory, a later session calls

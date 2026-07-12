@@ -95,6 +95,8 @@ def validate_nuzo_server(server: dict, version: str, release: bool) -> None:
             fail("release nuzo MCP server must run with npm")
         if args != ["exec", "--yes", f"--package=@nuzo/memory@{version}", "--", "nuzo-mcp-server"]:
             fail("release nuzo MCP server must pin @nuzo/memory to the plugin version and explicit binary")
+        if server.get("cwd") != ".":
+            fail("release nuzo MCP server cwd must isolate npm resolution at the Codex plugin root")
         if any(".." in arg or "/mcp-server/" in arg for arg in args):
             fail("release nuzo MCP server must not reference monorepo paths")
         return
@@ -178,7 +180,7 @@ def validate_nuzo_hooks(path: pathlib.Path, version: str, release: bool) -> None
     if commands[0] != commands[1]:
         fail("Nuzo lifecycle events must use the same hook runner")
     expected = (
-        f"npm exec --yes --package=@nuzo/memory@{version} -- nuzo-memory-hook"
+        f"npm exec --yes --prefix=${{CLAUDE_PLUGIN_ROOT}} --package=@nuzo/memory@{version} -- nuzo-memory-hook"
         if release
         else 'node "${CLAUDE_PLUGIN_ROOT}/../mcp-server/dist/host-hook-cli.js"'
     )

@@ -193,7 +193,7 @@ def validate_nuzo_hooks(path: pathlib.Path, version: str, release: bool) -> None
     if commands[0] != commands[1]:
         fail("Nuzo lifecycle events must use the same hook runner")
     expected = (
-        f"npm exec --yes --package=@nuzo/memory@{version} -- nuzo-memory-hook"
+        f"npm exec --yes --prefix=${{CLAUDE_PLUGIN_ROOT}} --package=@nuzo/memory@{version} -- nuzo-memory-hook"
         if release
         else 'node "${CLAUDE_PLUGIN_ROOT}/../mcp-server/dist/host-hook-cli.js"'
     )

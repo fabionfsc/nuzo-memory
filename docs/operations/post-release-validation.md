@@ -239,6 +239,17 @@ In published mode, the canary suppresses non-fatal npm warning output inside
 the spawned `npm exec` hook processes. A non-zero status or stderr emitted by
 the hook itself still fails validation.
 
+The published canary must also create and inspect its fixture with the
+published CLI. It must not create a store with the source-tree core and then
+ask an older public runtime to read it: after a source schema bump, that would
+test forward-schema rejection rather than published host continuity.
+
+Run published hooks from a workspace-bearing project directory. Their npm
+prefix must remain anchored at the installed plugin root so local workspace
+packages cannot shadow the version-pinned public runtime. Codex MCP config uses
+`.` because Codex resolves structured cwd values relative to the plugin root;
+Claude Code uses `${CLAUDE_PLUGIN_ROOT}`.
+
 The canary proves that the generated Codex and Claude Code artifacts deliver a
 shared `user:default` `autoload` instruction memory across fresh hook
 invocations while preserving the untrusted-memory boundary. It must not be
@@ -252,6 +263,11 @@ Before closing the release milestone, do one general issue-hunting pass for
 post-release work only. Open focused GitHub Issues for defects, docs gaps,
 host limitations, or roadmap candidates found during validation, but do not
 expand the already-scoped release unless the finding is release-blocking.
+
+The dated post-1.0 adoption pass is recorded in
+[Supported Host Evidence](supported-host-evidence-1.0.0.md). It separates
+automated marketplace and hook delivery evidence from interactive host-model
+response evidence that still requires an authenticated human session.
 9. Confirm a duplicate suggestion reports the existing memory instead of
    proposing a redundant write.
 10. Confirm a new memory through `memory.confirm_capture` with

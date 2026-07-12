@@ -37,6 +37,9 @@ try {
   if (!server || typeof server.command !== "string" || !Array.isArray(server.args)) {
     fail("generated Codex plugin artifact does not define an nuzo MCP server");
   }
+  if (server.cwd !== ".") {
+    fail("generated Codex plugin artifact does not isolate npm resolution at the plugin root");
+  }
   const hooks = readJson(join(pluginRoot, "hooks", "hooks.json"));
   const sessionHookCommand = hooks.hooks?.SessionStart?.[0]?.hooks?.[0]?.command;
   const promptHookCommand = hooks.hooks?.UserPromptSubmit?.[0]?.hooks?.[0]?.command;
@@ -61,7 +64,7 @@ try {
   });
   await assertHostHookArtifactTrust({
     ...(process.env.NUZO_PLUGIN_SMOKE_PUBLISHED === "1"
-      ? parseGeneratedHookCommand(sessionHookCommand, "generated Codex plugin artifact")
+      ? parseGeneratedHookCommand(sessionHookCommand, "generated Codex plugin artifact", pluginRoot)
       : runtime.hook),
     cwd: pluginRoot,
     memoryStore: storePath,

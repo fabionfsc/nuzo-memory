@@ -132,6 +132,22 @@ test("published host canary suppresses npm warnings without ignoring hook stderr
   assert.match(script, /NUZO_PLUGIN_SMOKE_PUBLISHED === "1"/);
   assert.match(script, /NPM_CONFIG_LOGLEVEL: "error"/);
   assert.match(script, /result\.status !== 0 \|\| result\.stderr !== ""/);
+  assert.match(script, /publishedMode\s*\? createPublishedFixture\(\)/);
+  assert.match(script, /function createPublishedFixture\(\)/);
+  assert.match(script, /@nuzo\/memory@\$\{/);
+  assert.match(script, /readPublishedHistory\(fixture\.cli, canary\.id\)/);
+  assert.match(script, /cwd: repositoryRoot/);
+});
+
+test("host plugin runtimes are isolated from the user's npm workspace", () => {
+  const script = readFileSync(
+    join(repositoryRoot, "tools", "package-host-plugins.mjs"),
+    "utf8",
+  );
+
+  assert.match(script, /--prefix=\$\{pluginRoot\}/);
+  assert.match(script, /host: "codex"[\s\S]*?cwd: "\."/u);
+  assert.match(script, /host: "claude-code"[\s\S]*?cwd: pluginRoot/u);
 });
 
 test("release tooling covers public release version references", () => {
