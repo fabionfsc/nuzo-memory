@@ -8,6 +8,11 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ### Changed
 
+- Public adoption guidance now includes a disposable 60-second demo, a
+  decision guide for repository files and native memory, a dated comparison of
+  adjacent agent-memory systems, focused installation feedback, and an
+  executable launch playbook.
+
 - Dense capture-suggestion scopes now use an indexed exact-duplicate lookup
   and bounded SQLite FTS prefilter instead of materializing every active memory;
   non-exhaustive evidence continues to fail closed as `uncertain`.

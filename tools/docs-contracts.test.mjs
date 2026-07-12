@@ -10,6 +10,7 @@ const userEntryPoints = [
   "docs/index.md",
   "docs/getting-started/index.md",
   "docs/getting-started/clean-install.md",
+  "docs/getting-started/sixty-second-demo.md",
   "docs/operations/local-cli.md",
   "docs/operations/codex-plugin.md",
   "docs/operations/claude-code-plugin.md",
@@ -93,6 +94,7 @@ test("public MCP tool count and names derive from the runtime contract", () => {
 
   assert.match(readText("docs/index.md"), new RegExp(`<strong>${names.length}</strong> MCP tools`));
   assert.match(readText("docs/getting-started/index.md"), new RegExp(`${names.length} Nuzo memory tools`));
+  assert.match(readText("docs/getting-started/clean-install.md"), new RegExp(`${names.length} public memory tools`));
   const toolSpec = readText("docs/spec/tools.md");
   for (const name of names) {
     assert.match(toolSpec, new RegExp("`" + escapeRegExp(name) + "`"), name);
@@ -204,6 +206,49 @@ test("memory governance contract stays visible and sliced for implementation", (
   for (const field of ["review_after", "expires_at", "user_confirmed", "needs_review", "superseded"]) {
     assert.match(governance, new RegExp("`" + escapeRegExp(field) + "`", "u"), field);
   }
+});
+
+test("public adoption path is discoverable, disposable, and safely routed", () => {
+  const readme = readText("README.md");
+  const home = readText("docs/index.md");
+  const navigation = readText("mkdocs.yml");
+  const demo = readText("docs/getting-started/sixty-second-demo.md");
+  const why = readText("docs/product/why-nuzo.md");
+  const comparison = readText("docs/product/competitive-landscape.md");
+  const feedback = readText("docs/operations/feedback.md");
+  const launch = readText("docs/operations/public-launch.md");
+  const roadmap = readText("docs/operations/roadmap.md");
+  const installForm = readText(".github/ISSUE_TEMPLATE/installation-feedback.yml");
+
+  for (const content of [readme, home, navigation]) {
+    assert.match(content, /60-[Ss]econd [Dd]emo/u);
+    assert.match(content, /Why Nuzo\?/u);
+  }
+  for (const command of [
+    "@nuzo/memory@1.0.0",
+    "nuzo memory --store",
+    "remember",
+    "recall",
+    "list --tag demo",
+    "audit",
+    "rm -rf",
+  ]) {
+    assert.match(demo, new RegExp(escapeRegExp(command), "u"), `demo: ${command}`);
+  }
+  for (const alternative of ["AGENTS.md", "MEMORY.md", "Native Assistant Memory", "Wrong Choice"]) {
+    assert.match(why, new RegExp(escapeRegExp(alternative), "iu"), alternative);
+  }
+  for (const product of ["Mem0", "Zep", "Letta", "Nuzo"]) {
+    assert.match(comparison, new RegExp(escapeRegExp(product), "u"), product);
+  }
+  assert.match(comparison, /Last reviewed: \d{4}-\d{2}-\d{2}/u);
+  assert.match(feedback, /Do not attach a SQLite store/u);
+  assert.match(launch, /does not authorize a new npm release/u);
+  for (const issue of ["#314", "#315", "#316"]) {
+    assert.match(launch, new RegExp(escapeRegExp(issue), "u"), issue);
+  }
+  assert.match(roadmap, /repository adoption surface is implemented/u);
+  assert.match(installForm, /I used fake data/u);
 });
 
 function escapeRegExp(value) {

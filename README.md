@@ -31,6 +31,10 @@
 <p align="center">
   <a href="https://nuzo.com.br/getting-started/">Get started</a>
   ·
+  <a href="https://nuzo.com.br/getting-started/sixty-second-demo/">60-second demo</a>
+  ·
+  <a href="https://nuzo.com.br/product/why-nuzo/">Why Nuzo?</a>
+  ·
   <a href="https://nuzo.com.br/getting-started/agent-memory-loop/">Memory loop</a>
   ·
   <a href="https://nuzo.com.br/operations/privacy-and-security/">Privacy & security</a>
@@ -139,6 +143,9 @@ The answer should use `NUZO-OK`. If it does not, follow the
 [Codex](docs/operations/codex-plugin.md) or
 [Claude Code](docs/operations/claude-code-plugin.md) troubleshooting path.
 
+Want proof without configuring a host or touching your normal store? Run the
+[60-second disposable CLI demo](docs/getting-started/sixty-second-demo.md).
+
 ## The Memory Loop
 
 ```text
@@ -193,15 +200,25 @@ Nuzo is for memory that also needs lifecycle control:
 | Avoid hidden agent writes. | Suggested memories are drafts until confirmed. |
 | Keep runtime memory out of Git. | Local SQLite store under `~/.nuzo/memory/`. |
 
+Files are often the right answer. Keep shared repository instructions in
+`AGENTS.md`; use a short `MEMORY.md` when manual curation is enough. Choose Nuzo
+when individual memories need scope, provenance, review state, relations,
+audit history, bounded recall, or reuse across supported hosts. Read the full
+[decision guide](docs/product/why-nuzo.md) and
+[honest comparison](docs/product/competitive-landscape.md).
+
 ## Documentation
 
 - [Getting started](docs/getting-started/index.md)
+- [60-second demo](docs/getting-started/sixty-second-demo.md)
+- [Why Nuzo?](docs/product/why-nuzo.md)
 - [Clean install walkthrough](docs/getting-started/clean-install.md)
 - [Agent memory loop](docs/getting-started/agent-memory-loop.md)
 - [Privacy and security](docs/operations/privacy-and-security.md)
 - [Threat model](docs/operations/threat-model.md)
 - [MCP tool contract](docs/spec/tools.md)
 - [Roadmap](docs/operations/roadmap.md)
+- [Feedback and support](docs/operations/feedback.md)
 
 ## Contributing
 

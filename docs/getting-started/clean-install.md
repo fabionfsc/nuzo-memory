@@ -138,7 +138,7 @@ nuzo memory --store "$NUZO_STORE" export --path "$NUZO_EXPORT"
 nuzo memory --store "$NUZO_STORE" import "$NUZO_EXPORT" --dry-run
 ```
 
-## Option D: Generic MCP Host
+## Option C: Generic MCP Host
 
 Configure this process as a stdio MCP server:
 
@@ -146,7 +146,7 @@ Configure this process as a stdio MCP server:
 npm exec --yes --package=@nuzo/memory@1.0.0 -- nuzo-mcp-server
 ```
 
-The host should discover the [14 public memory tools](../spec/tools.md). Use
+The host should discover the [19 public memory tools](../spec/tools.md). Use
 `memory.doctor` for content-free runtime diagnostics.
 
 ## Cleanup

@@ -375,6 +375,11 @@ the execution tracker for current work.
 Goal: make the stable Nuzo 1.0 contract easy for new developers to understand,
 trust, install, and evaluate before adding another major capability layer.
 
+Status: the repository adoption surface is implemented, including the decision
+guide, public-package demo, feedback route, comparison, and launch playbook.
+External distribution and supported-host feedback remain explicit follow-up
+work in issues #314, #315, and #316 rather than implicit launch promises.
+
 Nuzo `1.0.0` moved the main risk from contract stability to adoption. The next
 work should explain the product clearly, answer likely objections, and create a
 short reproducible path from installation to cross-session recall.
