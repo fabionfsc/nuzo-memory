@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { publicReleaseReferencePaths, readJson, readText } from "./release-shared.mjs";
-import { compareVersions } from "./npm-package-policy.mjs";
+import { compareVersions, npmPackageDefinitions } from "./npm-package-policy.mjs";
 
 const currentVersion = readJson("package.json").version;
 const userEntryPoints = [
@@ -73,6 +73,28 @@ test("user onboarding exposes host bootstrap only after its public release", () 
     }
     assert.match(content, /nuzo memory manage/u, `${path}: nuzo memory manage`);
   }
+});
+
+test("primary getting-started onboarding stays off the manual-bootstrap MCP Registry package", () => {
+  const registryDefinition = npmPackageDefinitions.find(
+    (definition) => definition.name === "@nuzo/memory-mcp",
+  );
+  assert.ok(registryDefinition, "@nuzo/memory-mcp package policy definition must exist");
+  if (registryDefinition.manualFirstPublication !== currentVersion) {
+    return;
+  }
+
+  const content = readText("docs/getting-started/index.md");
+  assert.doesNotMatch(
+    content,
+    /@nuzo\/memory-mcp/u,
+    "docs/getting-started/index.md must not advertise @nuzo/memory-mcp before its manual first publication is confirmed",
+  );
+  assert.match(
+    content,
+    new RegExp(escapeRegExp(`--package=@nuzo/memory@${currentVersion}`), "u"),
+    "docs/getting-started/index.md must keep the established unified entrypoint for generic MCP hosts",
+  );
 });
 
 test("unreleased recovery commands stay out of current user guidance", () => {

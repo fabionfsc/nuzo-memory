@@ -2,11 +2,14 @@
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
 import { assertMcpSessionContinuity } from "./mcp-session-continuity.mjs";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const { sortedMemoryToolNames: expectedMcpTools } = await import(
+  pathToFileURL(join(repositoryRoot, "packages", "mcp-server", "dist", "tool-contract.js")).href
+);
 const registryPackage = JSON.parse(
   readFileSync(join(repositoryRoot, "packages", "registry-server", "package.json"), "utf8"),
 );
@@ -36,6 +39,7 @@ try {
     args: ["--yes", packageSpec],
     memoryStore: join(testRoot, "memory", "registry.sqlite"),
     label: `published MCP Registry ${packageSpec}`,
+    expectedToolNames: expectedMcpTools,
   });
   console.log(`published MCP Registry smoke passed: ${packageSpec}`);
 } finally {
