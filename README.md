@@ -43,6 +43,9 @@ before writing configuration. To evaluate Nuzo without configuring a host or
 touching your normal store, run the
 [disposable 60-second demo](docs/getting-started/sixty-second-demo.md).
 
+Two read-only recall hooks are expected: `SessionStart` and
+`UserPromptSubmit`. They do not write memory.
+
 <details>
 <summary>Non-interactive setup and upgrade commands</summary>
 

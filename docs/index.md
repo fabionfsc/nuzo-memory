@@ -45,9 +45,10 @@ tools.
   <figcaption>One visible loop from conversation to confirmed local context.</figcaption>
 </figure>
 
-Hook trust prompts are expected. `SessionStart` and `UserPromptSubmit` hooks can
-retrieve context, but do not write memory. Recalled records remain untrusted
-data—not instructions merely because they were stored.
+Trust prompts for two read-only recall hooks are expected: `SessionStart` and
+`UserPromptSubmit`. These hooks can retrieve context, but do not write memory.
+Recalled records remain untrusted data—not instructions merely because they
+were stored.
 
 ## Remember once. Recall when it matters.
 
