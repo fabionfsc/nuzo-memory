@@ -248,10 +248,14 @@ to the release workflow.
 
 The dry run retains `artifact-manifest.json` and all three tarballs for 14 days
 under an artifact named `nuzo-npm-<version>-<commit>`. Record the manifest
-SHA-256 printed by the workflow and supply it as `artifact_manifest_sha256`
-when running the same workflow with `publish=true`. The publish run rebuilds
-the candidates from `main` and fails unless its manifest is byte-identical to
-the reviewed dry run.
+SHA-256 and workflow run ID. Supply both as `artifact_manifest_sha256` and
+`reviewed_run_id` when running the same workflow with `publish=true`. The live
+run verifies that the reviewed run completed successfully on the same `main`
+commit, downloads that run's immutable artifact, checks its manifest and
+source commit, and publishes those exact retained tarballs. It also rebuilds
+from the release checkout as an independent gate, but rebuilt bytes are not the
+publication source. If the artifact is absent or has expired, create and review
+a new dry-run workflow instead of rebuilding it locally.
 
 After the OIDC workflow has published `@nuzo/memory-core@1.1.0`, download the
 reviewed dry-run artifact and verify it from the exact release checkout:
@@ -263,12 +267,16 @@ gh run download <dry-run-id> \
   --name "nuzo-npm-1.1.0-<full-commit>" \
   --dir "$NUZO_NPM_CANDIDATE"
 node tools/verify-npm-artifact-manifest.mjs \
-  1.1.0 <reviewed-manifest-sha256> "$NUZO_NPM_CANDIDATE"
+  1.1.0 <reviewed-manifest-sha256> "$NUZO_NPM_CANDIDATE" <full-commit>
+node tools/check-npm-publish-targets.mjs \
+  1.1.0 "$NUZO_NPM_CANDIDATE/tarballs" \
+  <reviewed-manifest-sha256> <full-commit>
 npm publish \
   "$NUZO_NPM_CANDIDATE/tarballs/nuzo-memory-mcp-1.1.0.tgz" \
   --access public
 node tools/check-npm-publish-targets.mjs \
-  1.1.0 "$NUZO_NPM_CANDIDATE/tarballs"
+  1.1.0 "$NUZO_NPM_CANDIDATE/tarballs" \
+  <reviewed-manifest-sha256> <full-commit>
 ```
 
 Run it only after `npm login`, target availability checks, the bound OIDC
@@ -297,8 +305,9 @@ The workflow installs the reviewed exact npm version `11.5.1` because trusted
 publishing requires OIDC-capable npm. Bump that version only through a reviewed
 pull request that keeps `npm run check:supply-chain` green. The workflow
 validates the source release state for one explicit SemVer input, builds the
-publish staging packages, rejects already-published versions, rejects retired
-legacy staging after `0.9.0`, and publishes in dependency order:
+publish staging packages, permits byte-identical partial retries, rejects
+divergent existing versions, rejects retired legacy staging after `0.9.0`, and
+publishes in dependency order:
 
 ```text
 @nuzo/memory-core -> @nuzo/memory -> @nuzo/memory-mcp
@@ -311,7 +320,11 @@ the only exception.
 Run it first with `publish` set to `false`. That dry run proves the workflow
 selects the intended version and package set without publishing, prints the
 reviewed manifest SHA-256, and retains the exact candidates. A live run must
-provide that SHA-256 and fails closed if rebuilt bytes differ.
+provide both that SHA-256 and the dry-run workflow ID. It fails closed unless
+the run, workflow, successful dry-run steps, source commit, artifact name,
+manifest, and tarball bytes all match, then publishes the downloaded candidates.
+Use a fresh workflow dispatch if a dry-run needs to be repeated; rerun attempts
+are deliberately rejected to avoid ambiguous artifact evidence.
 
 When `publish` is `true`, the workflow runs:
 

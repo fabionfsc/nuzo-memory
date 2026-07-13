@@ -3,7 +3,9 @@ import { existsSync } from "node:fs";
 import { assertReleaseVersion, fail, readJson } from "./release-shared.mjs";
 import {
   inspectNpmPublishTarget,
+  npmArtifactRootFromTarballs,
   npmArtifactTarballPath,
+  verifyNpmArtifactManifest,
 } from "./npm-artifact-integrity.mjs";
 import {
   publishableNpmPackagesForVersion,
@@ -12,10 +14,29 @@ import {
 
 const version = process.argv[2];
 const tarballsRoot = process.argv[3];
+const expectedManifestSha256 = process.argv[4];
+const expectedSourceCommit = process.argv[5];
 assertReleaseVersion(version);
 
-const publishPackages = publishableNpmPackagesForVersion(version)
-  .map((definition) => [definition.name, definition.packageJson]);
+const publishPackages = publishableNpmPackagesForVersion(version);
+
+if (tarballsRoot !== undefined) {
+  try {
+    if (expectedManifestSha256 === undefined || expectedSourceCommit === undefined) {
+      throw new Error("external npm artifacts require an expected manifest SHA-256 and source commit");
+    }
+    const externalArtifact = npmArtifactRootFromTarballs(tarballsRoot);
+    verifyNpmArtifactManifest({
+      artifactRoot: externalArtifact.artifactRoot,
+      version,
+      packageNames: publishPackages.map((definition) => definition.name),
+      expectedManifestSha256,
+      expectedSourceCommit,
+    });
+  } catch (error) {
+    fail(error instanceof Error ? error.message : String(error));
+  }
+}
 
 for (const definition of retiredLegacyNpmPackagesForVersion(version)) {
   if (existsSync(definition.packageJson)) {
@@ -26,13 +47,16 @@ for (const definition of retiredLegacyNpmPackagesForVersion(version)) {
 let unpublishedCount = 0;
 let publishedCount = 0;
 
-for (const [packageName, packagePath] of publishPackages) {
-  const pkg = readJson(packagePath);
-  if (pkg.name !== packageName) {
-    fail(`${packagePath} has package name ${pkg.name}, expected ${packageName}`);
-  }
-  if (pkg.version !== version) {
-    fail(`${packagePath} has version ${pkg.version}, expected ${version}`);
+for (const definition of publishPackages) {
+  const packageName = definition.name;
+  if (tarballsRoot === undefined) {
+    const pkg = readJson(definition.packageJson);
+    if (pkg.name !== packageName) {
+      fail(`${definition.packageJson} has package name ${pkg.name}, expected ${packageName}`);
+    }
+    if (pkg.version !== version) {
+      fail(`${definition.packageJson} has version ${pkg.version}, expected ${version}`);
+    }
   }
 
   const tarballPath = npmArtifactTarballPath(

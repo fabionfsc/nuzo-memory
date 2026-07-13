@@ -65,16 +65,40 @@ test("npm release workflow uses manual OIDC publishing without tokens", () => {
 
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /id-token: write/);
+  assert.match(workflow, /actions: read/);
   assert.match(workflow, /environment: npm-publish/);
   assert.match(workflow, /npm install --global "npm@11\.5\.1"/);
   assert.match(workflow, /PACKAGE_VERSION: \$\{\{ inputs\.package_version \}\}/);
   assert.match(workflow, /npm run release:check -- "\$PACKAGE_VERSION"/);
-  assert.match(workflow, /node tools\/publish-npm-artifacts\.mjs "\$PACKAGE_VERSION" publish/);
-  assert.match(workflow, /node tools\/publish-npm-artifacts\.mjs "\$PACKAGE_VERSION" dry-run/);
-  assert.match(workflow, /artifact_manifest_sha256:/);
   assert.match(
     workflow,
-    /node tools\/verify-npm-artifact-manifest\.mjs "\$PACKAGE_VERSION" "\$EXPECTED_MANIFEST_SHA256"/,
+    /node tools\/publish-npm-artifacts\.mjs "\$PACKAGE_VERSION" publish build\/reviewed-npm\/tarballs "\$EXPECTED_MANIFEST_SHA256" "\$GITHUB_SHA"/,
+  );
+  assert.match(workflow, /node tools\/publish-npm-artifacts\.mjs "\$PACKAGE_VERSION" dry-run/);
+  assert.match(workflow, /artifact_manifest_sha256:/);
+  assert.match(workflow, /reviewed_run_id:/);
+  assert.match(workflow, /GITHUB_TOKEN: \$\{\{ github\.token \}\}/);
+  assert.match(workflow, /GH_TOKEN: \$\{\{ github\.token \}\}/);
+  assert.match(
+    workflow,
+    /ARTIFACT_ID: \$\{\{ steps\.reviewed-run\.outputs\.artifact_id \}\}/,
+  );
+  assert.match(
+    workflow,
+    /node tools\/verify-npm-artifact-manifest\.mjs "\$PACKAGE_VERSION" "\$EXPECTED_MANIFEST_SHA256" build\/reviewed-npm "\$GITHUB_SHA"/,
+  );
+  assert.match(
+    workflow,
+    /node tools\/verify-reviewed-npm-run\.mjs "\$PACKAGE_VERSION" "\$REVIEWED_RUN_ID" "\$GITHUB_SHA"/,
+  );
+  assert.match(
+    workflow,
+    /gh api "\/repos\/\$GITHUB_REPOSITORY\/actions\/artifacts\/\$ARTIFACT_ID\/zip"/,
+  );
+  assert.match(workflow, /build\/reviewed-npm\/tarballs/);
+  assert.match(
+    workflow,
+    /node tools\/check-npm-publish-targets\.mjs "\$PACKAGE_VERSION" build\/reviewed-npm\/tarballs "\$EXPECTED_MANIFEST_SHA256" "\$GITHUB_SHA"/,
   );
   assert.match(
     workflow,
@@ -83,12 +107,29 @@ test("npm release workflow uses manual OIDC publishing without tokens", () => {
   assert.match(workflow, /build\/npm\/artifact-manifest\.json/);
   assert.match(workflow, /build\/npm\/tarballs\/\*\.tgz/);
   assert.doesNotMatch(workflow, /NODE_AUTH_TOKEN|NPM_TOKEN/);
+  assert.doesNotMatch(workflow, /run:[^\n]*\$\{\{ inputs\./u);
   assert.doesNotMatch(workflow, /pull_request:/);
+  const reviewIndex = workflow.indexOf("node tools/verify-reviewed-npm-run.mjs");
+  const downloadIndex = workflow.indexOf("gh api \"/repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip\"");
+  const retainedVerifyIndex = workflow.indexOf(
+    "node tools/verify-npm-artifact-manifest.mjs \"$PACKAGE_VERSION\" \"$EXPECTED_MANIFEST_SHA256\" build/reviewed-npm \"$GITHUB_SHA\"",
+  );
+  const publishIndex = workflow.indexOf(
+    "node tools/publish-npm-artifacts.mjs \"$PACKAGE_VERSION\" publish build/reviewed-npm/tarballs",
+  );
+  assert.ok(reviewIndex >= 0 && reviewIndex < downloadIndex);
+  assert.ok(downloadIndex < retainedVerifyIndex);
+  assert.ok(retainedVerifyIndex < publishIndex);
   const publisher = readFileSync(
     join(repositoryRoot, "tools", "publish-npm-artifacts.mjs"),
     "utf8",
   );
-  assert.match(publisher, /definition\.manualFirstPublication === version/);
+  assert.match(
+    publisher,
+    /compareVersions\(version, definition\.manualFirstPublication\) === 0/,
+  );
+  assert.match(publisher, /expectedManifestSha256/);
+  assert.match(publisher, /expectedSourceCommit/);
   assert.match(publisher, /npm requires an authenticated first publication/);
   assert.match(publisher, /npmArtifactTarballPath/);
   assert.match(publisher, /inspectNpmPublishTarget/);

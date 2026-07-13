@@ -1,11 +1,23 @@
 import { createHash } from "node:crypto";
 import { readFileSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
 export function npmArtifactTarballPath(packageName, version, tarballsRoot = join("build", "npm", "tarballs")) {
   const filename = `${packageName.replace(/^@/u, "").replaceAll("/", "-")}-${version}.tgz`;
   return join(tarballsRoot, filename);
+}
+
+export function npmArtifactRootFromTarballs(tarballsRoot) {
+  const resolvedTarballsRoot = resolve(tarballsRoot);
+  if (basename(resolvedTarballsRoot) !== "tarballs") {
+    throw new Error("npm artifact tarballs directory must be the manifest-bound tarballs sibling");
+  }
+  const artifactRoot = dirname(resolvedTarballsRoot);
+  if (join(artifactRoot, "tarballs") !== resolvedTarballsRoot) {
+    throw new Error("npm artifact tarballs directory does not resolve below its artifact root");
+  }
+  return { artifactRoot, tarballsRoot: resolvedTarballsRoot };
 }
 
 export function npmArtifactIntegrity(tarballPath) {
@@ -22,6 +34,7 @@ export function verifyNpmArtifactManifest({
   version,
   packageNames,
   expectedManifestSha256,
+  expectedSourceCommit,
 }) {
   const manifestPath = join(artifactRoot, "artifact-manifest.json");
   const manifestSha256 = npmArtifactSha256(manifestPath);
@@ -43,6 +56,14 @@ export function verifyNpmArtifactManifest({
     !/^[0-9a-f]{40}$/u.test(manifest.sourceCommit)
   ) {
     throw new Error("npm artifact manifest sourceCommit must be a full Git commit or null");
+  }
+  if (
+    expectedSourceCommit !== undefined &&
+    manifest.sourceCommit !== expectedSourceCommit
+  ) {
+    throw new Error(
+      `npm artifact source commit mismatch: expected=${expectedSourceCommit} actual=${manifest.sourceCommit}`,
+    );
   }
   if (!Array.isArray(manifest.packages)) {
     throw new Error("npm artifact manifest packages must be an array");

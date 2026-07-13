@@ -14,8 +14,12 @@ on:
       artifact_manifest_sha256:
         description: Dry-run artifact-manifest SHA-256 required when publish is true.
         required: false
+      reviewed_run_id:
+        description: Successful dry-run workflow ID required when publish is true.
+        required: false
 
 permissions:
+  actions: read
   contents: read
   id-token: write
 
@@ -72,14 +76,38 @@ jobs:
         if: ${{ !inputs.publish }}
         env:
           PACKAGE_VERSION: ${{ inputs.package_version }}
-        run: node tools/verify-npm-artifact-manifest.mjs "$PACKAGE_VERSION"
+        run: node tools/verify-npm-artifact-manifest.mjs "$PACKAGE_VERSION" - build/npm "$GITHUB_SHA"
 
       - name: Bind publish to reviewed npm artifact manifest
         if: ${{ inputs.publish }}
         env:
           PACKAGE_VERSION: ${{ inputs.package_version }}
           EXPECTED_MANIFEST_SHA256: ${{ inputs.artifact_manifest_sha256 }}
-        run: node tools/verify-npm-artifact-manifest.mjs "$PACKAGE_VERSION" "$EXPECTED_MANIFEST_SHA256"
+        run: node tools/verify-npm-artifact-manifest.mjs "$PACKAGE_VERSION" "$EXPECTED_MANIFEST_SHA256" build/npm "$GITHUB_SHA"
+
+      - name: Verify reviewed dry-run
+        id: reviewed-run
+        if: ${{ inputs.publish }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PACKAGE_VERSION: ${{ inputs.package_version }}
+          REVIEWED_RUN_ID: ${{ inputs.reviewed_run_id }}
+        run: node tools/verify-reviewed-npm-run.mjs "$PACKAGE_VERSION" "$REVIEWED_RUN_ID" "$GITHUB_SHA"
+
+      - name: Download and verify reviewed npm candidates
+        if: ${{ inputs.publish }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: ${{ steps.reviewed-run.outputs.artifact_id }}
+          PACKAGE_VERSION: ${{ inputs.package_version }}
+          EXPECTED_MANIFEST_SHA256: ${{ inputs.artifact_manifest_sha256 }}
+        run: |
+          rm -rf build/reviewed-npm build/reviewed-npm.zip
+          mkdir -p build/reviewed-npm
+          gh api "/repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > build/reviewed-npm.zip
+          unzip -q build/reviewed-npm.zip -d build/reviewed-npm
+          node tools/verify-npm-artifact-manifest.mjs "$PACKAGE_VERSION" "$EXPECTED_MANIFEST_SHA256" build/reviewed-npm "$GITHUB_SHA"
+          node tools/check-npm-publish-targets.mjs "$PACKAGE_VERSION" build/reviewed-npm/tarballs "$EXPECTED_MANIFEST_SHA256" "$GITHUB_SHA"
 
       - name: Dry-run npm publish
         if: ${{ !inputs.publish }}
@@ -103,4 +131,5 @@ jobs:
         if: ${{ inputs.publish }}
         env:
           PACKAGE_VERSION: ${{ inputs.package_version }}
-        run: node tools/publish-npm-artifacts.mjs "$PACKAGE_VERSION" publish
+          EXPECTED_MANIFEST_SHA256: ${{ inputs.artifact_manifest_sha256 }}
+        run: node tools/publish-npm-artifacts.mjs "$PACKAGE_VERSION" publish build/reviewed-npm/tarballs "$EXPECTED_MANIFEST_SHA256" "$GITHUB_SHA"

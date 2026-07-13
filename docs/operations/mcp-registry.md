@@ -78,12 +78,13 @@ connects an SDK client to that installed entrypoint.
 For `1.1.0` and later:
 
 1. run the npm release workflow with `publish=false`, review all three package
-   candidates, retain the workflow artifact, and record its printed manifest
-   SHA-256;
+   candidates, retain the workflow artifact, and record its run ID, full source
+   commit, artifact name, and printed manifest SHA-256;
 2. run it with `publish=true` to publish `@nuzo/memory-core` and
-   `@nuzo/memory`, passing the reviewed manifest SHA-256 so rebuilt candidates
-   must match; the policy deliberately defers the brand-new Registry package at
-   `1.1.0`;
+   `@nuzo/memory`, passing the reviewed run ID and manifest SHA-256 so the
+   workflow verifies and publishes the exact retained tarballs; the independent
+   rebuild remains a gate, and policy deliberately defers the brand-new Registry
+   package at `1.1.0`;
 3. after core `1.1.0` is public, use an authenticated npm maintainer session to
    perform the one-time first publication of the retained and verified
    `nuzo-memory-mcp-1.1.0.tgz` candidate;
@@ -116,18 +117,23 @@ gh run download <dry-run-id> \
   --name "nuzo-npm-1.1.0-<full-commit>" \
   --dir "$NUZO_NPM_CANDIDATE"
 node tools/verify-npm-artifact-manifest.mjs \
-  1.1.0 <reviewed-manifest-sha256> "$NUZO_NPM_CANDIDATE"
+  1.1.0 <reviewed-manifest-sha256> "$NUZO_NPM_CANDIDATE" <full-commit>
+node tools/check-npm-publish-targets.mjs \
+  1.1.0 "$NUZO_NPM_CANDIDATE/tarballs" \
+  <reviewed-manifest-sha256> <full-commit>
 npm publish \
   "$NUZO_NPM_CANDIDATE/tarballs/nuzo-memory-mcp-1.1.0.tgz" \
   --access public
 node tools/check-npm-publish-targets.mjs \
-  1.1.0 "$NUZO_NPM_CANDIDATE/tarballs"
+  1.1.0 "$NUZO_NPM_CANDIDATE/tarballs" \
+  <reviewed-manifest-sha256> <full-commit>
 ```
 
 Do not rebuild this package or publish a staging directory. The local first
 publication is the documented one-version provenance exception; retain the
-workflow run, manifest SHA-256, tarball SHA-256, and matching public npm SRI as
-its evidence chain. Later versions use trusted publishing normally.
+workflow run ID, source commit, manifest SHA-256, tarball SHA-256, and matching
+public npm SRI as its evidence chain. Later versions use trusted publishing
+normally.
 
 Verify it before configuring trusted publishing or touching the MCP Registry:
 
@@ -178,10 +184,11 @@ listing have been observed successfully in production.
 ## Immutable Recovery
 
 npm and MCP Registry versions are immutable release records. If npm publication
-is partial, retry only with the retained tarballs: the tooling skips an existing
-package only when its public `dist.integrity` exactly matches the candidate. A
-different integrity is a stop condition, not permission to rebuild or broaden
-credentials.
+is partial, retry only with the retained tarballs from the same reviewed run:
+the tooling skips an existing package only when its public `dist.integrity`
+exactly matches the candidate. If that artifact expired, stop and investigate;
+do not substitute a rebuild under the old hash. A different integrity is a stop
+condition, not permission to rebuild or broaden credentials.
 
 If the Registry entry, npm package, or metadata is wrong after publication:
 

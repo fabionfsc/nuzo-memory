@@ -7,6 +7,7 @@ import test from "node:test";
 import {
   inspectNpmPublishTarget,
   npmArtifactIntegrity,
+  npmArtifactRootFromTarballs,
   npmArtifactSha256,
   npmArtifactTarballPath,
   verifyNpmArtifactManifest,
@@ -86,6 +87,20 @@ test("npm artifact tarball path matches npm pack naming", () => {
   );
 });
 
+test("external npm artifacts require the manifest-bound tarballs sibling", (context) => {
+  const artifactRoot = mkdtempSync(join(tmpdir(), "nuzo-artifact-path-"));
+  context.after(() => rmSync(artifactRoot, { recursive: true, force: true }));
+
+  assert.deepEqual(npmArtifactRootFromTarballs(join(artifactRoot, "tarballs")), {
+    artifactRoot,
+    tarballsRoot: join(artifactRoot, "tarballs"),
+  });
+  assert.throws(
+    () => npmArtifactRootFromTarballs(join(artifactRoot, "unbound")),
+    /manifest-bound tarballs sibling/u,
+  );
+});
+
 test("npm artifact manifest binds the exact package bytes", (context) => {
   const artifactRoot = createArtifactRoot(context);
   const result = verifyNpmArtifactManifest({
@@ -135,6 +150,30 @@ test("npm artifact manifest rejects a different reviewed manifest", (context) =>
   );
 });
 
+test("npm artifact manifest binds the expected source commit", (context) => {
+  const sourceCommit = "1".repeat(40);
+  const artifactRoot = createArtifactRoot(context, { sourceCommit });
+
+  assert.equal(
+    verifyNpmArtifactManifest({
+      artifactRoot,
+      version,
+      packageNames: [packageName],
+      expectedSourceCommit: sourceCommit,
+    }).manifest.sourceCommit,
+    sourceCommit,
+  );
+  assert.throws(
+    () => verifyNpmArtifactManifest({
+      artifactRoot,
+      version,
+      packageNames: [packageName],
+      expectedSourceCommit: "2".repeat(40),
+    }),
+    /npm artifact source commit mismatch/u,
+  );
+});
+
 function createTarball(context) {
   const directory = mkdtempSync(join(tmpdir(), "nuzo-integrity-"));
   const tarballPath = join(directory, "synthetic.tgz");
@@ -143,7 +182,7 @@ function createTarball(context) {
   return tarballPath;
 }
 
-function createArtifactRoot(context) {
+function createArtifactRoot(context, { sourceCommit = null } = {}) {
   const artifactRoot = mkdtempSync(join(tmpdir(), "nuzo-artifact-manifest-"));
   const tarballsRoot = join(artifactRoot, "tarballs");
   mkdirSync(tarballsRoot);
@@ -154,7 +193,7 @@ function createArtifactRoot(context) {
     `${JSON.stringify({
       schemaVersion: 1,
       version,
-      sourceCommit: null,
+      sourceCommit,
       packages: [{
         name: packageName,
         version,

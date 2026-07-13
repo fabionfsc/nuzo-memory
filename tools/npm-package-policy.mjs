@@ -68,7 +68,10 @@ export function compareVersions(left, right) {
   const leftVersion = parseComparableVersion(left);
   const rightVersion = parseComparableVersion(right);
   for (let index = 0; index < 3; index += 1) {
-    const difference = leftVersion.core[index] - rightVersion.core[index];
+    const difference = compareNumericIdentifier(
+      leftVersion.core[index],
+      rightVersion.core[index],
+    );
     if (difference !== 0) return difference;
   }
   if (leftVersion.prerelease === null && rightVersion.prerelease === null) return 0;
@@ -84,7 +87,9 @@ export function compareVersions(left, right) {
     if (leftPart === rightPart) continue;
     const leftNumeric = /^\d+$/u.test(leftPart);
     const rightNumeric = /^\d+$/u.test(rightPart);
-    if (leftNumeric && rightNumeric) return Number(leftPart) - Number(rightPart);
+    if (leftNumeric && rightNumeric) {
+      return compareNumericIdentifier(leftPart, rightPart);
+    }
     if (leftNumeric) return -1;
     if (rightNumeric) return 1;
     return leftPart < rightPart ? -1 : 1;
@@ -97,9 +102,17 @@ function parseComparableVersion(version) {
   const prereleaseSeparator = withoutBuild.indexOf("-");
   const core = (prereleaseSeparator === -1
     ? withoutBuild
-    : withoutBuild.slice(0, prereleaseSeparator)).split(".").map(Number);
+    : withoutBuild.slice(0, prereleaseSeparator)).split(".");
   const prerelease = prereleaseSeparator === -1
     ? null
     : withoutBuild.slice(prereleaseSeparator + 1).split(".");
   return { core, prerelease };
+}
+
+function compareNumericIdentifier(left, right) {
+  if (left.length !== right.length) {
+    return left.length < right.length ? -1 : 1;
+  }
+  if (left === right) return 0;
+  return left < right ? -1 : 1;
 }

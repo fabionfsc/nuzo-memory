@@ -441,13 +441,15 @@ Create GitHub release notes from `CHANGELOG.md`.
 
 Run the npm release workflow from `main` with the exact package version and
 `publish=false` first. Confirm it selects the intended version and packages
-without using an npm token. Retain the workflow artifact, record its full source
-commit, and record the `artifact-manifest.json` SHA-256 printed by the run.
+without using an npm token. Retain the workflow artifact and record the dry-run
+ID, full source commit, artifact name, and `artifact-manifest.json` SHA-256.
 
 After the dry run passes and the Git tag/release is ready, run the same
-workflow with `publish=true`, supplying the reviewed manifest SHA-256. The run
-must fail if the rebuilt candidates differ. Confirm the npm package pages show
-provenance for the new version.
+workflow with `publish=true`, supplying `reviewed_run_id` and the reviewed
+manifest SHA-256. The run must verify the successful dry run and publish the
+exact retained candidates from its immutable artifact; its rebuild remains a
+separate validation gate. Confirm the npm package pages show provenance and
+record each matching public `dist.integrity`.
 
 For the one-time `@nuzo/memory-mcp@1.1.0` bootstrap, publish only the retained
 tarball after verifying its manifest and checksum. Record its matching public
