@@ -67,7 +67,7 @@ try {
   });
   await assertHostHookArtifactTrust({
     ...(process.env.NUZO_PLUGIN_SMOKE_PUBLISHED === "1"
-      ? parseGeneratedHookCommand(sessionHookCommand, "generated Claude Code plugin artifact")
+      ? parseGeneratedHookCommand(sessionHookCommand, "generated Claude Code plugin artifact", pluginRoot)
       : runtime.hook),
     cwd: pluginRoot,
     memoryStore: storePath,

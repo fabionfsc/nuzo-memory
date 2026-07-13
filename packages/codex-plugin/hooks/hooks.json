@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "npm exec --yes --package=@nuzo/memory@1.0.0 -- nuzo-memory-hook",
+            "command": "npm exec --yes --prefix=${CLAUDE_PLUGIN_ROOT} --package=@nuzo/memory@1.0.0 -- nuzo-memory-hook",
             "timeout": 10
           }
         ]
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "npm exec --yes --package=@nuzo/memory@1.0.0 -- nuzo-memory-hook",
+            "command": "npm exec --yes --prefix=${CLAUDE_PLUGIN_ROOT} --package=@nuzo/memory@1.0.0 -- nuzo-memory-hook",
             "timeout": 10
           }
         ]

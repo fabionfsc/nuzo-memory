@@ -21,6 +21,14 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ### Fixed
 
+- Codex and Claude Code plugin hooks now anchor published npm resolution at
+  the plugin root, and the Codex MCP server uses its host-resolved plugin
+  directory, preventing a user's npm workspace from shadowing the pinned Nuzo
+  runtime.
+- Published host canaries now create and verify fixtures with the public CLI,
+  avoiding false forward-schema failures after a newer SQLite migration lands
+  on `main`.
+
 - GitHub Pages deploys now retry once inside the deploy job when the Pages
   backend returns a transient failure after accepting the artifact.
 - GitHub Pages deployments now use explicit Pages configuration and queue

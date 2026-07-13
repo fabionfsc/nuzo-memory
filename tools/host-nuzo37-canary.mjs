@@ -19,7 +19,8 @@ const generatedCodexRoot = join(repositoryRoot, "build", "plugins", "codex", "nu
 const generatedClaudeRoot = join(repositoryRoot, "build", "plugins", "claude-code", "nuzo");
 const codexPluginRoot = join(testRoot, "plugins", "codex", "nuzo");
 const claudePluginRoot = join(testRoot, "plugins", "claude-code", "nuzo");
-const publishedHookEnvironment = process.env.NUZO_PLUGIN_SMOKE_PUBLISHED === "1"
+const publishedMode = process.env.NUZO_PLUGIN_SMOKE_PUBLISHED === "1";
+const publishedHookEnvironment = publishedMode
   ? { NPM_CONFIG_LOGLEVEL: "error" }
   : {};
 const claudeCodePackage = "@anthropic-ai/claude-code@2.1.195";
@@ -32,13 +33,13 @@ try {
   cpSync(generatedCodexRoot, codexPluginRoot, { recursive: true });
   cpSync(generatedClaudeRoot, claudePluginRoot, { recursive: true });
 
-  const runtime = process.env.NUZO_PLUGIN_SMOKE_PUBLISHED === "1"
+  const runtime = publishedMode
     ? null
     : prepareStagedMcpRuntime(repositoryRoot, testRoot);
-  const codexHook = process.env.NUZO_PLUGIN_SMOKE_PUBLISHED === "1"
+  const codexHook = publishedMode
     ? codexPublishedHook(codexPluginRoot)
     : runtime.hook;
-  const claudeHook = process.env.NUZO_PLUGIN_SMOKE_PUBLISHED === "1"
+  const claudeHook = publishedMode
     ? claudePublishedHook(claudePluginRoot)
     : runtime.hook;
 
@@ -46,21 +47,14 @@ try {
     import("../packages/core/dist/index.js"),
     import("../packages/mcp-server/dist/host-hook.js"),
   ]);
-  const database = new core.SQLiteMemoryDatabase({ path: storePath });
-  const service = createService(database, core);
-  const canary = await service.remember({
-    content: canaryContent,
-    kind: "instruction",
-    scope: "user:default",
-    tags: ["autoload", "canary", "nuzo37"],
-    source: canarySource,
-  });
-  const historyBefore = await service.history(canary.id);
-  database.close();
+  const fixture = publishedMode
+    ? createPublishedFixture()
+    : await createSourceFixture(core);
+  const { canary, historyBefore } = fixture;
 
   for (const host of [
-    { label: "Codex", cwd: codexPluginRoot, hook: codexHook },
-    { label: "Claude Code", cwd: claudePluginRoot, hook: claudeHook },
+    { label: "Codex", cwd: repositoryRoot, hook: codexHook },
+    { label: "Claude Code", cwd: repositoryRoot, hook: claudeHook },
   ]) {
     const first = runHook(host, "SessionStart");
     const second = runHook(host, "SessionStart");
@@ -77,10 +71,9 @@ try {
     }
   }
 
-  const verificationDatabase = new core.SQLiteMemoryDatabase({ path: storePath });
-  const verificationService = createService(verificationDatabase, core);
-  const historyAfter = await verificationService.history(canary.id);
-  verificationDatabase.close();
+  const historyAfter = publishedMode
+    ? readPublishedHistory(fixture.cli, canary.id)
+    : await readSourceHistory(core, canary.id);
   if (JSON.stringify(historyAfter) !== JSON.stringify(historyBefore)) {
     fail("NUZO-37 host canary changed audit history.");
   }
@@ -100,6 +93,7 @@ function codexPublishedHook(pluginRoot) {
   return parseGeneratedHookCommand(
     hooks.hooks?.SessionStart?.[0]?.hooks?.[0]?.command,
     "Codex NUZO-37 canary",
+    pluginRoot,
   );
 }
 
@@ -108,6 +102,7 @@ function claudePublishedHook(pluginRoot) {
   return parseGeneratedHookCommand(
     hooks.hooks?.SessionStart?.[0]?.hooks?.[0]?.command,
     "Claude Code NUZO-37 canary",
+    pluginRoot,
   );
 }
 
@@ -157,7 +152,7 @@ function assertCanaryDelivered(label, result, canary, hostHook) {
     record?.scope !== "user:default" ||
     record?.kind !== "instruction" ||
     record?.content !== canaryContent ||
-    record?.source !== canarySource ||
+    record?.source !== canary.source ||
     JSON.stringify(record?.tags) !== JSON.stringify(["autoload", "canary", "nuzo37"])
   ) {
     fail(`${label} did not deliver the expected NUZO-37 canary record: ${JSON.stringify(records)}`);
@@ -176,6 +171,76 @@ function createService(database, core) {
   });
 }
 
+async function createSourceFixture(core) {
+  const database = new core.SQLiteMemoryDatabase({ path: storePath });
+  const service = createService(database, core);
+  const canary = await service.remember({
+    content: canaryContent,
+    kind: "instruction",
+    scope: "user:default",
+    tags: ["autoload", "canary", "nuzo37"],
+    source: canarySource,
+  });
+  const historyBefore = await service.history(canary.id);
+  database.close();
+  return { canary, historyBefore, cli: null };
+}
+
+async function readSourceHistory(core, memoryId) {
+  const database = new core.SQLiteMemoryDatabase({ path: storePath });
+  const service = createService(database, core);
+  const history = await service.history(memoryId);
+  database.close();
+  return history;
+}
+
+function createPublishedFixture() {
+  const prefix = join(testRoot, "published-runtime");
+  mkdirSync(prefix, { recursive: true });
+  run("npm", [
+    "install",
+    "--prefix",
+    prefix,
+    "--no-audit",
+    "--no-fund",
+    `@nuzo/memory@${readJson(join(repositoryRoot, "package.json")).version}`,
+  ], repositoryRoot);
+  const cli = join(prefix, "node_modules", ".bin", process.platform === "win32" ? "nuzo.cmd" : "nuzo");
+  const created = capture(cli, [
+    "memory",
+    "--store",
+    storePath,
+    "remember",
+    canaryContent,
+    "--kind",
+    "instruction",
+    "--tag",
+    "autoload",
+    "--tag",
+    "canary",
+    "--tag",
+    "nuzo37",
+  ], repositoryRoot);
+  const id = created.stdout.trim();
+  if (!id.startsWith("mem_")) {
+    fail(`Published CLI returned an unexpected memory ID: ${JSON.stringify(created.stdout)}`);
+  }
+  const canary = {
+    id,
+    revision: 1,
+    scope: "user:default",
+    kind: "instruction",
+    content: canaryContent,
+    tags: ["autoload", "canary", "nuzo37"],
+    source: "nuzo:cli",
+  };
+  return { canary, historyBefore: readPublishedHistory(cli, id), cli };
+}
+
+function readPublishedHistory(cli, memoryId) {
+  return capture(cli, ["memory", "--store", storePath, "history", memoryId], repositoryRoot).stdout;
+}
+
 function run(command, args, cwd) {
   const result = spawnSync(command, args, {
     cwd,
@@ -188,6 +253,22 @@ function run(command, args, cwd) {
   if (result.status !== 0) {
     process.exit(result.status ?? 1);
   }
+}
+
+function capture(command, args, cwd) {
+  const result = spawnSync(command, args, {
+    cwd,
+    encoding: "utf8",
+  });
+  if (result.error) {
+    throw result.error;
+  }
+  if (result.status !== 0) {
+    process.stderr.write(result.stdout);
+    process.stderr.write(result.stderr);
+    fail(`Command failed: ${command} ${args.join(" ")}`);
+  }
+  return result;
 }
 
 function assertCodexNativeMarketplaceInstall() {
@@ -267,7 +348,7 @@ function assertNativeMarketplaceVersion(host, pluginId, installedVersion) {
     return;
   }
   const message = `${host} native marketplace installed ${pluginId}@${installedVersion}; source version is ${sourceVersion}`;
-  if (process.env.NUZO_PLUGIN_SMOKE_PUBLISHED === "1") {
+  if (publishedMode) {
     fail(`${message}. Published marketplace smoke must resolve the source version.`);
   }
   console.log(`NUZO-37 native ${host} marketplace version check deferred until publish: ${message}.`);

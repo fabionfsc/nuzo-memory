@@ -77,11 +77,14 @@ export async function assertHostHookArtifactTrust(options) {
   }
 }
 
-export function parseGeneratedHookCommand(value, label) {
+export function parseGeneratedHookCommand(value, label, pluginRoot) {
   if (typeof value !== "string") {
     fail(label, "generated hook command is missing");
   }
-  const parts = value.trim().split(/\s+/u);
+  const expanded = pluginRoot === undefined
+    ? value
+    : value.replaceAll("${CLAUDE_PLUGIN_ROOT}", pluginRoot);
+  const parts = expanded.trim().split(/\s+/u);
   if (parts.length < 2 || parts.some((part) => part.includes('"') || part.includes("'"))) {
     fail(label, `generated hook command is not safely parseable: ${JSON.stringify(value)}`);
   }

@@ -124,6 +124,7 @@ nav:
           - Release Checklist: operations/release-checklist.md
           - 1.0.0 Release Readiness Audit: operations/release-readiness-1.0.0.md
           - Post-Release Validation: operations/post-release-validation.md
+          - 1.0.0 Supported Host Evidence: operations/supported-host-evidence-1.0.0.md
           - Public Launch Playbook: operations/public-launch.md
           - GitHub Pages: operations/github-pages.md
       - Engineering Quality:
