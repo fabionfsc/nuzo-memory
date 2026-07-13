@@ -136,9 +136,10 @@ test("npm artifact manifest rejects a different reviewed manifest", (context) =>
 });
 
 function createTarball(context) {
-  const tarballPath = join(tmpdir(), `nuzo-integrity-${process.pid}-${Date.now()}-${Math.random()}.tgz`);
+  const directory = mkdtempSync(join(tmpdir(), "nuzo-integrity-"));
+  const tarballPath = join(directory, "synthetic.tgz");
   writeFileSync(tarballPath, "synthetic npm tarball fixture", "utf8");
-  context.after(() => rmSync(tarballPath, { force: true }));
+  context.after(() => rmSync(directory, { recursive: true, force: true }));
   return tarballPath;
 }
 
