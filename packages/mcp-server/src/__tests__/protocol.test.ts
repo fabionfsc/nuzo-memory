@@ -554,11 +554,13 @@ describe("MCP protocol contract", () => {
         content: "Audit actor source memory.",
         kind: "note",
         scope: "project:nuzo",
+        tags: ["audit-actor"],
       });
       const target = await rememberProtocolMemory(client, {
         content: "Audit actor target memory.",
         kind: "note",
         scope: "project:nuzo",
+        tags: ["audit-actor"],
       });
 
       await client.callTool({
