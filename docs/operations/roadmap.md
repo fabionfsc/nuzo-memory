@@ -75,7 +75,7 @@ Exit criteria:
 
 Goal: make memory available to agents.
 
-Status: implemented in `packages/mcp-server` with 14 tools, protocol-level SDK
+Status: implemented in `packages/mcp-server` with 19 tools, protocol-level SDK
 tests, read-only lifecycle recall, read-only capture suggestion validation, and
 runtime doctor diagnostics.
 

@@ -84,6 +84,24 @@ const provenanceSchema = z.object({
 const redactForbiddenScopeDetails: JsonErrorToolResultOptions = {
   redactDetailsForCodes: ["MEMORY_SCOPE_FORBIDDEN"],
 };
+const readOnlyToolAnnotations = {
+  readOnlyHint: true,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: false,
+} as const;
+const writeToolAnnotations = {
+  readOnlyHint: false,
+  destructiveHint: false,
+  idempotentHint: false,
+  openWorldHint: false,
+} as const;
+const destructiveToolAnnotations = {
+  readOnlyHint: false,
+  destructiveHint: true,
+  idempotentHint: false,
+  openWorldHint: false,
+} as const;
 
 export interface NuzoMcpServerOptions {
   storePath?: string;
@@ -217,7 +235,8 @@ export function registerMemoryTools(
   server.registerTool(
     "memory.remember",
     {
-      description: "Store a local Nuzo memory.",
+      description: "Store a local Nuzo memory only when the user explicitly requested this exact write. For inferred capture, call memory.suggest_capture, display its returned draft, obtain the user's decision, then call memory.confirm_capture.",
+      annotations: writeToolAnnotations,
       inputSchema: {
         content: z.string().min(1).max(memoryLimits.contentLength),
         kind: z.enum(["preference", "project_decision", "fact", "instruction", "note"]),
@@ -263,6 +282,7 @@ export function registerMemoryTools(
     "memory.recall",
     {
       description: "Recall relevant local Nuzo memories.",
+      annotations: readOnlyToolAnnotations,
       inputSchema: {
         query: z.string().min(1).max(memoryLimits.queryLength),
         scope: scopeSchema.default(defaultScope),
@@ -291,6 +311,7 @@ export function registerMemoryTools(
     "memory.recall_hook",
     {
       description: "Prototype read-only recall entrypoint for host lifecycle hooks. It never captures or creates memories.",
+      annotations: readOnlyToolAnnotations,
       inputSchema: {
         task_context: z.string().min(1).max(8000),
         project_scope: scopeSchema.optional(),
@@ -313,7 +334,8 @@ export function registerMemoryTools(
   server.registerTool(
     "memory.suggest_capture",
     {
-      description: "Validate a proposed capture draft without creating memory. Host capture writes must use memory.confirm_capture after an explicit user decision.",
+      description: "Validate an inferred capture draft without writing. Display the returned draft to the user; only after their explicit decision may the host call memory.confirm_capture with the final approved fields.",
+      annotations: readOnlyToolAnnotations,
       inputSchema: {
         content: z.string().min(1).max(memoryLimits.contentLength),
         kind: z.enum(["preference", "project_decision", "fact", "instruction", "note"]),
@@ -364,7 +386,8 @@ export function registerMemoryTools(
   server.registerTool(
     "memory.confirm_capture",
     {
-      description: "Apply an explicit user decision for a previously suggested capture draft.",
+      description: "Apply the user's explicit decision after the host displayed a memory.suggest_capture draft. confirm=true is the host's attestation of that interaction; Nuzo does not persist or cryptographically bind drafts.",
+      annotations: destructiveToolAnnotations,
       inputSchema: {
         decision: z.enum(["create", "update", "keep_separate", "clarify", "reject"]),
         content: z.string().min(1).max(memoryLimits.contentLength),
@@ -379,7 +402,11 @@ export function registerMemoryTools(
         expires_at: exportDateSchema.nullable().optional(),
         reason: z.string().min(1).max(memoryLimits.reasonLength),
         confirm: z.boolean().default(false),
-        actor: z.string().min(1).max(memoryLimits.sourceLength).default("nuzo:mcp"),
+        actor: z.string()
+          .min(1)
+          .max(memoryLimits.actorLength)
+          .describe("Compatibility attribution hint; the MCP audit actor remains nuzo:mcp.")
+          .default("nuzo:mcp"),
         target_memory_id: memoryIdSchema.optional(),
         expected_revision: z.number().int().min(1).optional(),
       },
@@ -425,6 +452,7 @@ export function registerMemoryTools(
     "memory.list",
     {
       description: "List local Nuzo memories.",
+      annotations: readOnlyToolAnnotations,
       inputSchema: {
         scope: scopeSchema.optional(),
         tags: z.array(tagSchema).max(memoryLimits.tags).default([]),
@@ -456,6 +484,7 @@ export function registerMemoryTools(
     "memory.show",
     {
       description: "Inspect one local Nuzo memory with relations and recent audit events.",
+      annotations: readOnlyToolAnnotations,
       inputSchema: {
         id: memoryIdSchema,
         history_limit: z.number().int().min(1).max(200).default(50),
@@ -474,6 +503,7 @@ export function registerMemoryTools(
     "memory.challenge",
     {
       description: "Mark one memory as valid, needing review, stale, incorrect, or superseded. This never deletes memory content.",
+      annotations: writeToolAnnotations,
       inputSchema: {
         id: memoryIdSchema,
         outcome: challengeOutcomeSchema,
@@ -504,6 +534,7 @@ export function registerMemoryTools(
     "memory.relate",
     {
       description: "Create an explicit, manual relation between two local Nuzo memories.",
+      annotations: writeToolAnnotations,
       inputSchema: {
         source_memory_id: memoryIdSchema,
         target_memory_id: memoryIdSchema,
@@ -530,6 +561,7 @@ export function registerMemoryTools(
     "memory.relations",
     {
       description: "List explicit relations for one local Nuzo memory.",
+      annotations: readOnlyToolAnnotations,
       inputSchema: {
         memory_id: memoryIdSchema,
         include_reverse: z.boolean().default(true),
@@ -550,6 +582,7 @@ export function registerMemoryTools(
     "memory.unrelate",
     {
       description: "Remove an explicit memory relation without deleting either memory.",
+      annotations: destructiveToolAnnotations,
       inputSchema: {
         id: memoryIdSchema,
         reason: z.string().min(1).max(memoryLimits.reasonLength).optional(),
@@ -572,6 +605,7 @@ export function registerMemoryTools(
     "memory.update",
     {
       description: "Update a local Nuzo memory.",
+      annotations: destructiveToolAnnotations,
       inputSchema: {
         id: memoryIdSchema,
         expected_revision: z.number().int().min(1).optional(),
@@ -629,6 +663,7 @@ export function registerMemoryTools(
     "memory.history",
     {
       description: "List audit events for one Nuzo memory ID.",
+      annotations: readOnlyToolAnnotations,
       inputSchema: {
         id: memoryIdSchema,
         limit: z.number().int().min(1).max(200).default(50),
@@ -651,6 +686,7 @@ export function registerMemoryTools(
     "memory.audit",
     {
       description: "List bounded store-wide Nuzo audit events without memory content.",
+      annotations: readOnlyToolAnnotations,
       inputSchema: {
         memory_id: memoryIdSchema.optional(),
         event_type: z.array(eventTypeSchema).max(memoryEventTypes.length).default([]),
@@ -690,6 +726,7 @@ export function registerMemoryTools(
     "memory.forget",
     {
       description: "Archive or delete a local Nuzo memory.",
+      annotations: destructiveToolAnnotations,
       inputSchema: {
         id: memoryIdSchema,
         expected_revision: z.number().int().min(1).optional(),
@@ -719,6 +756,7 @@ export function registerMemoryTools(
     "memory.forget_many",
     {
       description: "Preview or apply a filtered bulk archive/delete operation.",
+      annotations: destructiveToolAnnotations,
       inputSchema: {
         scope: scopeSchema.optional(),
         tags: z.array(tagSchema).max(memoryLimits.tags).default([]),
@@ -751,7 +789,8 @@ export function registerMemoryTools(
   server.registerTool(
     "memory.export",
     {
-      description: "Export local Nuzo memories as a versioned JSON document.",
+      description: "Export local Nuzo memories as a versioned JSON document and append an export audit event.",
+      annotations: writeToolAnnotations,
       inputSchema: {
         scope: scopeSchema.optional(),
         tags: z.array(tagSchema).max(memoryLimits.tags).default([]),
@@ -781,6 +820,7 @@ export function registerMemoryTools(
     "memory.import",
     {
       description: "Import local Nuzo memories from a versioned JSON document.",
+      annotations: writeToolAnnotations,
       inputSchema: {
         document: z.object({
           format: z.literal("nuzo-memory-export"),
@@ -835,6 +875,7 @@ export function registerMemoryTools(
     "memory.doctor",
     {
       description: "Report the local Nuzo MCP memory environment.",
+      annotations: readOnlyToolAnnotations,
       inputSchema: {},
     },
     withJsonErrorHandling(async () => {

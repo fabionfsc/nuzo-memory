@@ -168,6 +168,7 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
           scope: resolveScope(options),
           tags: commandOptions.tag ?? [],
           source: commandOptions.source,
+          actor: "nuzo:cli",
           ...(commandOptions.confidenceState === undefined ? {} : { confidenceState: commandOptions.confidenceState }),
           ...(commandOptions.provenanceJson === undefined ? {} : { provenance: commandOptions.provenanceJson }),
           ...(commandOptions.reviewAfter === undefined ? {} : { reviewAfter: commandOptions.reviewAfter }),

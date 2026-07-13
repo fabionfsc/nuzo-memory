@@ -357,6 +357,13 @@ history.
 It still routes writes through the canonical remember and update behavior.
 `reject` and `clarify` decisions write nothing.
 
+For host integrations, `confirm: true` is an attestation by the host that it
+displayed the final draft and obtained the represented decision. The current
+protocol does not store suggestion drafts, issue confirmation tokens, or
+cryptographically bind confirmation to an earlier `memory.suggest_capture`
+response. Core policy, authorization, revision, and duplicate checks therefore
+remain mandatory at confirmation time.
+
 ## Scope Rules
 
 Choose the narrowest useful scope.

@@ -120,7 +120,7 @@ export async function runHostHookProcess(
     if (!existsSync(storePath)) {
       return 0;
     }
-    const database = new SQLiteMemoryDatabase({ path: storePath });
+    const database = new SQLiteMemoryDatabase({ path: storePath, readonly: true });
     try {
       const service = createMemoryService({
         store: database,

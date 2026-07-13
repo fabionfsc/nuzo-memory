@@ -84,6 +84,8 @@ export interface SQLiteMemoryDatabaseOptions {
   readonly?: boolean;
 }
 
+const transactionQueuesByPath = new Map<string, Promise<void>>();
+
 export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog, TransactionManager {
   readonly database: Database.Database;
   private readonly readonly: boolean;
@@ -117,11 +119,19 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
   }
 
   async run<T>(operation: () => Promise<T>): Promise<T> {
-    const previous = this.transactionQueue;
+    const sharedQueue = this.database.name === ":memory:"
+      ? this.transactionQueue
+      : transactionQueuesByPath.get(this.database.name) ?? Promise.resolve();
+    const previous = sharedQueue;
     let release!: () => void;
-    this.transactionQueue = new Promise<void>((resolve) => {
+    const current = new Promise<void>((resolve) => {
       release = resolve;
     });
+    if (this.database.name === ":memory:") {
+      this.transactionQueue = current;
+    } else {
+      transactionQueuesByPath.set(this.database.name, current);
+    }
 
     await previous;
     let started = false;
@@ -140,6 +150,12 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
     } finally {
       protectDatabaseFiles(this.database.name);
       release();
+      if (
+        this.database.name !== ":memory:" &&
+        transactionQueuesByPath.get(this.database.name) === current
+      ) {
+        transactionQueuesByPath.delete(this.database.name);
+      }
     }
   }
 
