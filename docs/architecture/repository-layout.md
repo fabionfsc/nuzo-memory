@@ -22,7 +22,8 @@ packages, host plugin source, and release tooling.
 │   ├── codex-plugin/
 │   ├── core/
 │   ├── memory/
-│   └── mcp-server/
+│   ├── mcp-server/
+│   └── registry-server/
 ├── tools/
 ├── AGENTS.md
 ├── CHANGELOG.md

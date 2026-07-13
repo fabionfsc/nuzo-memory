@@ -88,11 +88,14 @@ The literal `project:auto` selector must not become a shared project namespace
 in storage.
 
 The published hook runner opens an existing SQLite store in read-only mode. It
-must not initialize or migrate a schema, create WAL/SHM side files, append audit
-events, or otherwise modify the store. A missing store, older or incompatible
-schema, or read failure produces no injected context and remains fail-open for
-the host session. Operators must perform schema upgrades through an explicit
-writable CLI or MCP startup path before hooks can use the upgraded fields.
+must not initialize or migrate a schema, alter database content, append audit
+events, or otherwise perform application writes. SQLite may create empty
+WAL/SHM coordination files while opening an existing WAL-mode store read-only;
+those side files are not schema migrations or content writes. A missing store,
+older or incompatible schema, or read failure produces no injected context and
+remains fail-open for the host session. Operators must perform schema upgrades
+through an explicit writable CLI or MCP startup path before hooks can use the
+upgraded fields.
 
 Beginning with `0.9.0`, published hooks run in restricted authorization mode by default. They may query
 only their effective allowlist, normally the active project scope plus

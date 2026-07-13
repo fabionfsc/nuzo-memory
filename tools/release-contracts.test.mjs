@@ -263,11 +263,29 @@ test("MCP Registry manifest and npm ownership metadata stay aligned", () => {
     join(repositoryRoot, "packages", "registry-server", "package.json"),
     "utf8",
   ));
+  const mcpServerPkg = JSON.parse(readFileSync(
+    join(repositoryRoot, "packages", "mcp-server", "package.json"),
+    "utf8",
+  ));
 
   assert.equal(server.name, "io.github.fabionfsc/nuzo-memory");
   assert.equal(pkg.mcpName, server.name);
   assert.equal(server.packages[0].identifier, pkg.name);
   assert.deepEqual(pkg.bin, { "memory-mcp": "dist/index.js" });
+  const registrySdkSpec = pkg.dependencies?.["@modelcontextprotocol/sdk"];
+  const registryZodSpec = pkg.dependencies?.zod;
+  assert.match(registrySdkSpec ?? "", /\S/, "registry-server must depend on @modelcontextprotocol/sdk");
+  assert.match(registryZodSpec ?? "", /\S/, "registry-server must depend on zod");
+  assert.equal(
+    registrySdkSpec,
+    mcpServerPkg.dependencies?.["@modelcontextprotocol/sdk"],
+    "registry-server must pin the same @modelcontextprotocol/sdk range as the mcp-server build it repackages",
+  );
+  assert.equal(
+    registryZodSpec,
+    mcpServerPkg.dependencies?.zod,
+    "registry-server must pin the same zod range as the mcp-server build it repackages",
+  );
   const verifier = readFileSync(
     join(repositoryRoot, "tools", "verify-mcp-registry-listing.mjs"),
     "utf8",

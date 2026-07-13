@@ -10,6 +10,7 @@ import {
   projectScopeFromPath,
   RandomIdGenerator,
   RegexSecretScanner,
+  schemaVersion,
   SQLiteMemoryDatabase,
   SystemClock,
 } from "@nuzo/memory-core";
@@ -411,6 +412,47 @@ describe("host recall hooks", () => {
       expect(inspected.pragma("table_info(memories)")).not.toEqual(
         expect.arrayContaining([expect.objectContaining({ name: "capture_key" })]),
       );
+      inspected.close();
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("skips a newer unsupported schema without migrating or writing", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "nuzo-hook-readonly-newer-"));
+    const storePath = join(directory, "memories.sqlite");
+    const current = new SQLiteMemoryDatabase({ path: storePath });
+    current.close();
+    const raw = new Database(storePath);
+    raw.pragma(`user_version = ${schemaVersion + 1}`);
+    raw.pragma("wal_checkpoint(TRUNCATE)");
+    raw.close();
+    const before = readFileSync(storePath);
+    const stdout = vi.fn();
+    const stderr = vi.fn();
+
+    try {
+      const exitCode = await runHostHookProcess([], JSON.stringify({
+        hook_event_name: "SessionStart",
+        cwd: directory,
+      }), { stdout, stderr }, {
+        NUZO_MEMORY_STORE: storePath,
+        NUZO_AUTHORIZED_SCOPES: "project:auto,user:default",
+      });
+
+      // A read-only WAL-mode open can still create empty -wal/-shm coordination
+      // files; that is standard SQLite behavior, not a migration or content
+      // write, so the store bytes and user_version are the properties that
+      // must stay unchanged here.
+      expect(exitCode).toBe(0);
+      expect(stdout).not.toHaveBeenCalled();
+      expect(stderr).toHaveBeenCalledOnce();
+      expect(stderr).toHaveBeenCalledWith(
+        `Nuzo recall hook skipped: memory schema ${schemaVersion + 1} is newer than supported schema ${schemaVersion}`,
+      );
+      expect(readFileSync(storePath)).toEqual(before);
+      const inspected = new Database(storePath, { readonly: true, fileMustExist: true });
+      expect(inspected.pragma("user_version", { simple: true })).toBe(schemaVersion + 1);
       inspected.close();
     } finally {
       rmSync(directory, { recursive: true, force: true });
