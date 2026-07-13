@@ -12,6 +12,7 @@ export const packagePaths = [
   "packages/core/package.json",
   "packages/memory/package.json",
   "packages/mcp-server/package.json",
+  "packages/registry-server/package.json",
 ];
 
 export const pluginManifestPaths = [
@@ -31,16 +32,20 @@ export const publicReleaseReferencePaths = [
   "README.md",
   "docs/getting-started/clean-install.md",
   "docs/getting-started/index.md",
+  "docs/getting-started/sixty-second-demo.md",
   "docs/index.md",
   "docs/operations/claude-code-plugin.md",
   "docs/operations/codex-plugin.md",
   "docs/operations/local-cli.md",
   "docs/operations/npm-publishing.md",
   "docs/operations/optional-semantics.md",
+  "docs/operations/public-launch.md",
   "docs/operations/versioning.md",
   "packages/claude-code-plugin/README.md",
   "packages/codex-plugin/README.md",
   "packages/memory/README.md",
+  "packages/registry-server/README.md",
+  "server.json",
 ];
 
 export const nuzoWorkspaceDependencies = new Set([
@@ -48,6 +53,7 @@ export const nuzoWorkspaceDependencies = new Set([
   "@nuzo/memory-cli",
   "@nuzo/memory",
   "@nuzo/mcp-server",
+  "@nuzo/memory-mcp",
   "@nuzo/codex-plugin",
   "@nuzo/claude-code-plugin",
 ]);

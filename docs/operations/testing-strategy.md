@@ -242,7 +242,8 @@ npm run smoke:os-artifacts
 ```
 
 `smoke:os-artifacts` builds staged npm tarballs, installs the staged
-`@nuzo/memory-core` and `@nuzo/memory` packages into a temporary project,
+active `@nuzo/memory-core`, `@nuzo/memory`, and, from `1.1.0`,
+`@nuzo/memory-mcp` packages into a temporary project,
 exercises CLI session continuity, MCP stdio session continuity, installed host
 hook doctor diagnostics, and generated Codex and Claude Code plugin command
 forms. This is the release-blocking OS matrix documented in
@@ -344,6 +345,13 @@ derived sidecar, and recall a paraphrased memory through semantic and hybrid
 mode. These are post-release confidence checks for package users and host
 plugin installs, not replacements for staged artifact validation before
 publication.
+
+Starting with `1.1.0`, the staged npm matrix also installs
+`@nuzo/memory-mcp`, verifies its canonical `mcpName` and single executable,
+and opens an MCP SDK session through `memory-mcp`. `npm run registry:check`
+guards the repository, package, and version boundary. `npm run
+registry:validate` adds exhaustive validation with the checksum-pinned
+official Registry publisher; it never authenticates or publishes.
 
 The Codex plugin artifact smoke regenerates the release-layout plugin, verifies
 the host-facing metadata loads as `Nuzo`, reads its bundled MCP config, and

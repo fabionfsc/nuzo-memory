@@ -57,6 +57,8 @@ jobs:
           npm run check
           npm test
           npm run package:npm
+          npm run registry:validate
+          NUZO_USE_EXISTING_ARTIFACTS=1 node tools/smoke-registry-artifact.mjs
 
       - name: Verify npm publish targets
         env:

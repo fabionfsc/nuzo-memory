@@ -24,6 +24,15 @@ export const npmPackageDefinitions = [
     kind: "unified",
   },
   {
+    name: "@nuzo/memory-mcp",
+    source: "packages/registry-server",
+    output: "memory-mcp",
+    packageJson: "build/npm/packages/memory-mcp/package.json",
+    kind: "registry",
+    introduced: "1.1.0",
+    manualFirstPublication: "1.1.0",
+  },
+  {
     name: "@nuzo/mcp-server",
     source: "packages/mcp-server",
     output: "mcp-server",
@@ -35,7 +44,8 @@ export const npmPackageDefinitions = [
 
 export function publishableNpmPackagesForVersion(version) {
   return npmPackageDefinitions.filter((definition) =>
-    definition.legacy !== true || !isAfterLegacyPackageCutoff(version)
+    (definition.legacy !== true || !isAfterLegacyPackageCutoff(version)) &&
+    (definition.introduced === undefined || isAtLeastVersion(version, definition.introduced))
   );
 }
 

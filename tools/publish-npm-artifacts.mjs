@@ -16,8 +16,7 @@ if (!["dry-run", "publish"].includes(mode)) {
   fail(`unsupported npm publish mode: ${mode}`);
 }
 
-const publishPackages = publishableNpmPackagesForVersion(version)
-  .map((definition) => [definition.name, definition.output]);
+const publishPackages = publishableNpmPackagesForVersion(version);
 
 for (const definition of retiredLegacyNpmPackagesForVersion(version)) {
   const retiredPackageJson = join("build", "npm", "packages", definition.output, "package.json");
@@ -29,7 +28,9 @@ for (const definition of retiredLegacyNpmPackagesForVersion(version)) {
 let published = 0;
 let skipped = 0;
 
-for (const [packageName, packageDirectory] of publishPackages) {
+for (const definition of publishPackages) {
+  const packageName = definition.name;
+  const packageDirectory = definition.output;
   const packageRoot = join("build", "npm", "packages", packageDirectory);
   const pkg = readJson(join(packageRoot, "package.json"));
   if (pkg.name !== packageName) {
@@ -42,6 +43,14 @@ for (const [packageName, packageDirectory] of publishPackages) {
   if (awaitPackageExists(packageName, version)) {
     skipped += 1;
     console.log(`skip ${packageName}@${version}: already published`);
+    continue;
+  }
+
+  if (mode === "publish" && definition.manualFirstPublication === version) {
+    skipped += 1;
+    console.log(
+      `defer ${packageName}@${version}: npm requires an authenticated first publication before trusted publishing can be configured`,
+    );
     continue;
   }
 

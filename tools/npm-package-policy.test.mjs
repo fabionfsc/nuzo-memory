@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   isAfterLegacyPackageCutoff,
   legacyPackageCutoff,
+  npmPackageDefinitions,
   publishableNpmPackagesForVersion,
   retiredLegacyNpmPackagesForVersion,
 } from "./npm-package-policy.mjs";
@@ -34,6 +35,22 @@ test("legacy transition package staging stops after 0.9.0", () => {
     "@nuzo/memory-cli",
     "@nuzo/mcp-server",
   ]);
+});
+
+test("MCP Registry distribution starts with the 1.1.0 release", () => {
+  assert.deepEqual(packageNames(publishableNpmPackagesForVersion("1.0.1")), [
+    "@nuzo/memory-core",
+    "@nuzo/memory",
+  ]);
+  assert.deepEqual(packageNames(publishableNpmPackagesForVersion("1.1.0")), [
+    "@nuzo/memory-core",
+    "@nuzo/memory",
+    "@nuzo/memory-mcp",
+  ]);
+  assert.equal(
+    npmPackageDefinitions.find((definition) => definition.name === "@nuzo/memory-mcp")?.manualFirstPublication,
+    "1.1.0",
+  );
 });
 
 function packageNames(definitions) {

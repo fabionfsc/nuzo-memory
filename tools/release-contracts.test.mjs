@@ -72,6 +72,12 @@ test("npm release workflow uses manual OIDC publishing without tokens", () => {
   assert.match(workflow, /node tools\/publish-npm-artifacts\.mjs "\$PACKAGE_VERSION" dry-run/);
   assert.doesNotMatch(workflow, /NODE_AUTH_TOKEN|NPM_TOKEN/);
   assert.doesNotMatch(workflow, /pull_request:/);
+  const publisher = readFileSync(
+    join(repositoryRoot, "tools", "publish-npm-artifacts.mjs"),
+    "utf8",
+  );
+  assert.match(publisher, /definition\.manualFirstPublication === version/);
+  assert.match(publisher, /npm requires an authenticated first publication/);
 });
 
 test("local npm credentials and debug logs are ignored", () => {
@@ -148,6 +154,36 @@ test("host plugin runtimes are isolated from the user's npm workspace", () => {
   assert.match(script, /--prefix=\$\{pluginRoot\}/);
   assert.match(script, /host: "codex"[\s\S]*?cwd: "\."/u);
   assert.match(script, /host: "claude-code"[\s\S]*?cwd: pluginRoot/u);
+});
+
+test("MCP Registry validation uses a checksum-pinned official publisher", () => {
+  const installer = readFileSync(
+    join(repositoryRoot, "tools", "install-mcp-publisher.sh"),
+    "utf8",
+  );
+  const workflow = readFileSync(
+    join(repositoryRoot, ".github", "workflows", "ci.yml"),
+    "utf8",
+  );
+
+  assert.match(installer, /version=1\.7\.9/);
+  assert.match(installer, /checksum=ab128162b0616090b47cf245afe0a23f3ef08936fdce19074f5ba0a4469281ac/);
+  assert.match(installer, /sha256sum --check --status/);
+  assert.doesNotMatch(installer, /releases\/latest/);
+  assert.match(workflow, /npm run registry:validate/);
+});
+
+test("MCP Registry manifest and npm ownership metadata stay aligned", () => {
+  const server = JSON.parse(readFileSync(join(repositoryRoot, "server.json"), "utf8"));
+  const pkg = JSON.parse(readFileSync(
+    join(repositoryRoot, "packages", "registry-server", "package.json"),
+    "utf8",
+  ));
+
+  assert.equal(server.name, "io.github.fabionfsc/nuzo-memory");
+  assert.equal(pkg.mcpName, server.name);
+  assert.equal(server.packages[0].identifier, pkg.name);
+  assert.deepEqual(pkg.bin, { "memory-mcp": "dist/index.js" });
 });
 
 test("release tooling covers public release version references", () => {

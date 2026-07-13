@@ -56,6 +56,13 @@ jobs:
       - name: Check release state
         run: npm run release:check
 
+      - name: Check MCP Registry metadata
+        run: npm run registry:check
+
+      - name: Validate with official MCP publisher
+        if: matrix.node == '24'
+        run: npm run registry:validate
+
       - name: Run tests
         run: npm test
 
@@ -86,7 +93,10 @@ jobs:
       - name: Validate npm artifacts
         run: npm run validate:npm
 
-      - name: Run 1.0.0 developer experience gate
+      - name: Validate MCP Registry npx entrypoint
+        run: npm run smoke:registry
+
+      - name: Run developer experience gate
         run: npm run gate:developer-experience
 
       - name: Validate native host marketplace installation

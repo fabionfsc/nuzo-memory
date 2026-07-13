@@ -187,9 +187,11 @@ rg -n '\.\./mcp-server|packages/mcp-server' build/plugins
 
 The command should return no matches.
 
-Confirm the target `@nuzo/memory-core` and `@nuzo/memory` versions are not
-already published before publishing. After publishing, `@nuzo/memory` must
-exist before shipping the plugin artifacts.
+Confirm the target `@nuzo/memory-core`, `@nuzo/memory`, and, starting with
+`1.1.0`, `@nuzo/memory-mcp` versions are not already published before
+publishing. After publishing, `@nuzo/memory` must exist before shipping the
+plugin artifacts, and `@nuzo/memory-mcp` must exist before publishing
+`server.json` to the MCP Registry.
 
 Follow `docs/operations/npm-publishing.md`. Confirm the `@nuzo` organization
 scope and maintainer access before changing source package privacy or running
@@ -207,12 +209,28 @@ For `0.9.0`, confirm:
 @nuzo/mcp-server
 ```
 
-For every release after `0.9.0`, confirm:
+For `1.0.x`, confirm:
 
 ```text
 @nuzo/memory-core
 @nuzo/memory
 ```
+
+For `1.1.0` and later, confirm:
+
+```text
+@nuzo/memory-core
+@nuzo/memory
+@nuzo/memory-mcp
+```
+
+For the first `@nuzo/memory-mcp@1.1.0` publication, npm cannot configure a
+trusted publisher or staged publish before the package exists. Confirm the
+release workflow publishes core and unified memory but reports the Registry
+package as deferred. Bootstrap that exact reviewed package once from an
+authenticated maintainer session after core is public, then configure its
+trusted publisher immediately. Never add a long-lived npm token to the
+workflow for this exception.
 
 All package settings must point to GitHub Actions, repository
 `fabionfsc/nuzo-memory`, workflow `release-npm.yml`, environment
@@ -327,7 +345,8 @@ dry run, rehearsal, or before the unified `0.9.0` replacement is available.
 For releases after `0.9.0`:
 
 1. Confirm `npm run package:npm`, `npm run validate:npm`, and the npm release
-   workflow stage only `@nuzo/memory-core` and `@nuzo/memory`.
+   workflow stage only the active package set: core and unified memory for
+   `1.0.x`, plus `@nuzo/memory-mcp` starting with `1.1.0`.
 2. Confirm `build/npm/packages/memory-cli/package.json` and
    `build/npm/packages/mcp-server/package.json` are absent.
 3. Treat any retired transition package in staging as a release blocker.
@@ -432,7 +451,6 @@ for the new version.
 
 - Confirm the GitHub release page is correct.
 - Confirm GitHub Pages still deploys successfully.
-- Confirm the matching `@nuzo/memory-core` and `@nuzo/memory` versions are
-  published.
+- Confirm the matching active npm package versions are published.
 - Open follow-up issues for deferred work.
 - Move `CHANGELOG.md` back to an empty `[Unreleased]` section for new development.

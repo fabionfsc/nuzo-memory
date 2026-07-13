@@ -156,7 +156,7 @@ try {
     cwd: testRoot,
     command: mcp,
     memoryStore: storePath,
-    label: "1.0.0 developer experience gate",
+    label: "stable developer experience gate",
   });
 
   const cliList = run(nuzo, [
@@ -190,7 +190,7 @@ try {
   assertIncludes(restoredRecall.stdout, upgradeMemory, "memory after recovery");
 
   console.log(
-    `Nuzo 1.0.0 developer experience gate passed: ${baselineVersion} -> ${sourceVersion}; setup/update for Codex and Claude Code; shared CLI/MCP store; confirmed create/update/forget; recovery.`,
+    `Nuzo stable developer experience gate passed: ${baselineVersion} -> ${sourceVersion}; setup/update for Codex and Claude Code; shared CLI/MCP store; confirmed create/update/forget; recovery.`,
   );
 } finally {
   rmSync(testRoot, { recursive: true, force: true });
@@ -395,5 +395,5 @@ function writeJson(path, value) {
 }
 
 function fail(message) {
-  throw new Error(`Nuzo 1.0.0 developer experience gate failed: ${message}`);
+  throw new Error(`Nuzo stable developer experience gate failed: ${message}`);
 }

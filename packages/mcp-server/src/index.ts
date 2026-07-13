@@ -165,7 +165,7 @@ export function createNuzoMcpServerRuntime(options: NuzoMcpServerOptions = {}): 
   let closePromise: Promise<void> | null = null;
   const server = new McpServer({
     name: "nuzo",
-    version: "1.0.0",
+    version: "1.1.0",
   });
 
   registerMemoryTools(server, service, {

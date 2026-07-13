@@ -8,14 +8,14 @@
     <a href="product/why-nuzo/" class="nuzo-button nuzo-button--secondary">Why Nuzo?</a>
   </p>
   <div class="nuzo-trust-strip">
-  <span><strong>1.0.0</strong> stable release</span>
+  <span><strong>1.1.0</strong> stable release</span>
   <span><strong>19</strong> MCP tools</span>
   <span><strong>0</strong> telemetry by default</span>
   </div>
   </div>
   <div class="nuzo-terminal nuzo-reveal">
   <div class="nuzo-terminal__bar"><span></span><span></span><span></span></div>
-  <pre><code>npm install --global @nuzo/memory@1.0.0
+  <pre><code>npm install --global @nuzo/memory@1.1.0
 nuzo setup</code></pre>
   <p class="nuzo-terminal__note">Installs the CLI, MCP server, and host integration runtime. Setup shows host changes before writing config.</p>
   </div>
@@ -26,7 +26,7 @@ nuzo setup</code></pre>
   <p class="nuzo-card-kicker">Recommended</p>
   <h2>Install with npm</h2>
   <p>Use the public package directly when Node.js 22 LTS or 24 LTS and npm 10+ are already available.</p>
-  <pre><code>npm install --global @nuzo/memory@1.0.0
+  <pre><code>npm install --global @nuzo/memory@1.1.0
 nuzo setup</code></pre>
   </article>
 
@@ -138,7 +138,7 @@ nuzo memory manage</code></pre>
   <h3>Generic MCP host</h3>
   <p>Use the same local memory contract through stdio in any compatible MCP host.</p>
 
-  <pre><code>npm exec --yes --package=@nuzo/memory@1.0.0 -- nuzo-mcp-server</code></pre>
+  <pre><code>npm exec --yes --package=@nuzo/memory@1.1.0 -- nuzo-mcp-server</code></pre>
   </article>
 </section>
 
@@ -159,7 +159,7 @@ nuzo memory manage</code></pre>
   </article>
   <article class="nuzo-proof-card nuzo-reveal">
   <h3>Release evidence</h3>
-  <p>Nuzo 1.0.0 was published with npm trusted publishing, provenance, host smoke tests, and documented post-release validation.</p>
+  <p>Nuzo 1.1.0 was published with npm trusted publishing, provenance, host smoke tests, and documented post-release validation.</p>
   </article>
 </section>
 
@@ -177,7 +177,7 @@ dated comparison with adjacent memory systems.
 
 ## Current Release
 
-Nuzo `1.0.0` is the current public release.
+Nuzo `1.1.0` is the current public release.
 
 | Package | Intended use |
 | --- | --- |

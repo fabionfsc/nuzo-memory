@@ -24,6 +24,11 @@ packages/memory
   Defines metadata for the generated unified public runtime package. Published
   staging artifacts combine built CLI/MCP output and depend on memory-core.
 
+packages/registry-server
+  Defines metadata for the generated single-entrypoint MCP Registry package.
+  Published staging reuses built mcp-server output and contains no business
+  logic of its own.
+
 packages/codex-plugin
   Owns Codex packaging, plugin manifest, and Codex-specific docs.
 
@@ -63,6 +68,7 @@ Generated release artifacts follow this public distribution direction:
 
 ```text
 core -> cli/mcp-server -> memory -> host plugins
+core -> mcp-server -> registry-server distribution
 ```
 
 The unified package and host artifacts do not own a second implementation of

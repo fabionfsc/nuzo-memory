@@ -121,6 +121,7 @@ nav:
           - Versioning: operations/versioning.md
           - Release Version Map: operations/release-version-map.md
           - npm Publishing: operations/npm-publishing.md
+          - MCP Registry Publication: operations/mcp-registry.md
           - Release Checklist: operations/release-checklist.md
           - 1.0.0 Release Readiness Audit: operations/release-readiness-1.0.0.md
           - Post-Release Validation: operations/post-release-validation.md

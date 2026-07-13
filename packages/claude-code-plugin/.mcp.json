@@ -5,7 +5,7 @@
       "args": [
         "exec",
         "--yes",
-        "--package=@nuzo/memory@1.0.0",
+        "--package=@nuzo/memory@1.1.0",
         "--",
         "nuzo-mcp-server"
       ],

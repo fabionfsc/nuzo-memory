@@ -6,6 +6,17 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-07-12
+
+### Added
+
+- A Registry-ready `@nuzo/memory-mcp` distribution now exposes one
+  deterministic stdio entrypoint and canonical `mcpName` while reusing the
+  shared MCP server implementation.
+- A version-aligned `server.json`, official publisher validation, staged npm
+  continuity smoke, and maintainer publication runbook prepare Nuzo for the
+  preview MCP Registry.
+
 ### Changed
 
 - Public adoption guidance now includes a disposable 60-second demo, a

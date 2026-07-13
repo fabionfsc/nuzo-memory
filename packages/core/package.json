@@ -1,6 +1,6 @@
 {
   "name": "@nuzo/memory-core",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "Core memory lifecycle, ports, and domain contracts for Nuzo.",
   "keywords": [

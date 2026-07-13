@@ -21,10 +21,12 @@ test("current public entry points stay aligned with the repository release", () 
   for (const path of userEntryPoints.filter((path) => path !== "packages/memory/README.md")) {
     assert.match(readText(path), new RegExp(escapeRegExp(currentVersion)), path);
   }
-  assert.ok(
-    publicReleaseReferencePaths.includes("docs/operations/local-cli.md"),
-    "versioned CLI guidance must be covered by release preparation",
-  );
+  for (const path of userEntryPoints) {
+    assert.ok(
+      publicReleaseReferencePaths.includes(path),
+      `${path}: current user guidance must be covered by release preparation`,
+    );
+  }
 });
 
 test("user onboarding exposes host bootstrap only after its public release", () => {
@@ -225,7 +227,7 @@ test("public adoption path is discoverable, disposable, and safely routed", () =
     assert.match(content, /Why Nuzo\?/u);
   }
   for (const command of [
-    "@nuzo/memory@1.0.0",
+    `@nuzo/memory@${currentVersion}`,
     "nuzo memory --store",
     "remember",
     "recall",

@@ -20,8 +20,8 @@
   <a href="https://nuzo.com.br">
     <img alt="Docs" src="https://img.shields.io/badge/docs-nuzo.com.br-111827">
   </a>
-  <a href="https://github.com/fabionfsc/nuzo-memory/releases/tag/v1.0.0">
-    <img alt="Release" src="https://img.shields.io/badge/release-v1.0.0-22c55e">
+  <a href="https://github.com/fabionfsc/nuzo-memory/releases/tag/v1.1.0">
+    <img alt="Release" src="https://img.shields.io/badge/release-v1.1.0-22c55e">
   </a>
   <a href="#license">
     <img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-64748b">
@@ -53,16 +53,16 @@ edit, export, archive, or delete.
 | Cross-session recall for Codex, Claude Code, and MCP hosts. | No telemetry or remote embeddings by default. |
 | CLI, MCP server, and host hook runtime in one package. | No silent inferred memory writes. |
 | Local SQLite storage and portable import/export. | Suggested memories require confirmation. |
-| A stable 1.0.0 public contract with release validation. | Recalled memory remains untrusted data, not agent instructions. |
+| A stable 1.1.0 public contract with release validation. | Recalled memory remains untrusted data, not agent instructions. |
 
-`1.0.0` is the current public release.
+`1.1.0` is the current public release.
 
 ## Install Once
 
 Use Node.js 22 LTS or 24 LTS with npm 10 or newer.
 
 ```bash
-npm install --global @nuzo/memory@1.0.0
+npm install --global @nuzo/memory@1.1.0
 nuzo setup
 ```
 
@@ -185,7 +185,7 @@ local semantic retrieval. See the [CLI guide](docs/operations/local-cli.md).
 For a generic MCP host, run Nuzo as a stdio server:
 
 ```bash
-npm exec --yes --package=@nuzo/memory@1.0.0 -- nuzo-mcp-server
+npm exec --yes --package=@nuzo/memory@1.1.0 -- nuzo-mcp-server
 ```
 
 ## Why Not Just A File?

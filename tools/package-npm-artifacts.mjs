@@ -64,6 +64,10 @@ for (const definition of definitions) {
     cpSync(join(repositoryRoot, "packages", "mcp-server", "dist"), join(destination, "dist", "mcp-server"), {
       recursive: true,
     });
+  } else if (definition.kind === "registry") {
+    cpSync(join(repositoryRoot, "packages", "mcp-server", "dist"), join(destination, "dist"), {
+      recursive: true,
+    });
   } else {
     cpSync(join(sourceRoot, "dist"), join(destination, "dist"), { recursive: true });
   }
@@ -146,6 +150,9 @@ function sourceDirectoryFor(name) {
   if (name === "@nuzo/memory") {
     return "packages/memory";
   }
+  if (name === "@nuzo/memory-mcp") {
+    return "packages/mcp-server";
+  }
   if (name === "@nuzo/mcp-server") {
     return "packages/mcp-server";
   }
@@ -182,6 +189,17 @@ function validateStagedPackage(root, pkg) {
     }
     if (pkg.scripts?.postinstall !== "node postinstall.mjs") {
       fail("@nuzo/memory must expose the postinstall guidance script");
+    }
+  }
+  if (pkg.name === "@nuzo/memory-mcp") {
+    if (pkg.mcpName !== "io.github.fabionfsc/nuzo-memory") {
+      fail("@nuzo/memory-mcp must expose the canonical MCP Registry name");
+    }
+    if (pkg.dependencies?.["@nuzo/memory-core"] !== pkg.version) {
+      fail("@nuzo/memory-mcp must pin @nuzo/memory-core to the same version");
+    }
+    if (Object.keys(pkg.bin ?? {}).length !== 1 || pkg.bin?.["memory-mcp"] !== "dist/index.js") {
+      fail("@nuzo/memory-mcp must expose only the deterministic memory-mcp binary");
     }
   }
   if (pkg.name === "@nuzo/memory-cli") {
@@ -235,6 +253,18 @@ function validateStagedReadme(root, pkg) {
         !readme.includes(`not available in the current ${pkg.version} release`)
       ) {
         fail(`${pkg.name}@${pkg.version} README must clearly mark preview host commands as unreleased`);
+      }
+    }
+  }
+  if (pkg.name === "@nuzo/memory-mcp") {
+    for (const requiredText of [
+      "npx --yes @nuzo/memory-mcp@",
+      "io.github.fabionfsc/nuzo-memory",
+      "no telemetry",
+      "Writes remain explicit and auditable",
+    ]) {
+      if (!readme.includes(requiredText)) {
+        fail(`${pkg.name} staged README is missing registry guidance: ${requiredText}`);
       }
     }
   }
