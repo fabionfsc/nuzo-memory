@@ -2,6 +2,14 @@
 
 Nuzo is split into a small core and multiple interfaces.
 
+<figure class="nuzo-diagram" tabindex="0" aria-label="Scrollable Nuzo package architecture diagram">
+  <img src="../assets/package-architecture.svg" alt="Nuzo business logic flows from memory-core through thin CLI and MCP interfaces into the unified memory package and supported agent hosts, with SQLite and full-text search kept local beneath the core.">
+  <figcaption>Package direction and ownership boundaries. Arrows show dependency flow, not network calls.</figcaption>
+</figure>
+
+The diagram is the package view. The runtime ports inside the core follow this
+more detailed shape:
+
 ```text
 Agent / User
     |
@@ -108,6 +116,22 @@ Host plugins package the MCP server and defaults so agent hosts can use Nuzo wit
 Codex and Claude Code are the first host packages. Both support MCP-based extension paths, and both Nuzo packages should stay thin wrappers around the same MCP server.
 
 Host plugins are wrappers. They must not contain memory business logic.
+
+## Package Direction
+
+The intended dependency and publishing direction is:
+
+```text
+@nuzo/memory-core
+  -> workspace CLI and MCP server
+  -> generated @nuzo/memory package
+  -> generated Codex and Claude Code host artifacts
+```
+
+Library integrations use `@nuzo/memory-core`. Most users install
+`@nuzo/memory`, which assembles the CLI, MCP server, and host hook runtime.
+Source workspace packages remain private; release tooling creates and validates
+the public staging packages.
 
 ## Default Flow
 

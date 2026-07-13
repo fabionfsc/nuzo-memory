@@ -348,7 +348,8 @@
 }
 
 .nuzo-install-grid,
-.nuzo-card-grid {
+.nuzo-card-grid,
+.nuzo-fit-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
@@ -357,6 +358,53 @@
 
 .nuzo-card-grid--three {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.nuzo-diagram {
+  margin: 1.4rem 0 2rem;
+  overflow-x: auto;
+}
+
+.md-typeset .nuzo-diagram img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--nuzo-border);
+  border-radius: calc(var(--nuzo-radius) + 0.25rem);
+  background: #0d1117;
+  box-shadow: var(--nuzo-shadow);
+}
+
+.md-typeset .nuzo-diagram figcaption {
+  margin-top: 0.65rem;
+  color: var(--nuzo-muted);
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+.nuzo-proof-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0 0 2.4rem;
+  border: 1px solid var(--nuzo-border);
+  border-radius: var(--nuzo-radius);
+  background: var(--nuzo-border);
+  box-shadow: var(--nuzo-shadow-soft);
+  overflow: hidden;
+}
+
+.nuzo-proof-strip span {
+  display: flex;
+  min-height: 4.5rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.85rem;
+  background: rgba(13, 17, 23, 0.96);
+  color: #dbeafe;
+  font-size: 0.78rem;
+  font-weight: 750;
+  text-align: center;
 }
 
 .nuzo-install-card,
@@ -515,6 +563,8 @@
   .nuzo-install-grid,
   .nuzo-card-grid,
   .nuzo-card-grid--three,
+  .nuzo-fit-grid,
+  .nuzo-proof-strip,
   .nuzo-loop {
     grid-template-columns: 1fr;
   }
@@ -544,5 +594,9 @@
   .md-typeset .nuzo-terminal code {
     white-space: pre-wrap;
     overflow-wrap: anywhere;
+  }
+
+  .md-typeset .nuzo-diagram img {
+    min-width: 60rem;
   }
 }

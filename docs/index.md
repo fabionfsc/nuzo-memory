@@ -1,196 +1,159 @@
 <section class="nuzo-landing nuzo-reveal">
   <div class="nuzo-landing__copy">
   <p class="nuzo-eyebrow">Local-first memory for AI agents</p>
-  <h1>Local memory for AI agents.</h1>
-  <p class="nuzo-lead">Nuzo gives Codex, Claude Code, and MCP-compatible hosts durable memory that stays local, inspectable, editable, exportable, and deletable.</p>
+  <h1>Useful context. Visible control.</h1>
+  <p class="nuzo-lead">Nuzo gives Codex, Claude Code, and MCP-compatible hosts durable memory without hiding what was stored, why it was recalled, or how to remove it.</p>
   <p class="nuzo-actions">
     <a href="getting-started/sixty-second-demo/" class="nuzo-button">Run the 60-second demo</a>
-    <a href="product/why-nuzo/" class="nuzo-button nuzo-button--secondary">Why Nuzo?</a>
+    <a href="getting-started/" class="nuzo-button nuzo-button--secondary">Install Nuzo</a>
   </p>
-  <div class="nuzo-trust-strip">
-  <span><strong>1.1.0</strong> stable release</span>
-  <span><strong>19</strong> MCP tools</span>
-  <span><strong>0</strong> telemetry by default</span>
+  <div class="nuzo-trust-strip" role="list" aria-label="Nuzo defaults">
+  <span role="listitem"><strong>1.1.0</strong> stable release</span>
+  <span role="listitem"><strong>19</strong> MCP tools</span>
+  <span role="listitem"><strong>SQLite</strong> local store</span>
+  <span role="listitem"><strong>No</strong> telemetry by default</span>
   </div>
   </div>
-  <div class="nuzo-terminal nuzo-reveal">
-  <div class="nuzo-terminal__bar"><span></span><span></span><span></span></div>
-  <pre><code>npm install --global @nuzo/memory@1.1.0
-nuzo setup</code></pre>
-  <p class="nuzo-terminal__note">Installs the CLI, MCP server, and host integration runtime. Setup shows host changes before writing config.</p>
+  <div class="nuzo-terminal nuzo-reveal" role="group" aria-label="Install Nuzo from a terminal">
+  <div class="nuzo-terminal__bar" aria-hidden="true"><span></span><span></span><span></span></div>
+  <pre><code>$ npm install --global @nuzo/memory@1.1.0
+$ nuzo setup</code></pre>
+  <p class="nuzo-terminal__note">One package provides the CLI, MCP server, and supported host runtime.</p>
   </div>
 </section>
 
-<section class="nuzo-install-grid" aria-label="Install options">
-  <article class="nuzo-install-card nuzo-reveal">
-  <p class="nuzo-card-kicker">Recommended</p>
-  <h2>Install with npm</h2>
-  <p>Use the public package directly when Node.js 22 LTS or 24 LTS and npm 10+ are already available.</p>
-  <pre><code>npm install --global @nuzo/memory@1.1.0
-nuzo setup</code></pre>
-  </article>
+??? info "Automate setup and upgrades"
 
-  <article class="nuzo-install-card nuzo-reveal">
-  <p class="nuzo-card-kicker">One-line installer</p>
-  <h2>Let the script check prerequisites</h2>
-  <p>The installer validates Node.js/npm, installs the same npm package, verifies the CLI, and leaves host configuration to <code>nuzo setup</code>.</p>
-  <pre><code>curl -fsSL https://nuzo.com.br/install.sh | sh
-nuzo setup</code></pre>
-  <p><a href="getting-started/#install">See what the installer verifies →</a></p>
-  </article>
-</section>
+    ```bash
+    nuzo setup --codex --yes
+    nuzo setup --claude-code --yes
+    nuzo setup --all --yes
+    nuzo update --yes
+    nuzo memory manage
+    ```
 
-`nuzo setup` detects Codex and Claude Code. When both are available, it lets
-you choose Codex, Claude Code, or both, then shows the host changes and asks
-before changing host configuration. Open the configured host, confirm Nuzo is
-enabled, trust the two Nuzo read-only recall hooks, then start a new session.
+## Memory should help without becoming hidden state
 
-For non-interactive setup:
+An agent needs continuity across sessions. You need to know which records exist,
+where they came from, and whether they still deserve trust. Nuzo puts that
+boundary in the product: automatic recall is bounded and read-only; inferred
+memory waits for review; every confirmed record stays manageable through local
+tools.
 
-```bash
-# Codex
-nuzo setup --codex --yes
+<figure class="nuzo-diagram nuzo-reveal" tabindex="0" aria-label="Scrollable Nuzo memory loop diagram">
+  <img src="assets/memory-loop.svg" alt="An agent session proposes memory, the user reviews it, confirmed memory is stored in local SQLite with an audit trail, and later sessions recall bounded context read-only.">
+  <figcaption>One visible loop from conversation to confirmed local context.</figcaption>
+</figure>
 
-# Claude Code
-nuzo setup --claude-code --yes
+Hook trust prompts are expected. `SessionStart` and `UserPromptSubmit` hooks can
+retrieve context, but do not write memory. Recalled records remain untrusted
+data—not instructions merely because they were stored.
 
-# Both
-nuzo setup --all --yes
-```
+## Remember once. Recall when it matters.
 
-After package upgrades, update the global package normally. Nuzo refreshes
-plugins that were already installed through `nuzo setup`:
+=== "Remember"
 
-```bash
-npm install --global @nuzo/memory@latest
-```
+    ```bash
+    nuzo memory remember \
+      "The demo project uses SQLite." \
+      --kind project_decision \
+      --tag demo
+    ```
 
-If npm lifecycle scripts are disabled or the automatic refresh needs attention,
-run `nuzo update --yes` as the recovery path.
+    Explicit CLI writes are local and audited. Agent-inferred capture uses the
+    separate suggest-and-confirm path.
 
-## See The Loop
+=== "Recall"
 
-<section class="nuzo-loop nuzo-reveal" aria-label="Nuzo memory loop">
-  <article class="nuzo-loop__step">
-  <span class="nuzo-loop__index">01</span>
-  <h3>Recall</h3>
-  <p><code>SessionStart</code> and <code>UserPromptSubmit</code> hooks retrieve bounded context for the active session.</p>
-  </article>
-  <article class="nuzo-loop__step">
-  <span class="nuzo-loop__index">02</span>
-  <h3>Suggest</h3>
-  <p>Durable preferences or project decisions become drafts, not hidden writes.</p>
-  </article>
-  <article class="nuzo-loop__step">
-  <span class="nuzo-loop__index">03</span>
-  <h3>Confirm</h3>
-  <p>You review, edit, or reject each suggested memory before it is stored.</p>
-  </article>
-  <article class="nuzo-loop__step">
-  <span class="nuzo-loop__index">04</span>
-  <h3>Carry forward</h3>
-  <p>Confirmed memories persist locally and can be recalled by Codex, Claude Code, or MCP hosts.</p>
-  </article>
-</section>
+    ```bash
+    nuzo memory recall "demo storage"
+    ```
 
-Hook trust prompts are expected. Nuzo uses <code>SessionStart</code> and
-<code>UserPromptSubmit</code> for bounded recall, and those hooks do not write memory.
-Memory writes still require explicit confirmation.
+    Search uses local SQLite FTS by default. Optional semantic retrieval stays
+    local and does not replace the canonical text index.
 
-## Prove It Works
+=== "Inspect"
 
-In a new Codex or Claude Code session, say:
+    ```bash
+    nuzo memory doctor
+    nuzo memory manage
+    ```
 
-```text
-Save this in Nuzo memory: My installation test marker is NUZO-OK.
-```
+    List, review, update, archive, delete, export, import, and audit records
+    without depending on a remote dashboard.
 
-Review and confirm the proposed memory. Start another new session and ask:
-
-```text
-What is my Nuzo installation test marker?
-```
-
-The answer should use `NUZO-OK`. This confirms that capture, local persistence,
-and later-session recall all work. Continue with the
-[agent memory loop](getting-started/agent-memory-loop.md) or use the
-[host-specific verification guides](getting-started/index.md).
-
-## Choose Your Interface
+## Proof, not promises
 
 <section class="nuzo-card-grid nuzo-card-grid--three">
-  <article class="nuzo-card nuzo-reveal">
-  <h3>Codex or Claude Code</h3>
-  <p>Run <code>nuzo setup</code> once. Nuzo installs the local CLI, configures supported hosts, and keeps future updates managed through the global package.</p>
-  <p><a href="getting-started/">Install and verify →</a></p>
-  </article>
-
-  <article class="nuzo-card nuzo-reveal">
-  <h3>CLI</h3>
-  <p>Inspect, edit, export, import, archive, forget, and audit memory directly from your terminal.</p>
-
-  <pre><code>nuzo memory init
-nuzo memory doctor
-nuzo memory manage</code></pre>
-  </article>
-
-  <article class="nuzo-card nuzo-reveal">
-  <h3>Generic MCP host</h3>
-  <p>Use the same local memory contract through stdio in any compatible MCP host.</p>
-
-  <pre><code>npm exec --yes --package=@nuzo/memory@1.1.0 -- nuzo-mcp-server</code></pre>
-  </article>
-</section>
-
-## What Makes It Different
-
-<section class="nuzo-card-grid">
   <article class="nuzo-proof-card nuzo-reveal">
-  <h3>Inspectable by default</h3>
-  <p>Memory lives in local SQLite. You can inspect, update, export, archive, or delete it without asking a remote service.</p>
+  <h3>Public contracts</h3>
+  <p>The memory model and MCP schemas document scopes, lifecycle operations, confirmation, errors, and tool annotations.</p>
+  <p><a href="spec/tools/">Inspect the tool contract →</a></p>
   </article>
   <article class="nuzo-proof-card nuzo-reveal">
-  <h3>Explicit write boundary</h3>
-  <p>Inferred memories remain drafts until you confirm them. Recall is read-only and recalled content remains untrusted data.</p>
-  </article>
-  <article class="nuzo-proof-card nuzo-reveal">
-  <h3>Cross-host contract</h3>
-  <p>Codex, Claude Code, direct CLI workflows, and generic MCP hosts use the same memory model and tool contract.</p>
+  <h3>Tested boundaries</h3>
+  <p>CI exercises supported Node lines, docs, package contracts, host integrations, and security analysis before merge.</p>
+  <p><a href="operations/testing-strategy/">See the test strategy →</a></p>
   </article>
   <article class="nuzo-proof-card nuzo-reveal">
   <h3>Release evidence</h3>
-  <p>Nuzo 1.1.0 was published with npm trusted publishing, provenance, host smoke tests, and documented post-release validation.</p>
+  <p>Publishing uses reviewed artifacts, npm provenance, package validation, and post-release host checks.</p>
+  <p><a href="operations/release-checklist/">Review the release gates →</a></p>
   </article>
 </section>
 
-## Use The Smallest Tool That Fits
+<section class="nuzo-proof-strip nuzo-reveal" aria-label="Default trust boundaries">
+  <span>Local SQLite + FTS</span>
+  <span>No silent inferred writes</span>
+  <span>No remote embeddings by default</span>
+  <span>Exportable and deletable</span>
+</section>
 
-Keep durable team instructions in `AGENTS.md`. A short `MEMORY.md` is enough
-when manual curation and file history meet the need. Use native assistant
-memory when convenience inside one host matters most. Choose Nuzo when
-individual records need local ownership, bounded cross-host recall,
-provenance, review, relations, audit, export, and explicit write confirmation.
+## One core across every interface
 
-Read [Why Nuzo?](product/why-nuzo.md) for the decision guide and the
-[competitive landscape](product/competitive-landscape.md) for a sourced,
-dated comparison with adjacent memory systems.
+<section class="nuzo-card-grid nuzo-card-grid--three">
+  <article class="nuzo-card nuzo-reveal">
+  <h3>Codex and Claude Code</h3>
+  <p><code>nuzo setup</code> detects supported hosts, previews changes, and keeps their plugins as thin wrappers around the same MCP runtime.</p>
+  <p><a href="getting-started/">Install and verify →</a></p>
+  </article>
+  <article class="nuzo-card nuzo-reveal">
+  <h3>Local CLI</h3>
+  <p>Use the control plane directly for diagnostics and the full memory lifecycle, even without an agent host.</p>
+  <p><a href="operations/local-cli/">Explore CLI workflows →</a></p>
+  </article>
+  <article class="nuzo-card nuzo-reveal">
+  <h3>Generic MCP hosts</h3>
+  <p>Run the same stdio server and stable tool contract from any compatible local host.</p>
+  <p><a href="spec/tools/">Integrate through MCP →</a></p>
+  </article>
+</section>
 
-## Current Release
+## The right fit—and the honest limits
 
-Nuzo `1.1.0` is the current public release.
+<section class="nuzo-fit-grid">
+  <article class="nuzo-card nuzo-reveal">
+  <p class="nuzo-card-kicker">Use Nuzo when</p>
+  <h3>Memory needs a lifecycle</h3>
+  <p>Choose it for scoped records that need provenance, review state, relations, audit history, bounded cross-host recall, export, or deletion.</p>
+  </article>
+  <article class="nuzo-card nuzo-reveal">
+  <p class="nuzo-card-kicker">Choose something smaller when</p>
+  <h3>A file already solves it</h3>
+  <p>Keep team instructions in <code>AGENTS.md</code>. Use a short <code>MEMORY.md</code> when manual curation and version control are enough.</p>
+  </article>
+</section>
 
-| Package | Intended use |
-| --- | --- |
-| `@nuzo/memory` | CLI, MCP server, and host hook runtime. |
-| `@nuzo/memory-core` | Library-level integrations. |
+Nuzo is not a hosted dashboard, cloud sync service, team knowledge base, or
+autonomous profile builder. Read [Why Nuzo?](product/why-nuzo.md) for the full
+decision guide and the [privacy and security model](operations/privacy-and-security.md)
+for its boundaries.
 
-Start with the [installation overview](getting-started/index.md), read the
-[privacy and security model](operations/privacy-and-security.md), review the
-[threat model](operations/threat-model.md), or inspect the
-[MCP tool contract](spec/tools.md). Internal architecture, specifications,
-benchmarks, and release procedures remain available under the maintainer
-sections of this site.
+## Start with evidence
 
-Installation friction and product feedback belong in the public
-[feedback path](operations/feedback.md); never attach real memory data or
-credentials to an issue.
+Run the [disposable demo](getting-started/sixty-second-demo.md), follow the
+[installation guide](getting-started/index.md), inspect the
+[architecture](architecture/overview.md), or review the
+[memory trust boundary](architecture/memory-trust-boundary.md). Feedback belongs
+in the public [support path](operations/feedback.md); never attach real memory
+data, credentials, or exports to an issue.

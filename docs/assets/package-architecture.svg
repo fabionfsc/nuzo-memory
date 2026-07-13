@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" role="img" aria-labelledby="package-title package-desc">
+  <title id="package-title">Nuzo package architecture</title>
+  <desc id="package-desc">Business logic in memory-core flows through thin CLI and MCP interfaces into the unified memory package and generated host integrations for Codex, Claude Code, and other MCP hosts. SQLite and full-text search remain local beneath the core.</desc>
+  <defs>
+    <linearGradient id="arch-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#111827"/>
+      <stop offset="1" stop-color="#071f2b"/>
+    </linearGradient>
+    <linearGradient id="arch-core" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#07505c"/>
+      <stop offset="1" stop-color="#1e3a8a"/>
+    </linearGradient>
+    <marker id="arch-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#38d9ff"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="520" rx="32" fill="url(#arch-bg)"/>
+  <text x="60" y="66" fill="#f8fbff" font-family="system-ui, sans-serif" font-size="28" font-weight="750">One core, thin interfaces</text>
+  <text x="60" y="98" fill="#aeb8c7" font-family="system-ui, sans-serif" font-size="17">The public package assembles the same local memory behavior for every supported host.</text>
+
+  <g fill="none" stroke="#38d9ff" stroke-width="4" marker-end="url(#arch-arrow)">
+    <path d="M 284 232 H 350"/>
+    <path d="M 594 232 H 660"/>
+    <path d="M 874 232 H 940"/>
+    <path d="M 172 316 V 376"/>
+  </g>
+
+  <g font-family="system-ui, sans-serif">
+    <g transform="translate(60 148)">
+      <rect width="224" height="168" rx="22" fill="url(#arch-core)"/>
+      <text x="24" y="43" fill="#ffffff" font-size="15" font-weight="700">BUSINESS LOGIC</text>
+      <text x="24" y="80" fill="#ffffff" font-size="17" font-weight="800">@nuzo/memory-core</text>
+      <text x="24" y="106" fill="#e0f2fe" font-size="15">Policy · lifecycle · scopes</text>
+      <text x="24" y="129" fill="#e0f2fe" font-size="15">Search · audit</text>
+      <text x="24" y="152" fill="#e0f2fe" font-size="15">Transactions</text>
+    </g>
+
+    <g transform="translate(350 148)">
+      <rect width="244" height="168" rx="22" fill="#111827" stroke="#334155" stroke-width="2"/>
+      <text x="24" y="43" fill="#38d9ff" font-size="15" font-weight="700">THIN INTERFACES</text>
+      <text x="24" y="80" fill="#f8fbff" font-size="21" font-weight="800">CLI + MCP server</text>
+      <text x="24" y="110" fill="#aeb8c7" font-size="15">Parse input</text>
+      <text x="24" y="133" fill="#aeb8c7" font-size="15">Call core use cases</text>
+    </g>
+
+    <g transform="translate(660 148)">
+      <rect width="214" height="168" rx="22" fill="#0b2430" stroke="#00d1da" stroke-width="3"/>
+      <text x="24" y="43" fill="#38d9ff" font-size="15" font-weight="700">PUBLIC RUNTIME</text>
+      <text x="24" y="80" fill="#f8fbff" font-size="21" font-weight="800">@nuzo/memory</text>
+      <text x="24" y="110" fill="#aeb8c7" font-size="15">CLI · MCP · hooks</text>
+      <text x="24" y="133" fill="#aeb8c7" font-size="15">One install path</text>
+    </g>
+
+    <g transform="translate(940 148)">
+      <rect width="200" height="168" rx="22" fill="#111827" stroke="#334155" stroke-width="2"/>
+      <text x="24" y="43" fill="#38d9ff" font-size="15" font-weight="700">HOSTS</text>
+      <text x="24" y="78" fill="#f8fbff" font-size="19" font-weight="800">Codex</text>
+      <text x="24" y="105" fill="#f8fbff" font-size="19" font-weight="800">Claude Code</text>
+      <text x="24" y="135" fill="#aeb8c7" font-size="14">MCP-compatible agents</text>
+    </g>
+
+    <g transform="translate(60 376)">
+      <rect width="224" height="82" rx="18" fill="#0d1117" stroke="#334155"/>
+      <text x="24" y="34" fill="#f8fbff" font-size="17" font-weight="750">Local data layer</text>
+      <text x="24" y="54" fill="#aeb8c7" font-size="14">SQLite · FTS</text>
+      <text x="24" y="73" fill="#aeb8c7" font-size="14">Optional semantic sidecar</text>
+    </g>
+
+    <g transform="translate(350 376)">
+      <rect width="790" height="82" rx="18" fill="#0d1117" stroke="#334155"/>
+      <text x="24" y="34" fill="#f8fbff" font-size="17" font-weight="750">Boundary rule</text>
+      <text x="24" y="59" fill="#aeb8c7" font-size="15">Interfaces never duplicate policy or storage behavior; host plugins remain wrappers.</text>
+    </g>
+  </g>
+</svg>
