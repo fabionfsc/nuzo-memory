@@ -170,6 +170,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify native Rolldown binding loads
+        run: npm exec --offline -- rolldown --version
+
       - name: Smoke staged npm and plugin artifacts
         run: npm run smoke:os-artifacts
 
