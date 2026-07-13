@@ -47,6 +47,15 @@ test("MCP Registry distribution starts with the 1.1.0 release", () => {
     "@nuzo/memory",
     "@nuzo/memory-mcp",
   ]);
+  assert.deepEqual(packageNames(publishableNpmPackagesForVersion("1.1.0-beta.1")), [
+    "@nuzo/memory-core",
+    "@nuzo/memory",
+  ]);
+  assert.deepEqual(packageNames(publishableNpmPackagesForVersion("1.1.1-beta.1")), [
+    "@nuzo/memory-core",
+    "@nuzo/memory",
+    "@nuzo/memory-mcp",
+  ]);
   assert.equal(
     npmPackageDefinitions.find((definition) => definition.name === "@nuzo/memory-mcp")?.manualFirstPublication,
     "1.1.0",

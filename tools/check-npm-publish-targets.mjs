@@ -11,6 +11,7 @@ import {
 } from "./npm-package-policy.mjs";
 
 const version = process.argv[2];
+const tarballsRoot = process.argv[3];
 assertReleaseVersion(version);
 
 const publishPackages = publishableNpmPackagesForVersion(version)
@@ -34,7 +35,11 @@ for (const [packageName, packagePath] of publishPackages) {
     fail(`${packagePath} has version ${pkg.version}, expected ${version}`);
   }
 
-  const tarballPath = npmArtifactTarballPath(packageName, version);
+  const tarballPath = npmArtifactTarballPath(
+    packageName,
+    version,
+    tarballsRoot,
+  );
   let target;
   try {
     target = inspectNpmPublishTarget({ packageName, version, tarballPath });

@@ -132,6 +132,7 @@ This creates ignored staging directories and tarballs under:
 
 ```text
 build/npm/
+├── artifact-manifest.json
 ├── packages/
 │   ├── memory-core/
 │   ├── memory-cli/
@@ -167,6 +168,9 @@ The staging process:
   dependency references;
 - copies runtime output, README, and Apache-2.0 license;
 - rejects tests, source files, databases, exports, secrets, and environment files.
+- records every tarball's npm SRI, SHA-256, byte size, and source commit in
+  `artifact-manifest.json`, then verifies the manifest against the generated
+  bytes before returning success.
 
 ## Validation
 
@@ -237,19 +241,46 @@ The package is new in `1.1.0`. npm requires a package to exist before its
 trusted publisher can be configured, and staged publishing cannot bootstrap a
 brand-new package. For `1.1.0` only, the publish tool deliberately defers
 `@nuzo/memory-mcp` in live mode. Publish core and unified memory through OIDC,
-then perform one authenticated first publication of the reviewed
-`build/npm/packages/memory-mcp/` candidate. Configure its trusted publisher
-immediately afterward. Do not add an npm token to the release workflow.
+then perform one authenticated first publication of the exact retained
+`nuzo-memory-mcp-1.1.0.tgz` candidate from the reviewed dry-run workflow.
+Configure its trusted publisher immediately afterward. Do not add an npm token
+to the release workflow.
 
-After the OIDC workflow has published `@nuzo/memory-core@1.1.0`, the one-time
-bootstrap command is:
+The dry run retains `artifact-manifest.json` and all three tarballs for 14 days
+under an artifact named `nuzo-npm-<version>-<commit>`. Record the manifest
+SHA-256 printed by the workflow and supply it as `artifact_manifest_sha256`
+when running the same workflow with `publish=true`. The publish run rebuilds
+the candidates from `main` and fails unless its manifest is byte-identical to
+the reviewed dry run.
+
+After the OIDC workflow has published `@nuzo/memory-core@1.1.0`, download the
+reviewed dry-run artifact and verify it from the exact release checkout:
 
 ```bash
-npm publish build/npm/packages/memory-mcp --access public
+NUZO_NPM_CANDIDATE=/tmp/nuzo-npm-1.1.0
+rm -rf "$NUZO_NPM_CANDIDATE"
+gh run download <dry-run-id> \
+  --name "nuzo-npm-1.1.0-<full-commit>" \
+  --dir "$NUZO_NPM_CANDIDATE"
+node tools/verify-npm-artifact-manifest.mjs \
+  1.1.0 <reviewed-manifest-sha256> "$NUZO_NPM_CANDIDATE"
+npm publish \
+  "$NUZO_NPM_CANDIDATE/tarballs/nuzo-memory-mcp-1.1.0.tgz" \
+  --access public
+node tools/check-npm-publish-targets.mjs \
+  1.1.0 "$NUZO_NPM_CANDIDATE/tarballs"
 ```
 
-Run it only from the exact reviewed `1.1.0` checkout after `npm login`, target
-availability checks, `npm run package:npm`, and all release gates pass.
+Run it only after `npm login`, target availability checks, the bound OIDC
+workflow, and all release gates pass. Do not rebuild the manual package or
+publish its staging directory.
+
+The authenticated local bootstrap cannot produce GitHub Actions npm
+provenance. `@nuzo/memory-mcp@1.1.0` is the one documented exception: its
+retained manifest, workflow run, tarball SHA-256, and public `dist.integrity`
+are the evidence chain. Core and unified memory still require OIDC provenance.
+Configure trusted publishing immediately so `1.1.1` and later have normal npm
+provenance for all active packages.
 
 Use these settings for every package:
 
@@ -278,7 +309,9 @@ the active-package order shown above. The one-time `1.1.0` manual bootstrap is
 the only exception.
 
 Run it first with `publish` set to `false`. That dry run proves the workflow
-selects the intended version and package set without publishing.
+selects the intended version and package set without publishing, prints the
+reviewed manifest SHA-256, and retains the exact candidates. A live run must
+provide that SHA-256 and fails closed if rebuilt bytes differ.
 
 When `publish` is `true`, the workflow runs:
 
@@ -358,11 +391,13 @@ If publication fails:
 
 1. Stop before retrying with broader credentials.
 2. Check `npm whoami` and organization membership.
-3. Confirm the target version does not already exist.
+3. If the target version exists, compare its `dist.integrity` with the retained
+   reviewed tarball; never skip or combine a divergent immutable package.
 4. Confirm the trusted publisher settings exactly match `fabionfsc`,
    `nuzo-memory`, `release-npm.yml`, and the `npm-publish` environment.
 5. Re-run `npm run validate:npm`.
-6. Inspect the generated staging package, not the source workspace package.
+6. Inspect the retained tarball and `artifact-manifest.json`, not the source
+   workspace package or a rebuilt staging directory.
 7. If credentials may have leaked, revoke them before further work.
 
 Never delete or rewrite a published version to repair a failed release. Fix the

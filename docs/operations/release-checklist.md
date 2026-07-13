@@ -441,11 +441,19 @@ Create GitHub release notes from `CHANGELOG.md`.
 
 Run the npm release workflow from `main` with the exact package version and
 `publish=false` first. Confirm it selects the intended version and packages
-without using an npm token.
+without using an npm token. Retain the workflow artifact, record its full source
+commit, and record the `artifact-manifest.json` SHA-256 printed by the run.
 
 After the dry run passes and the Git tag/release is ready, run the same
-workflow with `publish=true`. Confirm the npm package pages show provenance
-for the new version.
+workflow with `publish=true`, supplying the reviewed manifest SHA-256. The run
+must fail if the rebuilt candidates differ. Confirm the npm package pages show
+provenance for the new version.
+
+For the one-time `@nuzo/memory-mcp@1.1.0` bootstrap, publish only the retained
+tarball after verifying its manifest and checksum. Record its matching public
+`dist.integrity`. This local first publication is the documented provenance
+exception; `@nuzo/memory-core` and `@nuzo/memory` still require provenance, and
+all active packages require it from `1.1.1` onward.
 
 ## Post-Release
 

@@ -10,6 +10,11 @@ import {
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import {
+  npmArtifactIntegrity,
+  npmArtifactSha256,
+  verifyNpmArtifactManifest,
+} from "./npm-artifact-integrity.mjs";
 import { isLocalDependencyReference } from "./release-shared.mjs";
 import {
   isAtLeastVersion,
@@ -22,6 +27,7 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const outputRoot = join(repositoryRoot, "build", "npm");
 const packagesRoot = join(outputRoot, "packages");
 const tarballsRoot = join(outputRoot, "tarballs");
+const artifactRecords = [];
 
 rmSync(outputRoot, { recursive: true, force: true });
 mkdirSync(packagesRoot, { recursive: true });
@@ -83,10 +89,28 @@ for (const definition of definitions) {
   );
 
   validateStagedPackage(destination, publishPackage);
-  pack(destination);
+  artifactRecords.push(pack(destination));
 }
 
+artifactRecords.sort((left, right) => left.name.localeCompare(right.name));
+writeFileSync(
+  join(outputRoot, "artifact-manifest.json"),
+  `${JSON.stringify({
+    schemaVersion: 1,
+    version: packageVersion,
+    sourceCommit: process.env.GITHUB_SHA ?? null,
+    packages: artifactRecords,
+  }, null, 2)}\n`,
+  "utf8",
+);
+const verifiedManifest = verifyNpmArtifactManifest({
+  artifactRoot: outputRoot,
+  version: packageVersion,
+  packageNames: definitions.map((definition) => definition.name),
+});
+
 console.log(`npm artifacts ready: ${outputRoot}`);
+console.log(`npm artifact manifest sha256: ${verifiedManifest.manifestSha256}`);
 
 function createPublishPackage(sourcePackage) {
   if (sourcePackage.private !== true) {
@@ -315,7 +339,21 @@ function pack(packageRoot) {
     fail(`forbidden npm package files: ${forbidden.join(", ")}`);
   }
 
-  console.log(`packed ${report[0].name}@${report[0].version}: ${report[0].filename}`);
+  const tarballPath = join(tarballsRoot, report[0].filename);
+  const record = {
+    name: report[0].name,
+    version: report[0].version,
+    filename: report[0].filename,
+    size: report[0].size,
+    integrity: npmArtifactIntegrity(tarballPath),
+    sha256: npmArtifactSha256(tarballPath),
+  };
+  if (report[0].integrity !== record.integrity) {
+    fail(`npm pack integrity mismatch for ${record.name}@${record.version}`);
+  }
+
+  console.log(`packed ${record.name}@${record.version}: ${record.filename}`);
+  return record;
 }
 
 function readJson(path) {

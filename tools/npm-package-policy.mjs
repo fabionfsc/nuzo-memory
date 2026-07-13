@@ -65,11 +65,41 @@ export function isAtLeastVersion(version, minimum) {
 }
 
 export function compareVersions(left, right) {
-  const leftParts = left.split("-", 1)[0].split(".").map(Number);
-  const rightParts = right.split("-", 1)[0].split(".").map(Number);
+  const leftVersion = parseComparableVersion(left);
+  const rightVersion = parseComparableVersion(right);
   for (let index = 0; index < 3; index += 1) {
-    const difference = leftParts[index] - rightParts[index];
+    const difference = leftVersion.core[index] - rightVersion.core[index];
     if (difference !== 0) return difference;
   }
+  if (leftVersion.prerelease === null && rightVersion.prerelease === null) return 0;
+  if (leftVersion.prerelease === null) return 1;
+  if (rightVersion.prerelease === null) return -1;
+
+  const length = Math.max(leftVersion.prerelease.length, rightVersion.prerelease.length);
+  for (let index = 0; index < length; index += 1) {
+    const leftPart = leftVersion.prerelease[index];
+    const rightPart = rightVersion.prerelease[index];
+    if (leftPart === undefined) return -1;
+    if (rightPart === undefined) return 1;
+    if (leftPart === rightPart) continue;
+    const leftNumeric = /^\d+$/u.test(leftPart);
+    const rightNumeric = /^\d+$/u.test(rightPart);
+    if (leftNumeric && rightNumeric) return Number(leftPart) - Number(rightPart);
+    if (leftNumeric) return -1;
+    if (rightNumeric) return 1;
+    return leftPart < rightPart ? -1 : 1;
+  }
   return 0;
+}
+
+function parseComparableVersion(version) {
+  const withoutBuild = version.split("+", 1)[0];
+  const prereleaseSeparator = withoutBuild.indexOf("-");
+  const core = (prereleaseSeparator === -1
+    ? withoutBuild
+    : withoutBuild.slice(0, prereleaseSeparator)).split(".").map(Number);
+  const prerelease = prereleaseSeparator === -1
+    ? null
+    : withoutBuild.slice(prereleaseSeparator + 1).split(".");
+  return { core, prerelease };
 }

@@ -71,6 +71,17 @@ test("npm release workflow uses manual OIDC publishing without tokens", () => {
   assert.match(workflow, /npm run release:check -- "\$PACKAGE_VERSION"/);
   assert.match(workflow, /node tools\/publish-npm-artifacts\.mjs "\$PACKAGE_VERSION" publish/);
   assert.match(workflow, /node tools\/publish-npm-artifacts\.mjs "\$PACKAGE_VERSION" dry-run/);
+  assert.match(workflow, /artifact_manifest_sha256:/);
+  assert.match(
+    workflow,
+    /node tools\/verify-npm-artifact-manifest\.mjs "\$PACKAGE_VERSION" "\$EXPECTED_MANIFEST_SHA256"/,
+  );
+  assert.match(
+    workflow,
+    /actions\/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7\.0\.1/,
+  );
+  assert.match(workflow, /build\/npm\/artifact-manifest\.json/);
+  assert.match(workflow, /build\/npm\/tarballs\/\*\.tgz/);
   assert.doesNotMatch(workflow, /NODE_AUTH_TOKEN|NPM_TOKEN/);
   assert.doesNotMatch(workflow, /pull_request:/);
   const publisher = readFileSync(

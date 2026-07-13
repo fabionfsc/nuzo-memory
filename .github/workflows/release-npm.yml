@@ -11,6 +11,9 @@ on:
         required: true
         type: boolean
         default: false
+      artifact_manifest_sha256:
+        description: Dry-run artifact-manifest SHA-256 required when publish is true.
+        required: false
 
 permissions:
   contents: read
@@ -65,11 +68,36 @@ jobs:
           PACKAGE_VERSION: ${{ inputs.package_version }}
         run: node tools/check-npm-publish-targets.mjs "$PACKAGE_VERSION"
 
+      - name: Verify generated npm artifact manifest
+        if: ${{ !inputs.publish }}
+        env:
+          PACKAGE_VERSION: ${{ inputs.package_version }}
+        run: node tools/verify-npm-artifact-manifest.mjs "$PACKAGE_VERSION"
+
+      - name: Bind publish to reviewed npm artifact manifest
+        if: ${{ inputs.publish }}
+        env:
+          PACKAGE_VERSION: ${{ inputs.package_version }}
+          EXPECTED_MANIFEST_SHA256: ${{ inputs.artifact_manifest_sha256 }}
+        run: node tools/verify-npm-artifact-manifest.mjs "$PACKAGE_VERSION" "$EXPECTED_MANIFEST_SHA256"
+
       - name: Dry-run npm publish
         if: ${{ !inputs.publish }}
         env:
           PACKAGE_VERSION: ${{ inputs.package_version }}
         run: node tools/publish-npm-artifacts.mjs "$PACKAGE_VERSION" dry-run
+
+      - name: Retain reviewed npm candidates
+        if: ${{ !inputs.publish }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: nuzo-npm-${{ inputs.package_version }}-${{ github.sha }}
+          path: |
+            build/npm/artifact-manifest.json
+            build/npm/tarballs/*.tgz
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
 
       - name: Publish packages with provenance
         if: ${{ inputs.publish }}

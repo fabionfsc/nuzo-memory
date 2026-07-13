@@ -77,14 +77,16 @@ connects an SDK client to that installed entrypoint.
 
 For `1.1.0` and later:
 
-1. run the npm release workflow with `publish=false` and review all three
-   package candidates;
+1. run the npm release workflow with `publish=false`, review all three package
+   candidates, retain the workflow artifact, and record its printed manifest
+   SHA-256;
 2. run it with `publish=true` to publish `@nuzo/memory-core` and
-   `@nuzo/memory`; the policy deliberately defers the brand-new Registry
-   package at `1.1.0`;
+   `@nuzo/memory`, passing the reviewed manifest SHA-256 so rebuilt candidates
+   must match; the policy deliberately defers the brand-new Registry package at
+   `1.1.0`;
 3. after core `1.1.0` is public, use an authenticated npm maintainer session to
-   perform the one-time first publication of the reviewed
-   `build/npm/packages/memory-mcp/` candidate;
+   perform the one-time first publication of the retained and verified
+   `nuzo-memory-mcp-1.1.0.tgz` candidate;
 4. configure trusted publishing for `@nuzo/memory-mcp` with the same
    repository, workflow, environment, and allowed `npm publish` action as the
    other active packages; later releases then use OIDC normally;
@@ -104,12 +106,28 @@ can be configured. Do not add a long-lived npm token to the workflow to bypass
 that first-publication boundary. The authenticated bootstrap is a one-version
 exception; configure OIDC immediately afterward.
 
-The one-time bootstrap command, after `npm login`, 2FA readiness, target
-availability checks, and `npm run package:npm`, is:
+The one-time bootstrap, after `npm login`, 2FA readiness, target availability
+checks, and the bound OIDC workflow, is:
 
 ```bash
-npm publish build/npm/packages/memory-mcp --access public
+NUZO_NPM_CANDIDATE=/tmp/nuzo-npm-1.1.0
+rm -rf "$NUZO_NPM_CANDIDATE"
+gh run download <dry-run-id> \
+  --name "nuzo-npm-1.1.0-<full-commit>" \
+  --dir "$NUZO_NPM_CANDIDATE"
+node tools/verify-npm-artifact-manifest.mjs \
+  1.1.0 <reviewed-manifest-sha256> "$NUZO_NPM_CANDIDATE"
+npm publish \
+  "$NUZO_NPM_CANDIDATE/tarballs/nuzo-memory-mcp-1.1.0.tgz" \
+  --access public
+node tools/check-npm-publish-targets.mjs \
+  1.1.0 "$NUZO_NPM_CANDIDATE/tarballs"
 ```
+
+Do not rebuild this package or publish a staging directory. The local first
+publication is the documented one-version provenance exception; retain the
+workflow run, manifest SHA-256, tarball SHA-256, and matching public npm SRI as
+its evidence chain. Later versions use trusted publishing normally.
 
 Verify it before configuring trusted publishing or touching the MCP Registry:
 
@@ -156,6 +174,26 @@ build/tools/mcp-publisher logout
 GitHub Actions OIDC can replace interactive login in a future automation
 slice. Keep initial Registry publication manual until the package identity and
 listing have been observed successfully in production.
+
+## Immutable Recovery
+
+npm and MCP Registry versions are immutable release records. If npm publication
+is partial, retry only with the retained tarballs: the tooling skips an existing
+package only when its public `dist.integrity` exactly matches the candidate. A
+different integrity is a stop condition, not permission to rebuild or broaden
+credentials.
+
+If the Registry entry, npm package, or metadata is wrong after publication:
+
+1. stop launch and record the failed verification evidence;
+2. do not overwrite, delete, or republish `1.1.0`;
+3. fix the source contract and prepare `1.1.1` through normal review;
+4. publish all active npm packages for `1.1.1` through trusted publishing;
+5. update and publish `server.json` as a new Registry version;
+6. run the exact npm, session, and Registry API verifiers for `1.1.1`.
+
+Metadata-only corrections also use a new Nuzo patch version so the npm package,
+manifest, documentation, and Registry record remain aligned.
 
 ## Preview Boundary
 

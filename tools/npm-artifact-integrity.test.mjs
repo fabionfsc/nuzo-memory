@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -7,7 +7,9 @@ import test from "node:test";
 import {
   inspectNpmPublishTarget,
   npmArtifactIntegrity,
+  npmArtifactSha256,
   npmArtifactTarballPath,
+  verifyNpmArtifactManifest,
 } from "./npm-artifact-integrity.mjs";
 
 const packageName = "@nuzo/memory-core";
@@ -84,9 +86,85 @@ test("npm artifact tarball path matches npm pack naming", () => {
   );
 });
 
+test("npm artifact manifest binds the exact package bytes", (context) => {
+  const artifactRoot = createArtifactRoot(context);
+  const result = verifyNpmArtifactManifest({
+    artifactRoot,
+    version,
+    packageNames: [packageName],
+  });
+
+  assert.match(result.manifestSha256, /^[0-9a-f]{64}$/u);
+  assert.equal(
+    verifyNpmArtifactManifest({
+      artifactRoot,
+      version,
+      packageNames: [packageName],
+      expectedManifestSha256: result.manifestSha256,
+    }).manifestSha256,
+    result.manifestSha256,
+  );
+});
+
+test("npm artifact manifest rejects a changed tarball", (context) => {
+  const artifactRoot = createArtifactRoot(context);
+  const tarballPath = npmArtifactTarballPath(packageName, version, join(artifactRoot, "tarballs"));
+  writeFileSync(tarballPath, "changed after review", "utf8");
+
+  assert.throws(
+    () => verifyNpmArtifactManifest({
+      artifactRoot,
+      version,
+      packageNames: [packageName],
+    }),
+    /npm artifact (size|checksum) mismatch/u,
+  );
+});
+
+test("npm artifact manifest rejects a different reviewed manifest", (context) => {
+  const artifactRoot = createArtifactRoot(context);
+
+  assert.throws(
+    () => verifyNpmArtifactManifest({
+      artifactRoot,
+      version,
+      packageNames: [packageName],
+      expectedManifestSha256: "0".repeat(64),
+    }),
+    /npm artifact manifest checksum mismatch/u,
+  );
+});
+
 function createTarball(context) {
   const tarballPath = join(tmpdir(), `nuzo-integrity-${process.pid}-${Date.now()}-${Math.random()}.tgz`);
   writeFileSync(tarballPath, "synthetic npm tarball fixture", "utf8");
   context.after(() => rmSync(tarballPath, { force: true }));
   return tarballPath;
+}
+
+function createArtifactRoot(context) {
+  const artifactRoot = mkdtempSync(join(tmpdir(), "nuzo-artifact-manifest-"));
+  const tarballsRoot = join(artifactRoot, "tarballs");
+  mkdirSync(tarballsRoot);
+  const tarballPath = npmArtifactTarballPath(packageName, version, tarballsRoot);
+  writeFileSync(tarballPath, "reviewed synthetic npm tarball", "utf8");
+  writeFileSync(
+    join(artifactRoot, "artifact-manifest.json"),
+    `${JSON.stringify({
+      schemaVersion: 1,
+      version,
+      sourceCommit: null,
+      packages: [{
+        name: packageName,
+        version,
+        filename: tarballPath.split(/[\\/]/u).at(-1),
+        size: statSync(tarballPath).size,
+        integrity: npmArtifactIntegrity(tarballPath),
+        sha256: npmArtifactSha256(tarballPath),
+      }],
+    }, null, 2)}\n`,
+    "utf8",
+  );
+  context.after(() => rmSync(artifactRoot, { recursive: true, force: true }));
+  return artifactRoot;
 }
