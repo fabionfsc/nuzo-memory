@@ -57,6 +57,28 @@ function createRestrictedTestService(scopes: Array<"user:default" | "project:nuz
 }
 
 describe("memory service", () => {
+  it("serializes identical confirmed creates without a transaction manager", async () => {
+    const { service } = createTestService();
+    const input = {
+      decision: "create" as const,
+      content: "Same-service confirmed capture remains unique.",
+      kind: "note" as const,
+      scope: "user:default" as const,
+      source: "test:capture-confirmed",
+      reason: "The user confirmed the concurrency fixture.",
+      confirm: true,
+      actor: "test",
+    };
+
+    const results = await Promise.all([
+      service.confirmCapture(input),
+      service.confirmCapture(input),
+    ]);
+
+    expect(results.map((result) => result.status).sort()).toEqual(["created", "skipped"]);
+    await expect(service.list({ scope: "user:default" })).resolves.toHaveLength(1);
+  });
+
   it("remembers and recalls without recording usage by default", async () => {
     const { auditLog, service } = createTestService();
 
@@ -501,6 +523,7 @@ describe("memory service", () => {
       kind: "preference",
       scope: "user:default",
       source: "test:user",
+      actor: "test:user",
     });
     const projectMemory = await service.remember({
       content: "Project exports should be visible in global audit.",
@@ -522,7 +545,7 @@ describe("memory service", () => {
       {
         eventType: "memory.created",
         memoryId: projectMemory.id,
-        actor: "test:project",
+        actor: "core",
       },
     ]);
 

@@ -524,6 +524,7 @@ export function createMemoryToolHandlers(
         scope: resolveToolScope(input.scope, options.projectScope),
         tags: input.tags,
         source: input.source,
+        actor: "nuzo:mcp",
       };
       if (input.confidence !== undefined) {
         rememberInput.confidence = input.confidence;
@@ -684,7 +685,7 @@ export function createMemoryToolHandlers(
         source: input.source,
         reason: input.reason,
         confirm: input.confirm,
-        actor: input.actor,
+        actor: "nuzo:mcp",
       };
       if (input.confidence !== undefined) {
         confirmInput.confidence = input.confidence;

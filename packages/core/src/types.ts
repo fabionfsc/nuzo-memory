@@ -142,6 +142,8 @@ export interface RememberMemoryInput {
   scope: MemoryScope;
   tags?: string[];
   source: string;
+  /** Audit surface that performed the write. Defaults to `core`. */
+  actor?: string;
   confidence?: number;
   confidenceState?: MemoryConfidenceState | null;
   provenance?: MemoryProvenance | null;

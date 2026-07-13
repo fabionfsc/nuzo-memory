@@ -86,6 +86,18 @@ class PrefixedIdGenerator implements IdGenerator {
 }
 
 describe("SQLiteMemoryDatabase", () => {
+  const confirmedCreateInput = {
+    decision: "create" as const,
+    content: "Concurrent exact capture remains unique.",
+    kind: "note" as const,
+    scope: "user:default" as const,
+    tags: ["concurrency"],
+    source: "test:capture-confirmed",
+    reason: "The user confirmed the synthetic concurrency fixture.",
+    confirm: true,
+    actor: "test",
+  };
+
   it("creates the complete version 7 schema from an empty database", () => {
     const directory = mkdtempSync(join(tmpdir(), "nuzo-schema-"));
     tempDirectories.push(directory);
@@ -345,6 +357,39 @@ describe("SQLiteMemoryDatabase", () => {
     ).resolves.toHaveLength(1);
 
     reopened.close();
+  });
+
+  it("serializes identical confirmed creates in one SQLite service", async () => {
+    const { database, service } = createTempDatabase();
+
+    const results = await Promise.all([
+      service.confirmCapture(confirmedCreateInput),
+      service.confirmCapture(confirmedCreateInput),
+    ]);
+
+    expect(results.map((result) => result.status).sort()).toEqual(["created", "skipped"]);
+    await expect(service.list({ scope: "user:default" })).resolves.toHaveLength(1);
+    database.close();
+  });
+
+  it("serializes identical confirmed creates across two SQLite connections", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "nuzo-confirm-concurrency-"));
+    tempDirectories.push(directory);
+    const path = join(directory, "memories.sqlite");
+    const first = new SQLiteMemoryDatabase({ path });
+    const second = new SQLiteMemoryDatabase({ path });
+    const firstService = createServiceForDatabase(first, new PrefixedIdGenerator("first"));
+    const secondService = createServiceForDatabase(second, new PrefixedIdGenerator("second"));
+
+    const results = await Promise.all([
+      firstService.confirmCapture(confirmedCreateInput),
+      secondService.confirmCapture(confirmedCreateInput),
+    ]);
+
+    expect(results.map((result) => result.status).sort()).toEqual(["created", "skipped"]);
+    await expect(firstService.list({ scope: "user:default" })).resolves.toHaveLength(1);
+    first.close();
+    second.close();
   });
 
   it("persists structured provenance across reopen", async () => {

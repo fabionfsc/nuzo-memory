@@ -70,14 +70,30 @@ The local CLI defaults to administrator mode for the selected local store.
 Use separate stores or a restricted MCP runtime when a repository-controlled
 agent should not enumerate unrelated memory.
 
+MCP `tools/list` responses publish annotations as part of the public contract:
+
+| Tools | `readOnlyHint` | `destructiveHint` | Notes |
+| --- | --- | --- | --- |
+| `memory.recall`, `memory.recall_hook`, `memory.suggest_capture`, `memory.list`, `memory.show`, `memory.relations`, `memory.history`, `memory.audit`, `memory.doctor` | `true` | `false` | Do not mutate the memory store. |
+| `memory.remember`, `memory.challenge`, `memory.relate`, `memory.export`, `memory.import` | `false` | `false` | Write memory state or audit history. Export appends an audit event. |
+| `memory.confirm_capture`, `memory.unrelate`, `memory.update`, `memory.forget`, `memory.forget_many` | `false` | `true` | May replace, archive, delete, or otherwise remove existing state. |
+
+All tools set `openWorldHint: false`. Read-only tools set `idempotentHint: true`;
+write tools set it to `false`. These hints describe side effects for MCP
+clients. They do not replace core authorization or confirmation policy.
+
 ### `memory.remember`
 
-Store a memory.
+Store one explicit memory directly.
 
 Inferred host capture must not call this tool directly; use
 `memory.confirm_capture` after the user confirms a capture draft. Direct
 library-style integrations may still use `memory.remember` for explicit writes.
 See `docs/spec/capture-suggestions.md`.
+
+The MCP surface records the creation audit actor as `nuzo:mcp`. The caller's
+`source` remains attribution on the memory record and is not an authenticated
+identity.
 
 Input:
 
@@ -471,6 +487,12 @@ Apply an explicit user decision for a previously suggested capture draft.
 This tool is the confirmed-write companion to `memory.suggest_capture`. It does
 not infer user intent. Callers must pass the final user-approved draft fields
 and the explicit decision.
+
+`confirm: true` is host attestation that the host displayed the final draft and
+received the represented user decision. Nuzo does not persist a draft token or
+cryptographically bind this call to a previous suggestion. The MCP surface
+records confirmed operations with actor `nuzo:mcp`; a caller-provided actor is
+only a compatibility attribution hint and cannot override that audit actor.
 
 Input for confirmed creation:
 

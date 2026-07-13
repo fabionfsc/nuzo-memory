@@ -172,6 +172,13 @@ the memory record; `actor` belongs to an event. Together they provide
 provenance for explicit writes, confirmed capture, imports, CLI actions, MCP
 actions, and host integrations.
 
+Creation actors are assigned at the trusted operation boundary rather than
+copied from `source`: direct MCP writes and MCP-confirmed capture use
+`nuzo:mcp`, direct CLI remember uses `nuzo:cli`, and library calls that omit an
+actor use `core`. The administrator-oriented CLI may still accept an explicit
+actor for confirmed or maintenance operations. An arbitrary `source` must
+never be treated as proof that a particular Nuzo surface performed the write.
+
 Audit payloads are metadata-only. They may include scope, tags, kind, count,
 reason, changed fields, a query hash, or score, but they must not retain memory
 content or full recall queries. This keeps hard-deleted memory content deleted

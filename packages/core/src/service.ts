@@ -96,6 +96,21 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
   const runTransaction = transactions
     ? <T>(operation: () => Promise<T>) => transactions.run(operation)
     : <T>(operation: () => Promise<T>) => operation();
+  let confirmedCreateQueue: Promise<void> = Promise.resolve();
+
+  async function runConfirmedCreate<T>(operation: () => Promise<T>): Promise<T> {
+    const previous = confirmedCreateQueue;
+    let release!: () => void;
+    confirmedCreateQueue = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await previous;
+    try {
+      return await runTransaction(operation);
+    } finally {
+      release();
+    }
+  }
 
   async function forgetMemory(input: ForgetMemoryInput): Promise<void> {
     assertMemoryId(input.id);
@@ -152,11 +167,16 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
     });
   }
 
-  async function rememberMemory(input: RememberMemoryInput): Promise<MemoryRecord> {
+  async function validateRememberMemory(input: RememberMemoryInput): Promise<string> {
     await policy.assertCanRemember(input);
+    const actor = input.actor ?? "core";
+    assertActor(actor);
+    return actor;
+  }
 
+  function createMemoryRecord(input: RememberMemoryInput): MemoryRecord {
     const now = clock.now();
-    const memory: MemoryRecord = {
+    return {
       id: ids.memoryId(),
       revision: 1,
       scope: input.scope,
@@ -174,26 +194,34 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       lastUsedAt: null,
       archivedAt: null,
     };
+  }
 
+  async function persistMemory(memory: MemoryRecord, actor: string): Promise<void> {
+    await store.create(memory);
+    await searchIndex.index(memory);
+    await auditLog.append({
+      id: ids.eventId(),
+      memoryId: memory.id,
+      eventType: "memory.created",
+      actor,
+      payload: {
+        kind: memory.kind,
+        scope: memory.scope,
+        tags: memory.tags,
+        confidenceState: memory.confidenceState,
+        provenance: memory.provenance,
+        reviewAfter: memory.reviewAfter?.toISOString() ?? null,
+        expiresAt: memory.expiresAt?.toISOString() ?? null,
+      },
+      createdAt: memory.createdAt,
+    });
+  }
+
+  async function rememberMemory(input: RememberMemoryInput): Promise<MemoryRecord> {
+    const actor = await validateRememberMemory(input);
+    const memory = createMemoryRecord(input);
     await runTransaction(async () => {
-      await store.create(memory);
-      await searchIndex.index(memory);
-      await auditLog.append({
-        id: ids.eventId(),
-        memoryId: memory.id,
-        eventType: "memory.created",
-        actor: input.source,
-        payload: {
-          kind: memory.kind,
-          scope: memory.scope,
-          tags: memory.tags,
-          confidenceState: memory.confidenceState,
-          provenance: memory.provenance,
-          reviewAfter: memory.reviewAfter?.toISOString() ?? null,
-          expiresAt: memory.expiresAt?.toISOString() ?? null,
-        },
-        createdAt: now,
-      });
+      await persistMemory(memory, actor);
     });
 
     return memory;
@@ -820,34 +848,13 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       }
 
       if (input.decision === "create" || input.decision === "keep_separate") {
-        if (input.decision === "create") {
-          const duplicateKey = toCaptureDuplicateKey(input.content);
-          const duplicate = (await findCaptureCandidates({
-            scope: input.scope,
-            duplicateKey,
-            query: input.content,
-            tags: input.tags ?? [],
-            includeCandidates: false,
-            candidateLimit: captureCandidateLimit,
-            exhaustiveScanLimit: captureExhaustiveScanLimit,
-          })).duplicate;
-          if (duplicate) {
-            return {
-              decision: input.decision,
-              status: "skipped",
-              memoryWrites: false,
-              memory: duplicate,
-              requiresConfirmation: false,
-              reason: input.reason.trim(),
-            };
-          }
-        }
         const rememberInput: RememberMemoryInput = {
           content: input.content,
           kind: input.kind,
           scope: input.scope,
           tags: input.tags ?? [],
           source: input.source,
+          actor: input.actor,
           confidenceState: input.confidenceState ?? "user_confirmed",
           provenance: input.provenance ?? null,
           reviewAfter: input.reviewAfter ?? null,
@@ -855,6 +862,45 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
         };
         if (input.confidence !== undefined) {
           rememberInput.confidence = input.confidence;
+        }
+        if (input.decision === "create") {
+          const actor = await validateRememberMemory(rememberInput);
+          const result = await runConfirmedCreate(async () => {
+            const duplicateKey = toCaptureDuplicateKey(input.content);
+            const duplicate = (await findCaptureCandidates({
+              scope: input.scope,
+              duplicateKey,
+              query: input.content,
+              tags: input.tags ?? [],
+              includeCandidates: false,
+              candidateLimit: captureCandidateLimit,
+              exhaustiveScanLimit: captureExhaustiveScanLimit,
+            })).duplicate;
+            if (duplicate) {
+              return { duplicate, memory: null };
+            }
+            const memory = createMemoryRecord(rememberInput);
+            await persistMemory(memory, actor);
+            return { duplicate: null, memory };
+          });
+          if (result.duplicate) {
+            return {
+              decision: input.decision,
+              status: "skipped",
+              memoryWrites: false,
+              memory: result.duplicate,
+              requiresConfirmation: false,
+              reason: input.reason.trim(),
+            };
+          }
+          return {
+            decision: input.decision,
+            status: "created",
+            memoryWrites: true,
+            memory: result.memory,
+            requiresConfirmation: false,
+            reason: input.reason.trim(),
+          };
         }
         const memory = await rememberMemory(rememberInput);
         return {

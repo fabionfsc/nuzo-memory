@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { closeSync, mkdirSync, mkdtempSync, openSync, rmSync, writeFileSync } from "node:fs";
+import { closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import Database from "better-sqlite3";
 import type { MemoryRecord, MemoryService } from "@nuzo/memory-core";
 import {
   createMemoryService,
@@ -335,6 +336,85 @@ describe("host recall hooks", () => {
 
     expect(exitCode).toBe(0);
     expect(stdout).not.toHaveBeenCalled();
+  });
+
+  it("opens older stores read-only without migration or SQLite side effects", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "nuzo-hook-readonly-"));
+    const storePath = join(directory, "memories.sqlite");
+    const legacy = new Database(storePath);
+    legacy.exec(`
+      CREATE TABLE memories (
+        id TEXT PRIMARY KEY,
+        revision INTEGER NOT NULL DEFAULT 1,
+        scope TEXT NOT NULL,
+        kind TEXT NOT NULL,
+        content TEXT NOT NULL,
+        tags TEXT NOT NULL DEFAULT '[]',
+        source TEXT NOT NULL,
+        confidence REAL NOT NULL DEFAULT 1.0,
+        confidence_state TEXT,
+        provenance TEXT,
+        review_after TEXT,
+        expires_at TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        last_used_at TEXT,
+        archived_at TEXT
+      );
+      CREATE TABLE memory_events (
+        id TEXT PRIMARY KEY,
+        memory_id TEXT,
+        event_type TEXT NOT NULL,
+        actor TEXT NOT NULL,
+        payload TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+      CREATE VIRTUAL TABLE memories_fts USING fts5(
+        id UNINDEXED,
+        scope UNINDEXED,
+        content,
+        tags
+      );
+      CREATE TABLE memory_relations (
+        id TEXT PRIMARY KEY,
+        source_memory_id TEXT NOT NULL REFERENCES memories(id) ON DELETE CASCADE,
+        target_memory_id TEXT NOT NULL REFERENCES memories(id) ON DELETE CASCADE,
+        relation TEXT NOT NULL,
+        reason TEXT,
+        created_at TEXT NOT NULL,
+        UNIQUE(source_memory_id, target_memory_id, relation)
+      );
+      PRAGMA user_version = 6;
+    `);
+    legacy.close();
+    const before = readFileSync(storePath);
+    const stdout = vi.fn();
+    const stderr = vi.fn();
+
+    try {
+      const exitCode = await runHostHookProcess([], JSON.stringify({
+        hook_event_name: "SessionStart",
+        cwd: directory,
+      }), { stdout, stderr }, {
+        NUZO_MEMORY_STORE: storePath,
+        NUZO_AUTHORIZED_SCOPES: "project:auto,user:default",
+      });
+
+      expect(exitCode).toBe(0);
+      expect(stdout).not.toHaveBeenCalled();
+      expect(stderr).not.toHaveBeenCalled();
+      expect(readFileSync(storePath)).toEqual(before);
+      expect(existsSync(`${storePath}-wal`)).toBe(false);
+      expect(existsSync(`${storePath}-shm`)).toBe(false);
+      const inspected = new Database(storePath, { readonly: true, fileMustExist: true });
+      expect(inspected.pragma("user_version", { simple: true })).toBe(6);
+      expect(inspected.pragma("table_info(memories)")).not.toEqual(
+        expect.arrayContaining([expect.objectContaining({ name: "capture_key" })]),
+      );
+      inspected.close();
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
   });
 
   it("discovers project config from a nested hook working directory", async () => {

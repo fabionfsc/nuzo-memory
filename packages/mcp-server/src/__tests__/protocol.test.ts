@@ -107,6 +107,85 @@ describe("MCP protocol contract", () => {
 
       const tools = await client.listTools();
       expect(tools.tools.map((tool) => tool.name).sort()).toEqual(sortedMemoryToolNames);
+      const tool = (name: string) => tools.tools.find((candidate) => candidate.name === name);
+      expect(tool("memory.remember")).toMatchObject({
+        description: expect.stringContaining("only when the user explicitly requested this exact write"),
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
+        },
+      });
+      expect(tool("memory.suggest_capture")).toMatchObject({
+        description: expect.stringContaining("Display the returned draft to the user"),
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
+      });
+      expect(tool("memory.confirm_capture")).toMatchObject({
+        description: expect.stringContaining("host's attestation"),
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: true,
+          idempotentHint: false,
+          openWorldHint: false,
+        },
+      });
+      const annotationGroups = {
+        readOnly: [
+          "memory.recall",
+          "memory.recall_hook",
+          "memory.suggest_capture",
+          "memory.list",
+          "memory.show",
+          "memory.relations",
+          "memory.history",
+          "memory.audit",
+          "memory.doctor",
+        ],
+        write: [
+          "memory.remember",
+          "memory.challenge",
+          "memory.relate",
+          "memory.export",
+          "memory.import",
+        ],
+        destructive: [
+          "memory.confirm_capture",
+          "memory.unrelate",
+          "memory.update",
+          "memory.forget",
+          "memory.forget_many",
+        ],
+      };
+      for (const name of annotationGroups.readOnly) {
+        expect(tool(name)?.annotations, name).toEqual({
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        });
+      }
+      for (const name of annotationGroups.write) {
+        expect(tool(name)?.annotations, name).toEqual({
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
+        });
+      }
+      for (const name of annotationGroups.destructive) {
+        expect(tool(name)?.annotations, name).toEqual({
+          readOnlyHint: false,
+          destructiveHint: true,
+          idempotentHint: false,
+          openWorldHint: false,
+        });
+      }
       expect(tools.tools.find((tool) => tool.name === "memory.remember")?.inputSchema)
         .toMatchObject({
           type: "object",
@@ -262,6 +341,14 @@ describe("MCP protocol contract", () => {
         created: true,
       });
       expect(remembered.id).toMatch(/^mem_/);
+      const rememberedHistory = parseToolJson(await client.callTool({
+        name: "memory.history",
+        arguments: { id: remembered.id },
+      })) as { events: Array<{ actor: string; event_type: string }> };
+      expect(rememberedHistory.events[0]).toMatchObject({
+        actor: "nuzo:mcp",
+        event_type: "memory.created",
+      });
 
       const duplicateSuggestion = parseToolJson(await client.callTool({
         name: "memory.suggest_capture",
@@ -359,7 +446,7 @@ describe("MCP protocol contract", () => {
         arguments: {
           memory_id: remembered.id,
           event_type: ["memory.created"],
-          actor: "test:mcp-client",
+          actor: "nuzo:mcp",
           since: "2000-01-01T00:00:00.000Z",
           until: "2999-01-01T00:00:00.000Z",
         },
@@ -368,7 +455,7 @@ describe("MCP protocol contract", () => {
         {
           event_type: "memory.created",
           memory_id: remembered.id,
-          actor: "test:mcp-client",
+          actor: "nuzo:mcp",
         },
       ]);
 
@@ -639,6 +726,7 @@ describe("MCP protocol contract", () => {
           source: "test:capture-confirmed",
           reason: "The user confirmed a durable preference.",
           confirm: true,
+          actor: "nuzo:cli",
         },
       })) as ConfirmCaptureOutput;
       expect(created).toMatchObject({
@@ -653,6 +741,14 @@ describe("MCP protocol contract", () => {
         },
       });
       const createdId = created.memory?.id ?? "";
+      const createdHistory = parseToolJson(await client.callTool({
+        name: "memory.history",
+        arguments: { id: createdId },
+      })) as { events: Array<{ actor: string; event_type: string }> };
+      expect(createdHistory.events[0]).toMatchObject({
+        actor: "nuzo:mcp",
+        event_type: "memory.created",
+      });
 
       const duplicate = parseToolJson(await client.callTool({
         name: "memory.confirm_capture",
