@@ -1,6 +1,6 @@
 # 1.0.0 Supported Host Evidence
 
-Date: 2026-07-12.
+Date: 2026-07-12. Authenticated Claude Code follow-up: 2026-07-13.
 
 This report records the post-1.0 adoption validation run for issue
 [#316](https://github.com/fabionfsc/nuzo-memory/issues/316). It uses synthetic
@@ -16,6 +16,7 @@ behavior.
 | npm | 10.9.8 |
 | Codex CLI | 0.144.1, installed locally |
 | Claude Code CLI | 2.1.195, invoked from its pinned npm package in a temporary HOME |
+| Authenticated Claude Code CLI | 2.1.207, first-party login in the operator profile |
 | Nuzo public runtime | `@nuzo/memory@1.0.0` from npm |
 | Nuzo source artifact | `1.0.0` staged from commit `b562969` plus the corrections in this change |
 
@@ -43,6 +44,11 @@ Nuzo store was used.
 | Backup/restore after upgrade | Public baseline to staged package | Temporary SQLite stores | Passed |
 | Authenticated Codex hook response | Public 1.0.0 runtime through corrected local plugin | Synthetic marker in an isolated store | Passed |
 | Authenticated Codex `memory.recall` | Public 1.0.0 MCP runtime through corrected local plugin | Same synthetic marker and store | Passed |
+| Authenticated Claude Code setup | Public global `@nuzo/memory@1.0.0` and user-scoped marketplace plugin | Clean profile with no pre-existing Nuzo plugin | Passed |
+| Authenticated Claude Code confirmed capture | Public 1.0.0 MCP runtime | `suggest_capture` remained read-only, then `confirm_capture` created one synthetic memory | Passed |
+| Authenticated Claude Code fresh-session hook | New process with tools disabled | Same synthetic marker delivered and used in the model response | Passed |
+| Authenticated Claude Code `memory.recall` | Separate new process and public 1.0.0 MCP runtime | Same marker and memory ID | Passed |
+| Authenticated Claude Code read-only continuity | Store integrity and per-memory history after hook and recall | One memory and only its original `memory.created` event | Passed |
 
 The native marketplace run exercised add, list, update/upgrade, disable,
 enable, uninstall, and reinstall operations. Both generated host artifacts
@@ -85,9 +91,12 @@ The home page, 60-second demo, Why Nuzo guide, and feedback page each returned
 HTTP 200 after deployment.
 
 The dedicated Installation Feedback form is present in the repository and
-requires fake-data confirmation. Opening a synthetic issue solely to test the
-form would create public tracker noise, so schema parsing and rendered form
-availability are the non-mutating validation used here.
+requires fake-data confirmation. Its public rendered URL returned HTTP 200 on
+2026-07-13. A local synthetic success payload selected `Claude Code setup`,
+filled every required environment and outcome field, and accepted the safety
+confirmation. Opening a synthetic issue solely to test submission would create
+public tracker noise, so schema parsing, rendered availability, and local
+payload validation are the non-mutating evidence used here.
 
 ## Host-Native Boundary
 
@@ -98,17 +107,27 @@ and a separate session completed `nuzo/memory.recall` against the same isolated
 store and returned the marker. This proves delivery and one observed compliant
 response, not unconditional model obedience.
 
-Claude Code was not authenticated on this machine. Its remaining evidence is
-narrow:
+The authenticated Claude Code follow-up used a profile with no pre-existing
+Nuzo plugin or global Nuzo package. The public `@nuzo/memory@1.0.0` package
+installed globally, and `nuzo setup --claude-code --yes` installed and enabled
+`nuzo@nuzo-memory@1.0.0` at user scope. `memory.doctor` reported a healthy,
+restricted `user:default` store before capture.
 
-1. install the corrected Nuzo artifact into an authenticated Claude Code
-   profile;
-2. save fake data, close the session, and verify recall in a fresh session;
-3. record delivery separately from whether the model follows recalled text.
+The first authenticated process proposed the exact synthetic
+`NUZO-CLAUDE-REAL-20260713` marker through `memory.suggest_capture`. After the
+test prompt's explicit confirmation, `memory.confirm_capture` created one
+`user:default` memory tagged `installation-test` and `autoload`. A second,
+fresh process had all tools disabled and returned the same marker from Nuzo's
+SessionStart context. This is observed model behavior, not a claim of
+unconditional instruction obedience. A third, separate process called
+`memory.recall` and returned the same marker and memory ID.
 
-Issue #316 remains open for that authenticated Claude Code check. The Codex
-interactive check and all automated install, marketplace, runtime,
-hook-delivery, zero-write, upgrade, and recovery portions are complete.
+The final store integrity check reported one active memory and one matching FTS
+row. Its history contained only the original `memory.created` event, so the
+fresh-session hook and explicit recall introduced no memory or audit write.
+The temporary store and test installation were removed after evidence capture.
+Together with the authenticated Codex run and automated host matrix, this
+completes issue #316's supported-host evidence boundary.
 
 ## Commands
 

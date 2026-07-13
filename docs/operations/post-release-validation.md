@@ -214,6 +214,13 @@ opened a working SQLite store in clean Node.js 22 Debian and Node.js 24 Alpine
 containers. Validation used only temporary fake memory data and left no
 runtime stores or containers in the repository workspace.
 
+The dated authenticated-host follow-up is recorded in
+[1.0.0 Supported Host Evidence](supported-host-evidence-1.0.0.md). Authenticated
+Codex and Claude Code processes each observed a synthetic marker across fresh
+sessions through the public runtime. Delivery, explicit MCP recall, model
+response, and read-only history evidence are reported separately; no real
+memory content or credentials were used.
+
 ## Real Flow To Prove
 
 The canonical post-release smoke is:
