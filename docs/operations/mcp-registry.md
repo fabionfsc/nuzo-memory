@@ -122,6 +122,17 @@ The smoke verifies public npm metadata, then uses the direct
 `npx --yes @nuzo/memory-mcp@1.1.0` heuristic and opens fresh MCP sessions
 against an isolated fake store.
 
+After `mcp-publisher publish` succeeds, verify the exact active Registry API
+record and its official publication metadata:
+
+```bash
+npm run registry:verify
+```
+
+This read-only check requires the response to match the tracked name, version,
+schema, repository, npm package, and stdio transport. It also requires the
+official status to be active and the version to be latest.
+
 ## Authentication
 
 Interactive publication uses:

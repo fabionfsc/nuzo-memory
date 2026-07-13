@@ -184,6 +184,13 @@ test("MCP Registry manifest and npm ownership metadata stay aligned", () => {
   assert.equal(pkg.mcpName, server.name);
   assert.equal(server.packages[0].identifier, pkg.name);
   assert.deepEqual(pkg.bin, { "memory-mcp": "dist/index.js" });
+  const verifier = readFileSync(
+    join(repositoryRoot, "tools", "verify-mcp-registry-listing.mjs"),
+    "utf8",
+  );
+  assert.match(verifier, /io\.modelcontextprotocol\.registry\/official/);
+  assert.match(verifier, /official\?\.status === "active"/);
+  assert.match(verifier, /official\?\.isLatest === true/);
 });
 
 test("release tooling covers public release version references", () => {
