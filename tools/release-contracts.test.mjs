@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import test from "node:test";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   isLocalDependencyReference,
   isSensitiveRehearsalPath,
@@ -10,6 +10,7 @@ import {
   publicReleaseReferencePaths,
   replaceCurrentPackageVersionBlock,
 } from "./release-shared.mjs";
+import { readTrackedMemoryToolNames } from "./mcp-tool-contract-source.mjs";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -78,6 +79,9 @@ test("npm release workflow uses manual OIDC publishing without tokens", () => {
   );
   assert.match(publisher, /definition\.manualFirstPublication === version/);
   assert.match(publisher, /npm requires an authenticated first publication/);
+  assert.match(publisher, /npmArtifactTarballPath/);
+  assert.match(publisher, /inspectNpmPublishTarget/);
+  assert.doesNotMatch(publisher, /"publish",\s*packageRoot/u);
 });
 
 test("local npm credentials and debug logs are ignored", () => {
@@ -127,6 +131,34 @@ test("npm artifact validation reuses the MCP tool contract", () => {
 
   assert.match(script, /tool-contract\.js/);
   assert.doesNotMatch(script, /const expectedMcpTools = \[/);
+});
+
+test("published Registry smoke reads the tracked MCP contract without build output", () => {
+  const script = readFileSync(
+    join(repositoryRoot, "tools", "smoke-published-registry.mjs"),
+    "utf8",
+  );
+
+  assert.equal(readTrackedMemoryToolNames().length, 19);
+  assert.match(script, /readTrackedMemoryToolNames/u);
+  assert.doesNotMatch(script, /packages.*mcp-server.*dist|tool-contract\.js/u);
+});
+
+test("tracked MCP contract parser matches compiled sorted tool names when built", async (context) => {
+  const compiledContract = join(
+    repositoryRoot,
+    "packages",
+    "mcp-server",
+    "dist",
+    "tool-contract.js",
+  );
+  if (!existsSync(compiledContract)) {
+    context.skip("MCP server build output is not present");
+    return;
+  }
+
+  const { sortedMemoryToolNames } = await import(pathToFileURL(compiledContract).href);
+  assert.deepEqual(readTrackedMemoryToolNames(), sortedMemoryToolNames);
 });
 
 test("published host canary suppresses npm warnings without ignoring hook stderr", () => {

@@ -4,6 +4,10 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { assertReleaseVersion, fail } from "./release-shared.mjs";
 import {
+  inspectNpmPublishTarget,
+  npmArtifactTarballPath,
+} from "./npm-artifact-integrity.mjs";
+import {
   publishableNpmPackagesForVersion,
   retiredLegacyNpmPackagesForVersion,
 } from "./npm-package-policy.mjs";
@@ -32,6 +36,7 @@ for (const definition of publishPackages) {
   const packageName = definition.name;
   const packageDirectory = definition.output;
   const packageRoot = join("build", "npm", "packages", packageDirectory);
+  const tarballPath = npmArtifactTarballPath(packageName, version);
   const pkg = readJson(join(packageRoot, "package.json"));
   if (pkg.name !== packageName) {
     fail(`${packageRoot}/package.json has package name ${pkg.name}, expected ${packageName}`);
@@ -40,9 +45,17 @@ for (const definition of publishPackages) {
     fail(`${packageRoot}/package.json has version ${pkg.version}, expected ${version}`);
   }
 
-  if (awaitPackageExists(packageName, version)) {
+  let target;
+  try {
+    target = inspectNpmPublishTarget({ packageName, version, tarballPath });
+  } catch (error) {
+    fail(error.message);
+  }
+  if (target.status === "published-identical") {
     skipped += 1;
-    console.log(`skip ${packageName}@${version}: already published`);
+    console.log(
+      `skip ${packageName}@${version}: already published with matching integrity ${target.integrity}`,
+    );
     continue;
   }
 
@@ -56,7 +69,7 @@ for (const definition of publishPackages) {
 
   const args = [
     "publish",
-    packageRoot,
+    tarballPath,
     "--access",
     "public",
     ...(mode === "dry-run" ? ["--dry-run"] : ["--provenance"]),
@@ -66,19 +79,6 @@ for (const definition of publishPackages) {
 }
 
 console.log(`${mode} complete: ${published} package(s) processed, ${skipped} skipped`);
-
-function awaitPackageExists(packageName, packageVersion) {
-  const view = spawnSync("npm", ["view", `${packageName}@${packageVersion}`, "version"], {
-    encoding: "utf8",
-  });
-  if (view.status === 0) {
-    return true;
-  }
-  if (view.stderr.includes("E404")) {
-    return false;
-  }
-  fail(`could not verify ${packageName}@${packageVersion}: ${view.stderr.trim()}`);
-}
 
 function run(command, args) {
   const result = spawnSync(command, args, {

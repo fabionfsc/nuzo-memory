@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 import { existsSync } from "node:fs";
-import { spawnSync } from "node:child_process";
 import { assertReleaseVersion, fail, readJson } from "./release-shared.mjs";
+import {
+  inspectNpmPublishTarget,
+  npmArtifactTarballPath,
+} from "./npm-artifact-integrity.mjs";
 import {
   publishableNpmPackagesForVersion,
   retiredLegacyNpmPackagesForVersion,
@@ -31,19 +34,22 @@ for (const [packageName, packagePath] of publishPackages) {
     fail(`${packagePath} has version ${pkg.version}, expected ${version}`);
   }
 
-  const view = spawnSync("npm", ["view", `${packageName}@${version}`, "version"], {
-    encoding: "utf8",
-  });
-  if (view.status === 0) {
+  const tarballPath = npmArtifactTarballPath(packageName, version);
+  let target;
+  try {
+    target = inspectNpmPublishTarget({ packageName, version, tarballPath });
+  } catch (error) {
+    fail(error.message);
+  }
+  if (target.status === "published-identical") {
     publishedCount += 1;
-    console.log(`${packageName}@${version} is already published; retry will skip it`);
+    console.log(
+      `${packageName}@${version} is already published with matching integrity ${target.integrity}; retry will skip it`,
+    );
     continue;
   }
-  if (!view.stderr.includes("E404")) {
-    fail(`could not verify ${packageName}@${version} publish target: ${view.stderr.trim()}`);
-  }
   unpublishedCount += 1;
-  console.log(`${packageName}@${version} is available`);
+  console.log(`${packageName}@${version} is available; candidate integrity ${target.integrity}`);
 }
 
 if (unpublishedCount === 0) {
