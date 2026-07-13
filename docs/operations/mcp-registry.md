@@ -126,12 +126,14 @@ After `mcp-publisher publish` succeeds, verify the exact active Registry API
 record and its official publication metadata:
 
 ```bash
-npm run registry:verify
+npm run registry:verify -- 1.1.0
 ```
 
 This read-only check requires the response to match the tracked name, version,
 schema, repository, npm package, and stdio transport. It also requires the
-official status to be active and the version to be latest.
+official status to be active and the version to be latest. Passing the expected
+version explicitly keeps the outbound lookup independent from local file data;
+the response must still match `server.json` exactly.
 
 ## Authentication
 

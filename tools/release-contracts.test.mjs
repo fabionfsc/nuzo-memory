@@ -191,6 +191,9 @@ test("MCP Registry manifest and npm ownership metadata stay aligned", () => {
   assert.match(verifier, /io\.modelcontextprotocol\.registry\/official/);
   assert.match(verifier, /official\?\.status === "active"/);
   assert.match(verifier, /official\?\.isLatest === true/);
+  assert.match(verifier, /const serverName = "io\.github\.fabionfsc\/nuzo-memory"/);
+  assert.match(verifier, /const version = process\.argv\[2\]/);
+  assert.doesNotMatch(verifier, /process\.argv\[2\] \?\? manifest\.name/);
 });
 
 test("release tooling covers public release version references", () => {

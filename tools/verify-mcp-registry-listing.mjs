@@ -2,11 +2,17 @@
 import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { isValidReleaseVersion } from "./release-shared.mjs";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const manifest = readJson("server.json");
-const serverName = process.argv[2] ?? manifest.name;
-const version = process.argv[3] ?? manifest.version;
+const serverName = "io.github.fabionfsc/nuzo-memory";
+const version = process.argv[2];
+
+assert(version !== undefined, "usage: npm run registry:verify -- <version>");
+assert(isValidReleaseVersion(version), "version must be strict SemVer");
+assert(manifest.name === serverName, "server.json name does not match the canonical Registry name");
+assert(manifest.version === version, "requested version does not match server.json");
 const endpoint = new URL(
   `/v0.1/servers/${encodeURIComponent(serverName)}/versions/${encodeURIComponent(version)}`,
   "https://registry.modelcontextprotocol.io",
