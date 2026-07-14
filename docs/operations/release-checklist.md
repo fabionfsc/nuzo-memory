@@ -425,31 +425,41 @@ curl -I https://nuzo.com.br/
 
 If HTTPS is still not enforced, keep the GitHub Pages HTTPS issue open and mention it in release notes if the release depends on the custom domain.
 
-## Tag And Publish
+## Review, Tag, And Publish
 
-After validation and version bump:
+After validation, version bump, and merge to `main`, confirm the working tree
+and exact release commit:
 
 ```bash
 git diff --check
 git status --short
-git tag vX.Y.Z
 git push origin main
-git push origin vX.Y.Z
 ```
-
-Create GitHub release notes from `CHANGELOG.md`.
 
 Run the npm release workflow from `main` with the exact package version and
 `publish=false` first. Confirm it selects the intended version and packages
 without using an npm token. Retain the workflow artifact and record the dry-run
 ID, full source commit, artifact name, and `artifact-manifest.json` SHA-256.
 
-After the dry run passes and the Git tag/release is ready, run the same
-workflow with `publish=true`, supplying `reviewed_run_id` and the reviewed
-manifest SHA-256. The run must verify the successful dry run and publish the
-exact retained candidates from its immutable artifact; its rebuild remains a
-separate validation gate. Confirm the npm package pages show provenance and
-record each matching public `dist.integrity`.
+Only after reviewing that retained artifact, tag the exact reviewed source
+commit and prepare a draft GitHub release from the matching `CHANGELOG.md`
+section:
+
+```bash
+git tag vX.Y.Z <reviewed-source-commit>
+git push origin vX.Y.Z
+```
+
+Keep the GitHub release as a draft until npm publication, Registry publication,
+and the post-release canaries pass. This preserves the reviewed release
+identity without announcing a release that has not completed its irreversible
+publication gates.
+
+Run the same workflow with `publish=true`, supplying `reviewed_run_id` and the
+reviewed manifest SHA-256. The run must verify the successful dry run and
+publish the exact retained candidates from its immutable artifact; its rebuild
+remains a separate validation gate. Confirm the npm package pages show
+provenance and record each matching public `dist.integrity`.
 
 For the one-time `@nuzo/memory-mcp@1.1.0` bootstrap, publish only the retained
 tarball after verifying its manifest and checksum. Record its matching public
@@ -459,7 +469,7 @@ all active packages require it from `1.1.1` onward.
 
 ## Post-Release
 
-- Confirm the GitHub release page is correct.
+- Publish the reviewed draft GitHub release, then confirm its page is correct.
 - Confirm GitHub Pages still deploys successfully.
 - Confirm the matching active npm package versions are published.
 - Open follow-up issues for deferred work.
