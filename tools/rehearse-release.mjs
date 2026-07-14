@@ -91,22 +91,20 @@ function shouldCopy(source) {
 function addSyntheticChangelogSection(root, targetVersion) {
   const path = join(root, "CHANGELOG.md");
   const changelog = readFileSync(path, "utf8");
-  const marker = "## [Unreleased]";
-  const markerIndex = changelog.indexOf(marker);
-  if (markerIndex === -1) {
-    throw new Error("CHANGELOG.md must contain an [Unreleased] section");
+  if (changelog.includes("## [Unreleased]")) {
+    throw new Error("CHANGELOG.md must not contain an [Unreleased] section");
   }
   if (changelog.includes(`## [${targetVersion}] - `)) {
     throw new Error(`CHANGELOG.md already contains release ${targetVersion}`);
   }
 
-  const nextSection = changelog.indexOf("\n## [", markerIndex + marker.length);
-  const insertionIndex = nextSection === -1 ? changelog.length : nextSection;
+  const firstReleaseSection = changelog.indexOf("\n## [");
+  const insertionIndex = firstReleaseSection === -1 ? changelog.length : firstReleaseSection;
   const date = new Date().toISOString().slice(0, 10);
-  const section = `\n## [${targetVersion}] - ${date}\n\nRelease rehearsal only.\n`;
+  const section = `\n\n## [${targetVersion}] - ${date}\n\nRelease rehearsal only.\n`;
   writeFileSync(
     path,
-    `${changelog.slice(0, insertionIndex).trimEnd()}\n${section}${changelog.slice(insertionIndex).trimStart()}`,
+    `${changelog.slice(0, insertionIndex).trimEnd()}${section}\n${changelog.slice(insertionIndex).trimStart()}`,
     "utf8",
   );
 }

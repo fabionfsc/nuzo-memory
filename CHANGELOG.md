@@ -4,8 +4,6 @@ All notable changes to Nuzo will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning after the first public release.
 
-## [Unreleased]
-
 ## [1.1.0] - 2026-07-14
 
 ### Added

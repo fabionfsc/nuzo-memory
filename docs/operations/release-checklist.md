@@ -388,8 +388,9 @@ Before tagging:
   default target and rejects a changelog version that already exists;
 - keep workflow inputs in environment variables and quote them in shell
   commands; do not interpolate user-controlled dispatch inputs directly;
-- move relevant `CHANGELOG.md` entries from `[Unreleased]` into the target version section;
-- keep a fresh empty `[Unreleased]` section above the release section;
+- add a dated target version section to `CHANGELOG.md` and summarize the
+  relevant user-visible changes directly in it;
+- keep the newest released version as the first changelog section;
 - prepare the release version with `npm run release:prepare -- X.Y.Z`;
 - confirm `npm run release:check -- X.Y.Z` passes;
 - confirm public release references in `docs/operations/release-version-map.md`
@@ -473,4 +474,5 @@ all active packages require it from `1.1.1` onward.
 - Confirm GitHub Pages still deploys successfully.
 - Confirm the matching active npm package versions are published.
 - Open follow-up issues for deferred work.
-- Move `CHANGELOG.md` back to an empty `[Unreleased]` section for new development.
+- Leave `CHANGELOG.md` headed by the released version; add the next dated
+  section only when preparing that release.

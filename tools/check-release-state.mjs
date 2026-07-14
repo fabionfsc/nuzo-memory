@@ -92,8 +92,8 @@ function assertSourceVersion(relativePath, pattern, expectedVersion) {
 
 function assertChangelog(expectedVersion) {
   const changelog = readText("CHANGELOG.md");
-  if (!changelog.includes("## [Unreleased]")) {
-    fail("CHANGELOG.md must keep an [Unreleased] section");
+  if (changelog.includes("## [Unreleased]")) {
+    fail("CHANGELOG.md must not contain an [Unreleased] section; use dated release sections only");
   }
   if (expectedVersion === "0.0.0") {
     return;
