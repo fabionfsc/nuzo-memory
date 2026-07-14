@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="docs/assets/logo.svg" alt="Nuzo" width="96" height="96">
-</p>
-
 <h1 align="center">Nuzo</h1>
 
 <p align="center">
@@ -60,10 +56,6 @@ nuzo memory manage
 </details>
 
 ## The Memory Loop
-
-<p align="center">
-  <img src="docs/assets/memory-loop.svg" alt="An agent proposes memory, the user reviews it, confirmed memory is stored locally with an audit trail, and later sessions recall bounded context read-only.">
-</p>
 
 Automatic host hooks only recall. Explicit requests can write directly;
 inferred capture uses a visible suggest-and-confirm flow. The same core policy
