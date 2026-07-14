@@ -1,0 +1,15 @@
+{% extends "main.html" %}
+
+{% block htmltitle %}
+  <title>Nuzo — local-first memory for AI agents</title>
+{% endblock %}
+
+{% block site_nav %}{% endblock %}
+
+{% block container %}
+  <div class="nuzo-home-shell md-content" data-md-component="content">
+    <article class="nuzo-home md-typeset">
+      {{ page.content }}
+    </article>
+  </div>
+{% endblock %}
