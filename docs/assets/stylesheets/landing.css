@@ -12,8 +12,8 @@
   --home-muted: #9ba7a1;
   --home-line: rgba(223, 238, 230, 0.14);
   --home-line-strong: rgba(223, 238, 230, 0.28);
-  --home-accent: #7cf6c6;
-  --home-accent-deep: #27c991;
+  --home-accent: #38d9ff;
+  --home-accent-deep: #0099ff;
   width: 100%;
   max-width: 88rem;
   margin: 0 auto;
@@ -28,9 +28,9 @@
   inset: 0;
   content: "";
   background:
-    linear-gradient(rgba(124, 246, 198, 0.026) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(124, 246, 198, 0.026) 1px, transparent 1px),
-    radial-gradient(circle at 72% 8%, rgba(39, 201, 145, 0.11), transparent 25rem),
+    linear-gradient(rgba(56, 217, 255, 0.026) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 217, 255, 0.026) 1px, transparent 1px),
+    radial-gradient(circle at 72% 8%, rgba(0, 153, 255, 0.11), transparent 25rem),
     var(--home-bg);
   background-size: 4rem 4rem, 4rem 4rem, auto, auto;
 }
@@ -92,7 +92,7 @@
   height: 0.42rem;
   border-radius: 50%;
   background: var(--home-accent);
-  box-shadow: 0 0 0 0.3rem rgba(124, 246, 198, 0.1);
+  box-shadow: 0 0 0 0.3rem rgba(56, 217, 255, 0.1);
 }
 
 .md-typeset .nuzo-hero h1 {
@@ -199,7 +199,7 @@
   position: relative;
   border: 1px solid var(--home-line-strong);
   background: rgba(9, 14, 13, 0.92);
-  box-shadow: 2rem 2rem 0 rgba(124, 246, 198, 0.035);
+  box-shadow: 2rem 2rem 0 rgba(56, 217, 255, 0.035);
   overflow: hidden;
 }
 
@@ -208,7 +208,7 @@
   inset: 0;
   content: "";
   pointer-events: none;
-  background: radial-gradient(circle at var(--trace-x, 70%) var(--trace-y, 12%), rgba(124, 246, 198, 0.1), transparent 14rem);
+  background: radial-gradient(circle at var(--trace-x, 70%) var(--trace-y, 12%), rgba(56, 217, 255, 0.1), transparent 14rem);
 }
 
 .nuzo-trace__topline,
@@ -306,7 +306,7 @@
 }
 
 .nuzo-trace__route button[aria-selected="true"] {
-  background: rgba(124, 246, 198, 0.055);
+  background: rgba(56, 217, 255, 0.055);
   color: var(--home-ink);
 }
 
@@ -674,7 +674,7 @@
   z-index: -1;
   width: 7.2rem;
   height: 7.2rem;
-  border: 1px solid rgba(124, 246, 198, 0.16);
+  border: 1px solid rgba(56, 217, 255, 0.16);
   border-radius: 50%;
   content: "";
 }
@@ -682,7 +682,7 @@
 .nuzo-core-pulse::after {
   width: 9rem;
   height: 9rem;
-  border-color: rgba(124, 246, 198, 0.07);
+  border-color: rgba(56, 217, 255, 0.07);
 }
 
 .nuzo-core-pulse i {
@@ -713,7 +713,7 @@
   margin: 0 calc(clamp(1rem, 4vw, 4.5rem) * -1);
   padding: clamp(5rem, 10vw, 9rem) clamp(1rem, 4vw, 4.5rem);
   border-block: 1px solid var(--home-line);
-  background: rgba(124, 246, 198, 0.035);
+  background: rgba(56, 217, 255, 0.035);
 }
 
 .nuzo-install > * {
@@ -759,7 +759,7 @@
   max-width: 100%;
   border: 1px solid var(--home-line-strong);
   background: #050706;
-  box-shadow: 1.2rem 1.2rem 0 rgba(124, 246, 198, 0.06);
+  box-shadow: 1.2rem 1.2rem 0 rgba(56, 217, 255, 0.06);
 }
 
 .nuzo-command__bar button {
@@ -910,7 +910,7 @@
 }
 
 @keyframes nuzo-home-pulse {
-  50% { opacity: 0.42; box-shadow: 0 0 0 0.42rem rgba(124, 246, 198, 0.08); }
+  50% { opacity: 0.42; box-shadow: 0 0 0 0.42rem rgba(56, 217, 255, 0.08); }
 }
 
 @keyframes nuzo-home-scan {
@@ -973,7 +973,7 @@
   .nuzo-trace {
     margin-right: -0.5rem;
     margin-left: -0.5rem;
-    box-shadow: 0.6rem 0.6rem 0 rgba(124, 246, 198, 0.035);
+    box-shadow: 0.6rem 0.6rem 0 rgba(56, 217, 255, 0.035);
   }
 
   .nuzo-trace__route button {

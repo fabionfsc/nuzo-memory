@@ -17,9 +17,14 @@
   --nuzo-radius: 1.25rem;
 }
 
-.md-header,
+[data-md-color-primary="black"] .md-header,
+[data-md-color-primary="black"] .md-tabs {
+  background: #080b0b;
+  box-shadow: none;
+}
+
 .md-tabs {
-  background: linear-gradient(90deg, #0d1117 0%, #0d1117 48%, #071f2b 100%);
+  border-bottom: 1px solid rgba(223, 238, 230, 0.1);
 }
 
 .md-container,
