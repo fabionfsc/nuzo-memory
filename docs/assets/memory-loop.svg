@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" role="img" aria-labelledby="memory-loop-title memory-loop-desc">
+  <title id="memory-loop-title">Nuzo local memory loop</title>
+  <desc id="memory-loop-desc">An agent session proposes a memory, the user reviews it, Nuzo stores confirmed memory in local SQLite with an audit trail, and later sessions recall bounded context read-only.</desc>
+  <defs>
+    <linearGradient id="loop-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#111827"/>
+      <stop offset="1" stop-color="#071f2b"/>
+    </linearGradient>
+    <linearGradient id="loop-accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#00d1da"/>
+      <stop offset="1" stop-color="#0099ff"/>
+    </linearGradient>
+    <marker id="loop-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#38d9ff"/>
+    </marker>
+    <filter id="loop-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000000" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="560" rx="32" fill="url(#loop-bg)"/>
+  <circle cx="1040" cy="75" r="210" fill="#00d1da" opacity="0.07"/>
+  <circle cx="110" cy="520" r="190" fill="#8b5cf6" opacity="0.06"/>
+
+  <text x="64" y="72" fill="#f8fbff" font-family="system-ui, sans-serif" font-size="28" font-weight="750">Memory stays visible at every step</text>
+  <text x="64" y="104" fill="#aeb8c7" font-family="system-ui, sans-serif" font-size="17">Automatic recall is read-only. Inferred writes wait for confirmation.</text>
+
+  <g fill="none" stroke="#38d9ff" stroke-width="4" marker-end="url(#loop-arrow)">
+    <path d="M 256 268 H 322"/>
+    <path d="M 510 268 H 576"/>
+    <path d="M 764 268 H 830"/>
+    <path d="M 1018 228 C 1100 152, 1090 125, 977 125 H 183 C 92 125, 82 165, 113 213"/>
+  </g>
+
+  <g filter="url(#loop-shadow)" font-family="system-ui, sans-serif">
+    <g transform="translate(68 196)">
+      <rect width="188" height="144" rx="20" fill="#111827" stroke="#334155" stroke-width="2"/>
+      <circle cx="32" cy="32" r="16" fill="#00d1da" opacity="0.18"/>
+      <text x="32" y="38" text-anchor="middle" fill="#00d1da" font-size="16" font-weight="800">1</text>
+      <text x="24" y="76" fill="#f8fbff" font-size="20" font-weight="750">Agent session</text>
+      <text x="24" y="103" fill="#aeb8c7" font-size="16">Explicit request</text>
+      <text x="24" y="126" fill="#aeb8c7" font-size="16">or suggested draft</text>
+    </g>
+
+    <g transform="translate(322 196)">
+      <rect width="188" height="144" rx="20" fill="#111827" stroke="#334155" stroke-width="2"/>
+      <circle cx="32" cy="32" r="16" fill="#00d1da" opacity="0.18"/>
+      <text x="32" y="38" text-anchor="middle" fill="#00d1da" font-size="16" font-weight="800">2</text>
+      <text x="24" y="69" fill="#f8fbff" font-size="18" font-weight="750">Review</text>
+      <text x="24" y="90" fill="#f8fbff" font-size="18" font-weight="750">if inferred</text>
+      <text x="24" y="113" fill="#aeb8c7" font-size="16">Confirm or reject</text>
+      <text x="24" y="135" fill="#aeb8c7" font-size="16">suggested drafts</text>
+    </g>
+
+    <g transform="translate(576 176)">
+      <rect width="188" height="184" rx="20" fill="#0b2430" stroke="url(#loop-accent)" stroke-width="3"/>
+      <circle cx="32" cy="32" r="16" fill="#00d1da" opacity="0.22"/>
+      <text x="32" y="38" text-anchor="middle" fill="#00d1da" font-size="16" font-weight="800">3</text>
+      <text x="24" y="76" fill="#f8fbff" font-size="20" font-weight="750">Local SQLite</text>
+      <text x="24" y="103" fill="#aeb8c7" font-size="16">Scoped records</text>
+      <text x="24" y="126" fill="#aeb8c7" font-size="16">Provenance + revs</text>
+      <path d="M24 142 H164" stroke="#334155"/>
+      <text x="24" y="166" fill="#38d9ff" font-size="15" font-weight="700">Inspectable audit trail</text>
+    </g>
+
+    <g transform="translate(830 196)">
+      <rect width="188" height="144" rx="20" fill="#111827" stroke="#334155" stroke-width="2"/>
+      <circle cx="32" cy="32" r="16" fill="#00d1da" opacity="0.18"/>
+      <text x="32" y="38" text-anchor="middle" fill="#00d1da" font-size="16" font-weight="800">4</text>
+      <text x="24" y="76" fill="#f8fbff" font-size="20" font-weight="750">Bounded recall</text>
+      <text x="24" y="103" fill="#aeb8c7" font-size="16">Read-only context</text>
+      <text x="24" y="126" fill="#aeb8c7" font-size="16">for a later session</text>
+    </g>
+  </g>
+
+  <g transform="translate(68 408)" font-family="system-ui, sans-serif">
+    <rect width="1064" height="88" rx="18" fill="#0d1117" stroke="#334155"/>
+    <text x="28" y="35" fill="#f8fbff" font-size="16" font-weight="750">The trust boundary</text>
+    <text x="28" y="62" fill="#aeb8c7" font-size="17">Recalled memory is untrusted data, never an instruction merely because it was stored.</text>
+    <rect x="838" y="23" width="198" height="42" rx="21" fill="#00d1da" opacity="0.13"/>
+    <text x="937" y="49" text-anchor="middle" fill="#38d9ff" font-size="14" font-weight="750">local-first · auditable</text>
+  </g>
+</svg>

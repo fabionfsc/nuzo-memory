@@ -716,6 +716,10 @@ Record an explicit review decision for one memory. Challenge never deletes
 memory content and never writes inferred memory. It updates review/confidence
 metadata and appends a `memory.challenged` audit event.
 
+The MCP surface records that audit event with actor `nuzo:mcp`; the input
+`actor` field is retained for wire compatibility, ignored, and cannot override
+that audit actor.
+
 Supported outcomes:
 
 - `valid`: mark the memory as user-confirmed and clear `review_after`;
@@ -765,6 +769,10 @@ Output:
 
 Create an explicit relation between two memories. This is a manual write and is
 audited. It does not create, update, archive, or delete either memory.
+
+The MCP surface records the relation audit event with actor `nuzo:mcp`; the
+input `actor` field is retained for wire compatibility, ignored, and cannot
+override that audit actor.
 
 Input:
 
@@ -834,6 +842,10 @@ Output:
 ### `memory.unrelate`
 
 Remove one explicit relation without deleting either memory.
+
+The MCP surface records the removal audit event with actor `nuzo:mcp`; the
+input `actor` field is retained for wire compatibility, ignored, and cannot
+override that audit actor.
 
 Input:
 

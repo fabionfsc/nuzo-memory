@@ -22,7 +22,8 @@ packages, host plugin source, and release tooling.
 │   ├── codex-plugin/
 │   ├── core/
 │   ├── memory/
-│   └── mcp-server/
+│   ├── mcp-server/
+│   └── registry-server/
 ├── tools/
 ├── AGENTS.md
 ├── CHANGELOG.md
@@ -86,9 +87,10 @@ cleanly. Prefer merging small operational notes into the relevant docs page.
 - CLI command: `nuzo memory`.
 - User package: `@nuzo/memory`.
 - Core package: `@nuzo/memory-core`.
+- MCP Registry package: `@nuzo/memory-mcp`, starting with `1.1.0`. It is a
+  generated single-entrypoint distribution of the shared MCP server.
 - Legacy transition packages: `@nuzo/memory-cli` and `@nuzo/mcp-server`.
   These remain source packages, but their final public npm release was
-  `0.9.0`; later public releases publish only `@nuzo/memory-core` and
-  `@nuzo/memory`.
+  `0.9.0`; later public releases never revive those names.
 - Host plugin display name: `Nuzo`.
 - Default config directory: `~/.nuzo/`.

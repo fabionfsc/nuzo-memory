@@ -24,8 +24,11 @@ const { sortedMemoryToolNames: expectedMcpTools } = await import(
 const tarballsRoot = join(repositoryRoot, "build", "npm", "tarballs");
 const corePackage = readJson(join(repositoryRoot, "packages", "core", "package.json"));
 const memoryPackage = readJson(join(repositoryRoot, "packages", "memory", "package.json"));
+const registryPackage = readJson(join(repositoryRoot, "packages", "registry-server", "package.json"));
 const coreTarball = join(tarballsRoot, tarballName(corePackage));
 const memoryTarball = join(tarballsRoot, tarballName(memoryPackage));
+const registryTarball = join(tarballsRoot, tarballName(registryPackage));
+const hasRegistryTarball = existsSync(registryTarball);
 const testRoot = mkdtempSync(join(tmpdir(), "nuzo-npm-artifacts-"));
 const cliStorePath = join(testRoot, "memory", "cli.sqlite");
 const mcpStorePath = join(testRoot, "memory", "mcp.sqlite");
@@ -45,6 +48,7 @@ try {
       "--no-fund",
       coreTarball,
       memoryTarball,
+      ...(hasRegistryTarball ? [registryTarball] : []),
     ],
     testRoot,
     { PATH: `${shadowBin}${delimiter}${process.env.PATH ?? ""}` },
@@ -59,11 +63,17 @@ try {
   const installedMemory = readJson(
     join(testRoot, "node_modules", "@nuzo", "memory", "package.json"),
   );
+  const installedRegistry = hasRegistryTarball
+    ? readJson(join(testRoot, "node_modules", "@nuzo", "memory-mcp", "package.json"))
+    : null;
   if (installedCore.version !== installedMemory.version) {
     fail("installed core and memory package versions differ");
   }
 
   assertOptionalSemanticPackageBoundary(testRoot, installedCore, installedMemory);
+  if (installedRegistry !== null) {
+    assertRegistryPackageBoundary(installedCore, installedRegistry);
+  }
 
   assertCliWorkflow(testRoot, cliStorePath);
   assertDefaultSemanticWorkflow(testRoot, semanticStorePath);
@@ -75,10 +85,24 @@ try {
     );
   }
   await assertMcpProtocol(testRoot, mcpStorePath);
+  if (installedRegistry !== null) {
+    await assertRegistryMcpProtocol(testRoot, mcpStorePath);
+  }
   assertHostHookDoctor(testRoot, mcpStorePath);
   console.log(`npm artifact validation passed: ${installedMemory.version}`);
 } finally {
   rmSync(testRoot, { recursive: true, force: true });
+}
+
+function assertRegistryPackageBoundary(installedCore, installedRegistry) {
+  if (
+    installedRegistry.version !== installedCore.version ||
+    installedRegistry.dependencies?.["@nuzo/memory-core"] !== installedCore.version ||
+    installedRegistry.mcpName !== "io.github.fabionfsc/nuzo-memory" ||
+    JSON.stringify(installedRegistry.bin) !== JSON.stringify({ "memory-mcp": "dist/index.js" })
+  ) {
+    fail(`registry package boundary is invalid: ${JSON.stringify(installedRegistry)}`);
+  }
 }
 
 function assertOptionalSemanticPackageBoundary(root, installedCore, installedMemory) {
@@ -252,6 +276,19 @@ async function assertMcpProtocol(cwd, memoryStore) {
     args: invocation.args,
     memoryStore,
     label: "installed MCP",
+    expectedToolNames: expectedMcpTools,
+  });
+}
+
+async function assertRegistryMcpProtocol(cwd, memoryStore) {
+  await assertMcpSessionContinuity({
+    cwd,
+    command: process.platform === "win32" ? process.execPath : join(cwd, "node_modules", ".bin", "memory-mcp"),
+    args: process.platform === "win32"
+      ? [join(cwd, "node_modules", "@nuzo", "memory-mcp", "dist", "index.js")]
+      : [],
+    memoryStore,
+    label: "installed MCP Registry entrypoint",
     expectedToolNames: expectedMcpTools,
   });
 }

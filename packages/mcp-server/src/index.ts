@@ -165,7 +165,7 @@ export function createNuzoMcpServerRuntime(options: NuzoMcpServerOptions = {}): 
   let closePromise: Promise<void> | null = null;
   const server = new McpServer({
     name: "nuzo",
-    version: "1.0.0",
+    version: "1.1.0",
   });
 
   registerMemoryTools(server, service, {
@@ -405,7 +405,7 @@ export function registerMemoryTools(
         actor: z.string()
           .min(1)
           .max(memoryLimits.actorLength)
-          .describe("Compatibility attribution hint; the MCP audit actor remains nuzo:mcp.")
+          .describe("Ignored compatibility field; the MCP audit actor remains nuzo:mcp.")
           .default("nuzo:mcp"),
         target_memory_id: memoryIdSchema.optional(),
         expected_revision: z.number().int().min(1).optional(),
@@ -508,7 +508,11 @@ export function registerMemoryTools(
         id: memoryIdSchema,
         outcome: challengeOutcomeSchema,
         reason: z.string().min(1).max(memoryLimits.reasonLength),
-        actor: z.string().min(1).max(memoryLimits.actorLength).default("nuzo:mcp"),
+        actor: z.string()
+          .min(1)
+          .max(memoryLimits.actorLength)
+          .describe("Ignored compatibility field; the MCP audit actor remains nuzo:mcp.")
+          .default("nuzo:mcp"),
         expected_revision: z.number().int().min(1).optional(),
         superseded_by_memory_id: memoryIdSchema.optional(),
       },
@@ -540,7 +544,11 @@ export function registerMemoryTools(
         target_memory_id: memoryIdSchema,
         relation: relationTypeSchema,
         reason: z.string().min(1).max(memoryLimits.reasonLength).optional(),
-        actor: z.string().min(1).max(memoryLimits.actorLength).default("nuzo:mcp"),
+        actor: z.string()
+          .min(1)
+          .max(memoryLimits.actorLength)
+          .describe("Ignored compatibility field; the MCP audit actor remains nuzo:mcp.")
+          .default("nuzo:mcp"),
       },
     },
     withJsonErrorHandling(async (input) => {
@@ -586,7 +594,11 @@ export function registerMemoryTools(
       inputSchema: {
         id: memoryIdSchema,
         reason: z.string().min(1).max(memoryLimits.reasonLength).optional(),
-        actor: z.string().min(1).max(memoryLimits.actorLength).default("nuzo:mcp"),
+        actor: z.string()
+          .min(1)
+          .max(memoryLimits.actorLength)
+          .describe("Ignored compatibility field; the MCP audit actor remains nuzo:mcp.")
+          .default("nuzo:mcp"),
       },
     },
     withJsonErrorHandling(async (input) => {

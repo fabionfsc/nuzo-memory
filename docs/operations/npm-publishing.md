@@ -15,6 +15,12 @@ The unified package depends on:
 Core and unified packages use the same version and must be released together.
 `@nuzo/memory-cli` and `@nuzo/mcp-server` are legacy transition packages.
 
+Starting with `1.1.0`, `@nuzo/memory-mcp` is the single-entrypoint npm
+distribution referenced by the official MCP Registry. It packages the same
+MCP server output and depends on the same exact `@nuzo/memory-core` version; it
+does not introduce another implementation or replace `@nuzo/memory` for normal
+installation.
+
 ## Package Lifecycle
 
 Use `@nuzo/memory` as the public runtime package for normal users and host
@@ -34,7 +40,9 @@ After the validated `0.9.0` publication, maintainers completed the transition:
 - mark every published version of both transition packages deprecated on npm;
 - point users to `@nuzo/memory` in the npm deprecation message;
 - stop publishing new `@nuzo/memory-cli` and `@nuzo/mcp-server` versions;
-- publish later releases only for `@nuzo/memory-core` and `@nuzo/memory`.
+- keep later active packages separate from the retired transition names;
+  `@nuzo/memory-mcp` joins the active set at `1.1.0` solely as the
+  single-entrypoint Registry distribution.
 
 Deprecation changes npm metadata; it does not remove an existing version or
 break an installed dependency. Ending public transition-package publication
@@ -48,11 +56,12 @@ package is still present in `build/npm/packages/`.
 
 ## Current Release
 
-Version `1.0.0` is the current release:
+Version `1.1.0` is the current release:
 
 ```text
-@nuzo/memory-core@1.0.0
-@nuzo/memory@1.0.0
+@nuzo/memory-core@1.1.0
+@nuzo/memory@1.1.0
+@nuzo/memory-mcp@1.1.0
 ```
 
 The packages are published together from the same source version. Routine
@@ -109,8 +118,9 @@ The source workspace packages remain:
 }
 ```
 
-Do not run `npm publish` from `packages/core`, `packages/cli`, or
-`packages/mcp-server`.
+Do not run `npm publish` from any source workspace, including
+`packages/core`, `packages/cli`, `packages/mcp-server`, or
+`packages/registry-server`.
 
 Generate publish candidates instead:
 
@@ -122,6 +132,7 @@ This creates ignored staging directories and tarballs under:
 
 ```text
 build/npm/
+├── artifact-manifest.json
 ├── packages/
 │   ├── memory-core/
 │   ├── memory-cli/
@@ -130,7 +141,7 @@ build/npm/
 └── tarballs/
 ```
 
-For releases after `0.9.0`, generated staging must contain only:
+For `1.0.x`, generated staging contains only:
 
 ```text
 build/npm/
@@ -138,6 +149,13 @@ build/npm/
 │   ├── memory-core/
 │   └── memory/
 └── tarballs/
+```
+
+Starting with `1.1.0`, staging additionally contains:
+
+```text
+build/npm/packages/memory-mcp/
+build/npm/tarballs/nuzo-memory-mcp-X.Y.Z.tgz
 ```
 
 The staging process:
@@ -150,6 +168,9 @@ The staging process:
   dependency references;
 - copies runtime output, README, and Apache-2.0 license;
 - rejects tests, source files, databases, exports, secrets, and environment files.
+- records every tarball's npm SRI, SHA-256, byte size, and source commit in
+  `artifact-manifest.json`, then verifies the manifest against the generated
+  bytes before returning success.
 
 ## Validation
 
@@ -172,7 +193,10 @@ The validation:
 7. connects an SDK client to the installed `nuzo-mcp-server` binary over stdio;
 8. verifies the exact public tool set, calls `memory.doctor`, and exercises
    `memory.suggest_capture`, `memory.confirm_capture`, and
-   `memory.recall_hook` against a temporary store.
+   `memory.recall_hook` against a temporary store;
+9. validates the Registry package's canonical `mcpName`, single bin, exact
+   core pin, and MCP session continuity through the installed `memory-mcp`
+   entrypoint.
 
 The command does not publish anything.
 
@@ -200,12 +224,71 @@ For `0.9.0`, that is:
 @nuzo/mcp-server
 ```
 
-For releases after `0.9.0`, including `1.0.0`, that is:
+For `1.0.x`, that is:
 
 ```text
 @nuzo/memory-core
 @nuzo/memory
 ```
+
+Starting with `1.1.0`, also configure the same trusted publisher for:
+
+```text
+@nuzo/memory-mcp
+```
+
+The package is new in `1.1.0`. npm requires a package to exist before its
+trusted publisher can be configured, and staged publishing cannot bootstrap a
+brand-new package. For `1.1.0` only, the publish tool deliberately defers
+`@nuzo/memory-mcp` in live mode. Publish core and unified memory through OIDC,
+then perform one authenticated first publication of the exact retained
+`nuzo-memory-mcp-1.1.0.tgz` candidate from the reviewed dry-run workflow.
+Configure its trusted publisher immediately afterward. Do not add an npm token
+to the release workflow.
+
+The dry run retains `artifact-manifest.json` and all three tarballs for 14 days
+under an artifact named `nuzo-npm-<version>-<commit>`. Record the manifest
+SHA-256 and workflow run ID. Supply both as `artifact_manifest_sha256` and
+`reviewed_run_id` when running the same workflow with `publish=true`. The live
+run verifies that the reviewed run completed successfully on the same `main`
+commit, downloads that run's immutable artifact, checks its manifest and
+source commit, and publishes those exact retained tarballs. It also rebuilds
+from the release checkout as an independent gate, but rebuilt bytes are not the
+publication source. If the artifact is absent or has expired, create and review
+a new dry-run workflow instead of rebuilding it locally.
+
+After the OIDC workflow has published `@nuzo/memory-core@1.1.0`, download the
+reviewed dry-run artifact and verify it from the exact release checkout:
+
+```bash
+NUZO_NPM_CANDIDATE=/tmp/nuzo-npm-1.1.0
+rm -rf "$NUZO_NPM_CANDIDATE"
+gh run download <dry-run-id> \
+  --name "nuzo-npm-1.1.0-<full-commit>" \
+  --dir "$NUZO_NPM_CANDIDATE"
+node tools/verify-npm-artifact-manifest.mjs \
+  1.1.0 <reviewed-manifest-sha256> "$NUZO_NPM_CANDIDATE" <full-commit>
+node tools/check-npm-publish-targets.mjs \
+  1.1.0 "$NUZO_NPM_CANDIDATE/tarballs" \
+  <reviewed-manifest-sha256> <full-commit>
+npm publish \
+  "$NUZO_NPM_CANDIDATE/tarballs/nuzo-memory-mcp-1.1.0.tgz" \
+  --access public
+node tools/check-npm-publish-targets.mjs \
+  1.1.0 "$NUZO_NPM_CANDIDATE/tarballs" \
+  <reviewed-manifest-sha256> <full-commit>
+```
+
+Run it only after `npm login`, target availability checks, the bound OIDC
+workflow, and all release gates pass. Do not rebuild the manual package or
+publish its staging directory.
+
+The authenticated local bootstrap cannot produce GitHub Actions npm
+provenance. `@nuzo/memory-mcp@1.1.0` is the one documented exception: its
+retained manifest, workflow run, tarball SHA-256, and public `dist.integrity`
+are the evidence chain. Core and unified memory still require OIDC provenance.
+Configure trusted publishing immediately so `1.1.1` and later have normal npm
+provenance for all active packages.
 
 Use these settings for every package:
 
@@ -222,18 +305,26 @@ The workflow installs the reviewed exact npm version `11.5.1` because trusted
 publishing requires OIDC-capable npm. Bump that version only through a reviewed
 pull request that keeps `npm run check:supply-chain` green. The workflow
 validates the source release state for one explicit SemVer input, builds the
-publish staging packages, rejects already-published versions, rejects retired
-legacy staging after `0.9.0`, and publishes in dependency order:
+publish staging packages, permits byte-identical partial retries, rejects
+divergent existing versions, rejects retired legacy staging after `0.9.0`, and
+publishes in dependency order:
 
 ```text
-@nuzo/memory-core -> @nuzo/memory
+@nuzo/memory-core -> @nuzo/memory -> @nuzo/memory-mcp
 ```
 
 The legacy transition suffix applies only through `0.9.0`; later releases use
-the active-package order shown above.
+the active-package order shown above. The one-time `1.1.0` manual bootstrap is
+the only exception.
 
 Run it first with `publish` set to `false`. That dry run proves the workflow
-selects the intended version and package set without publishing.
+selects the intended version and package set without publishing, prints the
+reviewed manifest SHA-256, and retains the exact candidates. A live run must
+provide both that SHA-256 and the dry-run workflow ID. It fails closed unless
+the run, workflow, successful dry-run steps, source commit, artifact name,
+manifest, and tarball bytes all match, then publishes the downloaded candidates.
+Use a fresh workflow dispatch if a dry-run needs to be repeated; rerun attempts
+are deliberately rejected to avoid ambiguous artifact evidence.
 
 When `publish` is `true`, the workflow runs:
 
@@ -268,7 +359,7 @@ npm publish --access public
 ```
 
 This manual first-publication sequence is historical and applies only to the
-pre-`1.0.0` transition set. Do not use it as the package list for `1.0.0` or
+pre-`1.1.0` transition set. Do not use it as the package list for `1.1.0` or
 later releases.
 
 Verify before distributing host plugins:
@@ -313,11 +404,13 @@ If publication fails:
 
 1. Stop before retrying with broader credentials.
 2. Check `npm whoami` and organization membership.
-3. Confirm the target version does not already exist.
+3. If the target version exists, compare its `dist.integrity` with the retained
+   reviewed tarball; never skip or combine a divergent immutable package.
 4. Confirm the trusted publisher settings exactly match `fabionfsc`,
    `nuzo-memory`, `release-npm.yml`, and the `npm-publish` environment.
 5. Re-run `npm run validate:npm`.
-6. Inspect the generated staging package, not the source workspace package.
+6. Inspect the retained tarball and `artifact-manifest.json`, not the source
+   workspace package or a rebuilt staging directory.
 7. If credentials may have leaked, revoke them before further work.
 
 Never delete or rewrite a published version to repair a failed release. Fix the

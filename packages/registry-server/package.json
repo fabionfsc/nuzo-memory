@@ -1,0 +1,32 @@
+{
+  "name": "@nuzo/memory-mcp",
+  "version": "1.1.0",
+  "private": true,
+  "description": "Registry-ready MCP server distribution for Nuzo local memory.",
+  "keywords": [
+    "ai-agents",
+    "memory",
+    "mcp",
+    "local-first"
+  ],
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22",
+    "npm": ">=10"
+  },
+  "mcpName": "io.github.fabionfsc/nuzo-memory",
+  "bin": {
+    "memory-mcp": "dist/index.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@nuzo/memory-core": "1.1.0",
+    "zod": "^4.1.13"
+  }
+}

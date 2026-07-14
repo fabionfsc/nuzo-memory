@@ -9,6 +9,7 @@ import {
   RandomIdGenerator,
   RegexSecretScanner,
   resolveNuzoRuntimeConfig,
+  schemaVersion,
   SQLiteMemoryDatabase,
   SystemClock,
 } from "@nuzo/memory-core";
@@ -122,6 +123,12 @@ export async function runHostHookProcess(
     }
     const database = new SQLiteMemoryDatabase({ path: storePath, readonly: true });
     try {
+      const storeSchemaVersion = database.getSchemaVersion();
+      if (storeSchemaVersion > schemaVersion) {
+        throw new Error(
+          `memory schema ${storeSchemaVersion} is newer than supported schema ${schemaVersion}`,
+        );
+      }
       const service = createMemoryService({
         store: database,
         searchIndex: database,

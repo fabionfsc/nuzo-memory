@@ -1,6 +1,6 @@
 # 60-Second Demo
 
-This demo uses the public Nuzo `1.0.0` package and a disposable store. It does
+This demo uses the public Nuzo `1.1.0` package and a disposable store. It does
 not configure a host, touch your default memory, or use real personal data.
 
 Prerequisites: Node.js 22 LTS or 24 LTS and npm 10 or newer.
@@ -8,7 +8,7 @@ Prerequisites: Node.js 22 LTS or 24 LTS and npm 10 or newer.
 ## Install
 
 ```bash
-npm install --global @nuzo/memory@1.0.0
+npm install --global @nuzo/memory@1.1.0
 nuzo --version
 ```
 

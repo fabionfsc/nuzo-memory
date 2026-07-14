@@ -10,6 +10,11 @@ import {
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import {
+  npmArtifactIntegrity,
+  npmArtifactSha256,
+  verifyNpmArtifactManifest,
+} from "./npm-artifact-integrity.mjs";
 import { isLocalDependencyReference } from "./release-shared.mjs";
 import {
   isAtLeastVersion,
@@ -22,6 +27,7 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const outputRoot = join(repositoryRoot, "build", "npm");
 const packagesRoot = join(outputRoot, "packages");
 const tarballsRoot = join(outputRoot, "tarballs");
+const artifactRecords = [];
 
 rmSync(outputRoot, { recursive: true, force: true });
 mkdirSync(packagesRoot, { recursive: true });
@@ -64,6 +70,10 @@ for (const definition of definitions) {
     cpSync(join(repositoryRoot, "packages", "mcp-server", "dist"), join(destination, "dist", "mcp-server"), {
       recursive: true,
     });
+  } else if (definition.kind === "registry") {
+    cpSync(join(repositoryRoot, "packages", "mcp-server", "dist"), join(destination, "dist"), {
+      recursive: true,
+    });
   } else {
     cpSync(join(sourceRoot, "dist"), join(destination, "dist"), { recursive: true });
   }
@@ -79,10 +89,28 @@ for (const definition of definitions) {
   );
 
   validateStagedPackage(destination, publishPackage);
-  pack(destination);
+  artifactRecords.push(pack(destination));
 }
 
+artifactRecords.sort((left, right) => left.name.localeCompare(right.name));
+writeFileSync(
+  join(outputRoot, "artifact-manifest.json"),
+  `${JSON.stringify({
+    schemaVersion: 1,
+    version: packageVersion,
+    sourceCommit: process.env.GITHUB_SHA ?? null,
+    packages: artifactRecords,
+  }, null, 2)}\n`,
+  "utf8",
+);
+const verifiedManifest = verifyNpmArtifactManifest({
+  artifactRoot: outputRoot,
+  version: packageVersion,
+  packageNames: definitions.map((definition) => definition.name),
+});
+
 console.log(`npm artifacts ready: ${outputRoot}`);
+console.log(`npm artifact manifest sha256: ${verifiedManifest.manifestSha256}`);
 
 function createPublishPackage(sourcePackage) {
   if (sourcePackage.private !== true) {
@@ -146,6 +174,9 @@ function sourceDirectoryFor(name) {
   if (name === "@nuzo/memory") {
     return "packages/memory";
   }
+  if (name === "@nuzo/memory-mcp") {
+    return "packages/mcp-server";
+  }
   if (name === "@nuzo/mcp-server") {
     return "packages/mcp-server";
   }
@@ -182,6 +213,17 @@ function validateStagedPackage(root, pkg) {
     }
     if (pkg.scripts?.postinstall !== "node postinstall.mjs") {
       fail("@nuzo/memory must expose the postinstall guidance script");
+    }
+  }
+  if (pkg.name === "@nuzo/memory-mcp") {
+    if (pkg.mcpName !== "io.github.fabionfsc/nuzo-memory") {
+      fail("@nuzo/memory-mcp must expose the canonical MCP Registry name");
+    }
+    if (pkg.dependencies?.["@nuzo/memory-core"] !== pkg.version) {
+      fail("@nuzo/memory-mcp must pin @nuzo/memory-core to the same version");
+    }
+    if (Object.keys(pkg.bin ?? {}).length !== 1 || pkg.bin?.["memory-mcp"] !== "dist/index.js") {
+      fail("@nuzo/memory-mcp must expose only the deterministic memory-mcp binary");
     }
   }
   if (pkg.name === "@nuzo/memory-cli") {
@@ -238,6 +280,18 @@ function validateStagedReadme(root, pkg) {
       }
     }
   }
+  if (pkg.name === "@nuzo/memory-mcp") {
+    for (const requiredText of [
+      "npx --yes @nuzo/memory-mcp@",
+      "io.github.fabionfsc/nuzo-memory",
+      "no telemetry",
+      "Writes remain explicit and auditable",
+    ]) {
+      if (!readme.includes(requiredText)) {
+        fail(`${pkg.name} staged README is missing registry guidance: ${requiredText}`);
+      }
+    }
+  }
   if (["@nuzo/memory-cli", "@nuzo/mcp-server"].includes(pkg.name)) {
     if (
       !readme.includes("New installs should use `@nuzo/memory`") ||
@@ -285,7 +339,21 @@ function pack(packageRoot) {
     fail(`forbidden npm package files: ${forbidden.join(", ")}`);
   }
 
-  console.log(`packed ${report[0].name}@${report[0].version}: ${report[0].filename}`);
+  const tarballPath = join(tarballsRoot, report[0].filename);
+  const record = {
+    name: report[0].name,
+    version: report[0].version,
+    filename: report[0].filename,
+    size: report[0].size,
+    integrity: npmArtifactIntegrity(tarballPath),
+    sha256: npmArtifactSha256(tarballPath),
+  };
+  if (report[0].integrity !== record.integrity) {
+    fail(`npm pack integrity mismatch for ${record.name}@${record.version}`);
+  }
+
+  console.log(`packed ${record.name}@${record.version}: ${record.filename}`);
+  return record;
 }
 
 function readJson(path) {

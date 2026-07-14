@@ -774,7 +774,7 @@ export function createMemoryToolHandlers(
         id: input.id,
         outcome: input.outcome,
         reason: input.reason,
-        actor: input.actor,
+        actor: "nuzo:mcp",
         ...(input.expected_revision === undefined ? {} : { expectedRevision: input.expected_revision }),
         ...(input.superseded_by_memory_id === undefined ? {} : { supersededByMemoryId: input.superseded_by_memory_id }),
       });
@@ -790,7 +790,7 @@ export function createMemoryToolHandlers(
         sourceMemoryId: input.source_memory_id,
         targetMemoryId: input.target_memory_id,
         relation: input.relation,
-        actor: input.actor,
+        actor: "nuzo:mcp",
         ...(input.reason === undefined ? {} : { reason: input.reason }),
       });
       return {
@@ -812,7 +812,7 @@ export function createMemoryToolHandlers(
     async unrelate(input) {
       await service.forgetRelation({
         id: input.id,
-        actor: input.actor,
+        actor: "nuzo:mcp",
         ...(input.reason === undefined ? {} : { reason: input.reason }),
       });
       return {

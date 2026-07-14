@@ -1,17 +1,42 @@
 #!/usr/bin/env node
 import { existsSync } from "node:fs";
-import { spawnSync } from "node:child_process";
 import { assertReleaseVersion, fail, readJson } from "./release-shared.mjs";
+import {
+  inspectNpmPublishTarget,
+  npmArtifactRootFromTarballs,
+  npmArtifactTarballPath,
+  verifyNpmArtifactManifest,
+} from "./npm-artifact-integrity.mjs";
 import {
   publishableNpmPackagesForVersion,
   retiredLegacyNpmPackagesForVersion,
 } from "./npm-package-policy.mjs";
 
 const version = process.argv[2];
+const tarballsRoot = process.argv[3];
+const expectedManifestSha256 = process.argv[4];
+const expectedSourceCommit = process.argv[5];
 assertReleaseVersion(version);
 
-const publishPackages = publishableNpmPackagesForVersion(version)
-  .map((definition) => [definition.name, definition.packageJson]);
+const publishPackages = publishableNpmPackagesForVersion(version);
+
+if (tarballsRoot !== undefined) {
+  try {
+    if (expectedManifestSha256 === undefined || expectedSourceCommit === undefined) {
+      throw new Error("external npm artifacts require an expected manifest SHA-256 and source commit");
+    }
+    const externalArtifact = npmArtifactRootFromTarballs(tarballsRoot);
+    verifyNpmArtifactManifest({
+      artifactRoot: externalArtifact.artifactRoot,
+      version,
+      packageNames: publishPackages.map((definition) => definition.name),
+      expectedManifestSha256,
+      expectedSourceCommit,
+    });
+  } catch (error) {
+    fail(error instanceof Error ? error.message : String(error));
+  }
+}
 
 for (const definition of retiredLegacyNpmPackagesForVersion(version)) {
   if (existsSync(definition.packageJson)) {
@@ -22,28 +47,38 @@ for (const definition of retiredLegacyNpmPackagesForVersion(version)) {
 let unpublishedCount = 0;
 let publishedCount = 0;
 
-for (const [packageName, packagePath] of publishPackages) {
-  const pkg = readJson(packagePath);
-  if (pkg.name !== packageName) {
-    fail(`${packagePath} has package name ${pkg.name}, expected ${packageName}`);
-  }
-  if (pkg.version !== version) {
-    fail(`${packagePath} has version ${pkg.version}, expected ${version}`);
+for (const definition of publishPackages) {
+  const packageName = definition.name;
+  if (tarballsRoot === undefined) {
+    const pkg = readJson(definition.packageJson);
+    if (pkg.name !== packageName) {
+      fail(`${definition.packageJson} has package name ${pkg.name}, expected ${packageName}`);
+    }
+    if (pkg.version !== version) {
+      fail(`${definition.packageJson} has version ${pkg.version}, expected ${version}`);
+    }
   }
 
-  const view = spawnSync("npm", ["view", `${packageName}@${version}`, "version"], {
-    encoding: "utf8",
-  });
-  if (view.status === 0) {
+  const tarballPath = npmArtifactTarballPath(
+    packageName,
+    version,
+    tarballsRoot,
+  );
+  let target;
+  try {
+    target = inspectNpmPublishTarget({ packageName, version, tarballPath });
+  } catch (error) {
+    fail(error.message);
+  }
+  if (target.status === "published-identical") {
     publishedCount += 1;
-    console.log(`${packageName}@${version} is already published; retry will skip it`);
+    console.log(
+      `${packageName}@${version} is already published with matching integrity ${target.integrity}; retry will skip it`,
+    );
     continue;
   }
-  if (!view.stderr.includes("E404")) {
-    fail(`could not verify ${packageName}@${version} publish target: ${view.stderr.trim()}`);
-  }
   unpublishedCount += 1;
-  console.log(`${packageName}@${version} is available`);
+  console.log(`${packageName}@${version} is available; candidate integrity ${target.integrity}`);
 }
 
 if (unpublishedCount === 0) {

@@ -114,28 +114,29 @@ nav:
       - Planning:
           - Roadmap: operations/roadmap.md
           - Release Goals: operations/release-goals.md
-          - 1.0.0 Developer Experience Contract: operations/developer-experience-1.0.0.md
           - Issue Tracking: operations/issue-tracking.md
           - Specification-Driven Workflow: operations/spec-driven-workflow.md
       - Release Process:
           - Versioning: operations/versioning.md
           - Release Version Map: operations/release-version-map.md
           - npm Publishing: operations/npm-publishing.md
+          - MCP Registry Publication: operations/mcp-registry.md
           - Release Checklist: operations/release-checklist.md
-          - 1.0.0 Release Readiness Audit: operations/release-readiness-1.0.0.md
           - Post-Release Validation: operations/post-release-validation.md
-          - 1.0.0 Supported Host Evidence: operations/supported-host-evidence-1.0.0.md
           - Public Launch Playbook: operations/public-launch.md
           - GitHub Pages: operations/github-pages.md
       - Engineering Quality:
           - Coding Standards: operations/coding-standards.md
           - Testing Strategy: operations/testing-strategy.md
-          - 1.0.0 Codebase Audit: operations/codebase-audit-1.0.0.md
           - Recall Benchmark: operations/recall-benchmark.md
           - Capture Intelligence Benchmark: operations/capture-benchmark.md
           - Optional Semantics Benchmark: operations/semantic-benchmark.md
-          - 0.9.0 User Documentation Audit: operations/user-documentation-audit-0.9.0.md
       - Historical Release Evidence:
+          - 1.0.0 Developer Experience Contract: operations/developer-experience-1.0.0.md
+          - 1.0.0 Codebase Audit: operations/codebase-audit-1.0.0.md
+          - 1.0.0 Release Readiness Audit: operations/release-readiness-1.0.0.md
+          - 1.0.0 Supported Host Evidence: operations/supported-host-evidence-1.0.0.md
+          - 0.9.0 User Documentation Audit: operations/user-documentation-audit-0.9.0.md
           - 0.7.0 Optional Semantics Evaluation: operations/semantic-evaluation-0.7.0.md
           - 0.7.0 Optional Semantics Release Gates: operations/semantic-release-gates-0.7.0.md
           - 0.6.0 Capture Release Gates: operations/capture-release-gates-0.6.0.md

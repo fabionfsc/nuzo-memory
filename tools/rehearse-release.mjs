@@ -51,6 +51,7 @@ try {
   run("npm", ["ci", "--no-audit", "--no-fund"], rehearsalRoot);
   run("npm", ["run", "release:prepare", "--", version], rehearsalRoot);
   run("npm", ["run", "release:check", "--", version], rehearsalRoot);
+  run("npm", ["run", "registry:validate"], rehearsalRoot);
   run("npm", ["run", "package:plugins"], rehearsalRoot);
   run("npm", ["run", "validate:npm"], rehearsalRoot);
 

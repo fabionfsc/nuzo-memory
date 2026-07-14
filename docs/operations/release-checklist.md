@@ -187,9 +187,11 @@ rg -n '\.\./mcp-server|packages/mcp-server' build/plugins
 
 The command should return no matches.
 
-Confirm the target `@nuzo/memory-core` and `@nuzo/memory` versions are not
-already published before publishing. After publishing, `@nuzo/memory` must
-exist before shipping the plugin artifacts.
+Confirm the target `@nuzo/memory-core`, `@nuzo/memory`, and, starting with
+`1.1.0`, `@nuzo/memory-mcp` versions are not already published before
+publishing. After publishing, `@nuzo/memory` must exist before shipping the
+plugin artifacts, and `@nuzo/memory-mcp` must exist before publishing
+`server.json` to the MCP Registry.
 
 Follow `docs/operations/npm-publishing.md`. Confirm the `@nuzo` organization
 scope and maintainer access before changing source package privacy or running
@@ -207,12 +209,28 @@ For `0.9.0`, confirm:
 @nuzo/mcp-server
 ```
 
-For every release after `0.9.0`, confirm:
+For `1.0.x`, confirm:
 
 ```text
 @nuzo/memory-core
 @nuzo/memory
 ```
+
+For `1.1.0` and later, confirm:
+
+```text
+@nuzo/memory-core
+@nuzo/memory
+@nuzo/memory-mcp
+```
+
+For the first `@nuzo/memory-mcp@1.1.0` publication, npm cannot configure a
+trusted publisher or staged publish before the package exists. Confirm the
+release workflow publishes core and unified memory but reports the Registry
+package as deferred. Bootstrap that exact reviewed package once from an
+authenticated maintainer session after core is public, then configure its
+trusted publisher immediately. Never add a long-lived npm token to the
+workflow for this exception.
 
 All package settings must point to GitHub Actions, repository
 `fabionfsc/nuzo-memory`, workflow `release-npm.yml`, environment
@@ -327,7 +345,8 @@ dry run, rehearsal, or before the unified `0.9.0` replacement is available.
 For releases after `0.9.0`:
 
 1. Confirm `npm run package:npm`, `npm run validate:npm`, and the npm release
-   workflow stage only `@nuzo/memory-core` and `@nuzo/memory`.
+   workflow stage only the active package set: core and unified memory for
+   `1.0.x`, plus `@nuzo/memory-mcp` starting with `1.1.0`.
 2. Confirm `build/npm/packages/memory-cli/package.json` and
    `build/npm/packages/mcp-server/package.json` are absent.
 3. Treat any retired transition package in staging as a release blocker.
@@ -406,33 +425,52 @@ curl -I https://nuzo.com.br/
 
 If HTTPS is still not enforced, keep the GitHub Pages HTTPS issue open and mention it in release notes if the release depends on the custom domain.
 
-## Tag And Publish
+## Review, Tag, And Publish
 
-After validation and version bump:
+After validation, version bump, and merge to `main`, confirm the working tree
+and exact release commit:
 
 ```bash
 git diff --check
 git status --short
-git tag vX.Y.Z
 git push origin main
-git push origin vX.Y.Z
 ```
-
-Create GitHub release notes from `CHANGELOG.md`.
 
 Run the npm release workflow from `main` with the exact package version and
 `publish=false` first. Confirm it selects the intended version and packages
-without using an npm token.
+without using an npm token. Retain the workflow artifact and record the dry-run
+ID, full source commit, artifact name, and `artifact-manifest.json` SHA-256.
 
-After the dry run passes and the Git tag/release is ready, run the same
-workflow with `publish=true`. Confirm the npm package pages show provenance
-for the new version.
+Only after reviewing that retained artifact, tag the exact reviewed source
+commit and prepare a draft GitHub release from the matching `CHANGELOG.md`
+section:
+
+```bash
+git tag vX.Y.Z <reviewed-source-commit>
+git push origin vX.Y.Z
+```
+
+Keep the GitHub release as a draft until npm publication, Registry publication,
+and the post-release canaries pass. This preserves the reviewed release
+identity without announcing a release that has not completed its irreversible
+publication gates.
+
+Run the same workflow with `publish=true`, supplying `reviewed_run_id` and the
+reviewed manifest SHA-256. The run must verify the successful dry run and
+publish the exact retained candidates from its immutable artifact; its rebuild
+remains a separate validation gate. Confirm the npm package pages show
+provenance and record each matching public `dist.integrity`.
+
+For the one-time `@nuzo/memory-mcp@1.1.0` bootstrap, publish only the retained
+tarball after verifying its manifest and checksum. Record its matching public
+`dist.integrity`. This local first publication is the documented provenance
+exception; `@nuzo/memory-core` and `@nuzo/memory` still require provenance, and
+all active packages require it from `1.1.1` onward.
 
 ## Post-Release
 
-- Confirm the GitHub release page is correct.
+- Publish the reviewed draft GitHub release, then confirm its page is correct.
 - Confirm GitHub Pages still deploys successfully.
-- Confirm the matching `@nuzo/memory-core` and `@nuzo/memory` versions are
-  published.
+- Confirm the matching active npm package versions are published.
 - Open follow-up issues for deferred work.
 - Move `CHANGELOG.md` back to an empty `[Unreleased]` section for new development.

@@ -532,6 +532,95 @@ describe("MCP protocol contract", () => {
     }
   });
 
+  it("prevents callers from spoofing MCP audit actors", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "nuzo-mcp-audit-actor-"));
+    tempDirectories.push(directory);
+    const runtime = createNuzoMcpServerRuntime({
+      storePath: join(directory, "memories.sqlite"),
+    });
+    const client = new Client({
+      name: "nuzo-audit-actor-test",
+      version: "0.0.0",
+    });
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+
+    try {
+      await Promise.all([
+        runtime.server.connect(serverTransport),
+        client.connect(clientTransport),
+      ]);
+
+      const source = await rememberProtocolMemory(client, {
+        content: "Audit actor source memory.",
+        kind: "note",
+        scope: "project:nuzo",
+        tags: ["audit-actor"],
+      });
+      const target = await rememberProtocolMemory(client, {
+        content: "Audit actor target memory.",
+        kind: "note",
+        scope: "project:nuzo",
+        tags: ["audit-actor"],
+      });
+
+      await client.callTool({
+        name: "memory.challenge",
+        arguments: {
+          id: source.id,
+          outcome: "needs_review",
+          reason: "Exercise the trusted actor boundary.",
+          actor: "spoofed:operator",
+        },
+      });
+      const related = parseToolJson(await client.callTool({
+        name: "memory.relate",
+        arguments: {
+          source_memory_id: source.id,
+          target_memory_id: target.id,
+          relation: "related_to",
+          actor: "spoofed:operator",
+        },
+      })) as { relation: { id: string } };
+      await client.callTool({
+        name: "memory.unrelate",
+        arguments: {
+          id: related.relation.id,
+          actor: "spoofed:operator",
+        },
+      });
+
+      const audit = parseToolJson(await client.callTool({
+        name: "memory.audit",
+        arguments: {
+          memory_id: source.id,
+          event_type: [
+            "memory.challenged",
+            "memory.relation.created",
+            "memory.relation.deleted",
+          ],
+        },
+      })) as { events: Array<{ actor: string; event_type: string }> };
+      expect(audit.events.map((event) => event.event_type).sort()).toEqual([
+        "memory.challenged",
+        "memory.relation.created",
+        "memory.relation.deleted",
+      ]);
+      expect(audit.events.every((event) => event.actor === "nuzo:mcp")).toBe(true);
+
+      const spoofedAudit = parseToolJson(await client.callTool({
+        name: "memory.audit",
+        arguments: {
+          memory_id: source.id,
+          actor: "spoofed:operator",
+        },
+      })) as { events: unknown[] };
+      expect(spoofedAudit.events).toEqual([]);
+    } finally {
+      await client.close();
+      await runtime.close();
+    }
+  });
+
   it("round-trips bounded capture relationships and policy outcomes through the SDK", async () => {
     const directory = mkdtempSync(join(tmpdir(), "nuzo-mcp-capture-contract-"));
     tempDirectories.push(directory);

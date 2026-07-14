@@ -6,6 +6,17 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-07-14
+
+### Added
+
+- A Registry-ready `@nuzo/memory-mcp` distribution now exposes one
+  deterministic stdio entrypoint and canonical `mcpName` while reusing the
+  shared MCP server implementation.
+- A version-aligned `server.json`, official publisher validation, staged npm
+  continuity smoke, and maintainer publication runbook prepare Nuzo for the
+  preview MCP Registry.
+
 ### Changed
 
 - Public adoption guidance now includes a disposable 60-second demo, a
@@ -21,6 +32,10 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ### Fixed
 
+- MCP challenge and relationship mutations now attribute audit events to the
+  trusted server actor instead of accepting caller-supplied attribution, and
+  read-only host hooks skip cleanly, staying fail-open for the host session,
+  when they encounter a newer unsupported SQLite schema.
 - Codex and Claude Code plugin hooks now anchor published npm resolution at
   the plugin root, and the Codex MCP server uses its host-resolved plugin
   directory, preventing a user's npm workspace from shadowing the pinned Nuzo

@@ -28,16 +28,20 @@ The public docs currently managed by that list are:
 | `README.md` | release badge, current release status, and first-read release text. |
 | `docs/index.md` | docs homepage current release panel and release state table. |
 | `docs/getting-started/index.md` | current public release line. |
+| `docs/getting-started/sixty-second-demo.md` | disposable demo package version. |
 | `docs/getting-started/clean-install.md` | clean install package version. |
 | `docs/operations/codex-plugin.md` | generated plugin `@nuzo/memory@X.Y.Z` example and validation text. |
 | `docs/operations/claude-code-plugin.md` | generated plugin `@nuzo/memory@X.Y.Z` example and validation text. |
 | `docs/operations/local-cli.md` | current public CLI installation version. |
 | `docs/operations/npm-publishing.md` | current npm package version list. |
 | `docs/operations/optional-semantics.md` | compatible optional semantics install command. |
+| `docs/operations/public-launch.md` | active launch checklist and canonical release links. |
 | `docs/operations/versioning.md` | current package version block. |
 | `packages/claude-code-plugin/README.md` | packaged Claude Code fallback runtime command. |
 | `packages/codex-plugin/README.md` | packaged Codex fallback runtime command. |
 | `packages/memory/README.md` | npm package installation version. |
+| `packages/registry-server/README.md` | MCP Registry npm invocation version. |
+| `server.json` | MCP Registry server and package version. |
 
 ## Checked By `release:check`
 

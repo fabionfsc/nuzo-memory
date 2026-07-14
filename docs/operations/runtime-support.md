@@ -20,9 +20,9 @@ without being part of the supported CI matrix.
 
 ## Operating System And Architecture Matrix
 
-The Node.js policy above is separate from the operating-system policy. For
-`0.9.0`, Nuzo claims support only for the OS/architecture combinations that CI
-tests with staged npm artifacts:
+The Node.js policy above is separate from the operating-system policy. Nuzo
+claims support only for the OS/architecture combinations that CI tests with
+staged npm artifacts:
 
 | Platform | Architecture | CI runner | Node.js lines | Support |
 | --- | --- | --- | --- | --- |
@@ -30,11 +30,12 @@ tests with staged npm artifacts:
 | macOS x64 | x64 | `macos-15-intel` | 22 LTS, 24 LTS | Supported and tested for staged npm artifacts. |
 | Windows x64 | x64 | `windows-latest` | 22 LTS, 24 LTS | Supported and tested for staged npm artifacts. |
 
-The staged artifact smoke installs generated `@nuzo/memory-core` and
-`@nuzo/memory` tarballs, exercises the installed `nuzo` CLI, validates MCP
-stdio session continuity through the installed `nuzo-mcp-server` binary,
-checks the installed `nuzo-memory-hook --doctor` path, and validates generated
-Codex and Claude Code plugin command forms.
+The staged artifact smoke installs generated `@nuzo/memory-core`,
+`@nuzo/memory`, and, starting with `1.1.0`, `@nuzo/memory-mcp` tarballs. It
+exercises the installed `nuzo` CLI, validates MCP stdio session continuity
+through both public MCP entrypoints, checks the installed
+`nuzo-memory-hook --doctor` path, and validates generated Codex and Claude Code
+plugin command forms.
 
 Other combinations are not claimed as supported until they are added to the
 matrix. In particular:

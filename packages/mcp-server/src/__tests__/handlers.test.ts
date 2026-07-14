@@ -25,9 +25,12 @@ function createTestHandlers(options: {
     update: 0,
     inspect: 0,
     challenge: 0,
+    challengeActor: null as string | null,
     relate: 0,
+    relateActor: null as string | null,
     relations: 0,
     forgetRelation: 0,
+    forgetRelationActor: null as string | null,
     history: 0,
     forget: 0,
     forgetMany: 0,
@@ -257,6 +260,7 @@ function createTestHandlers(options: {
     },
     async challenge(input) {
       calls.challenge += 1;
+      calls.challengeActor = input.actor;
       if (!memory || memory.id !== input.id) {
         throw new Error("No memory");
       }
@@ -289,6 +293,7 @@ function createTestHandlers(options: {
     },
     async relate(input) {
       calls.relate += 1;
+      calls.relateActor = input.actor;
       relation = {
         id: "rel_000001",
         sourceMemoryId: input.sourceMemoryId,
@@ -309,6 +314,7 @@ function createTestHandlers(options: {
     },
     async forgetRelation(input) {
       calls.forgetRelation += 1;
+      calls.forgetRelationActor = input.actor;
       if (relation?.id === input.id) {
         relation = null;
       }
@@ -526,7 +532,7 @@ describe("memory MCP handlers", () => {
       target_memory_id: "mem_000002",
       relation: "related_to",
       reason: "Same topic",
-      actor: "test",
+      actor: "nuzo:cli",
     });
     expect(created.relation).toMatchObject({
       id: "rel_000001",
@@ -544,12 +550,14 @@ describe("memory MCP handlers", () => {
 
     await handlers.unrelate({
       id: "rel_000001",
-      actor: "test",
+      actor: "nuzo:cli",
     });
     expect(calls).toMatchObject({
       relate: 1,
+      relateActor: "nuzo:mcp",
       relations: 1,
       forgetRelation: 1,
+      forgetRelationActor: "nuzo:mcp",
     });
   });
 
@@ -582,7 +590,7 @@ describe("memory MCP handlers", () => {
       id: "mem_000001",
       outcome: "needs_review",
       reason: "Verify before using.",
-      actor: "test",
+      actor: "nuzo:cli",
       expected_revision: 1,
     });
     expect(challenged).toMatchObject({
@@ -597,6 +605,7 @@ describe("memory MCP handlers", () => {
     expect(calls).toMatchObject({
       inspect: 1,
       challenge: 1,
+      challengeActor: "nuzo:mcp",
     });
   });
 
