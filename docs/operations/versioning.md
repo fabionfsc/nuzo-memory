@@ -100,9 +100,10 @@ dependency without evidence that it improves the workflow.
 
 ## Changelog
 
-Keep `CHANGELOG.md` human-readable.
-
-Use an `[Unreleased]` section during development. Move entries into a version section when cutting a release.
+Keep `CHANGELOG.md` human-readable. Do not maintain an empty `[Unreleased]`
+placeholder. Ordinary development does not need to edit the changelog; the
+release PR adds a dated section and summarizes the relevant user-visible
+changes directly in it.
 
 Do not paste raw Git logs into the changelog. Summarize user-visible changes.
 
@@ -112,8 +113,8 @@ Release PRs must update `CHANGELOG.md`. The target release section must use:
 ## [X.Y.Z] - YYYY-MM-DD
 ```
 
-Keep a fresh empty `[Unreleased]` section above the released section after the
-release commit.
+Keep the newest released version as the first changelog section after the
+introductory text.
 
 ## Release Automation
 

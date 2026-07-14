@@ -312,6 +312,16 @@ test("release tooling covers public release version references", () => {
   assert.match(rehearse, /publicReleaseReferencePaths/);
 });
 
+test("changelog uses dated release sections without an Unreleased placeholder", () => {
+  const changelog = readFileSync(join(repositoryRoot, "CHANGELOG.md"), "utf8");
+  const check = readFileSync(join(repositoryRoot, "tools", "check-release-state.mjs"), "utf8");
+  const rehearse = readFileSync(join(repositoryRoot, "tools", "rehearse-release.mjs"), "utf8");
+
+  assert.doesNotMatch(changelog, /^## \[Unreleased\]$/mu);
+  assert.match(check, /must not contain an \[Unreleased\] section/);
+  assert.match(rehearse, /firstReleaseSection/);
+});
+
 test("release preparation preserves stable versioning policy references", () => {
   const source = [
     "Packages currently use:",
