@@ -1085,6 +1085,182 @@ describe("MCP protocol contract", () => {
     }
   });
 
+  it("omits cross-scope relations and audit details across restricted SQLite reads", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "nuzo-mcp-relation-scope-"));
+    tempDirectories.push(directory);
+    const storePath = join(directory, "memories.sqlite");
+    const seedDatabase = new SQLiteMemoryDatabase({ path: storePath });
+    const seedService = createMemoryService({
+      store: seedDatabase,
+      searchIndex: seedDatabase,
+      auditLog: seedDatabase,
+      transactions: seedDatabase,
+      clock: new SystemClock(),
+      ids: new RandomIdGenerator(),
+      policy: new DefaultPolicyEngine(new RegexSecretScanner()),
+    });
+    const projectMemory = await seedService.remember({
+      content: "Blue green release sentinel belongs to the authorized project.",
+      kind: "project_decision",
+      scope: "project:nuzo",
+      source: "test:relation-scope",
+    });
+    const globalMemory = await seedService.remember({
+      content: "Blue green release summaries should remain concise.",
+      kind: "preference",
+      scope: "user:default",
+      source: "test:relation-scope",
+    });
+    const challengedMemory = await seedService.remember({
+      content: "Authorized challenge history sentinel.",
+      kind: "note",
+      scope: "project:nuzo",
+      source: "test:relation-scope",
+    });
+    const forbidden = await seedService.remember({
+      content: "Private blue green operations sentinel.",
+      kind: "note",
+      scope: "project:secret",
+      source: "test:forbidden-relation-scope",
+    });
+    const visibleRelation = await seedService.relate({
+      sourceMemoryId: projectMemory.id,
+      targetMemoryId: globalMemory.id,
+      relation: "related_to",
+      reason: "Visible relation reason.",
+      actor: "test:seed",
+    });
+    const hiddenRelation = await seedService.relate({
+      sourceMemoryId: projectMemory.id,
+      targetMemoryId: forbidden.id,
+      relation: "related_to",
+      reason: "Forbidden relation reason.",
+      actor: "test:seed",
+    });
+    const deletedHiddenRelation = await seedService.relate({
+      sourceMemoryId: projectMemory.id,
+      targetMemoryId: forbidden.id,
+      relation: "conflicts_with",
+      reason: "Forbidden deleted relation reason.",
+      actor: "test:seed",
+    });
+    await seedService.forgetRelation({
+      id: deletedHiddenRelation.id,
+      reason: "Forbidden unrelate reason.",
+      actor: "test:seed",
+    });
+    const challenge = await seedService.challenge({
+      id: challengedMemory.id,
+      expectedRevision: challengedMemory.revision,
+      outcome: "superseded",
+      supersededByMemoryId: forbidden.id,
+      reason: "Forbidden challenge reason.",
+      actor: "test:seed",
+    });
+    seedDatabase.close();
+
+    const runtime = createNuzoMcpServerRuntime({
+      storePath,
+      authorizedScopes: ["project:nuzo", "user:default"],
+    });
+    const client = new Client({
+      name: "nuzo-relation-scope-test",
+      version: "0.0.0",
+    });
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+
+    try {
+      await Promise.all([
+        runtime.server.connect(serverTransport),
+        client.connect(clientTransport),
+      ]);
+
+      const successfulReads = await Promise.all([
+        client.callTool({
+          name: "memory.recall",
+          arguments: {
+            query: "blue green release sentinel",
+            scope: "project:nuzo",
+            include_global: true,
+          },
+        }),
+        client.callTool({
+          name: "memory.recall_hook",
+          arguments: {
+            task_context: "blue green release sentinel",
+            project_scope: "project:nuzo",
+          },
+        }),
+        client.callTool({
+          name: "memory.list",
+          arguments: { scope: "project:nuzo" },
+        }),
+        client.callTool({
+          name: "memory.relations",
+          arguments: { memory_id: projectMemory.id },
+        }),
+        client.callTool({
+          name: "memory.show",
+          arguments: { id: projectMemory.id },
+        }),
+        client.callTool({
+          name: "memory.history",
+          arguments: { id: projectMemory.id },
+        }),
+        client.callTool({
+          name: "memory.audit",
+          arguments: { memory_id: projectMemory.id },
+        }),
+        client.callTool({
+          name: "memory.audit",
+          arguments: { scope: "project:nuzo", limit: 200 },
+        }),
+        client.callTool({
+          name: "memory.show",
+          arguments: { id: challengedMemory.id },
+        }),
+      ]);
+      for (const result of successfulReads) {
+        expect(result.isError).not.toBe(true);
+      }
+      const serializedReads = successfulReads.map((result) => toolText(result));
+      expect(serializedReads.some((output) => output.includes(visibleRelation.id))).toBe(true);
+      for (const output of serializedReads) {
+        for (const hiddenValue of [
+          forbidden.id,
+          "project:secret",
+          "test:forbidden-relation-scope",
+          "Private blue green operations sentinel.",
+          hiddenRelation.id,
+          deletedHiddenRelation.id,
+          challenge.relation!.id,
+          "conflicts_with",
+          "supersedes",
+          "Forbidden relation reason.",
+          "Forbidden deleted relation reason.",
+          "Forbidden unrelate reason.",
+          "Forbidden challenge reason.",
+        ]) {
+          expect(output).not.toContain(hiddenValue);
+        }
+      }
+
+      for (const name of ["memory.show", "memory.relations", "memory.history", "memory.audit"] as const) {
+        const idArgument = name === "memory.relations" ? "memory_id" : name === "memory.audit" ? "memory_id" : "id";
+        const denied = await client.callTool({
+          name,
+          arguments: { [idArgument]: forbidden.id },
+        });
+        expect(denied.isError).toBe(true);
+        expect(toolText(denied)).not.toContain("project:secret");
+        expect(toolText(denied)).not.toContain("test:forbidden-relation-scope");
+      }
+    } finally {
+      await client.close();
+      await runtime.close();
+    }
+  });
+
   it("resolves published MCP runtime scope and restrictions from environment", async () => {
     const directory = mkdtempSync(join(tmpdir(), "nuzo-mcp-env-runtime-"));
     tempDirectories.push(directory);

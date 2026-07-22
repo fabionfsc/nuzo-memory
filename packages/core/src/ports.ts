@@ -71,7 +71,17 @@ export interface EmbeddingProvider {
 export interface AuditLog {
   append(event: MemoryEvent): Promise<void>;
   list(memoryId: string, input?: MemoryHistoryInput): Promise<MemoryEvent[]>;
-  query(filter: AuditEventFilter): Promise<MemoryEvent[]>;
+  /** Return newest-first events; cursor is an exclusive upper bound. */
+  query(filter: AuditLogQuery): Promise<MemoryEvent[]>;
+}
+
+export interface AuditLogQuery extends AuditEventFilter {
+  cursor?: AuditLogCursor;
+}
+
+export interface AuditLogCursor {
+  createdAt: Date;
+  id: string;
 }
 
 export interface TransactionManager {
@@ -110,5 +120,15 @@ export interface PolicyEngine {
   assertCanList(input: ListMemoriesInput): Promise<void>;
   assertCanRelate(input: RelateMemoriesInput, source: MemoryRecord, target: MemoryRecord): Promise<void>;
   assertCanListRelations(input: ListMemoryRelationsInput, memory: MemoryRecord): Promise<void>;
+  /**
+   * Optional fail-closed authorization for a deleted relation endpoint when
+   * only the stable ID and event-time scope remain available.
+   */
+  assertCanListRelationEndpointReference?(reference: RelationEndpointReference): Promise<void>;
   assertCanAudit(input: AuditEventFilter, currentMemory?: MemoryRecord | null): Promise<void>;
+}
+
+export interface RelationEndpointReference {
+  id: string;
+  scope: MemoryScope;
 }

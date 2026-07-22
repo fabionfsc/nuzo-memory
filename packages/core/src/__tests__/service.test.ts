@@ -13,6 +13,49 @@ import {
   SequentialIdGenerator,
   FixedClock,
 } from "../testing.js";
+import { encodeMemoryEventCursor } from "../pagination.js";
+import type { ListMemoryRelationsInput, MemoryRecord } from "../index.js";
+
+// A policy that fails an endpoint authorization check with a non-authorization
+// error, used to prove relation reads rethrow instead of swallowing it.
+class RethrowEndpointPolicy extends DefaultPolicyEngine {
+  constructor(private readonly boomMemoryId: string) {
+    super(new RegexSecretScanner());
+  }
+
+  override assertCanListRelations = async (
+    input: ListMemoryRelationsInput,
+    memory: MemoryRecord,
+  ): Promise<void> => {
+    if (memory.id === this.boomMemoryId) {
+      throw new NuzoMemoryError(
+        "MEMORY_POLICY_TEST_FAILURE",
+        "Simulated non-authorization policy failure.",
+      );
+    }
+    await super.assertCanListRelations(input, memory);
+  };
+}
+
+class HideEndpointPolicy extends DefaultPolicyEngine {
+  constructor(private readonly hiddenMemoryId: string) {
+    super(new RegexSecretScanner());
+  }
+
+  override assertCanListRelations = async (
+    input: ListMemoryRelationsInput,
+    memory: MemoryRecord,
+  ): Promise<void> => {
+    if (memory.id === this.hiddenMemoryId) {
+      throw new NuzoMemoryError(
+        "MEMORY_SCOPE_FORBIDDEN",
+        "Memory scope is not authorized.",
+        { scope: memory.scope },
+      );
+    }
+    await super.assertCanListRelations(input, memory);
+  };
+}
 
 function createTestService() {
   const store = new InMemoryStore();
@@ -218,6 +261,14 @@ describe("memory service", () => {
       relation: "supersedes",
       reason: "Newer deployment decision replaces the older note.",
     });
+    await expect(target.service.audit({ eventTypes: ["memory.relation.created"] }))
+      .resolves.toMatchObject([{
+        payload: {
+          sourceScope: "project:nuzo",
+          targetScope: "project:nuzo",
+          imported: true,
+        },
+      }]);
 
     await service.forgetRelation({
       id: relation.id,
@@ -2166,5 +2217,469 @@ describe("memory service", () => {
     });
     expect(deleted.affected).toBe(1);
     await expect(service.list({ includeArchived: true })).resolves.toEqual([]);
+  });
+
+  it("hides relations with an unauthorized endpoint from restricted readers without leaking it", async () => {
+    // One shared store, two sessions: an unrestricted administrator and a
+    // restricted host session authorized for only two scopes.
+    const store = new InMemoryStore();
+    const searchIndex = new InMemorySearchIndex();
+    const auditLog = new InMemoryAuditLog();
+    const clock = new FixedClock();
+    const ids = new SequentialIdGenerator();
+    const shared = { store, searchIndex, auditLog, clock, ids } as const;
+    const admin = createMemoryService({
+      ...shared,
+      policy: new DefaultPolicyEngine(new RegexSecretScanner()),
+    });
+    const restricted = createMemoryService({
+      ...shared,
+      policy: new DefaultPolicyEngine(new RegexSecretScanner(), {
+        allowedScopes: ["project:nuzo", "user:default"],
+      }),
+    });
+
+    const allowedA = await admin.remember({
+      content: "Project nuzo deploys with blue green.",
+      kind: "project_decision",
+      scope: "project:nuzo",
+      tags: ["deploy"],
+      source: "admin",
+    });
+    const allowedB = await admin.remember({
+      content: "Prefer concise final answers.",
+      kind: "preference",
+      scope: "user:default",
+      tags: ["style"],
+      source: "admin",
+    });
+    const forbidden = await admin.remember({
+      content: "Runbook lives in the private ops project.",
+      kind: "note",
+      scope: "project:secret",
+      tags: ["ops"],
+      source: "admin",
+    });
+
+    // A fully-authorized relation and two relations that each touch the
+    // forbidden scope (one outgoing, one incoming to exercise includeReverse).
+    const visibleRelation = await admin.relate({
+      sourceMemoryId: allowedA.id,
+      targetMemoryId: allowedB.id,
+      relation: "related_to",
+      reason: "Both endpoints are user-visible.",
+      actor: "admin",
+    });
+    const hiddenOutgoingRelation = await admin.relate({
+      sourceMemoryId: allowedA.id,
+      targetMemoryId: forbidden.id,
+      relation: "related_to",
+      reason: "Outgoing to a forbidden scope.",
+      actor: "admin",
+    });
+    const hiddenIncomingRelation = await admin.relate({
+      sourceMemoryId: forbidden.id,
+      targetMemoryId: allowedA.id,
+      relation: "supersedes",
+      reason: "Incoming from a forbidden scope.",
+      actor: "admin",
+    });
+    const deletedHiddenRelation = await admin.relate({
+      sourceMemoryId: allowedA.id,
+      targetMemoryId: forbidden.id,
+      relation: "conflicts_with",
+      reason: "Hidden relation that will be removed.",
+      actor: "admin",
+    });
+    await admin.forgetRelation({
+      id: deletedHiddenRelation.id,
+      actor: "admin",
+      reason: "Hidden relation removal reason.",
+    });
+
+    const superseded = await admin.challenge({
+      id: allowedB.id,
+      expectedRevision: allowedB.revision,
+      outcome: "superseded",
+      supersededByMemoryId: forbidden.id,
+      reason: "Forbidden memory supersedes this preference.",
+      actor: "admin",
+    });
+    expect(superseded.relation).not.toBeNull();
+
+    // The restricted reader sees only the fully-authorized relation and never
+    // the forbidden endpoint's id or scope.
+    const restrictedRelations = await restricted.relations({
+      memoryId: allowedA.id,
+      includeReverse: true,
+      limit: 1,
+    });
+    expect(restrictedRelations).toEqual([visibleRelation]);
+    const serialized = JSON.stringify(restrictedRelations);
+    expect(serialized).not.toContain(forbidden.id);
+    expect(serialized).not.toContain("project:secret");
+
+    // Inspect succeeds for an authorized memory and hides the same relations.
+    const inspection = await restricted.inspect({ id: allowedA.id, historyLimit: 50 });
+    expect(inspection.memory.id).toBe(allowedA.id);
+    expect(inspection.relations).toEqual([visibleRelation]);
+    const serializedInspection = JSON.stringify(inspection);
+    for (const hiddenValue of [
+      forbidden.id,
+      "project:secret",
+      hiddenOutgoingRelation.id,
+      hiddenIncomingRelation.id,
+      deletedHiddenRelation.id,
+      "Outgoing to a forbidden scope.",
+      "Incoming from a forbidden scope.",
+      "Hidden relation that will be removed.",
+      "Hidden relation removal reason.",
+    ]) {
+      expect(serializedInspection).not.toContain(hiddenValue);
+    }
+
+    const history = await restricted.history(allowedA.id, { limit: 50 });
+    const auditByMemory = await restricted.audit({ memoryId: allowedA.id, limit: 50 });
+    for (const output of [history, auditByMemory]) {
+      const serializedOutput = JSON.stringify(output);
+      expect(serializedOutput).toContain(visibleRelation.id);
+      expect(serializedOutput).not.toContain(forbidden.id);
+      expect(serializedOutput).not.toContain("project:secret");
+      expect(serializedOutput).not.toContain(hiddenOutgoingRelation.id);
+      expect(serializedOutput).not.toContain(deletedHiddenRelation.id);
+      expect(serializedOutput).not.toContain("Hidden relation removal reason.");
+    }
+
+    const challengedInspection = await restricted.inspect({ id: allowedB.id, historyLimit: 50 });
+    const challengedHistory = await restricted.history(allowedB.id, { limit: 50 });
+    const challengedAudit = await restricted.audit({ memoryId: allowedB.id, limit: 50 });
+    for (const output of [challengedInspection, challengedHistory, challengedAudit]) {
+      const serializedOutput = JSON.stringify(output);
+      expect(serializedOutput).not.toContain(forbidden.id);
+      expect(serializedOutput).not.toContain("Forbidden memory supersedes this preference.");
+      expect(serializedOutput).not.toContain(superseded.relation!.id);
+    }
+
+    // Reading relations for a memory whose own scope is forbidden still fails
+    // closed instead of leaking that the memory exists.
+    await expect(
+      restricted.relations({ memoryId: forbidden.id, includeReverse: true, limit: 50 }),
+    ).rejects.toMatchObject({ code: "MEMORY_SCOPE_FORBIDDEN" });
+    await expect(
+      restricted.inspect({ id: forbidden.id, historyLimit: 50 }),
+    ).rejects.toMatchObject({ code: "MEMORY_SCOPE_FORBIDDEN" });
+    await expect(
+      restricted.history(forbidden.id, { limit: 50 }),
+    ).rejects.toMatchObject({ code: "MEMORY_SCOPE_FORBIDDEN" });
+    await expect(
+      restricted.audit({ memoryId: forbidden.id, limit: 50 }),
+    ).rejects.toMatchObject({ code: "MEMORY_SCOPE_FORBIDDEN" });
+
+    await expect(restricted.relate({
+      sourceMemoryId: allowedA.id,
+      targetMemoryId: forbidden.id,
+      relation: "duplicate_of",
+      actor: "restricted",
+    })).rejects.toMatchObject({ code: "MEMORY_SCOPE_FORBIDDEN" });
+    await expect(restricted.forgetRelation({
+      id: hiddenOutgoingRelation.id,
+      actor: "restricted",
+      reason: "This must remain fail closed.",
+    })).rejects.toMatchObject({ code: "MEMORY_SCOPE_FORBIDDEN" });
+    const beforeFailedChallenge = await admin.inspect({ id: allowedA.id });
+    await expect(restricted.challenge({
+      id: allowedA.id,
+      expectedRevision: beforeFailedChallenge.memory.revision,
+      outcome: "superseded",
+      supersededByMemoryId: forbidden.id,
+      reason: "This cross-scope challenge must fail.",
+      actor: "restricted",
+    })).rejects.toMatchObject({ code: "MEMORY_SCOPE_FORBIDDEN" });
+    const afterFailedChallenge = await admin.inspect({ id: allowedA.id });
+    expect(afterFailedChallenge.memory).toEqual(beforeFailedChallenge.memory);
+
+    // The unrestricted administrator still sees every relation.
+    const adminRelations = await admin.relations({
+      memoryId: allowedA.id,
+      includeReverse: true,
+      limit: 50,
+    });
+    expect(adminRelations).toHaveLength(3);
+    expect(adminRelations).toEqual(expect.arrayContaining([
+      visibleRelation,
+      hiddenOutgoingRelation,
+      hiddenIncomingRelation,
+    ]));
+    expect((await admin.audit({ memoryId: allowedA.id, limit: 200 }))
+      .filter((event) => event.eventType === "memory.relation.deleted"))
+      .toHaveLength(1);
+
+    await admin.forget({
+      id: forbidden.id,
+      expectedRevision: forbidden.revision,
+      mode: "delete",
+      confirm: true,
+      actor: "admin",
+    });
+    const unrestrictedHistoryAfterDelete = JSON.stringify(await admin.history(allowedA.id, { limit: 50 }));
+    expect(unrestrictedHistoryAfterDelete).toContain(hiddenOutgoingRelation.id);
+    const restrictedHistoryAfterDelete = JSON.stringify(await restricted.history(allowedA.id, { limit: 50 }));
+    expect(restrictedHistoryAfterDelete).not.toContain(hiddenOutgoingRelation.id);
+  });
+
+  it("honors custom forbidden-endpoint policy without weakening primary authorization", async () => {
+    const store = new InMemoryStore();
+    const searchIndex = new InMemorySearchIndex();
+    const auditLog = new InMemoryAuditLog();
+    const clock = new FixedClock();
+    const ids = new SequentialIdGenerator();
+    const shared = { store, searchIndex, auditLog, clock, ids } as const;
+    const admin = createMemoryService({
+      ...shared,
+      policy: new DefaultPolicyEngine(new RegexSecretScanner()),
+    });
+    const primary = await admin.remember({
+      content: "Custom policy primary memory.",
+      kind: "note",
+      scope: "project:nuzo",
+      source: "admin",
+    });
+    const hidden = await admin.remember({
+      content: "Custom policy hidden memory.",
+      kind: "note",
+      scope: "project:nuzo",
+      source: "admin",
+    });
+    const hiddenRelation = await admin.relate({
+      sourceMemoryId: primary.id,
+      targetMemoryId: hidden.id,
+      relation: "related_to",
+      reason: "Custom policy hidden relation reason.",
+      actor: "admin",
+    });
+
+    const restricted = createMemoryService({
+      ...shared,
+      policy: new HideEndpointPolicy(hidden.id),
+    });
+    await expect(restricted.relations({ memoryId: primary.id })).resolves.toEqual([]);
+    await expect(restricted.relations({ memoryId: hidden.id })).rejects.toMatchObject({
+      code: "MEMORY_SCOPE_FORBIDDEN",
+    });
+
+    await admin.forget({
+      id: hidden.id,
+      expectedRevision: hidden.revision,
+      mode: "delete",
+      confirm: true,
+      actor: "admin",
+    });
+    const historyAfterDelete = JSON.stringify(await restricted.history(primary.id, { limit: 50 }));
+    expect(historyAfterDelete).not.toContain(hidden.id);
+    expect(historyAfterDelete).not.toContain(hiddenRelation.id);
+    expect(historyAfterDelete).not.toContain("Custom policy hidden relation reason.");
+  });
+
+  it("fills authorized history and audit limits after batches of hidden relation events", async () => {
+    const store = new InMemoryStore();
+    const searchIndex = new InMemorySearchIndex();
+    const auditLog = new InMemoryAuditLog();
+    const clock = new FixedClock();
+    const ids = new SequentialIdGenerator();
+    const shared = { store, searchIndex, auditLog, clock, ids } as const;
+    const admin = createMemoryService({
+      ...shared,
+      policy: new DefaultPolicyEngine(new RegexSecretScanner()),
+    });
+    const restricted = createMemoryService({
+      ...shared,
+      policy: new DefaultPolicyEngine(new RegexSecretScanner(), {
+        allowedScopes: ["project:nuzo"],
+      }),
+    });
+    const source = await admin.remember({
+      content: "Authorized pagination source.",
+      kind: "note",
+      scope: "project:nuzo",
+      source: "admin",
+    });
+    const hidden = await admin.remember({
+      content: "Hidden pagination endpoint.",
+      kind: "note",
+      scope: "project:secret",
+      source: "admin",
+    });
+    const created = (await admin.history(source.id))[0]!;
+
+    for (let index = 0; index < 60; index += 1) {
+      await auditLog.append({
+        id: `evt_hidden_${index.toString().padStart(3, "0")}`,
+        memoryId: source.id,
+        eventType: "memory.relation.created",
+        actor: "admin",
+        payload: {
+          relationId: `rel_hidden_${index}`,
+          sourceMemoryId: source.id,
+          targetMemoryId: hidden.id,
+          relation: "related_to",
+          sourceScope: source.scope,
+          targetScope: hidden.scope,
+        },
+        createdAt: clock.now(),
+      });
+    }
+    await auditLog.append({
+      id: "evt_visible_update",
+      memoryId: source.id,
+      eventType: "memory.updated",
+      actor: "admin",
+      payload: { scope: source.scope },
+      createdAt: clock.now(),
+    });
+
+    await expect(restricted.history(source.id, {
+      cursor: encodeMemoryEventCursor(created),
+      limit: 1,
+    })).resolves.toMatchObject([{ id: "evt_visible_update" }]);
+
+    // Audit is newest-first. More than 200 newer hidden events must not starve
+    // the older authorized event even though the public request asks for one.
+    for (let index = 0; index < 201; index += 1) {
+      await auditLog.append({
+        id: `evt_zz_hidden_${index.toString().padStart(3, "0")}`,
+        memoryId: source.id,
+        eventType: "memory.relation.created",
+        actor: "admin",
+        payload: {
+          relationId: `rel_zz_hidden_${index}`,
+          sourceMemoryId: source.id,
+          targetMemoryId: hidden.id,
+          relation: "related_to",
+          sourceScope: source.scope,
+          targetScope: hidden.scope,
+        },
+        createdAt: clock.now(),
+      });
+    }
+    await expect(restricted.audit({ memoryId: source.id, limit: 1 }))
+      .resolves.toMatchObject([{ id: "evt_visible_update" }]);
+  });
+
+  it("authorizes relation audit events against their recorded endpoint scopes", async () => {
+    const store = new InMemoryStore();
+    const searchIndex = new InMemorySearchIndex();
+    const auditLog = new InMemoryAuditLog();
+    const clock = new FixedClock();
+    const ids = new SequentialIdGenerator();
+    const shared = { store, searchIndex, auditLog, clock, ids } as const;
+    const admin = createMemoryService({
+      ...shared,
+      policy: new DefaultPolicyEngine(new RegexSecretScanner()),
+    });
+    const restricted = createMemoryService({
+      ...shared,
+      policy: new DefaultPolicyEngine(new RegexSecretScanner(), {
+        allowedScopes: ["project:nuzo"],
+      }),
+    });
+    const primary = await admin.remember({
+      content: "Historical relation scope primary.",
+      kind: "note",
+      scope: "project:nuzo",
+      source: "admin",
+    });
+    const formerlyHidden = await admin.remember({
+      content: "Historical relation scope endpoint.",
+      kind: "note",
+      scope: "project:secret",
+      source: "admin",
+    });
+    const relation = await admin.relate({
+      sourceMemoryId: primary.id,
+      targetMemoryId: formerlyHidden.id,
+      relation: "related_to",
+      reason: "Created while one endpoint was hidden.",
+      actor: "admin",
+    });
+    await admin.update({
+      id: formerlyHidden.id,
+      expectedRevision: formerlyHidden.revision,
+      scope: "project:nuzo",
+      actor: "admin",
+    });
+
+    await expect(restricted.relations({ memoryId: primary.id })).resolves.toEqual([relation]);
+    const history = JSON.stringify(await restricted.history(primary.id, { limit: 50 }));
+    expect(history).not.toContain(relation.id);
+    expect(history).not.toContain("project:secret");
+    expect(history).not.toContain("Created while one endpoint was hidden.");
+
+    const superseder = await admin.remember({
+      content: "Historical challenge superseder.",
+      kind: "note",
+      scope: "project:secret",
+      source: "admin",
+    });
+    const challenged = await admin.challenge({
+      id: primary.id,
+      expectedRevision: primary.revision,
+      outcome: "superseded",
+      supersededByMemoryId: superseder.id,
+      reason: "Superseded while the replacement was hidden.",
+      actor: "admin",
+    });
+    await admin.update({
+      id: superseder.id,
+      expectedRevision: superseder.revision,
+      scope: "project:nuzo",
+      actor: "admin",
+    });
+
+    const challengedHistory = JSON.stringify(await restricted.history(primary.id, { limit: 50 }));
+    expect(challengedHistory).not.toContain(superseder.id);
+    expect(challengedHistory).not.toContain(challenged.relation!.id);
+    expect(challengedHistory).not.toContain("Superseded while the replacement was hidden.");
+  });
+
+  it("rethrows non-authorization policy errors raised while checking relation endpoints", async () => {
+    const store = new InMemoryStore();
+    const searchIndex = new InMemorySearchIndex();
+    const auditLog = new InMemoryAuditLog();
+    const clock = new FixedClock();
+    const ids = new SequentialIdGenerator();
+    const shared = { store, searchIndex, auditLog, clock, ids } as const;
+    const admin = createMemoryService({
+      ...shared,
+      policy: new DefaultPolicyEngine(new RegexSecretScanner()),
+    });
+
+    const primary = await admin.remember({
+      content: "Primary memory under test.",
+      kind: "note",
+      scope: "project:nuzo",
+      tags: [],
+      source: "admin",
+    });
+    const endpoint = await admin.remember({
+      content: "Endpoint memory under test.",
+      kind: "note",
+      scope: "project:nuzo",
+      tags: [],
+      source: "admin",
+    });
+    await admin.relate({
+      sourceMemoryId: primary.id,
+      targetMemoryId: endpoint.id,
+      relation: "related_to",
+      actor: "admin",
+    });
+
+    const service = createMemoryService({
+      ...shared,
+      policy: new RethrowEndpointPolicy(endpoint.id),
+    });
+    await expect(
+      service.relations({ memoryId: primary.id, includeReverse: true, limit: 50 }),
+    ).rejects.toMatchObject({ code: "MEMORY_POLICY_TEST_FAILURE" });
   });
 });

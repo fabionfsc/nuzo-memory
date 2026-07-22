@@ -44,7 +44,13 @@ scope allowlist. In restricted mode:
   scope, and updates that move a memory require authorization for the target
   scope as well;
 - history requires authorization for the target memory's current scope and
-  fails closed when that scope cannot be established.
+  fails closed when that scope cannot be established;
+- relation reads omit a relation unless both endpoints are authorized, while
+  relation writes and deletes fail closed if either endpoint is unauthorized;
+- show, history, and audit omit relation-linked events unless both endpoint
+  scopes are authorized, including the endpoint scopes recorded when the event
+  was created. Authorization filtering happens before the requested visible
+  result limit is applied.
 
 Denied scope access returns `MEMORY_SCOPE_FORBIDDEN`. Restricted unscoped list,
 export, or bulk destructive operations return `MEMORY_SCOPE_REQUIRED`.

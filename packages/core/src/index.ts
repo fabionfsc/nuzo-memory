@@ -15,6 +15,8 @@ export type {
 } from "./policy.js";
 export type {
   AuditLog,
+  AuditLogCursor,
+  AuditLogQuery,
   CaptureCandidateLookupInput,
   CaptureCandidateLookupResult,
   Clock,
@@ -23,6 +25,7 @@ export type {
   IdGenerator,
   MemoryStore,
   PolicyEngine,
+  RelationEndpointReference,
   SearchIndex,
   SecretFinding,
   SecretScanner,

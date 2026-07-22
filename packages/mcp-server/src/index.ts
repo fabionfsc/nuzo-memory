@@ -731,7 +731,7 @@ export function registerMemoryTools(
       }
 
       return jsonToolResult(await handlers.audit(auditInput));
-    }),
+    }, redactForbiddenScopeDetails),
   );
 
   server.registerTool(

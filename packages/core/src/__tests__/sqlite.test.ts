@@ -748,6 +748,20 @@ describe("SQLiteMemoryDatabase", () => {
       },
     ]);
 
+    const newestPage = await database.query({ limit: 1 });
+    const olderPage = await database.query({
+      limit: 2,
+      cursor: {
+        createdAt: newestPage[0]!.createdAt,
+        id: newestPage[0]!.id,
+      },
+    });
+    expect(newestPage.map((event) => event.eventType)).toEqual(["memory.deleted"]);
+    expect(olderPage.map((event) => event.eventType)).toEqual([
+      "memory.exported",
+      "memory.created",
+    ]);
+
     database.close();
   });
 
