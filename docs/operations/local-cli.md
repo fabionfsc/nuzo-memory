@@ -151,6 +151,53 @@ Apply the import only after reviewing the preflight output:
 nuzo memory import ./memories.memory.export.json
 ```
 
+## Store Integrity And FTS Repair
+
+Inspect the canonical SQLite tables and derived full-text index without making
+a logical store change:
+
+```bash
+nuzo memory integrity
+nuzo memory integrity --json
+```
+
+The integrity report distinguishes canonical data health from FTS health and
+counts missing, orphaned, duplicate, and mismatched FTS rows. SQLite may create
+or update its normal WAL coordination sidecars while a live store is opened
+read-only; the command does not rewrite canonical records or FTS rows.
+
+Preview a repair plan before writing. Preview is the default, and `--dry-run`
+is an explicit equivalent for scripts:
+
+```bash
+nuzo memory integrity repair-fts
+nuzo memory integrity repair-fts --dry-run --json
+```
+
+A preview with detected drift exits `1`. Repair is available only when the
+current canonical schema, SQLite integrity, foreign keys, canonical tag JSON,
+and exact FTS schema pass validation. Apply it with both explicit flags:
+
+```bash
+nuzo memory integrity repair-fts --apply --yes
+nuzo memory integrity repair-fts --apply --yes --backup-path /private/path/nuzo-before-fts-repair.sqlite
+```
+
+Before changing the source, Nuzo creates an owner-only, validated backup at
+`<store>.fts-repair.backup.sqlite` unless `--backup-path` is supplied. It never
+overwrites an existing backup. The backup preserves the pre-repair canonical
+memory, event, and relation rows exactly, while normalizing only its derived
+FTS rows so the ordinary strict restore command can consume it. Nuzo then
+rebuilds the source FTS table from active canonical memories in one immediate
+transaction and rolls back the source on failure. A validated published backup
+is retained if the source rebuild fails.
+
+`--dry-run` conflicts with `--apply`; `--yes` and `--backup-path` require
+`--apply`. An apply without `--yes` returns the structured
+`MEMORY_FTS_REPAIR_CONFIRMATION_REQUIRED` operational error. Repair output is
+content-free. There is intentionally no MCP repair tool: hosts can inspect
+`memory.doctor`, while mutation remains an explicit local administrator action.
+
 Use the CLI commands when you are administering a local store from a shell.
 Inside Codex, Claude Code, or another MCP host, call `memory.doctor` instead.
 Doctor diagnostics remain content-free and report runtime readiness without

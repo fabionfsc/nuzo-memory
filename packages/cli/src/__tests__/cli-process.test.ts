@@ -62,6 +62,18 @@ describe("nuzo CLI process contract", () => {
     expect(result.stderr).not.toContain("at ");
   });
 
+  it.each([
+    [["memory", "integrity", "repair-fts", "--dry-run", "--apply", "--yes"], "option '--dry-run' cannot be used with option '--apply'"],
+    [["memory", "integrity", "repair-fts", "--yes"], "--yes requires --apply"],
+    [["memory", "integrity", "repair-fts", "--backup-path", "/tmp/nuzo-repair.sqlite"], "--backup-path requires --apply"],
+  ])("returns usage code for invalid FTS repair option combinations", (args, message) => {
+    const result = runProcess(args);
+
+    expect(result.status).toBe(cliExitCodes.usageError);
+    expect(result.stderr).toContain(message);
+    expect(result.stderr).not.toContain("at ");
+  });
+
   it("returns an operational error for an unsafe store path without exposing a stack trace", () => {
     const directory = mkdtempSync(join(tmpdir(), "nuzo-cli-process-"));
     tempDirectories.push(directory);

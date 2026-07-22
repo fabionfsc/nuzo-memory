@@ -1,5 +1,5 @@
 import { resolve } from "node:path";
-import type { Command } from "commander";
+import { Option, type Command } from "commander";
 import {
   createHybridSearchIndex,
   createLocalTransformersEmbeddingProvider,
@@ -7,6 +7,8 @@ import {
   backupSQLiteMemoryStore,
   NuzoMemoryError,
   inspectSQLiteMemoryStore,
+  planSQLiteFtsRepair,
+  repairSQLiteFtsIndex,
   restoreSQLiteMemoryStore,
   semanticIndexPathFor,
   resolveAutomaticScope,
@@ -961,7 +963,7 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
       }
     }));
 
-  memory
+  const integrity = memory
     .command("integrity")
     .description("Validate SQLite store integrity, schema, FTS, and counts without writing.")
     .option("--json", "Print JSON output for scripting.", false)
@@ -977,6 +979,113 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
         process.exitCode = cliExitCodes.operationalError;
       }
     }));
+
+  const repairFts = integrity
+    .command("repair-fts")
+    .description("Preview or explicitly repair derived SQLite FTS rows from canonical memories.")
+    .addOption(new Option("--dry-run", "Preview FTS drift without writing.").conflicts("apply"))
+    .option("--apply", "Rebuild FTS rows after creating a validated backup.", false)
+    .option("--yes", "Confirm the requested FTS rebuild.", false)
+    .option("--backup-path <path>", "Validated SQLite backup destination used before repair.")
+    .option("--json", "Print JSON output for scripting.", false);
+
+  repairFts.hook("preAction", (command) => {
+    const commandOptions = command.opts<{
+      apply: boolean;
+      backupPath?: string;
+      dryRun?: boolean;
+      yes: boolean;
+    }>();
+    if (commandOptions.yes && !commandOptions.apply) {
+      command.error("error: --yes requires --apply");
+    }
+    if (commandOptions.backupPath !== undefined && !commandOptions.apply) {
+      command.error("error: --backup-path requires --apply");
+    }
+  });
+
+  repairFts.action(withErrorHandling(io, async () => {
+    const commandOptions = repairFts.opts<{
+      apply: boolean;
+      backupPath?: string;
+      dryRun?: boolean;
+      json: boolean;
+      yes: boolean;
+    }>();
+    commandOptions.json ||= integrity.opts<{ json: boolean }>().json;
+    const options = memory.opts<GlobalOptions>();
+    const sourcePath = resolveStorePath(options);
+    if (!commandOptions.apply) {
+      const plan = planSQLiteFtsRepair(sourcePath);
+      if (commandOptions.json) {
+        io.stdout(JSON.stringify({
+          mode: "preview",
+          status: !plan.repairable
+            ? "blocked"
+            : plan.repairRequired ? "repair_required" : "healthy",
+          source_path: plan.sourcePath,
+          repair_required: plan.repairRequired,
+          repairable: plan.repairable,
+          applied: false,
+          backup_path: null,
+          reindexed_rows: 0,
+          before: toIntegrityOutput(plan.report),
+          backup: null,
+          after: null,
+        }, null, 2));
+      } else {
+        io.stdout("FTS repair preview (no changes made)");
+        io.stdout(`Store: ${plan.sourcePath}`);
+        io.stdout(`Repair required: ${plan.repairRequired ? "yes" : "no"}`);
+        io.stdout(`Repairable: ${plan.repairable ? "yes" : "no"}`);
+        io.stdout(`Memories: ${plan.report.memoryCount}`);
+        io.stdout(`Active memories: ${plan.report.activeMemoryCount}`);
+        io.stdout(`FTS rows: ${plan.report.ftsRowCount}`);
+        io.stdout(`Missing FTS rows: ${plan.report.missingFtsRows}`);
+        io.stdout(`Orphan FTS rows: ${plan.report.orphanFtsRows}`);
+        io.stdout(`Duplicate FTS rows: ${plan.report.duplicateFtsRows}`);
+        io.stdout(`Mismatched FTS rows: ${plan.report.mismatchedFtsRows}`);
+        if (plan.repairRequired && plan.repairable) {
+          io.stdout("Apply with: nuzo memory integrity repair-fts --apply --yes");
+        }
+      }
+      if (!plan.repairable || plan.repairRequired) {
+        process.exitCode = cliExitCodes.operationalError;
+      }
+      return;
+    }
+
+    const result = await repairSQLiteFtsIndex({
+      sourcePath,
+      backupPath: commandOptions.backupPath === undefined
+        ? `${sourcePath}.fts-repair.backup.sqlite`
+        : resolve(commandOptions.backupPath),
+      confirm: commandOptions.yes,
+    });
+    if (commandOptions.json) {
+      io.stdout(JSON.stringify({
+        mode: "apply",
+        status: result.repaired ? "repaired" : "not_needed",
+        source_path: result.sourcePath,
+        repair_required: !result.before.ftsOk,
+        repairable: result.before.canonicalOk && result.before.ftsSchemaOk,
+        applied: result.repaired,
+        backup_path: result.backupPath,
+        pages: result.pages,
+        remaining_pages: result.remainingPages,
+        reindexed_rows: result.repaired ? result.after.ftsRowCount : 0,
+        before: toIntegrityOutput(result.before),
+        backup: result.backup === null ? null : toIntegrityOutput(result.backup),
+        after: toIntegrityOutput(result.after),
+      }, null, 2));
+    } else if (result.repaired) {
+      io.stdout(`Repaired ${result.after.ftsRowCount} FTS row(s) in ${result.sourcePath}`);
+      io.stdout(`Validated backup: ${result.backupPath}`);
+      io.stdout("Integrity: ok");
+    } else {
+      io.stdout(`FTS index is already healthy: ${result.sourcePath}`);
+    }
+  }));
 
   memory
     .command("backup")

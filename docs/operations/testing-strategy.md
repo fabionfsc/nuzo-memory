@@ -42,6 +42,12 @@ packaging validation, and runtime diagnostics instead of copying lists by hand.
 - import dry-run reports planned changes;
 - import preflight rejects the full request before writes and handles duplicate items consistently;
 - SQLite mutations roll back memory, FTS, and audit writes after injected failures;
+- FTS diagnostics detect missing, orphaned, duplicate, and mismatched derived
+  rows without exposing content;
+- explicit FTS repair preserves canonical memory, event, and relation rows,
+  creates a validated owner-only restoreable backup, rejects overlapping or
+  unsafe paths and altered schemas, removes temporary sidecars, and restores
+  search consistency;
 - multi-item imports are atomic when a later item fails;
 - normal recall does not persist query text or usage metadata unless the core
   caller explicitly opts in, and opt-in recall events persist only a query hash

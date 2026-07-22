@@ -424,6 +424,9 @@ export interface MemoryToolHandlers {
 
 export type MemoryDoctorIntegrityOutput = {
   ok: boolean | null;
+  canonical_ok: boolean | null;
+  fts_ok: boolean | null;
+  fts_schema_ok: boolean | null;
   path: string | null;
   schema_version: number | null;
   supported_schema_version: number | null;
@@ -434,6 +437,8 @@ export type MemoryDoctorIntegrityOutput = {
   fts_row_count: number | null;
   missing_fts_rows: number | null;
   orphan_fts_rows: number | null;
+  duplicate_fts_rows: number | null;
+  mismatched_fts_rows: number | null;
   errors: string[];
   status: "ok" | "failed" | "missing" | "not_performed";
 };

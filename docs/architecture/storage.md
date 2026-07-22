@@ -92,6 +92,30 @@ CREATE VIRTUAL TABLE memories_fts USING fts5(
 );
 ```
 
+`memories`, `memory_events`, and `memory_relations` are canonical.
+`memories_fts` is a derived search index containing one row for each active
+memory. Integrity diagnostics compare its ID, scope, content, and flattened tag
+text with canonical rows and separately report missing, orphaned or archived,
+duplicate, and mismatched entries.
+
+The local `memory integrity repair-fts` workflow is deliberately outside the
+MCP surface. Preview is read-only at the logical-store level. Apply requires
+explicit confirmation and refuses unsupported versions, altered canonical or
+FTS schemas, invalid canonical tag JSON, foreign-key violations, symlinked
+source or backup files, overlapping SQLite filesets, and existing backup
+destinations. Stable intermediate directory aliases are permitted for common
+platform paths, while fileset comparisons resolve their real parent paths.
+
+Repair holds `BEGIN IMMEDIATE` on the original source identity, takes a
+WAL-consistent snapshot through a read-only sibling connection, and converts
+the isolated snapshot to a self-contained `DELETE`-journal backup. Only the
+backup's derived FTS rows are normalized; its canonical rows remain the exact
+pre-repair snapshot. The owner-only backup is validated and published without
+replacing an existing path before the source FTS table is rebuilt by
+`INSERT ... SELECT`. Source validation occurs inside the same transaction, so
+a failed rebuild rolls back without changing canonical data. The validated
+backup remains available when a later source step fails.
+
 Schema version 7 backfills `capture_key` with the exact-capture normalization
 of each memory's content and maintains it on canonical creates and updates. A
 partial index covers active-memory scope counts through its `scope` prefix and
@@ -161,6 +185,8 @@ events atomically.
 - bulk forget uses one transaction per matched memory, so an unexpected failure
   may leave earlier memories committed while the failing memory is rolled back;
 - dry runs do not open write transactions.
+- FTS repair changes only the derived `memories_fts` table, after publishing a
+  validated recovery backup; canonical rows and audit history are unchanged.
 
 Policy validation happens before write transactions. Import duplicate planning
 happens inside the write transaction so equivalent imports from multiple local

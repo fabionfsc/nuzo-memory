@@ -127,6 +127,8 @@ injection, or runtime packaging.
 | `SQLiteMemoryDatabase` | Advanced public | SQLite adapter implementing store, search, audit, and transactions. |
 | `SQLiteMemoryDatabaseOptions` | Advanced public | SQLite adapter options. |
 | `inspectSQLiteMemoryStore` | Advanced public | Inspect a SQLite memory store for schema, integrity, count, and FTS consistency diagnostics. |
+| `planSQLiteFtsRepair` | Advanced public | Produce a content-free, non-mutating FTS drift and repairability plan. |
+| `repairSQLiteFtsIndex` | Advanced public | Create and validate a recovery backup, then transactionally rebuild derived FTS rows after explicit confirmation. |
 | `inspectRuntimeFileSafety` | Advanced public | Inspect known Nuzo runtime paths for unsafe modes, ownership, symlinks, stale artifacts, and unexpected files without changing them. |
 | `InspectRuntimeFileSafetyInput` | Advanced public | Store, project, and home roots selected for file-safety inspection. |
 | `RuntimeFileSafetyFinding` | Advanced public | Content-free unsafe-path finding. |
@@ -134,6 +136,8 @@ injection, or runtime packaging.
 | `backupSQLiteMemoryStore` | Advanced public | Create a WAL-safe SQLite online backup and validate the resulting snapshot. |
 | `restoreSQLiteMemoryStore` | Advanced public | Validate and restore a SQLite memory backup into a target store path. |
 | `SQLiteIntegrityReport` | Advanced public | Content-free SQLite store integrity report. |
+| `SQLiteFtsRepairPlan` | Advanced public | FTS drift plan with canonical and FTS precondition diagnostics. |
+| `SQLiteFtsRepairResult` | Advanced public | FTS repair result with before, backup, and after integrity reports. |
 | `SQLiteBackupResult` | Advanced public | SQLite backup result with snapshot integrity diagnostics. |
 | `SQLiteRestoreResult` | Advanced public | SQLite restore result with target integrity diagnostics. |
 | `schemaVersion` | Advanced public | Current SQLite schema version. |

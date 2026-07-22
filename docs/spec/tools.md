@@ -1249,6 +1249,9 @@ in `0.9.0`.
   },
   "integrity": {
     "ok": true,
+    "canonical_ok": true,
+    "fts_ok": true,
+    "fts_schema_ok": true,
     "path": "~/.nuzo/memory/memories.sqlite",
     "schema_version": 5,
     "supported_schema_version": 5,
@@ -1259,6 +1262,8 @@ in `0.9.0`.
     "fts_row_count": 4,
     "missing_fts_rows": 0,
     "orphan_fts_rows": 0,
+    "duplicate_fts_rows": 0,
+    "mismatched_fts_rows": 0,
     "errors": [],
     "status": "ok"
   },
@@ -1315,8 +1320,9 @@ Runtime checks:
 - schema is current;
 - store path is readable;
 - store path and parent directory are writable without creating durable memory.
-- SQLite `integrity_check`, foreign keys, schema version, memory counts, and
-  FTS row consistency are healthy when a store path is available.
+- SQLite `integrity_check`, foreign keys, canonical table/schema health,
+  schema version, memory counts, and missing, orphaned, duplicate, or
+  mismatched FTS row diagnostics are healthy when a store path is available.
 - known local runtime files are inspected without following symlinks or
   changing permissions;
 - file-safety findings expose paths and metadata, never stored memory content.
@@ -1328,7 +1334,8 @@ inspect or override that host-level decision.
 
 Handler-only integrations that do not provide runtime diagnostics return
 `not_performed` explicitly. Diagnostics do not delete, chmod, or rewrite local
-files.
+files. MCP intentionally exposes no FTS repair tool; an administrator must use
+the explicitly confirmed local CLI workflow after reviewing these diagnostics.
 
 ## CLI Commands
 
