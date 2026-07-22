@@ -53,7 +53,7 @@
     "gate:developer-experience": "npm run package:npm && node tools/developer-experience-gate.mjs"
   },
   "devDependencies": {
-    "typescript": "^6.0.3",
+    "typescript": "^7.0.2",
     "vitest": "^4.1.10"
   }
 }
