@@ -54,6 +54,8 @@ const runtimeExports = [
 const typeExports = [
   "AuditEventFilter",
   "AuditLog",
+  "AuditLogCursor",
+  "AuditLogQuery",
   "ChallengeMemoryInput",
   "ChallengeMemoryResult",
   "CaptureCandidateLookupInput",
@@ -122,6 +124,7 @@ const typeExports = [
   "RecallMemoriesInput",
   "RecallMemoriesResponse",
   "RecallMemoryResult",
+  "RelationEndpointReference",
   "RelateMemoriesInput",
   "RememberMemoryInput",
   "RetrievalMode",

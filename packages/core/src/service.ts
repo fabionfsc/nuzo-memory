@@ -13,8 +13,10 @@ import {
   toExportRelationItem,
   toImportDuplicateKey,
 } from "./import-export.js";
+import { encodeMemoryEventCursor } from "./pagination.js";
 import type {
   AuditLog,
+  AuditLogCursor,
   CaptureCandidateLookupInput,
   CaptureCandidateLookupResult,
   Clock,
@@ -366,6 +368,217 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
     return relation;
   }
 
+  async function isRelationEndpointVisible(memory: MemoryRecord): Promise<boolean> {
+    try {
+      await policy.assertCanListRelations({ memoryId: memory.id }, memory);
+      return true;
+    } catch (error) {
+      if (error instanceof NuzoMemoryError && error.code === "MEMORY_SCOPE_FORBIDDEN") {
+        return false;
+      }
+      throw error;
+    }
+  }
+
+  function relationEndpointIdsFromEvent(event: MemoryEvent): string[] | null {
+    if (
+      event.eventType === "memory.relation.created" ||
+      event.eventType === "memory.relation.deleted"
+    ) {
+      const { sourceMemoryId, targetMemoryId } = event.payload;
+      return typeof sourceMemoryId === "string" && typeof targetMemoryId === "string"
+        ? [sourceMemoryId, targetMemoryId]
+        : [];
+    }
+
+    if (
+      event.eventType === "memory.challenged" &&
+      (
+        event.payload.outcome === "superseded" ||
+        typeof event.payload.supersededByMemoryId === "string" ||
+        typeof event.payload.relationId === "string"
+      )
+    ) {
+      const ids: string[] = [];
+      if (event.memoryId !== null) {
+        ids.push(event.memoryId);
+      }
+      if (typeof event.payload.supersededByMemoryId === "string") {
+        ids.push(event.payload.supersededByMemoryId);
+      }
+      return ids.length === 2 ? ids : [];
+    }
+
+    return null;
+  }
+
+  async function isHistoricalRelationEndpointVisible(
+    endpointId: string,
+    scope: unknown,
+    current?: MemoryRecord,
+  ): Promise<boolean> {
+    const historicalScope = typeof scope === "string"
+      ? scope as MemoryScope
+      // Invalid by construction so no public scope allowlist can authorize an
+      // old event whose endpoint scope was never recorded.
+      : "" as MemoryScope;
+    if (current) {
+      return isRelationEndpointVisible({ ...current, scope: historicalScope });
+    }
+    if (policy.assertCanListRelationEndpointReference === undefined) {
+      return false;
+    }
+    try {
+      await policy.assertCanListRelationEndpointReference({ id: endpointId, scope: historicalScope });
+      return true;
+    } catch (error) {
+      if (error instanceof NuzoMemoryError && error.code === "MEMORY_SCOPE_FORBIDDEN") {
+        return false;
+      }
+      throw error;
+    }
+  }
+
+  async function isAuditEventVisible(event: MemoryEvent): Promise<boolean> {
+    const endpointIds = relationEndpointIdsFromEvent(event);
+    if (endpointIds === null) {
+      return true;
+    }
+    if (endpointIds.length === 0) {
+      return false;
+    }
+
+    const endpoints = new Map<string, MemoryRecord>();
+    for (const endpointId of new Set(endpointIds)) {
+      const endpoint = await store.findById(endpointId);
+      if (!endpoint) {
+        continue;
+      }
+      endpoints.set(endpointId, endpoint);
+      if (!(await isRelationEndpointVisible(endpoint))) {
+        return false;
+      }
+    }
+
+    if (
+      event.eventType === "memory.relation.created" ||
+      event.eventType === "memory.relation.deleted"
+    ) {
+      const historicalEndpoints = [
+        [event.payload.sourceMemoryId, event.payload.sourceScope],
+        [event.payload.targetMemoryId, event.payload.targetScope],
+      ] as const;
+      for (const [endpointId, scope] of historicalEndpoints) {
+        if (typeof endpointId !== "string") {
+          return false;
+        }
+        if (!(await isHistoricalRelationEndpointVisible(
+          endpointId,
+          scope,
+          endpoints.get(endpointId),
+        ))) {
+          return false;
+        }
+      }
+    }
+
+    if (event.eventType === "memory.challenged") {
+      const historicalEndpoints = [
+        [event.memoryId, event.payload.scope],
+        [event.payload.supersededByMemoryId, event.payload.supersededByScope],
+      ] as const;
+      for (const [endpointId, scope] of historicalEndpoints) {
+        if (typeof endpointId !== "string") {
+          return false;
+        }
+        if (!(await isHistoricalRelationEndpointVisible(
+          endpointId,
+          scope,
+          endpoints.get(endpointId),
+        ))) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
+  async function filterVisibleAuditEvents(events: readonly MemoryEvent[]): Promise<MemoryEvent[]> {
+    const visibleEvents: MemoryEvent[] = [];
+    for (const event of events) {
+      if (await isAuditEventVisible(event)) {
+        visibleEvents.push(event);
+      }
+    }
+    return visibleEvents;
+  }
+
+  async function listVisibleHistory(
+    memoryId: string,
+    input: MemoryHistoryInput,
+  ): Promise<MemoryEvent[]> {
+    if (input.limit === undefined) {
+      return filterVisibleAuditEvents(await auditLog.list(memoryId, input));
+    }
+
+    const visibleEvents: MemoryEvent[] = [];
+    let cursor = input.cursor;
+    while (visibleEvents.length < input.limit) {
+      const batchLimit = Math.min(1_000, Math.max(50, input.limit - visibleEvents.length));
+      const batchInput: MemoryHistoryInput = { limit: batchLimit };
+      if (cursor !== undefined) {
+        batchInput.cursor = cursor;
+      }
+      const events = await auditLog.list(memoryId, batchInput);
+      if (events.length === 0) {
+        break;
+      }
+      visibleEvents.push(...await filterVisibleAuditEvents(events));
+      if (events.length < batchLimit) {
+        break;
+      }
+      const nextCursor = encodeMemoryEventCursor(events[events.length - 1]!);
+      if (nextCursor === cursor) {
+        break;
+      }
+      cursor = nextCursor;
+    }
+    return visibleEvents.slice(0, input.limit);
+  }
+
+  async function queryVisibleAudit(input: AuditEventFilter): Promise<MemoryEvent[]> {
+    const visibleLimit = input.limit ?? 50;
+    const { limit: _limit, ...filter } = input;
+    const visibleEvents: MemoryEvent[] = [];
+    let cursor: AuditLogCursor | undefined;
+    while (visibleEvents.length < visibleLimit) {
+      const batchLimit = Math.min(1_000, Math.max(50, visibleLimit - visibleEvents.length));
+      const events = await auditLog.query({
+        ...filter,
+        limit: batchLimit,
+        ...(cursor === undefined ? {} : { cursor }),
+      });
+      if (events.length === 0) {
+        break;
+      }
+      visibleEvents.push(...await filterVisibleAuditEvents(events));
+      if (events.length < batchLimit) {
+        break;
+      }
+      const lastEvent = events[events.length - 1]!;
+      const nextCursor: AuditLogCursor = { createdAt: lastEvent.createdAt, id: lastEvent.id };
+      if (
+        nextCursor.id === cursor?.id &&
+        nextCursor.createdAt.getTime() === cursor.createdAt.getTime()
+      ) {
+        break;
+      }
+      cursor = nextCursor;
+    }
+    return visibleEvents.slice(0, visibleLimit);
+  }
+
   async function listRelations(input: ListMemoryRelationsInput): Promise<MemoryRelationRecord[]> {
     assertMemoryId(input.memoryId);
     const memory = await store.findById(input.memoryId);
@@ -374,9 +587,8 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
     }
     await policy.assertCanListRelations(input, memory);
     const relations = await store.listRelations({
-      ...input,
+      memoryId: input.memoryId,
       includeReverse: input.includeReverse ?? true,
-      limit: input.limit ?? 50,
     });
     const visibleRelations: MemoryRelationRecord[] = [];
     for (const relation of relations) {
@@ -387,11 +599,17 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       if (!source || !target) {
         continue;
       }
-      await policy.assertCanListRelations({ memoryId: source.id }, source);
-      await policy.assertCanListRelations({ memoryId: target.id }, target);
+      // A relation endpoint may live in a scope the caller cannot access when a
+      // store is shared across restricted sessions. Omit the relation from the
+      // read result instead of failing the whole read, and never leak the
+      // forbidden endpoint's id, scope, or existence. Non-authorization errors
+      // still propagate.
+      if (!(await isRelationEndpointVisible(source)) || !(await isRelationEndpointVisible(target))) {
+        continue;
+      }
       visibleRelations.push(relation);
     }
-    return visibleRelations;
+    return visibleRelations.slice(0, input.limit ?? 50);
   }
 
   async function forgetMemoryRelation(input: ForgetMemoryRelationInput): Promise<void> {
@@ -437,6 +655,8 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
           targetMemoryId: relation.targetMemoryId,
           relation: relation.relation,
           reason: input.reason ?? null,
+          sourceScope: source.scope,
+          targetScope: target.scope,
         },
         createdAt: now,
       });
@@ -453,7 +673,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
     await policy.assertCanList({ scope: memory.scope, includeArchived: true });
     const [relations, events] = await Promise.all([
       listRelations({ memoryId: input.id, includeReverse: true, limit: 50 }),
-      auditLog.list(input.id, { limit: input.historyLimit ?? 50 }),
+      listVisibleHistory(input.id, { limit: input.historyLimit ?? 50 }),
     ]);
     return {
       memory,
@@ -611,6 +831,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
           confidenceState: updated.confidenceState,
           reviewAfter: updated.reviewAfter?.toISOString() ?? null,
           supersededByMemoryId: input.supersededByMemoryId ?? null,
+          supersededByScope: supersedingMemory?.scope ?? null,
           relationId: createdRelation?.id ?? null,
           scope: updated.scope,
         },
@@ -968,7 +1189,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       assertPageInput(input);
       const currentMemory = await store.findById(memoryId);
       await policy.assertCanAudit({ memoryId }, currentMemory);
-      return auditLog.list(memoryId, input);
+      return listVisibleHistory(memoryId, input);
     },
 
     async audit(input = {}) {
@@ -979,7 +1200,7 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
         ? undefined
         : await store.findById(input.memoryId);
       await policy.assertCanAudit(input, currentMemory);
-      return auditLog.query(input);
+      return queryVisibleAudit(input);
     },
 
     async exportMemories(input) {
@@ -1176,6 +1397,8 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
                 targetMemoryId: relation.targetMemoryId,
                 relation: relation.relation,
                 reason: relation.reason,
+                sourceScope: source.scope,
+                targetScope: target.scope,
                 imported: true,
               },
               createdAt: clock.now(),

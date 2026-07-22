@@ -143,6 +143,8 @@ injection, or runtime packaging.
 | `CaptureCandidateLookupResult` | Advanced public | Duplicate, bounded candidates, and explicit search-completeness result returned by a storage prefilter. |
 | `SearchIndex` | Advanced public | Search port. |
 | `AuditLog` | Advanced public | Audit-log port. |
+| `AuditLogQuery` | Advanced public | Storage-facing audit filter for bounded page traversal. Results are newest-first and its cursor is exclusive. |
+| `AuditLogCursor` | Advanced public | Structured event timestamp and ID cursor used by `AuditLogQuery`. |
 | `TransactionManager` | Advanced public | Transaction port. |
 | `Clock` | Advanced public | Clock port. |
 | `IdGenerator` | Advanced public | ID-generator port. |
@@ -150,6 +152,7 @@ injection, or runtime packaging.
 | `SecretScanResult` | Advanced public | Secret-scan result. |
 | `SecretFinding` | Advanced public | Secret finding. |
 | `PolicyEngine` | Advanced public | Policy port. |
+| `RelationEndpointReference` | Advanced public | Stable ID and event-time scope used to authorize relation audit metadata after an endpoint is deleted. |
 | `DefaultPolicyEngineOptions` | Advanced public | Default policy options. |
 | `EmbeddingProvider` | Experimental public | Optional embedding provider port. |
 | `EmbeddingProviderDescriptor` | Experimental public | Embedding provider identity/fingerprint input. |
@@ -179,6 +182,18 @@ injection, or runtime packaging.
 | `ProvisionLocalTransformersModelInput` | Experimental public | Model provisioning input. |
 | `ProvisionLocalTransformersModelResult` | Experimental public | Model provisioning result. |
 | `LocalTransformersProviderOptions` | Experimental public | Local provider options. |
+
+`AuditLog.query` implementations must order results by `createdAt DESC, id
+DESC` and treat `AuditLogQuery.cursor` as an exclusive upper bound. The core
+service uses this contract to continue past unauthorized audit events without
+returning short pages.
+
+Custom policy adapters may implement
+`PolicyEngine.assertCanListRelationEndpointReference` to authorize the stable
+ID and event-time scope retained after a relation endpoint is deleted. When
+the method is absent, relation-linked audit events with a missing endpoint are
+omitted. `DefaultPolicyEngine` enables this path only when its standard
+relation-read authorization method has not been overridden.
 
 ## Error Contract
 

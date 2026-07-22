@@ -1,6 +1,7 @@
 import { toCaptureDuplicateKey } from "../capture-suggestions.js";
 import type {
   AuditLog,
+  AuditLogQuery,
   CaptureCandidateLookupInput,
   CaptureCandidateLookupResult,
   Clock,
@@ -10,7 +11,6 @@ import type {
 } from "../ports.js";
 import { decodeMemoryEventCursor, decodeMemoryListCursor } from "../pagination.js";
 import type {
-  AuditEventFilter,
   ListMemoriesInput,
   ListMemoryRelationsInput,
   MemoryHistoryInput,
@@ -292,7 +292,7 @@ export class InMemoryAuditLog implements AuditLog {
       .map(cloneEvent);
   }
 
-  async query(filter: AuditEventFilter): Promise<MemoryEvent[]> {
+  async query(filter: AuditLogQuery): Promise<MemoryEvent[]> {
     const limit = filter.limit ?? 50;
     return this.events
       .filter((event) => filter.memoryId === undefined || event.memoryId === filter.memoryId)
@@ -302,6 +302,15 @@ export class InMemoryAuditLog implements AuditLog {
       .filter((event) => filter.since === undefined || event.createdAt >= filter.since)
       .filter((event) => filter.until === undefined || event.createdAt <= filter.until)
       .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime() || right.id.localeCompare(left.id))
+      .filter((event) => {
+        if (filter.cursor === undefined) {
+          return true;
+        }
+        const cursor = filter.cursor;
+        const createdAt = event.createdAt.toISOString();
+        const cursorCreatedAt = cursor.createdAt.toISOString();
+        return createdAt < cursorCreatedAt || (createdAt === cursorCreatedAt && event.id < cursor.id);
+      })
       .slice(0, limit)
       .map(cloneEvent);
   }

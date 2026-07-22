@@ -13,6 +13,7 @@ import { NuzoMemoryError } from "../errors.js";
 import { decodeMemoryEventCursor, decodeMemoryListCursor } from "../pagination.js";
 import type {
   AuditLog,
+  AuditLogQuery,
   CaptureCandidateLookupInput,
   CaptureCandidateLookupResult,
   MemoryStore,
@@ -20,7 +21,6 @@ import type {
   TransactionManager,
 } from "../ports.js";
 import type {
-  AuditEventFilter,
   ListMemoriesInput,
   ListMemoryRelationsInput,
   MemoryHistoryInput,
@@ -490,7 +490,7 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
     return rows.map(fromEventRow);
   }
 
-  async query(filter: AuditEventFilter): Promise<MemoryEvent[]> {
+  async query(filter: AuditLogQuery): Promise<MemoryEvent[]> {
     const where: string[] = [];
     const params: Record<string, unknown> = {
       limit: filter.limit ?? 50,
@@ -527,6 +527,13 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
     if (filter.until !== undefined) {
       where.push("e.created_at <= @until");
       params.until = filter.until.toISOString();
+    }
+
+    if (filter.cursor !== undefined) {
+      const cursor = filter.cursor;
+      where.push("(e.created_at < @cursor_created_at OR (e.created_at = @cursor_created_at AND e.id < @cursor_id))");
+      params.cursor_created_at = cursor.createdAt.toISOString();
+      params.cursor_id = cursor.id;
     }
 
     const sql = `

@@ -1,5 +1,5 @@
 import { invariant, NuzoMemoryError } from "./errors.js";
-import type { PolicyEngine, SecretScanner } from "./ports.js";
+import type { PolicyEngine, RelationEndpointReference, SecretScanner } from "./ports.js";
 import {
   memoryConfidenceStates,
   memoryEventTypes,
@@ -246,6 +246,16 @@ export class DefaultPolicyEngine implements PolicyEngine {
         { limit: input.limit },
       );
     }
+  }
+
+  async assertCanListRelationEndpointReference(reference: RelationEndpointReference): Promise<void> {
+    if (this.assertCanListRelations !== DefaultPolicyEngine.prototype.assertCanListRelations) {
+      throw new NuzoMemoryError(
+        "MEMORY_SCOPE_FORBIDDEN",
+        "Deleted relation endpoint authorization cannot be established.",
+      );
+    }
+    this.assertScopeAllowed(reference.scope);
   }
 
   async assertCanAudit(input: AuditEventFilter, currentMemory?: MemoryRecord | null): Promise<void> {
