@@ -731,6 +731,9 @@ describe("memory MCP handlers", () => {
     });
     expect(doctor.integrity).toEqual({
       ok: null,
+      canonical_ok: null,
+      fts_ok: null,
+      fts_schema_ok: null,
       path: null,
       schema_version: null,
       supported_schema_version: null,
@@ -741,6 +744,8 @@ describe("memory MCP handlers", () => {
       fts_row_count: null,
       missing_fts_rows: null,
       orphan_fts_rows: null,
+      duplicate_fts_rows: null,
+      mismatched_fts_rows: null,
       errors: [],
       status: "not_performed",
     });
@@ -767,6 +772,9 @@ describe("memory MCP handlers", () => {
         },
         integrity: {
           ok: false,
+          canonicalOk: true,
+          ftsOk: false,
+          ftsSchemaOk: true,
           path: "/tmp/nuzo-test.sqlite",
           schemaVersion: 1,
           supportedSchemaVersion: 2,
@@ -777,6 +785,8 @@ describe("memory MCP handlers", () => {
           ftsRowCount: 0,
           missingFtsRows: 1,
           orphanFtsRows: 0,
+          duplicateFtsRows: 0,
+          mismatchedFtsRows: 0,
           errors: ["1 active memory row(s) are missing from FTS"],
         },
         writable: false,

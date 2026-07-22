@@ -1,7 +1,9 @@
 import {
   chmodSync,
   existsSync,
+  mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   statSync,
@@ -17,6 +19,8 @@ import {
   DefaultPolicyEngine,
   backupSQLiteMemoryStore,
   inspectSQLiteMemoryStore,
+  planSQLiteFtsRepair,
+  repairSQLiteFtsIndex,
   type MemoryExportDocument,
   type MemoryRecord,
   RegexSecretScanner,
@@ -60,6 +64,15 @@ function createServiceForDatabase(
   });
 
   return service;
+}
+
+function snapshotCanonicalRows(database: Database.Database): Record<string, unknown[]> {
+  return Object.fromEntries(
+    ["memories", "memory_events", "memory_relations"].map((table) => [
+      table,
+      database.prepare(`SELECT * FROM ${table} ORDER BY id ASC`).all(),
+    ]),
+  );
 }
 
 class PrefixedIdGenerator implements IdGenerator {
@@ -444,6 +457,9 @@ describe("SQLiteMemoryDatabase", () => {
 
     expect(inspectSQLiteMemoryStore(path)).toMatchObject({
       ok: true,
+      canonicalOk: true,
+      ftsOk: true,
+      ftsSchemaOk: true,
       schemaVersion: 7,
       integrityCheck: "ok",
       memoryCount: 1,
@@ -451,17 +467,378 @@ describe("SQLiteMemoryDatabase", () => {
       ftsRowCount: 1,
       missingFtsRows: 0,
       orphanFtsRows: 0,
+      duplicateFtsRows: 0,
+      mismatchedFtsRows: 0,
       errors: [],
     });
 
     database.database.prepare("DELETE FROM memories_fts").run();
     expect(inspectSQLiteMemoryStore(path)).toMatchObject({
       ok: false,
+      canonicalOk: true,
+      ftsOk: false,
       missingFtsRows: 1,
       errors: ["1 active memory row(s) are missing from FTS"],
     });
 
     database.close();
+  });
+
+  it("repairs every FTS drift class after publishing a validated recovery backup", async () => {
+    const { database, directory, service } = createTempDatabase();
+    const memories = await Promise.all([
+      service.remember({
+        content: "The missing index row must be rebuilt.",
+        kind: "note",
+        scope: "project:nuzo",
+        tags: ["missing"],
+        source: "test",
+      }),
+      service.remember({
+        content: "The duplicate index row must be deduplicated.",
+        kind: "note",
+        scope: "project:nuzo",
+        tags: ["duplicate"],
+        source: "test",
+      }),
+      service.remember({
+        content: "The stale index row must match canonical content.",
+        kind: "note",
+        scope: "user:default",
+        tags: ["stale", "canonical"],
+        source: "test",
+      }),
+    ]);
+    await service.relate({
+      sourceMemoryId: memories[1]!.id,
+      targetMemoryId: memories[0]!.id,
+      relation: "related_to",
+      actor: "test",
+    });
+    const sourcePath = join(directory, "memories.sqlite");
+    const backupPath = join(directory, "fts-repair.backup.sqlite");
+    const restoredPath = join(directory, "restored.sqlite");
+    const canonicalBefore = snapshotCanonicalRows(database.database);
+
+    database.database.prepare("DELETE FROM memories_fts WHERE id = ?").run(memories[0]!.id);
+    database.database.prepare(`
+      INSERT INTO memories_fts (id, scope, content, tags)
+      SELECT id, scope, content, 'duplicate' FROM memories WHERE id = ?
+    `).run(memories[1]!.id);
+    database.database.prepare("UPDATE memories_fts SET content = 'stale derived content' WHERE id = ?")
+      .run(memories[2]!.id);
+    database.database.prepare(`
+      INSERT INTO memories_fts (id, scope, content, tags)
+      VALUES ('mem_orphan', 'project:nuzo', 'orphan derived content', 'orphan')
+    `).run();
+
+    const plan = planSQLiteFtsRepair(sourcePath);
+    expect(plan).toMatchObject({
+      sourcePath,
+      repairRequired: true,
+      repairable: true,
+      report: {
+        ok: false,
+        canonicalOk: true,
+        ftsOk: false,
+        ftsSchemaOk: true,
+        missingFtsRows: 1,
+        orphanFtsRows: 1,
+        duplicateFtsRows: 1,
+        mismatchedFtsRows: 1,
+      },
+    });
+
+    await expect(repairSQLiteFtsIndex({ sourcePath, backupPath }))
+      .rejects.toMatchObject({ code: "MEMORY_FTS_REPAIR_CONFIRMATION_REQUIRED" });
+    expect(existsSync(backupPath)).toBe(false);
+
+    const result = await repairSQLiteFtsIndex({ sourcePath, backupPath, confirm: true });
+    expect(result).toMatchObject({
+      sourcePath,
+      backupPath,
+      repaired: true,
+      remainingPages: 0,
+      backup: { ok: true, ftsOk: true, memoryCount: 3, ftsRowCount: 3 },
+      after: {
+        ok: true,
+        canonicalOk: true,
+        ftsOk: true,
+        missingFtsRows: 0,
+        orphanFtsRows: 0,
+        duplicateFtsRows: 0,
+        mismatchedFtsRows: 0,
+      },
+    });
+    expect(result.pages).toBeGreaterThan(0);
+    expect(statSync(backupPath).mode & 0o777).toBe(0o600);
+    expect(readdirSync(directory).filter((entry) => entry.includes(".tmp-") || entry.startsWith("fts-repair.backup.sqlite-")))
+      .toEqual([]);
+    const backupDatabase = new Database(backupPath, { readonly: true });
+    expect(backupDatabase.pragma("journal_mode", { simple: true })).toBe("delete");
+    backupDatabase.close();
+    expect(snapshotCanonicalRows(database.database)).toEqual(canonicalBefore);
+
+    const restored = restoreSQLiteMemoryStore({ backupPath, targetPath: restoredPath });
+    expect(restored.report).toMatchObject({ ok: true, ftsOk: true, memoryCount: 3 });
+    const restoredDatabase = new SQLiteMemoryDatabase({ path: restoredPath, readonly: true });
+    try {
+      await expect(restoredDatabase.search({
+        query: "canonical content",
+        scope: "user:default",
+      })).resolves.toMatchObject([{ memory: { id: memories[2]!.id } }]);
+    } finally {
+      restoredDatabase.close();
+      database.close();
+    }
+  });
+
+  it("rolls back a rebuilt source FTS transaction and retains its validated backup on failure", async () => {
+    const { database, directory, service } = createTempDatabase();
+    const first = await service.remember({
+      content: "Rollback keeps this canonical memory unchanged.",
+      kind: "note",
+      scope: "project:nuzo",
+      tags: ["rollback"],
+      source: "test",
+    });
+    const second = await service.remember({
+      content: "Rollback also keeps audit and relation rows unchanged.",
+      kind: "note",
+      scope: "project:nuzo",
+      tags: ["failure"],
+      source: "test",
+    });
+    await service.relate({
+      sourceMemoryId: second.id,
+      targetMemoryId: first.id,
+      relation: "related_to",
+      actor: "test",
+    });
+    const sourcePath = join(directory, "memories.sqlite");
+    const backupPath = join(directory, "failure.backup.sqlite");
+    const canonicalBefore = snapshotCanonicalRows(database.database);
+    database.database.prepare("DELETE FROM memories_fts WHERE id = ?").run(first.id);
+    const ftsBefore = database.database
+      .prepare("SELECT rowid, id, scope, content, tags FROM memories_fts ORDER BY rowid ASC")
+      .all();
+
+    const prepareDescriptor = Object.getOwnPropertyDescriptor(Database.prototype, "prepare");
+    if (prepareDescriptor === undefined) throw new Error("better-sqlite3 prepare descriptor is missing");
+    const originalPrepare = Database.prototype.prepare;
+    let ftsIntegrityChecks = 0;
+    Object.defineProperty(Database.prototype, "prepare", {
+      ...prepareDescriptor,
+      value(this: Database.Database, sql: string) {
+        if (sql.includes("VALUES('integrity-check', 1)")) {
+          ftsIntegrityChecks += 1;
+          if (ftsIntegrityChecks === 2) throw new Error("injected post-rebuild failure");
+        }
+        return originalPrepare.call(this, sql);
+      },
+    });
+    try {
+      await expect(repairSQLiteFtsIndex({ sourcePath, backupPath, confirm: true }))
+        .rejects.toMatchObject({
+          code: "MEMORY_FTS_REPAIR_FAILED",
+          details: { backupPath },
+        });
+    } finally {
+      Object.defineProperty(Database.prototype, "prepare", prepareDescriptor);
+    }
+
+    expect(snapshotCanonicalRows(database.database)).toEqual(canonicalBefore);
+    expect(database.database
+      .prepare("SELECT rowid, id, scope, content, tags FROM memories_fts ORDER BY rowid ASC")
+      .all()).toEqual(ftsBefore);
+    expect(inspectSQLiteMemoryStore(sourcePath)).toMatchObject({
+      canonicalOk: true,
+      ftsOk: false,
+      missingFtsRows: 1,
+    });
+    expect(inspectSQLiteMemoryStore(backupPath)).toMatchObject({
+      ok: true,
+      canonicalOk: true,
+      ftsOk: true,
+      memoryCount: 2,
+    });
+    expect(readdirSync(directory).filter((entry) => entry.includes(".tmp-"))).toEqual([]);
+
+    database.close();
+  });
+
+  it("does not write for a healthy FTS plan and blocks repair when canonical rows are invalid", async () => {
+    const { database, directory, service } = createTempDatabase();
+    const memory = await service.remember({
+      content: "A healthy index needs no recovery backup.",
+      kind: "note",
+      scope: "user:default",
+      source: "test",
+    });
+    const sourcePath = join(directory, "memories.sqlite");
+    const backupPath = join(directory, "fts-repair.backup.sqlite");
+
+    expect(planSQLiteFtsRepair(sourcePath)).toMatchObject({
+      repairRequired: false,
+      repairable: true,
+    });
+    await expect(repairSQLiteFtsIndex({ sourcePath, backupPath, confirm: true }))
+      .resolves.toMatchObject({ repaired: false, backupPath: null });
+    expect(existsSync(backupPath)).toBe(false);
+
+    database.database.prepare("UPDATE memories SET tags = 'not-json' WHERE id = ?").run(memory.id);
+    database.database.prepare("DELETE FROM memories_fts WHERE id = ?").run(memory.id);
+    expect(planSQLiteFtsRepair(sourcePath)).toMatchObject({
+      repairRequired: true,
+      repairable: false,
+      report: { canonicalOk: false, ftsOk: false },
+    });
+    await expect(repairSQLiteFtsIndex({ sourcePath, backupPath, confirm: true }))
+      .rejects.toMatchObject({ code: "MEMORY_FTS_REPAIR_SOURCE_INVALID" });
+    expect(existsSync(backupPath)).toBe(false);
+
+    database.close();
+  });
+
+  it("rejects FTS repair backup paths that overlap any source SQLite sidecar", async () => {
+    const { database, directory, service } = createTempDatabase();
+    const memory = await service.remember({
+      content: "Fileset overlap must fail before repair.",
+      kind: "note",
+      scope: "user:default",
+      source: "test",
+    });
+    const sourcePath = join(directory, "memories.sqlite");
+    database.database.prepare("DELETE FROM memories_fts WHERE id = ?").run(memory.id);
+
+    await expect(repairSQLiteFtsIndex({
+      sourcePath,
+      backupPath: `${sourcePath}-wal`,
+      confirm: true,
+    })).rejects.toMatchObject({ code: "MEMORY_FTS_REPAIR_BACKUP_CONFLICT" });
+    expect(planSQLiteFtsRepair(sourcePath).repairRequired).toBe(true);
+
+    database.close();
+
+    const reverseSourcePath = join(directory, "reverse.sqlite-wal");
+    const reverse = new SQLiteMemoryDatabase({ path: reverseSourcePath });
+    const reverseService = createServiceForDatabase(reverse, new PrefixedIdGenerator("reverse"));
+    const reverseMemory = await reverseService.remember({
+      content: "Reverse fileset overlap must also fail.",
+      kind: "note",
+      scope: "user:default",
+      source: "test",
+    });
+    reverse.database.prepare("DELETE FROM memories_fts WHERE id = ?").run(reverseMemory.id);
+    await expect(repairSQLiteFtsIndex({
+      sourcePath: reverseSourcePath,
+      backupPath: join(directory, "reverse.sqlite"),
+      confirm: true,
+    })).rejects.toMatchObject({ code: "MEMORY_FTS_REPAIR_BACKUP_CONFLICT" });
+    reverse.close();
+  });
+
+  it.skipIf(process.platform === "win32")("refuses symbolic-link source and backup paths for FTS repair", async () => {
+    const { database, directory, service } = createTempDatabase();
+    const memory = await service.remember({
+      content: "Symbolic links cannot redirect FTS repair.",
+      kind: "note",
+      scope: "user:default",
+      source: "test",
+    });
+    const sourcePath = join(directory, "memories.sqlite");
+    database.database.prepare("DELETE FROM memories_fts WHERE id = ?").run(memory.id);
+    database.close();
+
+    const sourceLink = join(directory, "linked-source.sqlite");
+    symlinkSync(sourcePath, sourceLink);
+    expect(planSQLiteFtsRepair(sourceLink)).toMatchObject({
+      repairRequired: true,
+      repairable: false,
+      report: { integrityCheck: "unsafe_symlink" },
+    });
+    await expect(repairSQLiteFtsIndex({
+      sourcePath: sourceLink,
+      backupPath: join(directory, "source-link.backup.sqlite"),
+      confirm: true,
+    })).rejects.toMatchObject({ code: "MEMORY_FTS_REPAIR_PATH_UNSAFE" });
+
+    const danglingBackup = join(directory, "dangling.backup.sqlite");
+    symlinkSync(join(directory, "missing-target.sqlite"), danglingBackup);
+    await expect(repairSQLiteFtsIndex({
+      sourcePath,
+      backupPath: danglingBackup,
+      confirm: true,
+    })).rejects.toMatchObject({ code: "MEMORY_FTS_REPAIR_PATH_UNSAFE" });
+  });
+
+  it.skipIf(process.platform === "win32")("allows stable intermediate directory symlinks while rejecting symlink files", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "nuzo-fts-parent-link-"));
+    tempDirectories.push(directory);
+    const realDirectory = join(directory, "real");
+    const linkedDirectory = join(directory, "linked");
+    mkdirSync(realDirectory, { mode: 0o700 });
+    symlinkSync(realDirectory, linkedDirectory);
+    const realSourcePath = join(realDirectory, "memories.sqlite");
+    const linkedSourcePath = join(linkedDirectory, "memories.sqlite");
+    const linkedBackupPath = join(linkedDirectory, "repair.backup.sqlite");
+    const database = new SQLiteMemoryDatabase({ path: realSourcePath });
+    const service = createServiceForDatabase(database, new PrefixedIdGenerator("parent_link"));
+    const memory = await service.remember({
+      content: "System directory aliases must not block safe local repair.",
+      kind: "note",
+      scope: "user:default",
+      source: "test",
+    });
+    database.database.prepare("DELETE FROM memories_fts WHERE id = ?").run(memory.id);
+    database.close();
+
+    await expect(repairSQLiteFtsIndex({
+      sourcePath: linkedSourcePath,
+      backupPath: linkedBackupPath,
+      confirm: true,
+    })).resolves.toMatchObject({ repaired: true, backupPath: linkedBackupPath });
+    expect(inspectSQLiteMemoryStore(realSourcePath)).toMatchObject({ ok: true, ftsOk: true });
+    expect(inspectSQLiteMemoryStore(join(realDirectory, "repair.backup.sqlite")))
+      .toMatchObject({ ok: true, ftsOk: true });
+  });
+
+  it("blocks FTS repair for altered canonical or FTS schemas", async () => {
+    const { database, directory, service } = createTempDatabase();
+    const memory = await service.remember({
+      content: "Schema preconditions protect the repair boundary.",
+      kind: "note",
+      scope: "user:default",
+      source: "test",
+    });
+    const sourcePath = join(directory, "memories.sqlite");
+    database.database.prepare("DELETE FROM memories_fts WHERE id = ?").run(memory.id);
+    database.database.exec(`
+      DROP TABLE memory_events;
+      CREATE VIEW memory_events AS
+      SELECT id, id AS memory_id, 'memory.created' AS event_type,
+        'test' AS actor, '{}' AS payload, created_at
+      FROM memories;
+    `);
+    expect(planSQLiteFtsRepair(sourcePath)).toMatchObject({
+      repairRequired: true,
+      repairable: false,
+      report: { canonicalOk: false },
+    });
+    database.close();
+
+    const ftsPath = join(directory, "invalid-fts.sqlite");
+    const invalidFts = new SQLiteMemoryDatabase({ path: ftsPath });
+    invalidFts.database.exec(`
+      DROP TABLE memories_fts;
+      CREATE VIRTUAL TABLE memories_fts USING fts5(id, scope, content, tags);
+    `);
+    expect(planSQLiteFtsRepair(ftsPath)).toMatchObject({
+      repairRequired: true,
+      repairable: false,
+      report: { canonicalOk: true, ftsOk: false, ftsSchemaOk: false },
+    });
+    invalidFts.close();
   });
 
   it("persists explicit memory relations and cascades hard deletes", async () => {

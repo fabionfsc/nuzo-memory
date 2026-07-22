@@ -163,6 +163,9 @@ export function formatIntegrityDiagnostics(
   if (report === undefined) {
     return {
       ok: null,
+      canonical_ok: null,
+      fts_ok: null,
+      fts_schema_ok: null,
       path: null,
       schema_version: null,
       supported_schema_version: null,
@@ -173,6 +176,8 @@ export function formatIntegrityDiagnostics(
       fts_row_count: null,
       missing_fts_rows: null,
       orphan_fts_rows: null,
+      duplicate_fts_rows: null,
+      mismatched_fts_rows: null,
       errors: [],
       status: "not_performed",
     };
@@ -180,6 +185,9 @@ export function formatIntegrityDiagnostics(
 
   return {
     ok: report.ok,
+    canonical_ok: report.canonicalOk,
+    fts_ok: report.ftsOk,
+    fts_schema_ok: report.ftsSchemaOk,
     path: report.path,
     schema_version: report.schemaVersion,
     supported_schema_version: report.supportedSchemaVersion,
@@ -190,6 +198,8 @@ export function formatIntegrityDiagnostics(
     fts_row_count: report.ftsRowCount,
     missing_fts_rows: report.missingFtsRows,
     orphan_fts_rows: report.orphanFtsRows,
+    duplicate_fts_rows: report.duplicateFtsRows,
+    mismatched_fts_rows: report.mismatchedFtsRows,
     errors: report.errors,
     status: report.ok ? "ok" : report.integrityCheck === "missing" ? "missing" : "failed",
   };

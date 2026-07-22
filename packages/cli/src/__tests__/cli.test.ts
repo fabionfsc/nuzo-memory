@@ -36,6 +36,16 @@ function createStorePath(): string {
   return join(directory, "memories.sqlite");
 }
 
+function inspectFtsCount(path: string): number {
+  const database = new SQLiteMemoryDatabase({ path });
+  try {
+    const row = database.database.prepare("SELECT COUNT(*) AS count FROM memories_fts").get() as { count: number };
+    return row.count;
+  } finally {
+    database.close();
+  }
+}
+
 async function runCli(
   args: string[],
   env: NodeJS.ProcessEnv = {},
@@ -1532,6 +1542,97 @@ describe("nuzo memory cli", () => {
     expect(recall.stdout.join("\n")).toContain("keeps memory and audit data");
     const history = await runCli(["memory", "--store", restoredStore, "history", remembered.stdout[0] ?? ""]);
     expect(history.stdout.some((line) => line.includes("memory.created"))).toBe(true);
+  });
+
+  it("previews FTS drift read-only and repairs it only after explicit confirmation", async () => {
+    const store = createStorePath();
+    const backupDirectory = mkdtempSync(join(tmpdir(), "nuzo-fts-repair-"));
+    const backupPath = join(backupDirectory, "recovery.sqlite");
+    tempDirectories.push(backupDirectory);
+    const sentinel = "FTS repair restores this unique searchable phrase.";
+    await runCli([
+      "memory", "--store", store, "remember", sentinel,
+      "--kind", "note", "--tag", "repair",
+    ]);
+    const raw = new SQLiteMemoryDatabase({ path: store });
+    raw.database.prepare("DELETE FROM memories_fts").run();
+    raw.close();
+
+    const preview = await runCli([
+      "memory", "--store", store, "integrity", "repair-fts", "--json",
+    ]);
+    const previewOutput = JSON.parse(preview.stdout[0] ?? "{}") as Record<string, unknown>;
+    expect(previewOutput).toMatchObject({
+      mode: "preview",
+      status: "repair_required",
+      source_path: store,
+      repair_required: true,
+      repairable: true,
+      applied: false,
+      backup_path: null,
+      reindexed_rows: 0,
+      before: { canonical_ok: true, fts_ok: false, missing_fts_rows: 1 },
+      backup: null,
+      after: null,
+    });
+    expect(JSON.stringify(previewOutput)).not.toContain(sentinel);
+    expect(inspectFtsCount(store)).toBe(0);
+
+    const explicitDryRun = await runCli([
+      "memory", "--store", store, "integrity", "repair-fts", "--dry-run", "--json",
+    ]);
+    expect(JSON.parse(explicitDryRun.stdout[0] ?? "{}")).toMatchObject({
+      mode: "preview",
+      applied: false,
+      before: { missing_fts_rows: 1 },
+    });
+    expect(inspectFtsCount(store)).toBe(0);
+
+    const unconfirmed = await runCli([
+      "memory", "--store", store, "integrity", "repair-fts", "--apply",
+    ]);
+    expect(unconfirmed.stderr).toEqual([
+      "MEMORY_FTS_REPAIR_CONFIRMATION_REQUIRED: FTS repair requires explicit confirmation.",
+    ]);
+    expect(existsSync(backupPath)).toBe(false);
+    expect(inspectFtsCount(store)).toBe(0);
+
+    const repaired = await runCli([
+      "memory", "--store", store, "integrity", "repair-fts",
+      "--apply", "--yes", "--backup-path", backupPath, "--json",
+    ]);
+    const repairedOutput = JSON.parse(repaired.stdout[0] ?? "{}") as Record<string, unknown>;
+    expect(repairedOutput).toMatchObject({
+      mode: "apply",
+      status: "repaired",
+      source_path: store,
+      repair_required: true,
+      repairable: true,
+      applied: true,
+      backup_path: backupPath,
+      reindexed_rows: 1,
+      before: { missing_fts_rows: 1 },
+      backup: { ok: true, fts_ok: true, missing_fts_rows: 0 },
+      after: { ok: true, fts_ok: true, missing_fts_rows: 0 },
+    });
+    expect(JSON.stringify(repairedOutput)).not.toContain(sentinel);
+    expect(existsSync(backupPath)).toBe(true);
+    expect(statSync(backupPath).mode & 0o777).toBe(0o600);
+
+    const recalled = await runCli(["memory", "--store", store, "recall", "unique searchable phrase"]);
+    expect(recalled.stdout.join("\n")).toContain(sentinel);
+
+    const noOpBackup = `${store}.fts-repair.backup.sqlite`;
+    const noOp = await runCli([
+      "memory", "--store", store, "integrity", "repair-fts", "--apply", "--yes", "--json",
+    ]);
+    expect(JSON.parse(noOp.stdout[0] ?? "{}")).toMatchObject({
+      status: "not_needed",
+      applied: false,
+      backup_path: null,
+      reindexed_rows: 0,
+    });
+    expect(existsSync(noOpBackup)).toBe(false);
   });
 
   it("reports and exposes legacy literal project:auto memories for scope review", async () => {

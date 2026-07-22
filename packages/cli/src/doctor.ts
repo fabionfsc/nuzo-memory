@@ -197,14 +197,19 @@ export function formatIntegrityReport(report: SQLiteIntegrityReport): string {
   const lines = [
     `Store: ${report.path}`,
     `Status: ${report.ok ? "ok" : "failed"}`,
+    `Canonical data: ${report.canonicalOk ? "ok" : "failed"}`,
     `Schema: ${report.schemaVersion ?? "unknown"} (supported ${report.supportedSchemaVersion})`,
     `SQLite integrity: ${report.integrityCheck}`,
     `Foreign key violations: ${report.foreignKeyViolations}`,
     `Memories: ${report.memoryCount}`,
     `Active memories: ${report.activeMemoryCount}`,
+    `FTS: ${report.ftsOk ? "ok" : "failed"}`,
+    `FTS schema: ${report.ftsSchemaOk ? "ok" : "failed"}`,
     `FTS rows: ${report.ftsRowCount}`,
     `Missing FTS rows: ${report.missingFtsRows}`,
     `Orphan FTS rows: ${report.orphanFtsRows}`,
+    `Duplicate FTS rows: ${report.duplicateFtsRows}`,
+    `Mismatched FTS rows: ${report.mismatchedFtsRows}`,
   ];
   for (const error of report.errors) lines.push(`Error: ${error}`);
   return lines.join("\n");
@@ -213,6 +218,9 @@ export function formatIntegrityReport(report: SQLiteIntegrityReport): string {
 export function toIntegrityOutput(report: SQLiteIntegrityReport) {
   return {
     ok: report.ok,
+    canonical_ok: report.canonicalOk,
+    fts_ok: report.ftsOk,
+    fts_schema_ok: report.ftsSchemaOk,
     path: report.path,
     schema_version: report.schemaVersion,
     supported_schema_version: report.supportedSchemaVersion,
@@ -223,6 +231,8 @@ export function toIntegrityOutput(report: SQLiteIntegrityReport) {
     fts_row_count: report.ftsRowCount,
     missing_fts_rows: report.missingFtsRows,
     orphan_fts_rows: report.orphanFtsRows,
+    duplicate_fts_rows: report.duplicateFtsRows,
+    mismatched_fts_rows: report.mismatchedFtsRows,
     errors: report.errors,
   };
 }
