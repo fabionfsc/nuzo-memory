@@ -250,8 +250,8 @@ test("MCP Registry validation uses a checksum-pinned official publisher", () => 
     "utf8",
   );
 
-  assert.match(installer, /version=1\.7\.9/);
-  assert.match(installer, /checksum=ab128162b0616090b47cf245afe0a23f3ef08936fdce19074f5ba0a4469281ac/);
+  assert.match(installer, /version=1\.8\.1/);
+  assert.match(installer, /checksum=a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc/);
   assert.match(installer, /sha256sum --check --status/);
   assert.doesNotMatch(installer, /releases\/latest/);
   assert.match(workflow, /npm run registry:validate/);
