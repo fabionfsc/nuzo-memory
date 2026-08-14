@@ -3,7 +3,6 @@ import {
   chmodSync,
   closeSync,
   constants as fsConstants,
-  copyFileSync,
   existsSync,
   linkSync,
   lstatSync,
@@ -137,11 +136,11 @@ export async function backupSQLiteMemoryStore(input: {
   const source = new Database(sourcePath, { readonly: true, fileMustExist: true });
   try {
     source.pragma("busy_timeout = 5000");
+    createPrivateFileExclusive(backupPath);
     const backup = await source.backup(backupPath);
     chmodSQLiteFileSet(backupPath);
     const report = inspectSQLiteMemoryStore(backupPath);
     if (!report.ok) {
-      rmSQLiteFileSet(backupPath);
       throw new NuzoMemoryError("MEMORY_BACKUP_INVALID", "Created backup failed integrity validation.", {
         path: backupPath,
         errors: report.errors,
@@ -154,6 +153,9 @@ export async function backupSQLiteMemoryStore(input: {
       remainingPages: backup.remainingPages,
       report,
     };
+  } catch (error) {
+    rmSQLiteFileSet(backupPath);
+    throw error;
   } finally {
     source.close();
   }
@@ -191,8 +193,14 @@ export function restoreSQLiteMemoryStore(input: {
   mkdirSync(dirname(targetPath), { recursive: true, mode: 0o700 });
   const temporaryPath = `${targetPath}.restore-${randomUUID()}`;
   try {
-    copyFileSync(backupPath, temporaryPath);
-    chmodSync(temporaryPath, 0o600);
+    createPrivateFileExclusive(temporaryPath);
+    const source = new Database(backupPath, { readonly: true, fileMustExist: true });
+    try {
+      source.pragma("busy_timeout = 5000");
+      source.prepare("VACUUM INTO ?").run(temporaryPath);
+    } finally {
+      source.close();
+    }
     const temporaryReport = inspectSQLiteMemoryStore(temporaryPath);
     if (!temporaryReport.ok) {
       throw new NuzoMemoryError("MEMORY_RESTORE_COPY_INVALID", "Restore copy failed integrity validation.", {

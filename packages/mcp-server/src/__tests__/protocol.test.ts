@@ -1049,6 +1049,22 @@ describe("MCP protocol contract", () => {
           include_global: true,
         },
       }));
+      const restrictedRecallHook = parseToolJson(await client.callTool({
+        name: "memory.recall_hook",
+        arguments: {
+          task_context: "authorized project scope",
+          project_scope: "project:nuzo",
+        },
+      })) as {
+        scope: string;
+        include_global: boolean;
+        results: Array<{ id: string }>;
+      };
+      expect(restrictedRecallHook).toMatchObject({
+        scope: "project:nuzo",
+        include_global: false,
+        results: [{ id: remembered.id }],
+      });
       await expectToolError(client.callTool({
         name: "memory.suggest_capture",
         arguments: {

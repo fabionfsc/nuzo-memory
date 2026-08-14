@@ -212,7 +212,9 @@ Input:
 Behavior:
 
 - builds a concise recall query from `task_context`;
-- searches `project_scope` plus `user:default`;
+- searches `project_scope` plus `user:default` when the global scope is
+  authorized; restricted sessions without `user:default` remain usable and
+  report `include_global: false`;
 - limits results to 1-8 memories;
 - does not update `last_used_at` or append recall audit events;
 - returns inspectable recall results and read-only metadata.

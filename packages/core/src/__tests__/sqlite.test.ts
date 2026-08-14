@@ -13,7 +13,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import Database from "better-sqlite3";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createMemoryService,
   DefaultPolicyEngine,
@@ -1197,7 +1197,27 @@ describe("SQLiteMemoryDatabase", () => {
     const backupPath = join(directory, "backup.sqlite");
     const restoredPath = join(directory, "restored.sqlite");
 
-    const backup = await backupSQLiteMemoryStore({ sourcePath, backupPath });
+    const originalBackup = Database.prototype.backup;
+    let modeWhenBackupStarted: number | null = null;
+    const backupSpy = vi.spyOn(Database.prototype, "backup").mockImplementation(function (
+      this: Database.Database,
+      destinationFile: string,
+      options?: Database.BackupOptions,
+    ) {
+      modeWhenBackupStarted = existsSync(destinationFile)
+        ? statSync(destinationFile).mode & 0o777
+        : null;
+      return options === undefined
+        ? originalBackup.call(this, destinationFile)
+        : originalBackup.call(this, destinationFile, options);
+    });
+    let backup;
+    try {
+      backup = await backupSQLiteMemoryStore({ sourcePath, backupPath });
+    } finally {
+      backupSpy.mockRestore();
+    }
+    expect(modeWhenBackupStarted).toBe(0o600);
     expect(backup).toMatchObject({
       sourcePath,
       backupPath,
@@ -1239,6 +1259,48 @@ describe("SQLiteMemoryDatabase", () => {
     }
   });
 
+  it("restores a live SQLite source through its uncheckpointed WAL", async () => {
+    const { database, directory, service } = createTempDatabase();
+    const sourcePath = join(directory, "memories.sqlite");
+    const restoredPath = join(directory, "restored-live.sqlite");
+    database.database.pragma("wal_checkpoint(TRUNCATE)");
+    database.database.pragma("wal_autocheckpoint = 0");
+
+    const memory = await service.remember({
+      content: "Restore must snapshot data that exists only in the live WAL.",
+      kind: "project_decision",
+      scope: "project:nuzo",
+      tags: ["restore", "wal"],
+      source: "test",
+    });
+    expect(statSync(`${sourcePath}-wal`).size).toBeGreaterThan(0);
+
+    const restored = restoreSQLiteMemoryStore({
+      backupPath: sourcePath,
+      targetPath: restoredPath,
+    });
+    expect(restored.report).toMatchObject({
+      ok: true,
+      memoryCount: 1,
+      ftsRowCount: 1,
+    });
+    expect(statSync(restoredPath).mode & 0o777).toBe(0o600);
+
+    const restoredDatabase = new SQLiteMemoryDatabase({ path: restoredPath, readonly: true });
+    try {
+      await expect(restoredDatabase.findById(memory.id)).resolves.toMatchObject({
+        content: "Restore must snapshot data that exists only in the live WAL.",
+      });
+      await expect(restoredDatabase.search({
+        query: "live WAL",
+        scope: "project:nuzo",
+      })).resolves.toMatchObject([{ memory: { id: memory.id } }]);
+    } finally {
+      restoredDatabase.close();
+      database.close();
+    }
+  });
+
   it("requires explicit overwrite for backup and restore targets", async () => {
     const { database, directory, service } = createTempDatabase();
     await service.remember({
@@ -1264,6 +1326,38 @@ describe("SQLiteMemoryDatabase", () => {
       .not.toThrow();
     expect(inspectSQLiteMemoryStore(targetPath)).toMatchObject({ ok: true, memoryCount: 1 });
 
+    database.close();
+  });
+
+  it("does not treat imported originalScope metadata as an audit authorization scope", async () => {
+    const { database, service } = createTempDatabase();
+    const memory = await service.remember({
+      content: "Imported audit scope filtering fixture.",
+      kind: "note",
+      scope: "project:allowed",
+      source: "test",
+    });
+    await database.append({
+      id: "evt_import_scope_filter",
+      memoryId: memory.id,
+      eventType: "memory.imported",
+      actor: "nuzo:cli",
+      payload: {
+        originalScope: "project:unrelated",
+        scope: "project:allowed",
+        archived: false,
+      },
+      createdAt: new Date("2026-08-14T18:00:00.000Z"),
+    });
+
+    await expect(database.query({
+      scope: "project:unrelated",
+      eventTypes: ["memory.imported"],
+    })).resolves.toEqual([]);
+    await expect(database.query({
+      scope: "project:allowed",
+      eventTypes: ["memory.imported"],
+    })).resolves.toMatchObject([{ id: "evt_import_scope_filter" }]);
     database.close();
   });
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { MemoryEvent, MemoryRecord, MemoryRelationRecord, MemoryService } from "@nuzo/memory-core";
+import type { MemoryEvent, MemoryRecord, MemoryRelationRecord, MemoryScope, MemoryService } from "@nuzo/memory-core";
 import {
   createMemoryToolHandlers,
   type MemoryDoctorDiagnostics,
@@ -9,6 +9,7 @@ function createTestHandlers(options: {
   failList?: boolean;
   doctorDiagnostics?: MemoryDoctorDiagnostics;
   projectScope?: `project:${string}`;
+  authorizedScopes?: readonly MemoryScope[];
 } = {}) {
   let memory: MemoryRecord | null = null;
   let relation: MemoryRelationRecord | null = null;
@@ -486,6 +487,7 @@ function createTestHandlers(options: {
     handlers: createMemoryToolHandlers(service, {
       storePath: "/tmp/nuzo-test.sqlite",
       ...(options.projectScope === undefined ? {} : { projectScope: options.projectScope }),
+      ...(options.authorizedScopes === undefined ? {} : { authorizedScopes: options.authorizedScopes }),
       ...(options.doctorDiagnostics === undefined
         ? {}
         : { doctorDiagnostics: options.doctorDiagnostics }),
@@ -1029,6 +1031,28 @@ describe("memory MCP handlers", () => {
     expect(listed.memories[0]?.scope).toBe("project:resolved");
     expect(result.scope).toBe("project:resolved");
     expect(calls.recall.at(-1)?.scope).toBe("project:resolved");
+  });
+
+  it("keeps recall hook usable when restricted mode excludes global scope", async () => {
+    const { calls, handlers } = createTestHandlers({
+      projectScope: "project:restricted",
+      authorizedScopes: ["project:restricted"],
+    });
+
+    const result = await handlers.recallHook({
+      task_context: "Continue the restricted project task.",
+      project_scope: "project:auto",
+    });
+
+    expect(result).toMatchObject({
+      scope: "project:restricted",
+      include_global: false,
+    });
+    expect(calls.recall.at(-1)).toMatchObject({
+      scope: "project:restricted",
+      includeGlobal: false,
+      recordUsage: false,
+    });
   });
 
   it("validates capture suggestions without calling remember", async () => {
