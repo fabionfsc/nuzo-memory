@@ -4,7 +4,7 @@ This repository is the design, implementation, and documentation home for
 Nuzo.
 
 Nuzo is a local-first, auditable memory layer for Codex, Claude Code, and
-MCP-compatible AI agents. Version `1.1.0` is the current public release.
+MCP-compatible AI agents. Version `1.2.0` is the current public release.
 
 ## Start Here
 
@@ -43,7 +43,8 @@ data, or personal operator notes in public docs, issues, examples, or tests.
   alongside tool contract changes.
 - Host plugins should remain thin wrappers around the MCP server.
 - Storage starts with SQLite and SQLite FTS.
-- Embeddings, sync, encryption, and UI are future optional layers.
+- Optional local embeddings shipped; sync, encryption, and UI remain outside
+  the final upstream release.
 - Do not introduce telemetry, network calls, remote embeddings, or silent
   inferred writes by default.
 - Inferred memories are drafts until the user confirms them.
@@ -66,6 +67,10 @@ Source workspace packages remain private. Publish only generated npm staging
 packages after following `docs/operations/npm-publishing.md`.
 
 ## Git And Issues
+
+Nuzo `1.2.0` is the final planned release. These rules apply through final
+publication; after repository archival, no new upstream issues or pull requests
+are accepted.
 
 - Do not push routine changes directly to `main`.
 - Create a focused branch, commit validated changes, push the branch, and open

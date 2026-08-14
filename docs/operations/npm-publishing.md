@@ -23,6 +23,12 @@ installation.
 
 ## Package Lifecycle
 
+`1.2.0` is the final planned release of the active package set. Leave the
+published packages installable and undeprecated after end of maintenance so
+existing users and downstream forks can reproduce the tagged release. Do not
+publish later versions without an explicit downstream maintenance decision and
+a complete new release audit.
+
 Use `@nuzo/memory` as the public runtime package for normal users and host
 plugins. It includes the `nuzo`, `nuzo-mcp-server`, and `nuzo-memory-hook`
 binaries.
@@ -56,12 +62,12 @@ package is still present in `build/npm/packages/`.
 
 ## Current Release
 
-Version `1.1.0` is the current release:
+Version `1.2.0` is the current release:
 
 ```text
-@nuzo/memory-core@1.1.0
-@nuzo/memory@1.1.0
-@nuzo/memory-mcp@1.1.0
+@nuzo/memory-core@1.2.0
+@nuzo/memory@1.2.0
+@nuzo/memory-mcp@1.2.0
 ```
 
 The packages are published together from the same source version. Routine
@@ -237,9 +243,9 @@ Starting with `1.1.0`, also configure the same trusted publisher for:
 @nuzo/memory-mcp
 ```
 
-The package is new in `1.1.0`. npm requires a package to exist before its
+The package was new in `1.1.0`. npm requires a package to exist before its
 trusted publisher can be configured, and staged publishing cannot bootstrap a
-brand-new package. For `1.1.0` only, the publish tool deliberately defers
+brand-new package. For `1.1.0` only, the publish tool deliberately deferred
 `@nuzo/memory-mcp` in live mode. Publish core and unified memory through OIDC,
 then perform one authenticated first publication of the exact retained
 `nuzo-memory-mcp-1.1.0.tgz` candidate from the reviewed dry-run workflow.

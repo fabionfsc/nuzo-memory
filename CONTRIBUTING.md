@@ -1,8 +1,10 @@
 # Contributing
 
-Nuzo is in early public development. Contributions should preserve the
-project's main promise: local-first, auditable, user-controlled memory for
-agents.
+Nuzo reached its final planned release at `1.2.0`. The repository is archived
+after publication and does not accept new issues or pull requests. This file
+is retained to document the engineering rules used for the released code and
+to help downstream forks preserve its local-first, auditable,
+user-controlled design.
 
 ## Before Contributing
 
@@ -15,10 +17,8 @@ Read:
 5. `docs/operations/roadmap.md`
 6. `docs/operations/spec-driven-workflow.md`
 
-For installation results, support, or product feedback that does not yet need
-a code contribution, use the public
-[feedback guide](https://nuzo.com.br/operations/feedback/) and its focused
-GitHub forms. Reports must use fake data and sanitized diagnostics.
+There is no upstream support or feature intake after end of maintenance.
+Downstream work must use fake data and sanitized diagnostics.
 
 ## Contribution Rules
 

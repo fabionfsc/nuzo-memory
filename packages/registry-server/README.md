@@ -1,5 +1,9 @@
 # Nuzo Memory MCP Server
 
+> Nuzo `1.2.0` is the final planned release. This MCP Registry distribution
+> remains available, but no ongoing fixes, security response, or compatibility
+> updates are promised. See the repository's end-of-maintenance notice.
+
 `@nuzo/memory-mcp` is the single-entrypoint npm distribution for publishing
 Nuzo to the official MCP Registry.
 
@@ -13,7 +17,7 @@ nuzo setup
 MCP clients and registry integrations can run this package directly:
 
 ```bash
-npx --yes @nuzo/memory-mcp@1.1.0
+npx --yes @nuzo/memory-mcp@1.2.0
 ```
 
 The server uses stdio, stores memory locally, performs no telemetry, and makes

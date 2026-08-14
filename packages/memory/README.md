@@ -1,5 +1,9 @@
 # @nuzo/memory
 
+> Nuzo `1.2.0` is the final planned release. This package remains available,
+> but no ongoing fixes, security response, or compatibility updates are
+> promised. See the repository's end-of-maintenance notice.
+
 The official Nuzo runtime package for local, inspectable agent memory.
 
 It installs:
@@ -16,7 +20,7 @@ contract.
 ## Install Once
 
 ```bash
-npm install --global @nuzo/memory@1.1.0
+npm install --global @nuzo/memory@1.2.0
 nuzo setup
 ```
 

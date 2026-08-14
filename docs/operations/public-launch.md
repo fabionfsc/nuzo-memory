@@ -1,15 +1,17 @@
 # Public Launch Playbook
 
-This is the executable adoption checklist for Nuzo `1.1.0`. It coordinates a
-public launch; it does not authorize a new npm release, telemetry, paid
-promotion, or posting from an operator's external accounts.
+This page preserves the launch checklist used for the public Nuzo releases.
+For final `1.2.0`, publication is limited to the canonical GitHub, npm, MCP
+Registry, and documentation channels. No external posting campaign or ongoing
+feedback program is planned after repository archival. This historical
+playbook does not authorize a new npm release.
 
 ## Canonical Links
 
 - Repository: <https://github.com/fabionfsc/nuzo-memory>
 - Documentation: <https://nuzo.com.br/>
 - 60-second demo: <https://nuzo.com.br/getting-started/sixty-second-demo/>
-- Current release: <https://github.com/fabionfsc/nuzo-memory/releases/tag/v1.1.0>
+- Current release: <https://github.com/fabionfsc/nuzo-memory/releases/tag/v1.2.0>
 - npm package: <https://www.npmjs.com/package/@nuzo/memory>
 - Feedback: <https://github.com/fabionfsc/nuzo-memory/issues/new/choose>
 
@@ -18,7 +20,7 @@ instructions that can drift.
 
 ## Readiness Gate
 
-- [ ] Install `@nuzo/memory@1.1.0` into a clean temporary npm prefix.
+- [ ] Install `@nuzo/memory@1.2.0` into a clean temporary npm prefix.
 - [ ] Run the complete 60-second demo against that installed package.
 - [ ] Verify a confirmed memory across two fresh Codex sessions.
 - [ ] Verify a confirmed memory across two fresh Claude Code sessions.
@@ -57,7 +59,7 @@ Initial execution issues:
 | Curated agent-tool lists | Read contribution rules, use the canonical one-sentence description, and disclose project ownership where requested. | Merged contribution or declined/closed link. |
 | Codex and Claude Code communities | Reproduce installation on the named host; do not imply host endorsement. | Public post URL and any correction follow-up. |
 | Developer communities | Lead with the problem and demo, not unsupported benchmark or adoption claims. | Public post URL and summarized actionable feedback. |
-| Project release channels | Reuse the existing `v1.1.0` release; do not retag or republish merely for launch copy. | Verified release and npm links. |
+| Project release channels | Reuse the existing `v1.2.0` release; do not retag or republish merely for launch copy. | Verified release and npm links. |
 
 ## Launch Narrative
 

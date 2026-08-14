@@ -4,6 +4,38 @@ All notable changes to Nuzo will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning after the first public release.
 
+## [1.2.0] - 2026-08-14
+
+### Added
+
+- Local administrators can preview and explicitly apply a WAL-safe SQLite FTS
+  drift repair, with validated backup and post-repair integrity evidence.
+- Human-readable output now uses shared untrusted-text renderers for terminal
+  rows and Markdown exports while keeping JSON data lossless.
+
+### Changed
+
+- The public landing experience, site navigation, and first-use narrative now
+  present the stable local-first trust boundary and supported host workflow
+  more directly.
+- Runtime and development dependencies resolve with zero known npm audit
+  findings; pinned GitHub Actions and documentation tooling move to their
+  final validated releases while `better-sqlite3` remains on the
+  Windows/Node-22-compatible `12.11.1` line.
+- `1.2.0` is the final planned Nuzo release. The repository, packages, roadmap,
+  support expectations, and downstream-fork guidance now state the
+  end-of-maintenance posture explicitly.
+
+### Security
+
+- Restricted relation reads no longer disclose relation metadata for a target
+  memory outside the authorized scope.
+- CLI inspection, recall, list, audit, capture, and interactive-manager views
+  visibly escape untrusted terminal controls and row/column separators.
+  Markdown exports contain stored content in dynamically sized inert fences,
+  preventing stored HTML, headings, lists, tables, links, or backticks from
+  becoming export structure.
+
 ## [1.1.0] - 2026-07-14
 
 ### Added

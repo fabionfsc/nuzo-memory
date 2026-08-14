@@ -7,6 +7,11 @@ conflicts, and session-continuity validation across release goals.
 
 ## Current Focus
 
+`1.2.0` is the final release. The current focus is limited to publishing and
+recording its final artifact evidence. The recurring product-hardening loop
+below is retained for historical auditability and downstream forks; it is not
+an upstream maintenance commitment after the repository is archived.
+
 For every current release, prioritize:
 
 - continued installed-package validation over source-tree-only validation;
@@ -221,6 +226,29 @@ sessions through the public runtime. Delivery, explicit MCP recall, model
 response, and read-only history evidence are reported separately; no real
 memory content or credentials were used.
 
+## Published 1.1.0 Verification
+
+The `1.1.0` distribution release was published from commit
+`5e737986f28d09453d8fc012fc8eb1dd53e3583f` through the GitHub Release
+[`v1.1.0`](https://github.com/fabionfsc/nuzo-memory/releases/tag/v1.1.0).
+The retained npm dry run passed in
+[workflow run 29312594381](https://github.com/fabionfsc/nuzo-memory/actions/runs/29312594381),
+then the live workflow completed in
+[workflow run 29312724614](https://github.com/fabionfsc/nuzo-memory/actions/runs/29312724614).
+
+The public package set is:
+
+- `@nuzo/memory-core@1.1.0` with npm provenance;
+- `@nuzo/memory@1.1.0` with npm provenance;
+- `@nuzo/memory-mcp@1.1.0`, created through the documented one-time manual
+  bootstrap because npm cannot configure a trusted publisher before a package
+  exists. That bootstrap package does not have an npm attestation.
+
+The MCP Registry lists `io.github.fabionfsc/nuzo-memory@1.1.0`. A retrospective
+public-artifact audit on 2026-08-14 passed the exact published CLI, MCP,
+Registry, and default semantic-fallback smokes. It used temporary synthetic
+data only.
+
 ## Real Flow To Prove
 
 The canonical post-release smoke is:
@@ -422,8 +450,7 @@ A release that changes capture or host behavior is ready only when:
 
 ## Issue Tracking
 
-Create focused issues from the active release goal only when their contract,
-boundary, and acceptance evidence are concrete. Keep broad product direction
-in the roadmap and use issues for assignable work. After release, close
-completed issues and carry documented non-blockers into the next applicable
-milestone.
+For the final release, close completed work and document deliberate non-goals
+instead of carrying a backlog into a successor milestone. Downstream forks may
+reuse the issue discipline above when their contract, boundary, and acceptance
+evidence are concrete.

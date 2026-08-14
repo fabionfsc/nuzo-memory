@@ -12,11 +12,15 @@ Semantic Versioning across the contracts listed below.
 Packages currently use:
 
 ```text
-1.1.0
+1.2.0
 ```
 
 Development commits keep the last released version until an explicit release
 commit prepares the next version.
+
+Nuzo `1.2.0` is the final planned version. Semantic Versioning describes the
+published contracts but does not imply future compatibility updates, patches,
+or dependency maintenance after the repository is archived.
 
 ## Version Scheme
 
