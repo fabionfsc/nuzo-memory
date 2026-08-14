@@ -16,6 +16,30 @@ content-free discovery pass. It preserves this specification's explicit-write
 boundary: only the existing audited `relate` and `challenge` operations can
 apply a human decision.
 
+## Final 1.2.0 Disposition
+
+The final release closes the governance follow-up plan with this evidence:
+
+| Slice | Final contract |
+| --- | --- |
+| Review lifecycle | Shipped: `review_after`, `expires_at`, persistence, import/export, CLI/MCP fields, due filtering, and compact recall markers. Nothing expires or deletes automatically. |
+| Relations | Shipped: explicit `supersedes`, `conflicts_with`, `duplicate_of`, and `related_to` writes, reverse reads, import/export, scope authorization, and compact rendering. |
+| Progressive inspection | Shipped: compact recall/list, `show`, history/audit, interactive management, and explicit challenge/relation actions. |
+| Governance discovery | Shipped: the bounded content-free `review-relations` report distinguishes exact duplicates, update candidates, related records, existing relations, and uncertain pairs without an apply path. The privacy doctor separately reports local runtime hygiene. |
+| Stable topic key/upsert | Not added: confirmed capture already returns exact-duplicate and revision-bound update candidates, while explicit update and `supersedes` preserve intent and history. A new scoped-unique key would add naming, rename, collision, import, and schema contracts and could make an apparent capture silently replace durable knowledge. |
+| Automatic relation mutation | Not added: classifier evidence remains advisory; only explicit audited `relate` or `challenge` actions write governance state. |
+
+A separate `doctor --governance` mode is not needed in the final contract. The
+relation review handles store-level duplicate/relation discovery with bounded
+benchmarks; `--needs-review`, `show`, history/audit, `challenge`, and the privacy
+doctor cover the remaining deterministic actions. Folding heuristic topic
+identity or automatic fixes into doctor would duplicate those surfaces and
+create a tuning obligation after maintenance ends.
+
+For evolving decisions, update the inspected memory by ID with its expected
+revision, or create a replacement and explicitly mark the old record
+`superseded`. Nuzo does not infer a durable topic identity from content or tags.
+
 ## Problem Statement
 
 The dangerous failure mode is a stale or weakly-attributed memory that sounds

@@ -27,6 +27,15 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ### Changed
 
+- Final architecture decisions now evaluate encrypted local stores and capture
+  confirmation binding with explicit threat models and executable reference
+  evidence. Nuzo keeps OS-managed at-rest encryption and host-attested capture
+  confirmation as honest external trust boundaries instead of adding an
+  unsupported cryptographic mode or token contract.
+- The governance follow-up plan records the shipped lifecycle, relation,
+  inspection, challenge, and bounded review surfaces and rejects implicit
+  topic-key upserts in favor of revision-bound explicit updates or superseding
+  relations.
 - The public landing experience, site navigation, and first-use narrative now
   present the stable local-first trust boundary and supported host workflow
   more directly.

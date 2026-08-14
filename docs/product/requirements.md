@@ -45,8 +45,13 @@
 
 ## Future Requirements
 
-- Optional encrypted storage.
 - Optional sync provider.
 - Browser memory manager only after the stable CLI-first workflow is proven.
 - Agent-specific policies.
 - Team-level memory stores.
+
+Built-in encrypted storage was evaluated and not selected for the final
+upstream release. See
+[Encrypted Local Stores Decision](../architecture/encrypted-local-stores.md)
+for the threat model, option comparison, and operator alternative. Items in
+this section are historical product direction, not post-`1.2.0` commitments.

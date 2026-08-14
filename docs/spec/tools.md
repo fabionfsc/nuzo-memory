@@ -499,6 +499,8 @@ received the represented user decision. Nuzo does not persist a draft token or
 cryptographically bind this call to a previous suggestion. The MCP surface
 records confirmed operations with actor `nuzo:mcp`; a caller-provided actor is
 only a compatibility attribution hint and cannot override that audit actor.
+See [Capture Confirmation Binding Decision](../architecture/capture-confirmation-binding.md)
+for the final token evaluation and executable reference evidence.
 
 Input for confirmed creation:
 
