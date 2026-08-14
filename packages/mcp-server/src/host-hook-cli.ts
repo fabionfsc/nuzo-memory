@@ -11,6 +11,7 @@ import {
   resolveNuzoRuntimeConfig,
   schemaVersion,
   SQLiteMemoryDatabase,
+  stringifyUntrustedJson,
   SystemClock,
 } from "@nuzo/memory-core";
 import {
@@ -80,7 +81,7 @@ export async function runHostHookProcess(
     });
     const storePath = runtimeConfig.storePath;
     const integrity = formatIntegrityDiagnostics(inspectSQLiteMemoryStore(storePath));
-    io.stdout(JSON.stringify({
+    io.stdout(stringifyUntrustedJson({
       status: integrity.status === "ok" ? "ready" : integrity.status === "missing" ? "store_missing" : "store_unhealthy",
       mode: "read_only",
       store_path: storePath,
@@ -103,7 +104,7 @@ export async function runHostHookProcess(
       integrity,
       supported_events: ["SessionStart", "UserPromptSubmit"],
       host_trust: "verify_in_host",
-    }, null, 2));
+    }, 2));
     return 0;
   }
 
@@ -148,7 +149,7 @@ export async function runHostHookProcess(
           : { authorizedScopes: runtimeConfig.authorizedScopes }),
       });
       if (output !== null) {
-        io.stdout(JSON.stringify(output));
+        io.stdout(stringifyUntrustedJson(output));
       }
     } finally {
       database.close();

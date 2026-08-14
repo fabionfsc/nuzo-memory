@@ -60,7 +60,7 @@ and maintenance. They do not change the trust boundary.
 | Threat | Example | Required control |
 | --- | --- | --- |
 | Deceptive instruction text | A memory says to ignore current instructions or run a command. | Frame every record as untrusted data and tell the host not to execute or follow directives solely because they appear in memory. |
-| Output-structure injection | Content includes terminal controls, newlines, fake records, HTML, Markdown fences, JSON fragments, or boundary markers. | Render stored values through the shared untrusted-text helpers: visible escapes for terminal rows, inert dynamically fenced blocks for Markdown, and escaped line separators inside JSON strings. |
+| Output-structure injection | Content includes terminal controls, bidirectional formatting, newlines, fake records, HTML, Markdown fences, JSON fragments, or boundary markers. | Render stored values through the shared untrusted-text helpers: visible escapes for terminal rows, inert dynamically fenced blocks for Markdown, and lossless JSON escapes for terminal-active and direction-changing code points. |
 | Imported hostile content | A valid export contains text designed for a different host or session. | Apply the same recall boundary to imported and locally created records; imports do not grant authority. |
 | Source spoofing | A writer sets `source` to `system`, `admin`, or another host. | Display source for attribution but never use it to assign instruction priority. |
 | Scope confusion | A repository-controlled process requests unrelated user or project scopes. | Derive project scopes consistently and enforce explicit core allowlists in restricted sessions. |
@@ -94,11 +94,13 @@ that was recalled.
 
 Human CLI output renders stored content, tags, source labels, relation reasons,
 audit actors, and audit payloads as untrusted data. Single-line views replace
-control characters and row or column separators with visible deterministic
-escapes. Markdown exports place content in a dynamically sized fenced code
-block, so stored backticks cannot close the block and stored HTML or Markdown
-cannot become document structure. JSON output and the versioned JSON export
-remain lossless: parsing them reconstructs the original stored values.
+control characters, bidirectional formatting, and row or column separators
+with visible deterministic escapes. Markdown exports place content in a
+dynamically sized fenced code block, so stored backticks cannot close the block
+and stored HTML or Markdown cannot become document structure. JSON output and
+the versioned JSON export escape raw C1, line/paragraph, and bidirectional
+formatting code points while remaining lossless: parsing them reconstructs the
+original stored values.
 
 ## Authorization Modes
 

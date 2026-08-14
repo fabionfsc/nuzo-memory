@@ -48,14 +48,15 @@ directly instead of depending on internal assertion helpers.
 | `resolveAutomaticScope` | Resolves `project:auto` for library callers. |
 | `resolveNuzoRuntimeConfig` | Shared runtime resolver for CLI, MCP, and host integrations. |
 | `formatMemoryExportMarkdown` | Markdown rendering for versioned memory exports. |
-| `escapeUntrustedControlCharacters` | Escape control characters in a value that already carries its own escaping, such as compact JSON or a filesystem path. |
+| `escapeUntrustedControlCharacters` | Escape terminal controls, bidirectional formatting, and row/column separators in a value that already carries its own escaping, such as compact JSON or a filesystem path. |
 | `renderUntrustedInlineText` | Render untrusted stored text for one line of human-readable output, without control characters, row breaks, or forged columns. |
 | `renderUntrustedMarkdownBlock` | Render untrusted stored text as an inert fenced Markdown block. |
+| `stringifyUntrustedJson` | Serialize lossless JSON while escaping terminal-active and direction-changing code points that native `JSON.stringify` leaves raw. |
 
 Integrations that print memory content, tags, sources, relation reasons, or
 audit actors to a terminal or a Markdown document should render those values
-through these helpers. They change presentation only; stored values and JSON
-responses keep the original content. See
+through these helpers. They change presentation only; stored values and parsed
+JSON responses keep the original content. See
 [Memory Trust Boundary](../architecture/memory-trust-boundary.md).
 
 ## Stable Public Type Exports

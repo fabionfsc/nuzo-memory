@@ -551,7 +551,7 @@ describe("nuzo memory cli", () => {
     const store = createStorePath();
     const content = [
       "security sentinel\u001b]8;;https://example.invalid\u0007 forged",
-      "row\tcolumn\u009b31m\u2028<script>alert(1)</script>",
+      "row\tcolumn\u009b31m\u2028<script>alert(1)</script>\u202e reversed\u2066 isolate",
       "```",
     ].join("\n");
     const remembered = await runCli([
@@ -570,13 +570,18 @@ describe("nuzo memory cli", () => {
       shown.stdout.join("\n"),
     ];
     for (const rendered of humanOutputs) {
-      expect(rendered).not.toMatch(/[\u0000-\u0008\u000b-\u001f\u007f-\u009f\u2028\u2029]/u);
+      expect(rendered).not.toMatch(/[\u0000-\u0008\u000b-\u001f\u007f-\u009f\u061c\u200e\u200f\u2028-\u202e\u2066-\u2069]/u);
       expect(rendered).toContain("\\u001b");
+      expect(rendered).toContain("\\u202e");
       expect(rendered).toContain("forged\\nrow\\tcolumn");
     }
 
     const json = await runCli(["memory", "--store", store, "show", id, "--json"]);
-    expect(JSON.parse(json.stdout[0] ?? "{}").memory.content).toBe(content);
+    const renderedJson = json.stdout[0] ?? "{}";
+    expect(JSON.parse(renderedJson).memory.content).toBe(content);
+    expect(renderedJson).not.toMatch(/[\u007f-\u009f\u061c\u200e\u200f\u2028-\u202e\u2066-\u2069]/u);
+    expect(renderedJson).toContain("\\u009b");
+    expect(renderedJson).toContain("\\u202e");
 
     const markdown = await runCli(["memory", "--store", store, "export", "--format", "markdown"]);
     const renderedMarkdown = markdown.stdout[0] ?? "";
@@ -584,7 +589,8 @@ describe("nuzo memory cli", () => {
     expect(renderedMarkdown).toContain("<script>alert(1)</script>");
     expect(renderedMarkdown).toContain("\\u001b");
     expect(renderedMarkdown).toContain("forged\nrow\\tcolumn");
-    expect(renderedMarkdown).not.toMatch(/[\u0000-\u0009\u000b-\u001f\u007f-\u009f\u2028\u2029]/u);
+    expect(renderedMarkdown).toContain("\\u202e");
+    expect(renderedMarkdown).not.toMatch(/[\u0000-\u0009\u000b-\u001f\u007f-\u009f\u061c\u200e\u200f\u2028-\u202e\u2066-\u2069]/u);
   });
 
   it("validates capture suggestions without writing memory", async () => {

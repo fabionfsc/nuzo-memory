@@ -8,6 +8,7 @@ export {
   escapeUntrustedControlCharacters,
   renderUntrustedInlineText,
   renderUntrustedMarkdownBlock,
+  stringifyUntrustedJson,
 } from "./untrusted-text.js";
 export {
   DefaultPolicyEngine,

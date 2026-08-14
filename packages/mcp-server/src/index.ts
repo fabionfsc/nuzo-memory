@@ -30,6 +30,7 @@ import {
   resolveNuzoRuntimeConfig,
   semanticIndexPathFor,
   schemaVersion,
+  stringifyUntrustedJson,
   type EmbeddingProvider,
   type MemoryService,
   type MemoryExportDocument,
@@ -1001,7 +1002,7 @@ function jsonToolResult(value: unknown) {
     content: [
       {
         type: "text" as const,
-        text: JSON.stringify(value, null, 2),
+        text: stringifyUntrustedJson(value, 2),
       },
     ],
   };
@@ -1043,7 +1044,7 @@ function jsonErrorToolResult(error: unknown, options: JsonErrorToolResultOptions
       content: [
         {
           type: "text" as const,
-          text: JSON.stringify(output, null, 2),
+          text: stringifyUntrustedJson(output, 2),
         },
       ],
     };

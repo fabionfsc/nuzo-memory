@@ -2,6 +2,7 @@ import { closeSync, constants, fstatSync, openSync, readFileSync } from "node:fs
 import {
   formatMemoryExportMarkdown,
   NuzoMemoryError,
+  stringifyUntrustedJson,
   type MemoryExportDocument,
 } from "@nuzo/memory-core";
 import type { ExportFormat } from "./parsers.js";
@@ -40,5 +41,5 @@ export function readExportDocument(path: string): MemoryExportDocument {
 export function formatExportDocument(document: MemoryExportDocument, format: ExportFormat): string {
   return format === "markdown"
     ? formatMemoryExportMarkdown(document)
-    : `${JSON.stringify(document, null, 2)}\n`;
+    : `${stringifyUntrustedJson(document, 2)}\n`;
 }

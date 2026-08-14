@@ -1,6 +1,7 @@
 import {
   escapeUntrustedControlCharacters,
   renderUntrustedInlineText,
+  stringifyUntrustedJson,
   type CaptureSuggestionResult,
   type ConfirmCaptureResult,
   type MemoryEvent,
@@ -9,7 +10,7 @@ import {
 
 export function formatCaptureSuggestion(suggestion: CaptureSuggestionResult, json: boolean): string {
   const output = toCaptureSuggestionOutput(suggestion);
-  if (json) return JSON.stringify(output, null, 2);
+  if (json) return stringifyUntrustedJson(output, 2);
 
   const lines = [
     `Status: ${renderUntrustedInlineText(output.status)}`,
@@ -89,7 +90,7 @@ function toCaptureSuggestionOutput(suggestion: CaptureSuggestionResult) {
 
 export function formatConfirmCapture(result: ConfirmCaptureResult, json: boolean): string {
   const output = toConfirmCaptureOutput(result);
-  if (json) return JSON.stringify(output, null, 2);
+  if (json) return stringifyUntrustedJson(output, 2);
 
   const lines = [
     `Decision: ${renderUntrustedInlineText(output.decision)}`,

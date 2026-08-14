@@ -1,5 +1,5 @@
 import type { MemoryRecord, MemoryScope, MemoryService, RecallMemoryResult } from "@nuzo/memory-core";
-import { memoryLimits, projectScopeFromPath } from "@nuzo/memory-core";
+import { memoryLimits, projectScopeFromPath, stringifyUntrustedJson } from "@nuzo/memory-core";
 
 export const hostHookLimits = {
   memories: 5,
@@ -178,7 +178,7 @@ function toBoundedMemoryJsonLine(memory: MemoryRecord, maxCharacters: number): s
 }
 
 function toMemoryJsonLine(memory: MemoryRecord, content: string): string {
-  return JSON.stringify({
+  return stringifyUntrustedJson({
     id: memory.id,
     revision: memory.revision,
     scope: memory.scope,
@@ -186,9 +186,7 @@ function toMemoryJsonLine(memory: MemoryRecord, content: string): string {
     tags: memory.tags,
     source: memory.source,
     content,
-  })
-    .replaceAll("\u2028", "\\u2028")
-    .replaceAll("\u2029", "\\u2029");
+  });
 }
 
 function deduplicateMemories(memories: MemoryRecord[]): MemoryRecord[] {
