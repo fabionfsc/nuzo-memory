@@ -173,6 +173,9 @@ export function createNuzoMcpServerRuntime(options: NuzoMcpServerOptions = {}): 
     storePath,
     defaultScope: runtimeConfig.scope,
     projectPath: runtimeConfig.projectRoot,
+    ...(runtimeConfig.authorizedScopes === undefined
+      ? {}
+      : { authorizedScopes: runtimeConfig.authorizedScopes }),
     recallDefaults: options.recallDefaults ?? runtimeConfig.recall,
     doctorDiagnostics: options.doctorDiagnostics ?? {
       schema: {
@@ -225,6 +228,9 @@ export function registerMemoryTools(
   const handlerOptions = {
     ...(options.storePath === undefined ? {} : { storePath: options.storePath }),
     projectScope: projectScopeFromPath(options.projectPath ?? process.cwd()),
+    ...(options.authorizedScopes === undefined
+      ? {}
+      : { authorizedScopes: options.authorizedScopes }),
     ...(options.doctorDiagnostics === undefined
       ? {}
       : { doctorDiagnostics: options.doctorDiagnostics }),

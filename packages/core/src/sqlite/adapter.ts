@@ -546,7 +546,9 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
     }
 
     if (filter.scope !== undefined) {
-      where.push("(m.scope = @scope OR json_extract(e.payload, '$.scope') = @scope OR json_extract(e.payload, '$.originalScope') = @scope)");
+      // Import documents control originalScope. Only the server-generated
+      // rehome event may use it as a trusted historical scope selector.
+      where.push("(m.scope = @scope OR json_extract(e.payload, '$.scope') = @scope OR (e.event_type = 'memory.scope.rehomed' AND json_extract(e.payload, '$.originalScope') = @scope))");
       params.scope = filter.scope;
     }
 

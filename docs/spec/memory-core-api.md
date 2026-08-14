@@ -166,7 +166,7 @@ injection, or runtime packaging.
 | `RuntimeFileSafetyFinding` | Advanced public | Content-free unsafe-path finding. |
 | `RuntimeFileSafetyReport` | Advanced public | Content-free file-safety summary shared by CLI and MCP diagnostics. |
 | `backupSQLiteMemoryStore` | Advanced public | Create a WAL-safe SQLite online backup and validate the resulting snapshot. |
-| `restoreSQLiteMemoryStore` | Advanced public | Validate and restore a SQLite memory backup into a target store path. |
+| `restoreSQLiteMemoryStore` | Advanced public | Validate and restore a WAL-safe SQLite snapshot into a target store path. |
 | `SQLiteIntegrityReport` | Advanced public | Content-free SQLite store integrity report. |
 | `SQLiteFtsRepairPlan` | Advanced public | FTS drift plan with canonical and FTS precondition diagnostics. |
 | `SQLiteFtsRepairResult` | Advanced public | FTS repair result with before, backup, and after integrity reports. |

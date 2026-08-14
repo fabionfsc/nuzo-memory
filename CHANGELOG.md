@@ -52,6 +52,12 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 - Restricted relation reads no longer disclose relation metadata for a target
   memory outside the authorized scope.
+- Restricted recall hooks omit a non-allowlisted global scope instead of
+  failing the authorized project recall, and audit scope filtering accepts
+  `originalScope` only from trusted project-rehome events.
+- SQLite backup and restore create private destinations before writing any
+  content, and restore snapshots a live source through its WAL instead of
+  copying only the main database file.
 - CLI inspection, recall, list, audit, capture, interactive-manager, and JSON
   views visibly or losslessly escape untrusted terminal controls,
   bidirectional formatting, and row/column separators. Markdown exports

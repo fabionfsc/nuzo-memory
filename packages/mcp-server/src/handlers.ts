@@ -210,6 +210,7 @@ export interface MemoryToolHandlerOptions {
   storePath?: string;
   doctorDiagnostics?: MemoryDoctorDiagnostics;
   projectScope?: `project:${string}`;
+  authorizedScopes?: readonly MemoryScope[];
 }
 
 export interface MemoryDoctorDiagnostics {
@@ -263,7 +264,7 @@ export interface MemoryToolHandlers {
     capture_suggestions: false;
     query: string;
     scope: MemoryScope;
-    include_global: true;
+    include_global: boolean;
     limit: number;
     results: Array<{
       id: string;
@@ -592,11 +593,13 @@ export function createMemoryToolHandlers(
       const query = buildRecallHookQuery(input.task_context);
       const limit = clampRecallHookLimit(input.limit);
       const scope = resolveToolScope(input.project_scope ?? "project:auto", options.projectScope);
+      const includeGlobal = options.authorizedScopes === undefined ||
+        options.authorizedScopes.includes("user:default");
       const results = await service.recall({
         query,
         scope,
         limit,
-        includeGlobal: true,
+        includeGlobal,
         recordUsage: false,
       });
       const relations = await service.relationsBatch({
@@ -611,7 +614,7 @@ export function createMemoryToolHandlers(
         capture_suggestions: false,
         query,
         scope,
-        include_global: true,
+        include_global: includeGlobal,
         limit,
         results: results.map((result) => ({
           ...toRecallOutput(result),
