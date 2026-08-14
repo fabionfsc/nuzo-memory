@@ -993,7 +993,7 @@ Input:
 ```
 
 All filters are optional. `limit` defaults to `50` and must be an integer
-between `1` and `200`. The `event_type` array accepts at most 10 values from:
+between `1` and `200`. The `event_type` array accepts at most 11 values from:
 
 - `memory.created`;
 - `memory.updated`;
@@ -1002,6 +1002,7 @@ between `1` and `200`. The `event_type` array accepts at most 10 values from:
 - `memory.imported`;
 - `memory.exported`;
 - `memory.recalled`;
+- `memory.scope.rehomed`;
 - `memory.challenged`;
 - `memory.relation.created`;
 - `memory.relation.deleted`.
@@ -1048,6 +1049,30 @@ correlation but is not encryption and does not protect predictable input from
 offline guessing. Existing events created by earlier versions may still expose
 the legacy `query` field because Nuzo does not rewrite historical audit
 payloads during migration.
+
+The CLI-only project-scope rehome use case appends one global
+`memory.scope.rehomed` event after its validated backup and atomic commit. Its
+content-free payload has this shape:
+
+```json
+{
+  "scope": "project:new-explicit-scope",
+  "originalScope": "project:old-explicit-scope",
+  "sourceScope": "project:old-explicit-scope",
+  "targetScope": "project:new-explicit-scope",
+  "memoryCount": 12,
+  "activeMemoryCount": 10,
+  "archivedMemoryCount": 2,
+  "affectedRelationCount": 4,
+  "historicalEventCount": 19,
+  "historicalEventsRewritten": 0,
+  "revisionsPreserved": true,
+  "planHash": "<sha256>"
+}
+```
+
+Historical events keep their event-time payload scopes. Audit queries by the
+old scope match `originalScope`; queries by the new scope match `scope`.
 
 Restricted runtime mode must not reveal unauthorized scopes. A restricted
 session may query audit by an authorized `scope` or by a `memory_id` whose

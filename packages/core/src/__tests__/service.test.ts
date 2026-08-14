@@ -845,10 +845,10 @@ describe("memory service", () => {
       code: "MEMORY_HISTORY_LIMIT_INVALID",
     });
     await expect(service.audit({
-      eventTypes: Array.from({ length: 11 }, () => "memory.created" as const),
+      eventTypes: Array.from({ length: 12 }, () => "memory.created" as const),
     })).rejects.toMatchObject({
       code: "MEMORY_AUDIT_EVENT_TYPE_LIMIT_EXCEEDED",
-      details: { maxEventTypes: 10 },
+      details: { maxEventTypes: 11 },
     });
   });
 

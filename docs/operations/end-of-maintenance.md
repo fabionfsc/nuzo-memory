@@ -49,9 +49,9 @@ requesting help from third parties.
 ## Deferred Work Disposition
 
 The final audit deliberately does not add optional encrypted stores, automatic
-relation mutation, project-scope rehoming, or capture-confirmation tokens. It
-does include benchmark-proven relation-query batching and a bounded read-only
-governance report. Existing explicit export/import,
+relation mutation, or capture-confirmation tokens. It does include
+benchmark-proven relation-query batching, a bounded read-only governance
+report, and explicit backed-up project-scope rehoming. Existing explicit export/import,
 backup/restore, relation, challenge, inspection, and scope controls remain the
 supported `1.2.0` workflows. These omissions are documented product boundaries,
 not commitments for a future Nuzo release.

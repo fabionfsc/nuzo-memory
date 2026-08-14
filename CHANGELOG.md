@@ -20,6 +20,10 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
   report over legacy stores. It reuses capture classification, distinguishes
   unreviewed from already-related pairs, supports lifecycle filters, and has no
   inferred apply or write path.
+- Moved repositories can use an explicit `rehome-scope` plan/apply workflow.
+  Apply holds a writer lock, publishes a validated WAL-safe backup, blocks
+  active target collisions, updates canonical and FTS scope atomically, and
+  preserves IDs, revisions, lifecycle, relations, and historical audit rows.
 
 ### Changed
 

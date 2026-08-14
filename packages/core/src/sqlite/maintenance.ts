@@ -14,8 +14,10 @@ import {
   rmSync,
 } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { NuzoMemoryError } from "../errors.js";
+import { memoryLimits, memoryScopePattern } from "../policy.js";
+import type { MemoryScope } from "../types.js";
 import { schemaVersion } from "./schema.js";
 
 export interface SQLiteIntegrityReport {
@@ -67,6 +69,45 @@ export interface SQLiteFtsRepairResult {
   remainingPages: number;
   before: SQLiteIntegrityReport;
   backup: SQLiteIntegrityReport | null;
+  after: SQLiteIntegrityReport;
+}
+
+export interface SQLiteProjectScopeRehomePlan {
+  version: 1;
+  dryRun: true;
+  sourcePath: string;
+  sourceScope: MemoryScope;
+  targetScope: MemoryScope;
+  planHash: string;
+  applicable: boolean;
+  memoryCount: number;
+  activeMemoryCount: number;
+  archivedMemoryCount: number;
+  targetMemoryCount: number;
+  affectedRelationCount: number;
+  historicalEventCount: number;
+  historicalEventsRewritten: 0;
+  collisionCount: number;
+  integrity: SQLiteIntegrityReport;
+}
+
+export interface SQLiteProjectScopeRehomeResult {
+  version: 1;
+  applied: true;
+  sourcePath: string;
+  backupPath: string;
+  sourceScope: MemoryScope;
+  targetScope: MemoryScope;
+  planHash: string;
+  memoryCount: number;
+  activeMemoryCount: number;
+  archivedMemoryCount: number;
+  affectedRelationCount: number;
+  historicalEventCount: number;
+  historicalEventsRewritten: 0;
+  revisionsPreserved: true;
+  eventId: string;
+  backup: SQLiteIntegrityReport;
   after: SQLiteIntegrityReport;
 }
 
@@ -176,6 +217,304 @@ export function restoreSQLiteMemoryStore(input: {
       cause: error instanceof Error ? error.message : String(error),
     });
   }
+}
+
+export function planSQLiteProjectScopeRehome(input: {
+  sourcePath: string;
+  sourceScope: MemoryScope;
+  targetScope: MemoryScope;
+}): SQLiteProjectScopeRehomePlan {
+  const sourcePath = resolve(input.sourcePath);
+  assertProjectScopeRehomeScopes(input.sourceScope, input.targetScope);
+  assertRehomeNoSymlinkLeaf(sourcePath);
+  const integrity = inspectSQLiteMemoryStore(sourcePath);
+  if (!integrity.ok || integrity.schemaVersion !== schemaVersion) {
+    throw new NuzoMemoryError(
+      "MEMORY_SCOPE_REHOME_STORE_INVALID",
+      "Project-scope rehome requires a healthy store at the current schema version.",
+      { path: sourcePath, errors: integrity.errors },
+    );
+  }
+  const database = new Database(sourcePath, { readonly: true, fileMustExist: true });
+  try {
+    database.pragma("busy_timeout = 5000");
+    return buildProjectScopeRehomePlan(
+      database,
+      sourcePath,
+      input.sourceScope,
+      input.targetScope,
+      integrity,
+    );
+  } finally {
+    database.close();
+  }
+}
+
+export async function rehomeSQLiteProjectScope(input: {
+  sourcePath: string;
+  backupPath: string;
+  sourceScope: MemoryScope;
+  targetScope: MemoryScope;
+  actor: string;
+  confirm?: boolean;
+}): Promise<SQLiteProjectScopeRehomeResult> {
+  if (input.confirm !== true) {
+    throw new NuzoMemoryError(
+      "MEMORY_SCOPE_REHOME_CONFIRMATION_REQUIRED",
+      "Project-scope rehome requires --apply and explicit --yes confirmation.",
+    );
+  }
+  if (input.actor.trim().length === 0 || input.actor.length > memoryLimits.actorLength) {
+    throw new NuzoMemoryError("MEMORY_ACTOR_INVALID", "Project-scope rehome actor is invalid.");
+  }
+  assertProjectScopeRehomeScopes(input.sourceScope, input.targetScope);
+  const sourcePath = resolve(input.sourcePath);
+  const backupPath = resolve(input.backupPath);
+  if (sqliteFileSetsOverlap(sourcePath, backupPath)) {
+    throw new NuzoMemoryError(
+      "MEMORY_SCOPE_REHOME_BACKUP_CONFLICT",
+      "Project-scope rehome backup files must not overlap the source SQLite fileset.",
+    );
+  }
+  assertRehomeNoSymlinkLeaf(sourcePath);
+  assertRehomeNoSymlinkLeaf(backupPath);
+  const sourceIdentity = readRehomeFileIdentity(sourcePath);
+  const initialPlan = planSQLiteProjectScopeRehome({
+    sourcePath,
+    sourceScope: input.sourceScope,
+    targetScope: input.targetScope,
+  });
+  assertProjectScopeRehomeApplicable(initialPlan);
+  if (sqliteFileSetExists(backupPath)) {
+    throw new NuzoMemoryError(
+      "MEMORY_BACKUP_EXISTS",
+      "Backup path already exists. Choose a different --backup-path.",
+      { path: backupPath },
+    );
+  }
+
+  mkdirSync(dirname(backupPath), { recursive: true, mode: 0o700 });
+  assertRehomeNoSymlinkLeaf(backupPath);
+  const temporaryBackupPath = `${backupPath}.tmp-${randomUUID()}`;
+  const writer = new Database(sourcePath, { fileMustExist: true });
+  let transactionOpen = false;
+  let sourceCommitted = false;
+  let backupPublished = false;
+  let backupValidated = false;
+  let publishedBackupIdentity: FileIdentity | null = null;
+  let backupReport: SQLiteIntegrityReport | null = null;
+  let lockedPlan = initialPlan;
+  const eventId = `evt_${randomUUID()}`;
+  try {
+    writer.pragma("busy_timeout = 5000");
+    writer.pragma("foreign_keys = ON");
+    writer.exec("BEGIN IMMEDIATE");
+    transactionOpen = true;
+    assertRehomeFileIdentity(sourcePath, sourceIdentity);
+    lockedPlan = buildProjectScopeRehomePlan(
+      writer,
+      sourcePath,
+      input.sourceScope,
+      input.targetScope,
+      initialPlan.integrity,
+    );
+    if (lockedPlan.planHash !== initialPlan.planHash) {
+      throw new NuzoMemoryError(
+        "MEMORY_SCOPE_REHOME_PLAN_CHANGED",
+        "The rehome plan changed before the writer lock was acquired. Review a new dry-run.",
+      );
+    }
+    assertProjectScopeRehomeApplicable(lockedPlan);
+
+    createPrivateFileExclusive(temporaryBackupPath);
+    const snapshot = new Database(sourcePath, { readonly: true, fileMustExist: true });
+    try {
+      snapshot.pragma("busy_timeout = 5000");
+      const backup = await snapshot.backup(temporaryBackupPath);
+      if (backup.remainingPages !== 0) {
+        throw new NuzoMemoryError(
+          "MEMORY_SCOPE_REHOME_BACKUP_INVALID",
+          "Project-scope rehome backup did not complete.",
+        );
+      }
+    } finally {
+      snapshot.close();
+    }
+    assertRehomeFileIdentity(sourcePath, sourceIdentity);
+    chmodSQLiteFileSet(temporaryBackupPath);
+    backupReport = inspectSQLiteMemoryStore(temporaryBackupPath);
+    if (!backupReport.ok) {
+      throw new NuzoMemoryError(
+        "MEMORY_SCOPE_REHOME_BACKUP_INVALID",
+        "Project-scope rehome backup failed validation.",
+        { errors: backupReport.errors },
+      );
+    }
+    const backupPlan = planSQLiteProjectScopeRehome({
+      sourcePath: temporaryBackupPath,
+      sourceScope: input.sourceScope,
+      targetScope: input.targetScope,
+    });
+    if (backupPlan.planHash !== lockedPlan.planHash) {
+      throw new NuzoMemoryError(
+        "MEMORY_SCOPE_REHOME_BACKUP_MISMATCH",
+        "Project-scope rehome backup does not match the locked plan.",
+      );
+    }
+    if (sqliteFileSetExists(backupPath)) {
+      throw new NuzoMemoryError(
+        "MEMORY_BACKUP_EXISTS",
+        "Backup path appeared while the rehome backup was being prepared.",
+        { path: backupPath },
+      );
+    }
+    publishedBackupIdentity = readRehomeFileIdentity(temporaryBackupPath);
+    try {
+      linkSync(temporaryBackupPath, backupPath);
+    } catch (error) {
+      if (isNodeError(error, "EEXIST")) {
+        throw new NuzoMemoryError(
+          "MEMORY_BACKUP_EXISTS",
+          "Backup path appeared while the rehome backup was being published.",
+          { path: backupPath },
+        );
+      }
+      throw error;
+    }
+    backupPublished = true;
+    assertRehomeBackupIdentity(backupPath, publishedBackupIdentity);
+    if (pathEntryExists(`${backupPath}-wal`) || pathEntryExists(`${backupPath}-shm`)) {
+      removeFileIfIdentityMatches(backupPath, readFileIdentity(temporaryBackupPath));
+      backupPublished = false;
+      throw new NuzoMemoryError(
+        "MEMORY_BACKUP_EXISTS",
+        "Backup sidecar path appeared while the rehome backup was being published.",
+        { path: backupPath },
+      );
+    }
+    assertRehomeBackupIdentity(backupPath, publishedBackupIdentity);
+    backupReport = inspectSQLiteMemoryStore(backupPath);
+    assertRehomeBackupIdentity(backupPath, publishedBackupIdentity);
+    if (!backupReport.ok) {
+      removeFileIfIdentityMatches(backupPath, readFileIdentity(temporaryBackupPath));
+      backupPublished = false;
+      throw new NuzoMemoryError(
+        "MEMORY_SCOPE_REHOME_BACKUP_INVALID",
+        "Published project-scope rehome backup failed validation.",
+        { path: backupPath, errors: backupReport.errors },
+      );
+    }
+    backupValidated = true;
+    rmSQLiteFileSet(temporaryBackupPath);
+    assertRehomeFileIdentity(sourcePath, sourceIdentity);
+
+    writer.prepare(`
+      UPDATE memories_fts
+      SET scope = @target_scope
+      WHERE id IN (SELECT id FROM memories WHERE scope = @source_scope)
+    `).run({ source_scope: input.sourceScope, target_scope: input.targetScope });
+    const moved = writer.prepare("UPDATE memories SET scope = @target_scope WHERE scope = @source_scope")
+      .run({ source_scope: input.sourceScope, target_scope: input.targetScope });
+    if (moved.changes !== lockedPlan.memoryCount) {
+      throw new NuzoMemoryError(
+        "MEMORY_SCOPE_REHOME_COUNT_MISMATCH",
+        "Project-scope rehome changed an unexpected number of memories.",
+        { expected: lockedPlan.memoryCount, actual: moved.changes },
+      );
+    }
+    writer.prepare(`
+      INSERT INTO memory_events (id, memory_id, event_type, actor, payload, created_at)
+      VALUES (@id, NULL, 'memory.scope.rehomed', @actor, @payload, @created_at)
+    `).run({
+      id: eventId,
+      actor: input.actor.trim(),
+      payload: JSON.stringify({
+        scope: input.targetScope,
+        originalScope: input.sourceScope,
+        sourceScope: input.sourceScope,
+        targetScope: input.targetScope,
+        memoryCount: lockedPlan.memoryCount,
+        activeMemoryCount: lockedPlan.activeMemoryCount,
+        archivedMemoryCount: lockedPlan.archivedMemoryCount,
+        affectedRelationCount: lockedPlan.affectedRelationCount,
+        historicalEventCount: lockedPlan.historicalEventCount,
+        historicalEventsRewritten: 0,
+        revisionsPreserved: true,
+        planHash: lockedPlan.planHash,
+      }),
+      created_at: new Date().toISOString(),
+    });
+    assertFtsRebuildComplete(writer);
+    const integrityCheck = String(writer.pragma("integrity_check", { simple: true }));
+    if (integrityCheck !== "ok") {
+      throw new NuzoMemoryError(
+        "MEMORY_SCOPE_REHOME_INTEGRITY_FAILED",
+        "Project-scope rehome failed SQLite integrity validation.",
+        { integrityCheck },
+      );
+    }
+    assertRehomeFileIdentity(sourcePath, sourceIdentity);
+    writer.exec("COMMIT");
+    transactionOpen = false;
+    sourceCommitted = true;
+  } catch (error) {
+    if (transactionOpen) {
+      try {
+        writer.exec("ROLLBACK");
+      } catch {
+        // SQLite also rolls back the open transaction when the handle closes.
+      }
+    }
+    rmSQLiteFileSet(temporaryBackupPath);
+    if (backupPublished && !backupValidated && publishedBackupIdentity !== null) {
+      removeFileIfIdentityMatches(backupPath, publishedBackupIdentity);
+      backupPublished = false;
+    }
+    if (error instanceof NuzoMemoryError) {
+      if (backupPublished && backupValidated && !sourceCommitted) {
+        throw new NuzoMemoryError(
+          "MEMORY_SCOPE_REHOME_FAILED",
+          "Project-scope rehome failed and the source transaction was rolled back; the validated backup was retained.",
+          { backupPath, causeCode: error.code },
+        );
+      }
+      throw error;
+    }
+    throw new NuzoMemoryError("MEMORY_SCOPE_REHOME_FAILED", "Project-scope rehome failed.", {
+      cause: error instanceof Error ? error.message : String(error),
+      ...(backupPublished && backupValidated ? { backupPath } : {}),
+    });
+  } finally {
+    writer.close();
+  }
+
+  const after = inspectSQLiteMemoryStore(sourcePath);
+  if (!after.ok || backupReport === null) {
+    throw new NuzoMemoryError(
+      "MEMORY_SCOPE_REHOME_FAILED",
+      "Project-scope rehome committed but post-apply validation failed; restore the retained backup.",
+      { backupPath, errors: after.errors },
+    );
+  }
+  return {
+    version: 1,
+    applied: true,
+    sourcePath,
+    backupPath,
+    sourceScope: input.sourceScope,
+    targetScope: input.targetScope,
+    planHash: lockedPlan.planHash,
+    memoryCount: lockedPlan.memoryCount,
+    activeMemoryCount: lockedPlan.activeMemoryCount,
+    archivedMemoryCount: lockedPlan.archivedMemoryCount,
+    affectedRelationCount: lockedPlan.affectedRelationCount,
+    historicalEventCount: lockedPlan.historicalEventCount,
+    historicalEventsRewritten: 0,
+    revisionsPreserved: true,
+    eventId,
+    backup: backupReport,
+    after,
+  };
 }
 
 export function planSQLiteFtsRepair(path: string): SQLiteFtsRepairPlan {
@@ -761,6 +1100,126 @@ function readFtsConsistency(database: Database.Database, compareCanonicalValues:
   return { ftsRowCount, missingFtsRows, orphanFtsRows, duplicateFtsRows, mismatchedFtsRows };
 }
 
+function buildProjectScopeRehomePlan(
+  database: Database.Database,
+  sourcePath: string,
+  sourceScope: MemoryScope,
+  targetScope: MemoryScope,
+  integrity: SQLiteIntegrityReport,
+): SQLiteProjectScopeRehomePlan {
+  const sourceRows = database.prepare(
+    "SELECT * FROM memories WHERE scope = ? ORDER BY id ASC",
+  ).all(sourceScope) as Array<Record<string, unknown>>;
+  const targetRows = database.prepare(
+    "SELECT * FROM memories WHERE scope = ? ORDER BY id ASC",
+  ).all(targetScope) as Array<Record<string, unknown>>;
+  const affectedRelations = database.prepare(`
+    SELECT r.*
+    FROM memory_relations r
+    WHERE EXISTS (
+      SELECT 1 FROM memories m
+      WHERE m.scope = @source_scope
+        AND (m.id = r.source_memory_id OR m.id = r.target_memory_id)
+    )
+    ORDER BY r.id ASC
+  `).all({ source_scope: sourceScope }) as Array<Record<string, unknown>>;
+  const historicalEvents = database.prepare(`
+    SELECT e.*
+    FROM memory_events e
+    WHERE EXISTS (
+      SELECT 1 FROM memories m
+      WHERE m.scope = @source_scope AND m.id = e.memory_id
+    )
+      OR json_extract(e.payload, '$.scope') = @source_scope
+      OR json_extract(e.payload, '$.originalScope') = @source_scope
+      OR json_extract(e.payload, '$.sourceScope') = @source_scope
+      OR json_extract(e.payload, '$.targetScope') = @source_scope
+      OR json_extract(e.payload, '$.supersededByScope') = @source_scope
+    ORDER BY e.id ASC
+  `).all({ source_scope: sourceScope }) as Array<Record<string, unknown>>;
+  const collisions = database.prepare(`
+    SELECT source.id AS source_id, target.id AS target_id
+    FROM memories source
+    JOIN memories target
+      ON target.scope = @target_scope
+      AND target.archived_at IS NULL
+      AND target.capture_key = source.capture_key
+    WHERE source.scope = @source_scope
+      AND source.archived_at IS NULL
+      AND source.capture_key IS NOT NULL
+    ORDER BY source.id ASC, target.id ASC
+  `).all({ source_scope: sourceScope, target_scope: targetScope }) as Array<Record<string, unknown>>;
+  const planHash = createHash("sha256").update(JSON.stringify({
+    version: 1,
+    sourceScope,
+    targetScope,
+    sourceRows,
+    targetRows,
+    affectedRelations,
+    historicalEvents,
+    collisions,
+  })).digest("hex");
+  const activeMemoryCount = sourceRows.filter((row) => row.archived_at === null).length;
+  return {
+    version: 1,
+    dryRun: true,
+    sourcePath,
+    sourceScope,
+    targetScope,
+    planHash,
+    applicable: sourceRows.length > 0 && collisions.length === 0,
+    memoryCount: sourceRows.length,
+    activeMemoryCount,
+    archivedMemoryCount: sourceRows.length - activeMemoryCount,
+    targetMemoryCount: targetRows.length,
+    affectedRelationCount: affectedRelations.length,
+    historicalEventCount: historicalEvents.length,
+    historicalEventsRewritten: 0,
+    collisionCount: collisions.length,
+    integrity,
+  };
+}
+
+function assertProjectScopeRehomeScopes(sourceScope: MemoryScope, targetScope: MemoryScope): void {
+  for (const [name, scope] of [["source", sourceScope], ["target", targetScope]] as const) {
+    if (
+      scope.length > memoryLimits.scopeLength ||
+      !memoryScopePattern.test(scope) ||
+      !scope.startsWith("project:") ||
+      scope === "project:auto"
+    ) {
+      throw new NuzoMemoryError(
+        "MEMORY_SCOPE_REHOME_SCOPE_INVALID",
+        `Project-scope rehome ${name} must be an explicit valid project scope.`,
+        { [name]: scope },
+      );
+    }
+  }
+  if (sourceScope === targetScope) {
+    throw new NuzoMemoryError(
+      "MEMORY_SCOPE_REHOME_SCOPE_CONFLICT",
+      "Project-scope rehome source and target must differ.",
+    );
+  }
+}
+
+function assertProjectScopeRehomeApplicable(plan: SQLiteProjectScopeRehomePlan): void {
+  if (plan.memoryCount === 0) {
+    throw new NuzoMemoryError(
+      "MEMORY_SCOPE_REHOME_SOURCE_EMPTY",
+      "Project-scope rehome source contains no memories.",
+      { scope: plan.sourceScope },
+    );
+  }
+  if (plan.collisionCount > 0) {
+    throw new NuzoMemoryError(
+      "MEMORY_SCOPE_REHOME_COLLISION",
+      "Project-scope rehome found active normalized-content collisions in the target scope.",
+      { collisionCount: plan.collisionCount },
+    );
+  }
+}
+
 function assertFtsRepairable(plan: SQLiteFtsRepairPlan): void {
   if (!plan.repairable) {
     throw new NuzoMemoryError(
@@ -873,6 +1332,71 @@ function canonicalPathForComparison(path: string): string {
 }
 
 type FileIdentity = { dev: number; ino: number };
+
+function assertRehomeNoSymlinkLeaf(path: string): void {
+  try {
+    if (lstatSync(path).isSymbolicLink()) {
+      throw new NuzoMemoryError(
+        "MEMORY_SCOPE_REHOME_PATH_UNSAFE",
+        "Project-scope rehome refuses symbolic-link source or backup files.",
+        { path },
+      );
+    }
+  } catch (error) {
+    if (!isNodeError(error, "ENOENT")) {
+      if (error instanceof NuzoMemoryError) throw error;
+      throw new NuzoMemoryError(
+        "MEMORY_SCOPE_REHOME_PATH_UNSAFE",
+        "Project-scope rehome could not safely inspect a source or backup path.",
+        { path },
+      );
+    }
+  }
+}
+
+function readRehomeFileIdentity(path: string): FileIdentity {
+  const stats = lstatSync(path);
+  if (!stats.isFile() || stats.isSymbolicLink()) {
+    throw new NuzoMemoryError(
+      "MEMORY_SCOPE_REHOME_PATH_UNSAFE",
+      "Project-scope rehome requires a regular, non-symbolic-link SQLite file.",
+      { path },
+    );
+  }
+  return { dev: stats.dev, ino: stats.ino };
+}
+
+function assertRehomeFileIdentity(path: string, expected: FileIdentity): void {
+  const actual = readRehomeFileIdentity(path);
+  if (actual.dev !== expected.dev || actual.ino !== expected.ino) {
+    throw new NuzoMemoryError(
+      "MEMORY_SCOPE_REHOME_SOURCE_CHANGED",
+      "The source store path changed while project-scope rehome was running.",
+      { path },
+    );
+  }
+}
+
+function assertRehomeBackupIdentity(path: string, expected: FileIdentity): void {
+  let actual: FileIdentity;
+  try {
+    actual = readRehomeFileIdentity(path);
+  } catch (error) {
+    if (error instanceof NuzoMemoryError) throw error;
+    throw new NuzoMemoryError(
+      "MEMORY_SCOPE_REHOME_BACKUP_CHANGED",
+      "The published backup path changed while project-scope rehome was running.",
+      { path },
+    );
+  }
+  if (actual.dev !== expected.dev || actual.ino !== expected.ino) {
+    throw new NuzoMemoryError(
+      "MEMORY_SCOPE_REHOME_BACKUP_CHANGED",
+      "The published backup path changed while project-scope rehome was running.",
+      { path },
+    );
+  }
+}
 
 function createPrivateFileExclusive(path: string): void {
   const descriptor = openSync(

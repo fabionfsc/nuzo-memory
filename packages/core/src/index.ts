@@ -119,7 +119,9 @@ export {
 export {
   backupSQLiteMemoryStore,
   inspectSQLiteMemoryStore,
+  planSQLiteProjectScopeRehome,
   planSQLiteFtsRepair,
+  rehomeSQLiteProjectScope,
   repairSQLiteFtsIndex,
   restoreSQLiteMemoryStore,
 } from "./sqlite/maintenance.js";
@@ -128,6 +130,8 @@ export type {
   SQLiteFtsRepairPlan,
   SQLiteFtsRepairResult,
   SQLiteIntegrityReport,
+  SQLiteProjectScopeRehomePlan,
+  SQLiteProjectScopeRehomeResult,
   SQLiteRestoreResult,
 } from "./sqlite/maintenance.js";
 export {

@@ -1020,6 +1020,87 @@ describe("nuzo memory cli", () => {
     expect(snapshotStoreRows(store)).toEqual(before);
   });
 
+  it("plans and explicitly applies project-scope rehome with a retained backup", async () => {
+    const store = createStorePath();
+    const backup = join(tempDirectories[0]!, "scope-rehome.backup.sqlite");
+    const sourceScope = "project:old-cli-location";
+    const targetScope = "project:new-cli-location";
+    const first = await runCli([
+      "memory", "--store", store, "--scope", sourceScope, "remember",
+      "CLI scope rehome preserves this decision.", "--kind", "project_decision",
+    ]);
+    const second = await runCli([
+      "memory", "--store", store, "--scope", sourceScope, "remember",
+      "CLI scope rehome preserves this relation.", "--kind", "note",
+    ]);
+    await runCli([
+      "memory", "--store", store, "relate", first.stdout[0] ?? "",
+      "--target", second.stdout[0] ?? "", "--relation", "related_to",
+    ]);
+    const before = snapshotStoreRows(store);
+
+    const preview = await runCli([
+      "memory", "--store", store, "rehome-scope",
+      "--from", sourceScope, "--to", targetScope, "--dry-run", "--json",
+    ]);
+    expect(preview.stderr).toEqual([]);
+    expect(JSON.parse(preview.stdout[0] ?? "{}")).toMatchObject({
+      version: 1,
+      dry_run: true,
+      source_scope: sourceScope,
+      target_scope: targetScope,
+      applicable: true,
+      memory_count: 2,
+      affected_relation_count: 1,
+      historical_events_rewritten: 0,
+      collision_count: 0,
+      integrity: { ok: true, fts_ok: true },
+    });
+    expect(snapshotStoreRows(store)).toEqual(before);
+
+    const unconfirmed = await runCli([
+      "memory", "--store", store, "rehome-scope",
+      "--from", sourceScope, "--to", targetScope,
+      "--apply", "--backup-path", backup,
+    ]);
+    expect(unconfirmed.stdout).toEqual([]);
+    expect(unconfirmed.stderr.join("\n")).toContain("explicit --yes confirmation");
+    expect(existsSync(backup)).toBe(false);
+    expect(snapshotStoreRows(store)).toEqual(before);
+
+    const applied = await runCli([
+      "memory", "--store", store, "rehome-scope",
+      "--from", sourceScope, "--to", targetScope,
+      "--apply", "--yes", "--backup-path", backup, "--json",
+    ]);
+    expect(applied.stderr).toEqual([]);
+    expect(JSON.parse(applied.stdout[0] ?? "{}")).toMatchObject({
+      version: 1,
+      applied: true,
+      backup_path: backup,
+      source_scope: sourceScope,
+      target_scope: targetScope,
+      memory_count: 2,
+      affected_relation_count: 1,
+      historical_events_rewritten: 0,
+      revisions_preserved: true,
+      backup_integrity: { ok: true },
+      after_integrity: { ok: true, fts_ok: true },
+    });
+    expect(existsSync(backup)).toBe(true);
+    const database = new SQLiteMemoryDatabase({ path: store, readonly: true });
+    expect(database.database.prepare("SELECT COUNT(*) AS count FROM memories WHERE scope = ?")
+      .get(sourceScope)).toEqual({ count: 0 });
+    expect(database.database.prepare("SELECT COUNT(*) AS count FROM memories WHERE scope = ?")
+      .get(targetScope)).toEqual({ count: 2 });
+    expect(database.database.prepare("SELECT COUNT(*) AS count FROM memory_relations").get())
+      .toEqual({ count: 1 });
+    expect(database.database.prepare(
+      "SELECT COUNT(*) AS count FROM memory_events WHERE event_type = 'memory.scope.rehomed'",
+    ).get()).toEqual({ count: 1 });
+    database.close();
+  });
+
   it("applies confirmed capture decisions from the CLI", async () => {
     const store = createStorePath();
 
