@@ -320,6 +320,68 @@ export interface ListMemoryRelationsBatchInput {
   limitPerMemory?: number;
 }
 
+export type RelationGovernanceReasonCode =
+  | "exact_normalized_content"
+  | "possible_revision"
+  | "shared_subject"
+  | "shared_tags"
+  | "shared_terms"
+  | "classification_uncertain"
+  | "candidate_scan_truncated";
+
+export type RelationGovernanceLifecycleState =
+  | "active"
+  | "archived"
+  | "expired"
+  | "review_due";
+
+export interface ReviewMemoryRelationsInput {
+  scope: MemoryScope;
+  includeArchived?: boolean;
+  needsReview?: boolean;
+  limit?: number;
+}
+
+export interface RelationGovernanceExistingRelation {
+  id: string;
+  relation: MemoryRelationType;
+  direction: "outgoing" | "incoming";
+}
+
+export interface RelationGovernanceCandidate {
+  primaryMemoryId: string;
+  primaryRevision: number;
+  primaryScope: MemoryScope;
+  primaryLifecycle: RelationGovernanceLifecycleState;
+  candidateMemoryId: string;
+  candidateRevision: number;
+  candidateScope: MemoryScope;
+  candidateLifecycle: RelationGovernanceLifecycleState;
+  relationship: Exclude<CaptureRelationship, "independent">;
+  reasonCodes: RelationGovernanceReasonCode[];
+  state: "unreviewed" | "already_related";
+  existingRelations: RelationGovernanceExistingRelation[];
+}
+
+export interface RelationGovernanceReview {
+  version: 1;
+  mode: "read_only";
+  memoryWrites: false;
+  relationWrites: false;
+  lifecycleWrites: false;
+  auditWrites: false;
+  scope: MemoryScope;
+  includeArchived: boolean;
+  needsReview: boolean;
+  memoryScanLimit: 200;
+  candidateLimit: number;
+  scannedMemories: number;
+  reviewedMemories: number;
+  memoryScanTruncated: boolean;
+  candidateResultsTruncated: boolean;
+  candidates: RelationGovernanceCandidate[];
+}
+
 export interface ForgetMemoryRelationInput {
   id: string;
   actor: string;

@@ -70,6 +70,7 @@ nuzo memory remember "The project uses SQLite for local storage." --kind project
 nuzo memory suggest-capture "The user prefers concise final answers." --kind preference --reason "Durable response style preference."
 nuzo memory recall "local storage"
 nuzo memory list --all-scopes
+nuzo memory --scope project:auto review-relations --limit 50
 nuzo memory manage
 nuzo memory export --path ./memories.memory.export.json
 nuzo memory history mem_01HZY
@@ -124,6 +125,15 @@ memory shown to the user. `reject` and `clarify` write nothing.
 `list --all-scopes` is an administrator audit view for the selected local
 store. It is also the recovery path for literal `project:auto` records created
 before `0.2.1`; `doctor` warns when active records require review.
+
+`review-relations` produces a local, content-free governance report for one
+explicit scope. It reuses bounded capture classification to identify likely
+duplicates, revisions, related records, and uncertain pairs, and distinguishes
+existing relations from unreviewed pairs. Use `--needs-review`,
+`--include-archived`, `--limit`, and `--json` to select a bounded view. The
+command has no apply mode and writes no memory, relation, lifecycle, or audit
+state. See [Relation Governance Review](../spec/relation-governance-review.md)
+for the output and explicit `show`, `relate`, and `challenge` follow-up flow.
 
 `memory history <id>` shows audit events for one memory ID. `memory audit`
 shows bounded store-wide audit events, including global events such as exports

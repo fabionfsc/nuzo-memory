@@ -323,6 +323,26 @@ function createTestHandlers(options: {
         ) ? [relation] : [],
       ]));
     },
+    async reviewRelations(input) {
+      return {
+        version: 1,
+        mode: "read_only",
+        memoryWrites: false,
+        relationWrites: false,
+        lifecycleWrites: false,
+        auditWrites: false,
+        scope: input.scope,
+        includeArchived: input.includeArchived === true,
+        needsReview: input.needsReview === true,
+        memoryScanLimit: 200,
+        candidateLimit: input.limit ?? 50,
+        scannedMemories: 0,
+        reviewedMemories: 0,
+        memoryScanTruncated: false,
+        candidateResultsTruncated: false,
+        candidates: [],
+      };
+    },
     async forgetRelation(input) {
       calls.forgetRelation += 1;
       calls.forgetRelationActor = input.actor;

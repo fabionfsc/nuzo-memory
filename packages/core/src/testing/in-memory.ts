@@ -85,7 +85,11 @@ export class InMemoryStore implements MemoryStore {
 
   async findCaptureCandidates(input: CaptureCandidateLookupInput): Promise<CaptureCandidateLookupResult> {
     const active = [...this.memories.values()]
-      .filter((memory) => memory.archivedAt === null && memory.scope === input.scope)
+      .filter((memory) => (
+        memory.archivedAt === null &&
+        memory.scope === input.scope &&
+        memory.id !== input.excludeMemoryId
+      ))
       .sort((left, right) => left.id.localeCompare(right.id));
     const duplicate = active.find((memory) => toCaptureDuplicateKey(memory.content) === input.duplicateKey) ?? null;
     if (!input.includeCandidates || duplicate !== null) {

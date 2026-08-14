@@ -170,6 +170,139 @@ describe("memory service", () => {
     expect(hydrated.get(alpha.id)).not.toContain(oldest);
   });
 
+  it("reports bounded content-free relation governance candidates without writing state or audit events", async () => {
+    const { auditLog, clock, service, store } = createTestService();
+    const previous = await service.remember({
+      content: "Final answers should be concise for routine status updates.",
+      kind: "preference",
+      scope: "project:nuzo",
+      tags: ["response", "style"],
+      source: "test:legacy",
+      reviewAfter: new Date("2026-06-11T00:00:00.000Z"),
+    });
+    const current = await service.remember({
+      content: "Final answers should now be detailed instead of concise for routine status updates.",
+      kind: "preference",
+      scope: "project:nuzo",
+      tags: ["response", "style"],
+      source: "test:legacy",
+    });
+    const existing = await service.relate({
+      sourceMemoryId: current.id,
+      targetMemoryId: previous.id,
+      relation: "supersedes",
+      actor: "test",
+    });
+    const duplicate: MemoryRecord = {
+      ...previous,
+      id: "mem_legacy_duplicate",
+      createdAt: new Date("2026-06-10T00:00:00.000Z"),
+      updatedAt: new Date("2026-06-10T00:00:00.000Z"),
+      reviewAfter: null,
+    };
+    await store.create(duplicate);
+    const beforeMemories = await store.list({ scope: "project:nuzo", includeArchived: true });
+    const beforeRelations = await store.listRelationsForMemoryIds(beforeMemories.map((memory) => memory.id));
+    const beforeEvents = await auditLog.query({ limit: 200 });
+
+    const report = await service.reviewRelations({
+      scope: "project:nuzo",
+      includeArchived: true,
+      limit: 20,
+    });
+
+    expect(report).toMatchObject({
+      version: 1,
+      mode: "read_only",
+      memoryWrites: false,
+      relationWrites: false,
+      lifecycleWrites: false,
+      auditWrites: false,
+      scope: "project:nuzo",
+      memoryScanLimit: 200,
+      candidateLimit: 20,
+      memoryScanTruncated: false,
+      candidateResultsTruncated: false,
+    });
+    expect(report.candidates).toContainEqual(expect.objectContaining({
+      primaryMemoryId: previous.id,
+      candidateMemoryId: duplicate.id,
+      relationship: "exact_duplicate",
+      reasonCodes: expect.arrayContaining(["exact_normalized_content"]),
+      state: "unreviewed",
+    }));
+    expect(report.candidates).toContainEqual(expect.objectContaining({
+      primaryMemoryId: current.id,
+      candidateMemoryId: previous.id,
+      relationship: "update_candidate",
+      reasonCodes: expect.arrayContaining(["possible_revision", "shared_tags", "shared_terms"]),
+      state: "already_related",
+      existingRelations: [{
+        id: existing.id,
+        relation: "supersedes",
+        direction: "outgoing",
+      }],
+    }));
+    const serialized = JSON.stringify(report);
+    expect(serialized).not.toContain("Final answers");
+    expect(serialized).not.toContain("routine status");
+    expect(await store.list({ scope: "project:nuzo", includeArchived: true })).toEqual(beforeMemories);
+    expect(await store.listRelationsForMemoryIds(beforeMemories.map((memory) => memory.id))).toEqual(beforeRelations);
+    expect(await auditLog.query({ limit: 200 })).toEqual(beforeEvents);
+
+    clock.set(new Date("2026-06-12T00:00:00.000Z"));
+    const dueReport = await service.reviewRelations({
+      scope: "project:nuzo",
+      needsReview: true,
+      limit: 20,
+    });
+    expect(dueReport.needsReview).toBe(true);
+    expect(dueReport.candidates.every((candidate) => candidate.primaryMemoryId === previous.id)).toBe(true);
+    expect(dueReport.candidates.every((candidate) => candidate.primaryLifecycle === "review_due")).toBe(true);
+  });
+
+  it("omits relation governance pairs whose endpoint policy is not authorized", async () => {
+    const store = new InMemoryStore();
+    const searchIndex = new InMemorySearchIndex();
+    const auditLog = new InMemoryAuditLog();
+    const clock = new FixedClock();
+    const ids = new SequentialIdGenerator();
+    const admin = createMemoryService({
+      store,
+      searchIndex,
+      auditLog,
+      clock,
+      ids,
+      policy: new DefaultPolicyEngine(new RegexSecretScanner()),
+    });
+    const previous = await admin.remember({
+      content: "The response format uses concise summaries.",
+      kind: "preference",
+      scope: "project:nuzo",
+      tags: ["response"],
+      source: "test",
+    });
+    const hidden = await admin.remember({
+      content: "The response format now uses detailed summaries instead of concise summaries.",
+      kind: "preference",
+      scope: "project:nuzo",
+      tags: ["response"],
+      source: "test",
+    });
+    const restricted = createMemoryService({
+      store,
+      searchIndex,
+      auditLog,
+      clock,
+      ids,
+      policy: new HideEndpointPolicy(hidden.id),
+    });
+
+    const report = await restricted.reviewRelations({ scope: "project:nuzo", limit: 20 });
+    expect(JSON.stringify(report)).not.toContain(hidden.id);
+    expect(JSON.stringify(report)).not.toContain(previous.content);
+  });
+
   it("serializes identical confirmed creates without a transaction manager", async () => {
     const { service } = createTestService();
     const input = {

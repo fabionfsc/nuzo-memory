@@ -332,7 +332,7 @@ const captureStopWords = new Set([
   "a", "an", "and", "are", "as", "at", "before", "by", "com", "da", "de", "do",
   "does", "e", "em", "for", "from", "has", "have", "in", "is", "it", "la", "le",
   "na", "no", "o", "of", "on", "or", "os", "para", "por", "que", "should", "the",
-  "to", "use", "uses", "user", "with", "workflow", "process", "review", "revisao", "revisão",
+  "to", "use", "uses", "user", "with", "workflow", "process", "review", "revisao", "revisão", "now",
   "change", "changes", "important",
   "は", "の", "する",
 ]);

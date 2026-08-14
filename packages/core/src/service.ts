@@ -56,7 +56,12 @@ import type {
   RecallMemoriesResponse,
   RecallMemoryResult,
   RelateMemoriesInput,
+  RelationGovernanceCandidate,
+  RelationGovernanceLifecycleState,
+  RelationGovernanceReasonCode,
+  RelationGovernanceReview,
   RememberMemoryInput,
+  ReviewMemoryRelationsInput,
   SuggestCaptureInput,
   UpdateMemoryInput,
 } from "./types.js";
@@ -85,6 +90,7 @@ export interface MemoryService {
   relate(input: RelateMemoriesInput): Promise<MemoryRelationRecord>;
   relations(input: ListMemoryRelationsInput): Promise<MemoryRelationRecord[]>;
   relationsBatch(input: ListMemoryRelationsBatchInput): Promise<ReadonlyMap<string, MemoryRelationRecord[]>>;
+  reviewRelations(input: ReviewMemoryRelationsInput): Promise<RelationGovernanceReview>;
   forgetRelation(input: ForgetMemoryRelationInput): Promise<void>;
   update(input: UpdateMemoryInput): Promise<MemoryRecord>;
   history(memoryId: string, input?: MemoryHistoryInput): Promise<MemoryEvent[]>;
@@ -693,6 +699,176 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
     return result;
   }
 
+  async function reviewMemoryRelations(
+    input: ReviewMemoryRelationsInput,
+  ): Promise<RelationGovernanceReview> {
+    const candidateLimit = input.limit ?? 50;
+    if (!Number.isInteger(candidateLimit) || candidateLimit < 1 || candidateLimit > 200) {
+      throw new NuzoMemoryError(
+        "MEMORY_RELATION_REVIEW_LIMIT_INVALID",
+        "Relation governance candidate limit must be 1-200.",
+        { limit: candidateLimit },
+      );
+    }
+
+    const now = clock.now();
+    const primaryInput: ListMemoriesInput = {
+      scope: input.scope,
+      includeArchived: input.includeArchived === true,
+      needsReview: input.needsReview === true,
+      limit: 201,
+      ...(input.needsReview === true ? { reviewDueAt: now } : {}),
+    };
+    const activeInput: ListMemoriesInput = {
+      scope: input.scope,
+      includeArchived: false,
+      limit: 201,
+    };
+    await policy.assertCanList(primaryInput);
+    await policy.assertCanList(activeInput);
+    const [primaryRows, activeRows] = await Promise.all([
+      store.list(primaryInput),
+      store.list(activeInput),
+    ]);
+    const primaryMemories = primaryRows.slice(0, 200);
+    const activeMemories = activeRows.slice(0, 200);
+    const memoryScanTruncated = primaryRows.length > 200 || activeRows.length > 200;
+    const reviewMemoriesById = new Map(
+      [...primaryMemories, ...activeMemories].map((memory) => [memory.id, memory]),
+    );
+    const pairCandidates = new Map<string, Omit<RelationGovernanceCandidate, "state" | "existingRelations">>();
+
+    for (const primary of primaryMemories) {
+      const lookup = await findCaptureCandidates({
+        scope: primary.scope,
+        excludeMemoryId: primary.id,
+        duplicateKey: toCaptureDuplicateKey(primary.content),
+        query: primary.content,
+        tags: primary.tags,
+        includeCandidates: true,
+        candidateLimit: captureCandidateLimit,
+        exhaustiveScanLimit: captureExhaustiveScanLimit,
+      });
+      const suggestion = buildBoundedCaptureSuggestion({
+        draft: {
+          content: primary.content,
+          kind: primary.kind,
+          scope: primary.scope,
+          tags: primary.tags,
+          source: primary.source,
+          confidence: primary.confidence,
+          confidenceState: primary.confidenceState,
+          provenance: primary.provenance,
+          reviewAfter: primary.reviewAfter,
+          expiresAt: primary.expiresAt,
+          reason: "Read-only relation governance review.",
+        },
+        duplicate: lookup.duplicate,
+        memories: lookup.candidates,
+        searchExhaustive: lookup.searchExhaustive,
+      });
+      if (suggestion.relationship === undefined || suggestion.relationship === "independent") {
+        continue;
+      }
+      for (const evidence of suggestion.relationshipEvidence?.candidates ?? []) {
+        if (evidence.memory.id === primary.id) {
+          continue;
+        }
+        reviewMemoriesById.set(evidence.memory.id, evidence.memory);
+        const pairKey = relationPairKey(primary.id, evidence.memory.id);
+        const reasonCodes = relationGovernanceReasonCodes(
+          suggestion.relationship,
+          evidence.matchedTerms.length,
+          evidence.matchedTags.length,
+          !suggestion.relationshipEvidence!.searchExhaustive,
+        );
+        const candidate = {
+          primaryMemoryId: primary.id,
+          primaryRevision: primary.revision,
+          primaryScope: primary.scope,
+          primaryLifecycle: relationGovernanceLifecycle(primary, now),
+          candidateMemoryId: evidence.memory.id,
+          candidateRevision: evidence.memory.revision,
+          candidateScope: evidence.memory.scope,
+          candidateLifecycle: relationGovernanceLifecycle(evidence.memory, now),
+          relationship: suggestion.relationship,
+          reasonCodes,
+        } satisfies Omit<RelationGovernanceCandidate, "state" | "existingRelations">;
+        const current = pairCandidates.get(pairKey);
+        if (!current || relationGovernancePriority(candidate.relationship) < relationGovernancePriority(current.relationship)) {
+          pairCandidates.set(pairKey, candidate);
+        }
+      }
+    }
+
+    const authorizedCandidates: Array<Omit<RelationGovernanceCandidate, "state" | "existingRelations">> = [];
+    const visibility = new Map<string, boolean>();
+    for (const candidate of pairCandidates.values()) {
+      let visible = true;
+      for (const memoryId of [candidate.primaryMemoryId, candidate.candidateMemoryId]) {
+        if (!visibility.has(memoryId)) {
+          const memory = reviewMemoriesById.get(memoryId);
+          visibility.set(memoryId, memory !== undefined && await isRelationEndpointVisible(memory));
+        }
+        visible = visible && visibility.get(memoryId) === true;
+      }
+      if (visible) {
+        authorizedCandidates.push(candidate);
+      }
+    }
+
+    const candidateMemoryIds = [...new Set(authorizedCandidates.flatMap((candidate) => [
+      candidate.primaryMemoryId,
+      candidate.candidateMemoryId,
+    ]))];
+    const existing = await store.listRelationsForMemoryIds(candidateMemoryIds, true);
+    const relationIndex = new Map<string, MemoryRelationRecord[]>();
+    for (const relation of existing) {
+      const pairKey = relationPairKey(relation.sourceMemoryId, relation.targetMemoryId);
+      if (!pairCandidates.has(pairKey)) {
+        continue;
+      }
+      const indexed = relationIndex.get(pairKey) ?? [];
+      indexed.push(relation);
+      relationIndex.set(pairKey, indexed);
+    }
+
+    const candidates = authorizedCandidates.map((candidate): RelationGovernanceCandidate => {
+      const relations = (relationIndex.get(relationPairKey(
+        candidate.primaryMemoryId,
+        candidate.candidateMemoryId,
+      )) ?? []).sort((left, right) => left.id.localeCompare(right.id));
+      return {
+        ...candidate,
+        state: relations.length === 0 ? "unreviewed" : "already_related",
+        existingRelations: relations.map((relation) => ({
+          id: relation.id,
+          relation: relation.relation,
+          direction: relation.sourceMemoryId === candidate.primaryMemoryId ? "outgoing" : "incoming",
+        })),
+      };
+    }).sort(compareRelationGovernanceCandidates);
+
+    return {
+      version: 1,
+      mode: "read_only",
+      memoryWrites: false,
+      relationWrites: false,
+      lifecycleWrites: false,
+      auditWrites: false,
+      scope: input.scope,
+      includeArchived: input.includeArchived === true,
+      needsReview: input.needsReview === true,
+      memoryScanLimit: 200,
+      candidateLimit,
+      scannedMemories: activeMemories.length,
+      reviewedMemories: primaryMemories.length,
+      memoryScanTruncated,
+      candidateResultsTruncated: candidates.length > candidateLimit,
+      candidates: candidates.slice(0, candidateLimit),
+    };
+  }
+
   async function forgetMemoryRelation(input: ForgetMemoryRelationInput): Promise<void> {
     assertMemoryId(input.id);
     assertActor(input.actor);
@@ -980,7 +1156,8 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       return normalizeCaptureCandidateLookup(input, await store.findCaptureCandidates(input));
     }
 
-    const memories = await store.list({ scope: input.scope });
+    const memories = (await store.list({ scope: input.scope }))
+      .filter((memory) => memory.id !== input.excludeMemoryId);
     const duplicate = memories.find((memory) => (
       memory.archivedAt === null &&
       toCaptureDuplicateKey(memory.content) === input.duplicateKey
@@ -999,11 +1176,14 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
     const duplicateValid = result.duplicate === null || (
       result.duplicate.archivedAt === null &&
       result.duplicate.scope === input.scope &&
+      result.duplicate.id !== input.excludeMemoryId &&
       toCaptureDuplicateKey(result.duplicate.content) === input.duplicateKey
     );
     const duplicate = duplicateValid ? result.duplicate : null;
     const authorizedCandidates = result.candidates.filter((memory) => (
-      memory.archivedAt === null && memory.scope === input.scope
+      memory.archivedAt === null &&
+      memory.scope === input.scope &&
+      memory.id !== input.excludeMemoryId
     ));
     const resultLimit = result.searchExhaustive
       ? input.exhaustiveScanLimit
@@ -1259,6 +1439,10 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
 
     async relationsBatch(input) {
       return listRelationsBatch(input);
+    },
+
+    async reviewRelations(input) {
+      return reviewMemoryRelations(input);
     },
 
     async forgetRelation(input) {
@@ -1655,6 +1839,63 @@ function assertCaptureReason(reason: string): void {
     throw new NuzoMemoryError("MEMORY_REASON_EMPTY", "Memory reason cannot be empty.");
   }
   assertReason(reason);
+}
+
+function relationPairKey(leftMemoryId: string, rightMemoryId: string): string {
+  return leftMemoryId < rightMemoryId
+    ? `${leftMemoryId}\u0000${rightMemoryId}`
+    : `${rightMemoryId}\u0000${leftMemoryId}`;
+}
+
+function relationGovernanceReasonCodes(
+  relationship: Exclude<RelationGovernanceCandidate["relationship"], "independent">,
+  matchedTermCount: number,
+  matchedTagCount: number,
+  scanTruncated: boolean,
+): RelationGovernanceReasonCode[] {
+  const codes: RelationGovernanceReasonCode[] = [];
+  if (relationship === "exact_duplicate") codes.push("exact_normalized_content");
+  if (relationship === "update_candidate") codes.push("possible_revision");
+  if (relationship === "related") codes.push("shared_subject");
+  if (relationship === "uncertain") codes.push("classification_uncertain");
+  if (matchedTagCount > 0) codes.push("shared_tags");
+  if (matchedTermCount > 0) codes.push("shared_terms");
+  if (scanTruncated) codes.push("candidate_scan_truncated");
+  return codes;
+}
+
+function relationGovernanceLifecycle(
+  memory: MemoryRecord,
+  now: Date,
+): RelationGovernanceLifecycleState {
+  if (memory.archivedAt !== null) return "archived";
+  if (memory.expiresAt !== null && memory.expiresAt <= now) return "expired";
+  if (
+    memory.confidenceState === "needs_review" ||
+    (memory.reviewAfter !== null && memory.reviewAfter <= now)
+  ) return "review_due";
+  return "active";
+}
+
+function relationGovernancePriority(
+  relationship: RelationGovernanceCandidate["relationship"],
+): number {
+  return {
+    exact_duplicate: 0,
+    update_candidate: 1,
+    related: 2,
+    uncertain: 3,
+  }[relationship];
+}
+
+function compareRelationGovernanceCandidates(
+  left: RelationGovernanceCandidate,
+  right: RelationGovernanceCandidate,
+): number {
+  return Number(left.state === "already_related") - Number(right.state === "already_related") ||
+    relationGovernancePriority(left.relationship) - relationGovernancePriority(right.relationship) ||
+    left.primaryMemoryId.localeCompare(right.primaryMemoryId) ||
+    left.candidateMemoryId.localeCompare(right.candidateMemoryId);
 }
 
 function storeExportRelations(

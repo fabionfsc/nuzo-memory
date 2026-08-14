@@ -81,6 +81,12 @@ jobs:
       - name: Run capture intelligence dense-store benchmark
         run: npm run benchmark:capture -- --expect bounded --store-size dense
 
+      - name: Run relation hydration benchmark
+        run: npm run benchmark:relations
+
+      - name: Run relation governance benchmark
+        run: npm run benchmark:governance
+
       - name: Run optional semantics benchmark
         run: npm run benchmark:semantics
 
