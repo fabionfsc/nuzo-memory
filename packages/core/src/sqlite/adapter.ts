@@ -215,6 +215,24 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
     return row ? fromMemoryRow(row) : null;
   }
 
+  async findByIds(ids: readonly string[]): Promise<MemoryRecord[]> {
+    const uniqueIds = [...new Set(ids)];
+    if (uniqueIds.length === 0) {
+      return [];
+    }
+    const memories: MemoryRecord[] = [];
+    for (let offset = 0; offset < uniqueIds.length; offset += 500) {
+      const chunk = uniqueIds.slice(offset, offset + 500);
+      const placeholders = chunk.map((_, index) => `@id_${index}`);
+      const params = Object.fromEntries(chunk.map((id, index) => [`id_${index}`, id]));
+      const rows = this.database
+        .prepare(`SELECT * FROM memories WHERE id IN (${placeholders.join(", ")})`)
+        .all(params) as MemoryRow[];
+      memories.push(...rows.map(fromMemoryRow));
+    }
+    return memories;
+  }
+
   async findCaptureCandidates(input: CaptureCandidateLookupInput): Promise<CaptureCandidateLookupResult> {
     const duplicateRow = this.database.prepare(`
       SELECT *
@@ -333,7 +351,10 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
     return rows.map(fromRelationRow);
   }
 
-  async listRelationsForMemoryIds(memoryIds: readonly string[]): Promise<MemoryRelationRecord[]> {
+  async listRelationsForMemoryIds(
+    memoryIds: readonly string[],
+    includeReverse = true,
+  ): Promise<MemoryRelationRecord[]> {
     if (memoryIds.length === 0) {
       return [];
     }
@@ -346,7 +367,7 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
           SELECT *
           FROM memory_relations
           WHERE source_memory_id IN (${placeholders.join(", ")})
-            AND target_memory_id IN (${placeholders.join(", ")})
+            ${includeReverse ? `OR target_memory_id IN (${placeholders.join(", ")})` : ""}
           ORDER BY created_at ASC, id ASC
         `,
       )

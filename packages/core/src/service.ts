@@ -42,6 +42,7 @@ import type {
   ImportMemoriesResult,
   InspectMemoryInput,
   ListMemoriesInput,
+  ListMemoryRelationsBatchInput,
   ListMemoryRelationsInput,
   MemoryHistoryInput,
   MemoryExportDocument,
@@ -83,6 +84,7 @@ export interface MemoryService {
   list(input?: ListMemoriesInput): Promise<MemoryRecord[]>;
   relate(input: RelateMemoriesInput): Promise<MemoryRelationRecord>;
   relations(input: ListMemoryRelationsInput): Promise<MemoryRelationRecord[]>;
+  relationsBatch(input: ListMemoryRelationsBatchInput): Promise<ReadonlyMap<string, MemoryRelationRecord[]>>;
   forgetRelation(input: ForgetMemoryRelationInput): Promise<void>;
   update(input: UpdateMemoryInput): Promise<MemoryRecord>;
   history(memoryId: string, input?: MemoryHistoryInput): Promise<MemoryEvent[]>;
@@ -112,6 +114,15 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
     } finally {
       release();
     }
+  }
+
+  async function findMemoriesByIds(memoryIds: readonly string[]): Promise<Map<string, MemoryRecord>> {
+    const uniqueMemoryIds = [...new Set(memoryIds)];
+    const memories = store.findByIds
+      ? await store.findByIds(uniqueMemoryIds)
+      : (await Promise.all(uniqueMemoryIds.map((memoryId) => store.findById(memoryId))))
+          .filter((memory): memory is MemoryRecord => memory !== null);
+    return new Map(memories.map((memory) => [memory.id, memory]));
   }
 
   async function forgetMemory(input: ForgetMemoryInput): Promise<void> {
@@ -610,6 +621,76 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
       visibleRelations.push(relation);
     }
     return visibleRelations.slice(0, input.limit ?? 50);
+  }
+
+  async function listRelationsBatch(
+    input: ListMemoryRelationsBatchInput,
+  ): Promise<ReadonlyMap<string, MemoryRelationRecord[]>> {
+    const memoryIds = [...new Set(input.memoryIds)];
+    if (memoryIds.length > 200) {
+      throw new NuzoMemoryError(
+        "MEMORY_RELATION_BATCH_LIMIT_INVALID",
+        "Relation batch size must be 0-200 memories.",
+        { count: memoryIds.length, max: 200 },
+      );
+    }
+    for (const memoryId of memoryIds) {
+      assertMemoryId(memoryId);
+    }
+    if (memoryIds.length === 0) {
+      return new Map();
+    }
+
+    const primaryMemories = await findMemoriesByIds(memoryIds);
+    for (const memoryId of memoryIds) {
+      const memory = primaryMemories.get(memoryId);
+      if (!memory) {
+        throw new NuzoMemoryError("MEMORY_NOT_FOUND", "Memory was not found.", { id: memoryId });
+      }
+      await policy.assertCanListRelations(
+        {
+          memoryId,
+          ...(input.limitPerMemory === undefined ? {} : { limit: input.limitPerMemory }),
+        },
+        memory,
+      );
+    }
+
+    const includeReverse = input.includeReverse ?? true;
+    const candidates = await store.listRelationsForMemoryIds(memoryIds, includeReverse);
+    const endpointIds = [...new Set(candidates.flatMap((relation) => [
+      relation.sourceMemoryId,
+      relation.targetMemoryId,
+    ]))];
+    const endpoints = await findMemoriesByIds(endpointIds);
+    const visibility = new Map<string, boolean>();
+    for (const memoryId of endpointIds) {
+      const memory = endpoints.get(memoryId);
+      visibility.set(memoryId, memory !== undefined && await isRelationEndpointVisible(memory));
+    }
+
+    const requested = new Set(memoryIds);
+    const result = new Map(memoryIds.map((memoryId) => [memoryId, [] as MemoryRelationRecord[]]));
+    for (const relation of candidates) {
+      if (visibility.get(relation.sourceMemoryId) !== true || visibility.get(relation.targetMemoryId) !== true) {
+        continue;
+      }
+      if (requested.has(relation.sourceMemoryId)) {
+        result.get(relation.sourceMemoryId)!.push(relation);
+      }
+      if (includeReverse && requested.has(relation.targetMemoryId)) {
+        result.get(relation.targetMemoryId)!.push(relation);
+      }
+    }
+
+    const limit = input.limitPerMemory ?? 50;
+    for (const [memoryId, relations] of result) {
+      relations.sort((left, right) => (
+        right.createdAt.getTime() - left.createdAt.getTime() || right.id.localeCompare(left.id)
+      ));
+      result.set(memoryId, relations.slice(0, limit));
+    }
+    return result;
   }
 
   async function forgetMemoryRelation(input: ForgetMemoryRelationInput): Promise<void> {
@@ -1174,6 +1255,10 @@ export function createMemoryService(dependencies: MemoryServiceDependencies): Me
 
     async relations(input) {
       return listRelations(input);
+    },
+
+    async relationsBatch(input) {
+      return listRelationsBatch(input);
     },
 
     async forgetRelation(input) {

@@ -160,6 +160,7 @@ export type {
   ImportMemoriesResult,
   InspectMemoryInput,
   ListMemoriesInput,
+  ListMemoryRelationsBatchInput,
   ListMemoryRelationsInput,
   MemoryHistoryInput,
   MemoryInspection,

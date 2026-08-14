@@ -121,6 +121,7 @@ nav:
           - Coding Standards: operations/coding-standards.md
           - Testing Strategy: operations/testing-strategy.md
           - Recall Benchmark: operations/recall-benchmark.md
+          - Relation Hydration Benchmark: operations/relation-hydration-benchmark.md
           - Capture Intelligence Benchmark: operations/capture-benchmark.md
           - Optional Semantics Benchmark: operations/semantic-benchmark.md
       - Historical Release Evidence:

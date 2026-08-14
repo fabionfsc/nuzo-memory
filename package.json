@@ -14,6 +14,7 @@
   ],
   "scripts": {
     "benchmark:capture": "npm run build -w @nuzo/memory-core && node tools/capture-benchmark.mjs",
+    "benchmark:relations": "npm run build -w @nuzo/memory-core && node tools/relation-hydration-benchmark.mjs",
     "benchmark:recall": "npm run build -w @nuzo/memory-core && node tools/recall-benchmark.mjs",
     "benchmark:semantics": "npm run build -w @nuzo/memory-core && node tools/semantic-benchmark.mjs",
     "build": "npm run clean:dist && npm run build -w @nuzo/memory-core && npm run build -w @nuzo/memory-cli && npm run build -w @nuzo/mcp-server",

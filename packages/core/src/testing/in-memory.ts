@@ -76,6 +76,13 @@ export class InMemoryStore implements MemoryStore {
     return memory ? cloneMemory(memory) : null;
   }
 
+  async findByIds(ids: readonly string[]): Promise<MemoryRecord[]> {
+    return [...new Set(ids)]
+      .map((id) => this.memories.get(id))
+      .filter((memory): memory is MemoryRecord => memory !== undefined)
+      .map(cloneMemory);
+  }
+
   async findCaptureCandidates(input: CaptureCandidateLookupInput): Promise<CaptureCandidateLookupResult> {
     const active = [...this.memories.values()]
       .filter((memory) => memory.archivedAt === null && memory.scope === input.scope)
@@ -193,10 +200,15 @@ export class InMemoryStore implements MemoryStore {
       .map(cloneRelation);
   }
 
-  async listRelationsForMemoryIds(memoryIds: readonly string[]): Promise<MemoryRelationRecord[]> {
+  async listRelationsForMemoryIds(
+    memoryIds: readonly string[],
+    includeReverse = true,
+  ): Promise<MemoryRelationRecord[]> {
     const memoryIdSet = new Set(memoryIds);
     return [...this.relations.values()]
-      .filter((relation) => memoryIdSet.has(relation.sourceMemoryId) && memoryIdSet.has(relation.targetMemoryId))
+      .filter((relation) => memoryIdSet.has(relation.sourceMemoryId) || (
+        includeReverse && memoryIdSet.has(relation.targetMemoryId)
+      ))
       .sort((left, right) => left.createdAt.getTime() - right.createdAt.getTime() || left.id.localeCompare(right.id))
       .map(cloneRelation);
   }

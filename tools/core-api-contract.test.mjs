@@ -90,6 +90,7 @@ const typeExports = [
   "InspectMemoryInput",
   "InspectRuntimeFileSafetyInput",
   "ListMemoriesInput",
+  "ListMemoryRelationsBatchInput",
   "ListMemoryRelationsInput",
   "LocalTransformersModelManifest",
   "LocalTransformersModelStatus",

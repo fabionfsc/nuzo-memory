@@ -314,6 +314,12 @@ export interface ListMemoryRelationsInput {
   limit?: number;
 }
 
+export interface ListMemoryRelationsBatchInput {
+  memoryIds: readonly string[];
+  includeReverse?: boolean;
+  limitPerMemory?: number;
+}
+
 export interface ForgetMemoryRelationInput {
   id: string;
   actor: string;

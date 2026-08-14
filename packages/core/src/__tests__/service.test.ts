@@ -14,7 +14,25 @@ import {
   FixedClock,
 } from "../testing.js";
 import { encodeMemoryEventCursor } from "../pagination.js";
-import type { ListMemoryRelationsInput, MemoryRecord } from "../index.js";
+import type { ListMemoryRelationsInput, MemoryRecord, MemoryRelationRecord } from "../index.js";
+
+class CountingRelationStore extends InMemoryStore {
+  relationQueries = 0;
+  batchRelationQueries = 0;
+
+  override async listRelations(input: ListMemoryRelationsInput): Promise<MemoryRelationRecord[]> {
+    this.relationQueries += 1;
+    return super.listRelations(input);
+  }
+
+  override async listRelationsForMemoryIds(
+    memoryIds: readonly string[],
+    includeReverse = true,
+  ): Promise<MemoryRelationRecord[]> {
+    this.batchRelationQueries += 1;
+    return super.listRelationsForMemoryIds(memoryIds, includeReverse);
+  }
+}
 
 // A policy that fails an endpoint authorization check with a non-authorization
 // error, used to prove relation reads rethrow instead of swallowing it.
@@ -100,6 +118,58 @@ function createRestrictedTestService(scopes: Array<"user:default" | "project:nuz
 }
 
 describe("memory service", () => {
+  it("hydrates relation batches with one relation query while preserving per-memory ordering and limits", async () => {
+    const store = new CountingRelationStore();
+    const service = createMemoryService({
+      store,
+      searchIndex: new InMemorySearchIndex(),
+      auditLog: new InMemoryAuditLog(),
+      clock: new FixedClock(),
+      ids: new SequentialIdGenerator(),
+      policy: new DefaultPolicyEngine(new RegexSecretScanner()),
+    });
+    const memories = await Promise.all(["alpha", "beta", "gamma", "delta"].map((name) => service.remember({
+      content: `Synthetic ${name} batch memory.`,
+      kind: "note",
+      scope: "project:nuzo",
+      source: "test:relation-batch",
+    })));
+    const [alpha, beta, gamma, delta] = memories as [MemoryRecord, MemoryRecord, MemoryRecord, MemoryRecord];
+    const oldest = await service.relate({
+      sourceMemoryId: alpha.id,
+      targetMemoryId: delta.id,
+      relation: "related_to",
+      actor: "test",
+    });
+    const middle = await service.relate({
+      sourceMemoryId: beta.id,
+      targetMemoryId: alpha.id,
+      relation: "supersedes",
+      actor: "test",
+    });
+    const newest = await service.relate({
+      sourceMemoryId: alpha.id,
+      targetMemoryId: gamma.id,
+      relation: "conflicts_with",
+      actor: "test",
+    });
+
+    store.relationQueries = 0;
+    store.batchRelationQueries = 0;
+    const hydrated = await service.relationsBatch({
+      memoryIds: [alpha.id, beta.id, gamma.id],
+      includeReverse: true,
+      limitPerMemory: 2,
+    });
+
+    expect(store.relationQueries).toBe(0);
+    expect(store.batchRelationQueries).toBe(1);
+    expect(hydrated.get(alpha.id)).toEqual([newest, middle]);
+    expect(hydrated.get(beta.id)).toEqual([middle]);
+    expect(hydrated.get(gamma.id)).toEqual([newest]);
+    expect(hydrated.get(alpha.id)).not.toContain(oldest);
+  });
+
   it("serializes identical confirmed creates without a transaction manager", async () => {
     const { service } = createTestService();
     const input = {
@@ -2318,6 +2388,16 @@ describe("memory service", () => {
     const serialized = JSON.stringify(restrictedRelations);
     expect(serialized).not.toContain(forbidden.id);
     expect(serialized).not.toContain("project:secret");
+    const restrictedBatch = await restricted.relationsBatch({
+      memoryIds: [allowedA.id, allowedB.id],
+      includeReverse: true,
+      limitPerMemory: 1,
+    });
+    expect(restrictedBatch.get(allowedA.id)).toEqual([visibleRelation]);
+    expect(restrictedBatch.get(allowedB.id)).toEqual([visibleRelation]);
+    const serializedBatch = JSON.stringify([...restrictedBatch]);
+    expect(serializedBatch).not.toContain(forbidden.id);
+    expect(serializedBatch).not.toContain("project:secret");
 
     // Inspect succeeds for an authorized memory and hides the same relations.
     const inspection = await restricted.inspect({ id: allowedA.id, historyLimit: 50 });
@@ -2364,6 +2444,9 @@ describe("memory service", () => {
     // closed instead of leaking that the memory exists.
     await expect(
       restricted.relations({ memoryId: forbidden.id, includeReverse: true, limit: 50 }),
+    ).rejects.toMatchObject({ code: "MEMORY_SCOPE_FORBIDDEN" });
+    await expect(
+      restricted.relationsBatch({ memoryIds: [allowedA.id, forbidden.id], limitPerMemory: 50 }),
     ).rejects.toMatchObject({ code: "MEMORY_SCOPE_FORBIDDEN" });
     await expect(
       restricted.inspect({ id: forbidden.id, historyLimit: 50 }),

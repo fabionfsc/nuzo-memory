@@ -870,6 +870,25 @@ describe("SQLiteMemoryDatabase", () => {
     expect(await reopenedService.relations({ memoryId: current.id })).toMatchObject([
       { id: relation.id, relation: "supersedes" },
     ]);
+    expect((await reopenedService.relationsBatch({
+      memoryIds: [current.id],
+      includeReverse: true,
+      limitPerMemory: 10,
+    })).get(current.id)).toMatchObject([
+      { id: relation.id, relation: "supersedes" },
+    ]);
+    expect((await reopenedService.relationsBatch({
+      memoryIds: [previous.id],
+      includeReverse: true,
+      limitPerMemory: 10,
+    })).get(previous.id)).toMatchObject([
+      { id: relation.id, relation: "supersedes" },
+    ]);
+    expect((await reopenedService.relationsBatch({
+      memoryIds: [previous.id],
+      includeReverse: false,
+      limitPerMemory: 10,
+    })).get(previous.id)).toEqual([]);
 
     await reopenedService.forget({
       id: previous.id,

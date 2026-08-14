@@ -29,6 +29,7 @@ function createTestHandlers(options: {
     relate: 0,
     relateActor: null as string | null,
     relations: 0,
+    relationsBatch: 0,
     forgetRelation: 0,
     forgetRelationActor: null as string | null,
     history: 0,
@@ -312,6 +313,16 @@ function createTestHandlers(options: {
         ? [relation]
         : [];
     },
+    async relationsBatch(input) {
+      calls.relationsBatch += 1;
+      return new Map(input.memoryIds.map((memoryId) => [
+        memoryId,
+        relation && (
+          relation.sourceMemoryId === memoryId ||
+          (input.includeReverse !== false && relation.targetMemoryId === memoryId)
+        ) ? [relation] : [],
+      ]));
+    },
     async forgetRelation(input) {
       calls.forgetRelation += 1;
       calls.forgetRelationActor = input.actor;
@@ -464,7 +475,7 @@ function createTestHandlers(options: {
 
 describe("memory MCP handlers", () => {
   it("remembers and recalls through tool-shaped inputs", async () => {
-    const { handlers } = createTestHandlers();
+    const { calls, handlers } = createTestHandlers();
 
     const remembered = await handlers.remember({
       content: "The user prefers explicit MCP contracts.",
@@ -514,6 +525,8 @@ describe("memory MCP handlers", () => {
       effective_mode: "hybrid",
       semantic_fallback_code: null,
     });
+    expect(calls.relationsBatch).toBe(2);
+    expect(calls.relations).toBe(0);
   });
 
   it("creates, lists, and removes explicit memory relations", async () => {
@@ -953,6 +966,8 @@ describe("memory MCP handlers", () => {
       limit: 8,
     });
     expect(result.results).toHaveLength(1);
+    expect(calls.relationsBatch).toBe(1);
+    expect(calls.relations).toBe(0);
     expect(calls.recall.at(-1)).toEqual({
       query: "Please continue Nuzo issue work. Use the project tracker.",
       scope: "project:nuzo",

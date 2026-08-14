@@ -35,6 +35,7 @@ export interface MemoryStore {
   create(memory: MemoryRecord): Promise<void>;
   update(memory: MemoryRecord, expectedRevision?: number): Promise<boolean>;
   findById(id: string): Promise<MemoryRecord | null>;
+  findByIds?(ids: readonly string[]): Promise<MemoryRecord[]>;
   findCaptureCandidates?(input: CaptureCandidateLookupInput): Promise<CaptureCandidateLookupResult>;
   list(filter: ListMemoriesInput): Promise<MemoryRecord[]>;
   archive(id: string, archivedAt: Date, expectedRevision?: number): Promise<boolean>;
@@ -42,7 +43,10 @@ export interface MemoryStore {
   createRelation(relation: MemoryRelationRecord): Promise<boolean>;
   findRelationById(id: string): Promise<MemoryRelationRecord | null>;
   listRelations(input: ListMemoryRelationsInput): Promise<MemoryRelationRecord[]>;
-  listRelationsForMemoryIds(memoryIds: readonly string[]): Promise<MemoryRelationRecord[]>;
+  listRelationsForMemoryIds(
+    memoryIds: readonly string[],
+    includeReverse?: boolean,
+  ): Promise<MemoryRelationRecord[]>;
   deleteRelation(id: string): Promise<boolean>;
 }
 
