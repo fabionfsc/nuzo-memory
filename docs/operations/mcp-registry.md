@@ -59,7 +59,7 @@ Run the official publisher validation:
 npm run registry:validate
 ```
 
-The second command downloads the reviewed official `mcp-publisher` 1.7.9
+The second command downloads the reviewed official `mcp-publisher` 1.8.1
 Linux amd64 archive, verifies its pinned SHA-256 digest, and validates
 `server.json`. The downloaded binary stays under ignored `build/tools/`.
 

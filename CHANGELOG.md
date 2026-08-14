@@ -41,7 +41,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
   more directly.
 - Runtime and development dependencies resolve with zero known npm audit
   findings; pinned GitHub Actions and documentation tooling move to their
-  final validated releases while `better-sqlite3` remains on the
+  final validated releases, MCP Registry validation uses the checksum-pinned
+  official `mcp-publisher` 1.8.1, and `better-sqlite3` remains on the
   Windows/Node-22-compatible `12.11.1` line.
 - `1.2.0` is the final planned Nuzo release. The repository, packages, roadmap,
   support expectations, and downstream-fork guidance now state the
