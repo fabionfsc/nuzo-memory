@@ -1,9 +1,10 @@
-import type {
-  MemoryEvent,
-  MemoryKind,
-  MemoryRecord,
-  MemoryScope,
-  MemoryService,
+import {
+  renderUntrustedInlineText,
+  type MemoryEvent,
+  type MemoryKind,
+  type MemoryRecord,
+  type MemoryScope,
+  type MemoryService,
 } from "@nuzo/memory-core";
 
 export interface MemoryManagerChoice {
@@ -116,7 +117,12 @@ async function chooseMemory(
   const selected = await options.io.choose(title, [
     ...memories.slice(0, 20).map((memory) => ({
       value: memory.id,
-      label: `${shortId(memory.id)} · ${memory.scope} · ${memory.kind} · ${truncate(memory.content, 72)}`,
+      label: [
+        renderUntrustedInlineText(shortId(memory.id)),
+        renderUntrustedInlineText(memory.scope),
+        renderUntrustedInlineText(memory.kind),
+        renderUntrustedInlineText(truncate(memory.content, 72)),
+      ].join(" · "),
     })),
     { value: "back", label: "Back" },
   ], "back");
@@ -244,17 +250,25 @@ async function importMemories(options: MemoryManagerOptions): Promise<void> {
 
 function showMemory(io: MemoryManagerIO, memory: MemoryRecord): void {
   io.write("");
-  io.write(`ID: ${memory.id}`);
+  io.write(`ID: ${renderUntrustedInlineText(memory.id)}`);
   io.write(`Revision: ${memory.revision}`);
-  io.write(`Scope: ${memory.scope}`);
-  io.write(`Kind: ${memory.kind}`);
-  io.write(`Tags: ${memory.tags.length === 0 ? "none" : memory.tags.join(", ")}`);
+  io.write(`Scope: ${renderUntrustedInlineText(memory.scope)}`);
+  io.write(`Kind: ${renderUntrustedInlineText(memory.kind)}`);
+  const tags = memory.tags.length === 0
+    ? "none"
+    : memory.tags.map(renderUntrustedInlineText).join(", ");
+  io.write(`Tags: ${tags}`);
   io.write(`Status: ${memory.archivedAt === null ? "active" : "archived"}`);
-  io.write(`Content: ${memory.content}`);
+  io.write(`Content: ${renderUntrustedInlineText(memory.content)}`);
 }
 
 function formatEvent(event: MemoryEvent): string {
-  return `${event.createdAt.toISOString()} · ${event.eventType} · ${event.actor} · ${event.memoryId ?? "store"}`;
+  return [
+    event.createdAt.toISOString(),
+    renderUntrustedInlineText(event.eventType),
+    renderUntrustedInlineText(event.actor),
+    renderUntrustedInlineText(event.memoryId ?? "store"),
+  ].join(" · ");
 }
 
 function parseTags(value: string): string[] {

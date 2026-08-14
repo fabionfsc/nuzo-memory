@@ -12,6 +12,8 @@ import {
   restoreSQLiteMemoryStore,
   semanticIndexPathFor,
   resolveAutomaticScope,
+  escapeUntrustedControlCharacters,
+  renderUntrustedInlineText,
   type MemoryKind,
   type ListMemoriesInput,
   type ConfirmCaptureDecision,
@@ -347,7 +349,11 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
               limit: 10,
             });
             const relationMarker = formatRelationMarkers(relations, result.memory.id);
-            io.stdout(`${result.memory.id}\t${result.score.toPrecision(4)}${relationMarker}\t${result.memory.content}`);
+            io.stdout([
+              renderUntrustedInlineText(result.memory.id),
+              `${result.score.toPrecision(4)}${relationMarker}`,
+              renderUntrustedInlineText(result.memory.content),
+            ].join("\t"));
           }
           if (response.diagnostics.semanticFallbackCode !== null) {
             io.stderr(`Semantic fallback: ${response.diagnostics.semanticFallbackCode}`);
@@ -458,7 +464,13 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
             limit: 10,
           });
           const relationMarker = formatRelationMarkers(relations, item.id);
-          io.stdout(`${item.id}\trev=${item.revision}\tscope=${item.scope}\t${item.kind}${archived}${lifecycle}${relationMarker}\t${item.content}`);
+          io.stdout([
+            renderUntrustedInlineText(item.id),
+            `rev=${item.revision}`,
+            `scope=${renderUntrustedInlineText(item.scope)}`,
+            `${renderUntrustedInlineText(item.kind)}${archived}${lifecycle}${relationMarker}`,
+            renderUntrustedInlineText(item.content),
+          ].join("\t"));
         }
       } finally {
         database.close();
@@ -516,8 +528,14 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
           limit: commandOptions.limit ?? 50,
         });
         for (const relation of relations) {
-          const reason = relation.reason === null ? "" : `\treason=${relation.reason}`;
-          io.stdout(`${relation.id}\t${formatRelationMarker(relation, id)}\tcreated=${relation.createdAt.toISOString()}${reason}`);
+          const reason = relation.reason === null
+            ? ""
+            : `\treason=${renderUntrustedInlineText(relation.reason)}`;
+          io.stdout([
+            renderUntrustedInlineText(relation.id),
+            formatRelationMarker(relation, id),
+            `created=${relation.createdAt.toISOString()}${reason}`,
+          ].join("\t"));
         }
       } finally {
         database.close();
@@ -770,12 +788,7 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
         const service = createService(database);
         const events = await service.history(id);
         for (const event of events) {
-          io.stdout([
-            event.createdAt.toISOString(),
-            event.eventType,
-            event.actor,
-            JSON.stringify(event.payload),
-          ].join("\t"));
+          io.stdout(formatHistoryEvent(event));
         }
       } finally {
         database.close();
@@ -1238,12 +1251,12 @@ function formatMemoryInspection(inspection: MemoryInspection, json: boolean): st
   }
   const memory = inspection.memory;
   const lines = [
-    `ID: ${memory.id}`,
+    `ID: ${renderUntrustedInlineText(memory.id)}`,
     `Revision: ${memory.revision}`,
-    `Scope: ${memory.scope}`,
-    `Kind: ${memory.kind}`,
-    `Tags: ${memory.tags.length > 0 ? memory.tags.join(", ") : "none"}`,
-    `Source: ${memory.source}`,
+    `Scope: ${renderUntrustedInlineText(memory.scope)}`,
+    `Kind: ${renderUntrustedInlineText(memory.kind)}`,
+    `Tags: ${memory.tags.length > 0 ? memory.tags.map(renderUntrustedInlineText).join(", ") : "none"}`,
+    `Source: ${renderUntrustedInlineText(memory.source)}`,
     `Confidence: ${memory.confidence}`,
     `Confidence state: ${memory.confidenceState ?? "none"}`,
     `Review after: ${memory.reviewAfter?.toISOString() ?? "none"}`,
@@ -1252,15 +1265,20 @@ function formatMemoryInspection(inspection: MemoryInspection, json: boolean): st
     `Updated at: ${memory.updatedAt.toISOString()}`,
     `Last used at: ${memory.lastUsedAt?.toISOString() ?? "none"}`,
     `Archived at: ${memory.archivedAt?.toISOString() ?? "none"}`,
-    `Provenance: ${memory.provenance === null ? "none" : JSON.stringify(memory.provenance)}`,
-    `Content: ${memory.content}`,
+    `Provenance: ${memory.provenance === null ? "none" : escapeUntrustedControlCharacters(JSON.stringify(memory.provenance))}`,
+    `Content: ${renderUntrustedInlineText(memory.content)}`,
     "Relations:",
   ];
   if (inspection.relations.length === 0) {
     lines.push("- none");
   } else {
     for (const relation of inspection.relations) {
-      lines.push(`- ${relation.id}: ${formatRelationMarker(relation, memory.id)}${relation.reason === null ? "" : ` (${relation.reason})`}`);
+      const reason = relation.reason === null
+        ? ""
+        : ` (${renderUntrustedInlineText(relation.reason)})`;
+      lines.push(
+        `- ${renderUntrustedInlineText(relation.id)}: ${formatRelationMarker(relation, memory.id)}${reason}`,
+      );
     }
   }
   lines.push("Events:");
@@ -1268,10 +1286,24 @@ function formatMemoryInspection(inspection: MemoryInspection, json: boolean): st
     lines.push("- none");
   } else {
     for (const event of inspection.events) {
-      lines.push(`- ${event.createdAt.toISOString()} ${event.eventType} ${event.actor} ${JSON.stringify(event.payload)}`);
+      lines.push([
+        `- ${event.createdAt.toISOString()}`,
+        renderUntrustedInlineText(event.eventType),
+        renderUntrustedInlineText(event.actor),
+        escapeUntrustedControlCharacters(JSON.stringify(event.payload)),
+      ].join(" "));
     }
   }
   return lines.join("\n");
+}
+
+function formatHistoryEvent(event: MemoryEvent): string {
+  return [
+    event.createdAt.toISOString(),
+    renderUntrustedInlineText(event.eventType),
+    renderUntrustedInlineText(event.actor),
+    escapeUntrustedControlCharacters(JSON.stringify(event.payload)),
+  ].join("\t");
 }
 
 function toCliMemory(memory: MemoryRecord) {

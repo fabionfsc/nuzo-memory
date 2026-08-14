@@ -1,4 +1,8 @@
 import type { MemoryExportDocument, MemoryExportItem, MemoryExportRelationItem } from "./types.js";
+import {
+  escapeUntrustedControlCharacters,
+  renderUntrustedMarkdownBlock,
+} from "./untrusted-text.js";
 
 export function formatMemoryExportMarkdown(document: MemoryExportDocument): string {
   const lines: string[] = [
@@ -28,7 +32,7 @@ export function formatMemoryExportMarkdown(document: MemoryExportDocument): stri
     lines.push("");
     lines.push(formatMemoryExportItemMetadata(memory));
     lines.push("");
-    lines.push(memory.content);
+    lines.push(renderUntrustedMarkdownBlock(memory.content));
     lines.push("");
   });
 
@@ -91,5 +95,8 @@ function yamlNullableString(value: string | null): string {
 }
 
 function yamlString(value: string): string {
-  return JSON.stringify(value);
+  // `JSON.stringify` escapes C0 controls but leaves DEL, C1 controls, and the
+  // Unicode line/paragraph separators raw. Escaping those keeps the metadata
+  // block a valid JSON string literal that is also safe to print in a terminal.
+  return escapeUntrustedControlCharacters(JSON.stringify(value));
 }

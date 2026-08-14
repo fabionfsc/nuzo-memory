@@ -5,6 +5,11 @@ export {
   formatMemoryExportMarkdown,
 } from "./export-format.js";
 export {
+  escapeUntrustedControlCharacters,
+  renderUntrustedInlineText,
+  renderUntrustedMarkdownBlock,
+} from "./untrusted-text.js";
+export {
   DefaultPolicyEngine,
   memoryLimits,
   memoryScopePattern,
