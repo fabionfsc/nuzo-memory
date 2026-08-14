@@ -533,6 +533,46 @@ describe("nuzo memory cli", () => {
     expect(visible.stdout).toEqual([]);
   });
 
+  it("neutralizes untrusted controls in human output while preserving JSON data", async () => {
+    const store = createStorePath();
+    const content = [
+      "security sentinel\u001b]8;;https://example.invalid\u0007 forged",
+      "row\tcolumn\u009b31m\u2028<script>alert(1)</script>",
+      "```",
+    ].join("\n");
+    const remembered = await runCli([
+      "memory", "--store", store, "remember", content,
+      "--kind", "note",
+      "--tag", "security",
+    ]);
+    const id = remembered.stdout[0] ?? "";
+
+    const recall = await runCli(["memory", "--store", store, "recall", "security sentinel"]);
+    const list = await runCli(["memory", "--store", store, "list"]);
+    const shown = await runCli(["memory", "--store", store, "show", id]);
+    const humanOutputs = [
+      recall.stdout.join("\n"),
+      list.stdout.join("\n"),
+      shown.stdout.join("\n"),
+    ];
+    for (const rendered of humanOutputs) {
+      expect(rendered).not.toMatch(/[\u0000-\u0008\u000b-\u001f\u007f-\u009f\u2028\u2029]/u);
+      expect(rendered).toContain("\\u001b");
+      expect(rendered).toContain("forged\\nrow\\tcolumn");
+    }
+
+    const json = await runCli(["memory", "--store", store, "show", id, "--json"]);
+    expect(JSON.parse(json.stdout[0] ?? "{}").memory.content).toBe(content);
+
+    const markdown = await runCli(["memory", "--store", store, "export", "--format", "markdown"]);
+    const renderedMarkdown = markdown.stdout[0] ?? "";
+    expect(renderedMarkdown).toContain("````text\n");
+    expect(renderedMarkdown).toContain("<script>alert(1)</script>");
+    expect(renderedMarkdown).toContain("\\u001b");
+    expect(renderedMarkdown).toContain("forged\nrow\\tcolumn");
+    expect(renderedMarkdown).not.toMatch(/[\u0000-\u0009\u000b-\u001f\u007f-\u009f\u2028\u2029]/u);
+  });
+
   it("validates capture suggestions without writing memory", async () => {
     const store = createStorePath();
     await runCli(["memory", "--store", store, "init"]);

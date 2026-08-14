@@ -114,6 +114,25 @@ describe("interactive memory manager", () => {
       reason: "Explicit permanent deletion in the interactive memory manager.",
     }]);
   });
+
+  it("renders stored controls visibly without changing the selected memory", async () => {
+    const candidate = {
+      ...memory(),
+      content: "visible\nforged\trow\u001b[31m\u009b31m",
+      tags: ["tag\nforged"],
+    };
+    const io = new FakeManagerIO({
+      choices: ["browse", candidate.id, "back", "exit"],
+    });
+    const service = mockService({ list: async () => [candidate] });
+
+    await runMemoryManager({ service, io, scope: "user:default", transfers: noTransfers() });
+
+    const output = io.output.join("\n");
+    expect(output).toContain("Content: visible\\nforged\\trow\\u001b[31m\\u009b31m");
+    expect(output).toContain("Tags: tag\\nforged");
+    expect(output).not.toMatch(/[\u0000-\u0008\u000b-\u001f\u007f-\u009f\u2028\u2029]/u);
+  });
 });
 
 class FakeManagerIO implements MemoryManagerIO {

@@ -1,8 +1,10 @@
-import type {
-  CaptureSuggestionResult,
-  ConfirmCaptureResult,
-  MemoryEvent,
-  MemoryRecord,
+import {
+  escapeUntrustedControlCharacters,
+  renderUntrustedInlineText,
+  type CaptureSuggestionResult,
+  type ConfirmCaptureResult,
+  type MemoryEvent,
+  type MemoryRecord,
 } from "@nuzo/memory-core";
 
 export function formatCaptureSuggestion(suggestion: CaptureSuggestionResult, json: boolean): string {
@@ -10,26 +12,30 @@ export function formatCaptureSuggestion(suggestion: CaptureSuggestionResult, jso
   if (json) return JSON.stringify(output, null, 2);
 
   const lines = [
-    `Status: ${output.status}`,
+    `Status: ${renderUntrustedInlineText(output.status)}`,
     "Memory writes: no",
     "Requires confirmation: yes",
-    `Content: ${output.draft.content}`,
-    `Kind: ${output.draft.kind}`,
-    `Scope: ${output.draft.scope}`,
-    `Tags: ${output.draft.tags.length > 0 ? output.draft.tags.join(", ") : "none"}`,
-    `Source: ${output.draft.source}`,
+    `Content: ${renderUntrustedInlineText(output.draft.content)}`,
+    `Kind: ${renderUntrustedInlineText(output.draft.kind)}`,
+    `Scope: ${renderUntrustedInlineText(output.draft.scope)}`,
+    `Tags: ${formatInlineTags(output.draft.tags)}`,
+    `Source: ${renderUntrustedInlineText(output.draft.source)}`,
     `Confidence: ${output.draft.confidence}`,
-    `Confidence state: ${output.draft.confidence_state ?? "none"}`,
+    `Confidence state: ${renderUntrustedInlineText(output.draft.confidence_state ?? "none")}`,
     `Review after: ${output.draft.review_after ?? "none"}`,
     `Expires at: ${output.draft.expires_at ?? "none"}`,
-    `Reason: ${output.draft.reason}`,
+    `Reason: ${renderUntrustedInlineText(output.draft.reason)}`,
   ];
-  if (output.duplicate !== null) lines.push(`Duplicate: ${output.duplicate.id}`);
+  if (output.duplicate !== null) {
+    lines.push(`Duplicate: ${renderUntrustedInlineText(output.duplicate.id)}`);
+  }
   if ("relationship_mode" in output && output.relationship_mode === "bounded") {
-    lines.push(`Relationship: ${output.relationship}`);
-    lines.push(`Relationship reason: ${output.relationship_evidence.reason}`);
+    lines.push(`Relationship: ${renderUntrustedInlineText(output.relationship)}`);
+    lines.push(`Relationship reason: ${renderUntrustedInlineText(output.relationship_evidence.reason)}`);
     if (output.relationship_evidence.primary_memory_id !== null) {
-      lines.push(`Primary memory: ${output.relationship_evidence.primary_memory_id}`);
+      lines.push(
+        `Primary memory: ${renderUntrustedInlineText(output.relationship_evidence.primary_memory_id)}`,
+      );
     }
   }
   return lines.join("\n");
@@ -86,13 +92,15 @@ export function formatConfirmCapture(result: ConfirmCaptureResult, json: boolean
   if (json) return JSON.stringify(output, null, 2);
 
   const lines = [
-    `Decision: ${output.decision}`,
-    `Status: ${output.status}`,
+    `Decision: ${renderUntrustedInlineText(output.decision)}`,
+    `Status: ${renderUntrustedInlineText(output.status)}`,
     `Memory writes: ${output.memory_writes ? "yes" : "no"}`,
     "Requires confirmation: no",
-    `Reason: ${output.reason}`,
+    `Reason: ${renderUntrustedInlineText(output.reason)}`,
   ];
-  if (output.memory !== null) lines.push(`Memory: ${output.memory.id}`);
+  if (output.memory !== null) {
+    lines.push(`Memory: ${renderUntrustedInlineText(output.memory.id)}`);
+  }
   return lines.join("\n");
 }
 
@@ -131,10 +139,14 @@ function toCliMemoryRecord(memory: MemoryRecord) {
 export function formatAuditEvent(event: MemoryEvent): string {
   return [
     event.createdAt.toISOString(),
-    event.id,
-    event.memoryId ?? "global",
-    event.eventType,
-    event.actor,
-    JSON.stringify(event.payload),
+    renderUntrustedInlineText(event.id),
+    renderUntrustedInlineText(event.memoryId ?? "global"),
+    renderUntrustedInlineText(event.eventType),
+    renderUntrustedInlineText(event.actor),
+    escapeUntrustedControlCharacters(JSON.stringify(event.payload)),
   ].join("\t");
+}
+
+function formatInlineTags(tags: readonly string[]): string {
+  return tags.length === 0 ? "none" : tags.map(renderUntrustedInlineText).join(", ");
 }

@@ -1,5 +1,6 @@
 import { createInterface, type Interface } from "node:readline/promises";
 import { stdin, stdout } from "node:process";
+import { renderUntrustedInlineText } from "@nuzo/memory-core";
 import type { MemoryManagerChoice, MemoryManagerIO } from "./memory-manager.js";
 
 export class TerminalMemoryManagerIO implements MemoryManagerIO {
@@ -34,7 +35,7 @@ export class TerminalMemoryManagerIO implements MemoryManagerIO {
   }
 
   async input(prompt: string, defaultValue?: string): Promise<string> {
-    const suffix = defaultValue === undefined ? "" : ` [${defaultValue}]`;
+    const suffix = defaultValue === undefined ? "" : ` [${renderUntrustedInlineText(defaultValue)}]`;
     const answer = await this.#readline.question(`${prompt}${suffix}: `);
     return answer.trim() === "" && defaultValue !== undefined ? defaultValue : answer;
   }
