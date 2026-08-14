@@ -4,9 +4,13 @@ Nuzo is designed around local-first memory and explicit user control.
 
 ## Current Status
 
-The current public release ships a local CLI, MCP server, SQLite runtime, host
-plugin artifacts, restricted scope policy, and optional local semantic
-retrieval.
+Nuzo `1.2.0` is the final planned release. It ships a local CLI, MCP server,
+SQLite runtime, host plugin artifacts, restricted scope policy, and optional
+local semantic retrieval. After publication, the repository is archived and
+no ongoing security response, patch schedule, dependency updates, or support
+SLA is promised. Users should pin the release and migrate to a maintained
+alternative or maintain a fork when their threat model requires future fixes.
+
 Security work covers runtime storage, input policy, dependency and release
 integrity, host-tool boundaries, derived semantic data, and safe repository
 practices.
@@ -51,9 +55,11 @@ Do not store or commit:
 
 ## Reporting
 
-Open a private GitHub security advisory for this repository. Do not disclose
-vulnerability details, proof-of-concept material, secrets, or affected user data
-in a public Issue.
+The project does not accept new vulnerability reports after end of
+maintenance. Do not disclose secrets, affected user data, or private memory in
+public issues, forks, or discussion threads. If you discover a vulnerability,
+assume it will not receive an upstream patch; stop using affected functionality
+and remediate it in a maintained fork or migrate to another product.
 
 ## Runtime Memory
 

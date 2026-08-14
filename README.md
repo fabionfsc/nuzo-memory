@@ -25,6 +25,12 @@ across sessions, while you retain a CLI and public MCP contract to inspect,
 update, export, archive, or delete every record. Inferred memories remain
 drafts until you confirm them; recalled content remains untrusted data.
 
+> [!IMPORTANT]
+> Nuzo `1.2.0` is the final planned release. The repository becomes read-only
+> after publication, and no ongoing maintenance or security response is
+> promised. Published packages remain available for reproducible use and
+> forking. See the [end-of-maintenance notice](docs/operations/end-of-maintenance.md).
+
 ## Quick Start
 
 Use Node.js 22 LTS or 24 LTS with npm 10 or newer:
@@ -104,11 +110,13 @@ Read the full [decision guide](docs/product/why-nuzo.md) and
 Source workspace packages remain private. Public packages are generated and
 validated through the documented release process.
 
-## Contributing
+## Project Status
 
-See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and the
-[public roadmap](docs/operations/roadmap.md). Never attach real memory data,
-credentials, or exports to an issue.
+The `1.2.0` release closes the planned roadmap. The repository is retained as
+an auditable reference and is not accepting new feature work. Existing users
+should pin an exact version and evaluate a maintained alternative or fork for
+future runtime and dependency changes. Never publish real memory data,
+credentials, or exports when discussing or forking Nuzo.
 
 ## License
 

@@ -23,6 +23,12 @@ installation.
 
 ## Package Lifecycle
 
+`1.2.0` is the final planned release of the active package set. Leave the
+published packages installable and undeprecated after end of maintenance so
+existing users and downstream forks can reproduce the tagged release. Do not
+publish later versions without an explicit downstream maintenance decision and
+a complete new release audit.
+
 Use `@nuzo/memory` as the public runtime package for normal users and host
 plugins. It includes the `nuzo`, `nuzo-mcp-server`, and `nuzo-memory-hook`
 binaries.

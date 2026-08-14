@@ -73,6 +73,13 @@ hide:
   </div>
 </section>
 
+!!! warning "Final release and end of maintenance"
+
+    Nuzo `1.2.0` is the final planned release. Packages and documentation stay
+    available, but the repository is archived after publication and no ongoing
+    fixes or support are promised. Read the
+    [end-of-maintenance notice](operations/end-of-maintenance.md).
+
 <div class="nuzo-principles" role="list" aria-label="Nuzo defaults">
   <span role="listitem"><b>01</b> SQLite + FTS stays canonical</span>
   <span role="listitem"><b>02</b> Recall is bounded and read-only</span>

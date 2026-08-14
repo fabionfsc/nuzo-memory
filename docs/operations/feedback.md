@@ -1,8 +1,9 @@
 # Feedback And Support
 
-Nuzo uses GitHub Issues as its public feedback and support path. GitHub
-Discussions is not required, and Nuzo does not collect product telemetry by
-default.
+Nuzo does not accept new feedback or support requests after the final `1.2.0`
+release and repository archival. The links below are retained as historical
+workflow documentation and may be unavailable in the archived repository.
+Nuzo does not collect product telemetry.
 
 Choose the narrowest form:
 

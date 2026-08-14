@@ -109,6 +109,7 @@ nav:
           - Specification-Driven Workflow: operations/spec-driven-workflow.md
       - Release Process:
           - Versioning: operations/versioning.md
+          - End Of Maintenance: operations/end-of-maintenance.md
           - Release Version Map: operations/release-version-map.md
           - npm Publishing: operations/npm-publishing.md
           - MCP Registry Publication: operations/mcp-registry.md

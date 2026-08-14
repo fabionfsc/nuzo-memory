@@ -1,9 +1,8 @@
 # Release Goals
 
-This page defines the planned release sequence from `0.3.1` through `1.0.0`.
-It is a product and engineering plan, not a promise of dates. Scope may move
-when implementation evidence or host limitations require it, but the purpose
-and exit criteria of each release should remain coherent.
+This page preserves the completed release sequence from `0.3.1` through the
+stable `1.0.0` boundary. `1.1.0` added MCP Registry distribution and adoption
+polish; `1.2.0` is the final hardening release and ends upstream maintenance.
 
 ## Release Rules
 
@@ -31,6 +30,8 @@ and exit criteria of each release should remain coherent.
 | `0.8.0` | Host reliability | Published Codex and Claude Code workflows are validated in real installations and across sessions. |
 | `0.9.0` | Contract stabilization | Public contracts, migrations, security, and release behavior are ready for a compatibility commitment. |
 | `1.0.0` | Stable release | Nuzo makes an explicit stable-contract and migration commitment. |
+| `1.1.0` | Distribution and adoption | The unified MCP Registry package and public evaluation path become available. |
+| `1.2.0` | Final hardening | Recovery, trust-boundary fixes, dependency cleanup, and end-of-maintenance documentation close the project. |
 
 ## `0.3.1`: Trust Baseline
 
@@ -390,6 +391,10 @@ mandatory embeddings, or automatic inferred writes. Stability, trust, and a
 proven CLI-first host workflow are the release boundary.
 
 ## Execution Tracking
+
+The execution process below is retained as historical guidance. The `1.2.0`
+release closes the final milestone; no successor milestone or upstream issue
+backlog is planned.
 
 Each planned version has a GitHub milestone with the same version and goal.
 Roadmap docs own direction and release boundaries. GitHub Issues own focused,

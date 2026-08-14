@@ -1,5 +1,11 @@
 # Getting Started
 
+!!! warning "Maintenance status"
+
+    Nuzo `1.2.0` is the final planned release. Pin the exact version and review
+    the [end-of-maintenance notice](../operations/end-of-maintenance.md) before
+    adopting it for a new workflow.
+
 Nuzo `1.1.0` is the current public release. For Codex and Claude Code, use the
 global npm package first. It installs the local management CLI and lets Nuzo
 configure supported host plugins from one place.

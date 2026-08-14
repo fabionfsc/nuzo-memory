@@ -360,25 +360,26 @@ deliverables and exit criteria:
 3. `0.5.0`: recall quality (shipped);
 4. `0.6.0`: capture intelligence (shipped);
 5. `0.7.0`: optional semantics (shipped);
-6. `0.8.0`: host reliability;
-7. `0.9.0`: contract stabilization;
-8. `1.0.0`: stable release.
+6. `0.8.0`: host reliability (shipped);
+7. `0.9.0`: contract stabilization (shipped);
+8. `1.0.0`: stable release (shipped);
+9. `1.1.0`: MCP Registry distribution and adoption polish (shipped);
+10. `1.2.0`: final hardening and end of maintenance (final release).
 
 See [Release Goals](release-goals.md) for the scope, non-goals, and exit
 criteria of each release. The stable user-experience target is defined in the
 [1.0.0 Developer Experience Contract](developer-experience-1.0.0.md). GitHub
-milestones mirror those release boundaries, while focused GitHub Issues remain
-the execution tracker for current work.
+milestones mirrored those release boundaries. The `1.2.0` release closes the
+planned roadmap; no future feature milestone is maintained.
 
 ## Post-1.0 Adoption Focus
 
 Goal: make the stable Nuzo 1.0 contract easy for new developers to understand,
 trust, install, and evaluate before adding another major capability layer.
 
-Status: the repository adoption surface is implemented, including the decision
-guide, public-package demo, feedback route, comparison, and launch playbook.
-External distribution and supported-host feedback remain explicit follow-up
-work in issues #314, #315, and #316 rather than implicit launch promises.
+Status: complete. The repository adoption surface is implemented, including
+the decision guide, public-package demo, comparison, and launch playbook. No
+external launch-post campaign or continuing feedback program is planned.
 
 Nuzo `1.0.0` moved the main risk from contract stability to adoption. The next
 work should explain the product clearly, answer likely objections, and create a
@@ -415,5 +416,13 @@ Exit criteria:
 - public docs answer the strongest objections before asking the user to install
   another tool;
 - feedback channels are intentionally configured and discoverable;
-- launch tasks are represented as executable follow-up issues or checklist
-  items.
+- the final release and end-of-maintenance posture are explicit and do not
+  imply continuing feature or support work.
+
+## End Of Maintenance
+
+Nuzo `1.2.0` is the final planned release. The repository is archived after
+the release artifacts, registry entry, and security advisories are verified.
+Deferred sync, encryption, UI, governance automation, performance tuning, and
+distribution work will not be implemented upstream. See
+[End Of Maintenance](end-of-maintenance.md) for the support and fork policy.
