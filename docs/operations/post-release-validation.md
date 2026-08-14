@@ -261,6 +261,16 @@ The canonical post-release smoke is:
 6. Call `memory.recall_hook` and confirm it is read-only.
 7. Call `memory.suggest_capture` or `nuzo memory suggest-capture`.
 8. Confirm the suggestion does not write before user confirmation.
+9. Confirm a duplicate suggestion reports the existing memory instead of
+   proposing a redundant write.
+10. Confirm a new memory through `memory.confirm_capture` with
+    `decision: "create"`.
+11. When the release supports replacement evidence, confirm updates through
+    `memory.confirm_capture` with `decision: "update"`, `target_memory_id`,
+    and `expected_revision`, then test the conflict path.
+12. Run `memory.doctor` or `nuzo memory doctor` against the same store.
+
+Use fake memory content only.
 
 Run the cross-host NUZO-37 canary before or immediately after the release:
 
@@ -303,16 +313,6 @@ The dated post-1.0 adoption pass is recorded in
 [Supported Host Evidence](supported-host-evidence-1.0.0.md). It separates
 automated marketplace and hook delivery evidence from interactive host-model
 response evidence that still requires an authenticated human session.
-9. Confirm a duplicate suggestion reports the existing memory instead of
-   proposing a redundant write.
-10. Confirm a new memory through `memory.confirm_capture` with
-    `decision: "create"`.
-11. When the release supports replacement evidence, confirm updates through
-    `memory.confirm_capture` with `decision: "update"`, `target_memory_id`,
-    and `expected_revision`, then test the conflict path.
-12. Run `memory.doctor` or `nuzo memory doctor` against the same store.
-
-Use fake memory content only.
 
 ## Host Validation
 
