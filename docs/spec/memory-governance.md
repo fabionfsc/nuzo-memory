@@ -10,6 +10,12 @@ This page defines the contract and compatibility plan for issue #294. Runtime
 schema and tool changes should land in smaller implementation PRs that keep
 existing stores and clients compatible.
 
+For existing and imported stores, the implemented
+[Relation Governance Review](relation-governance-review.md) adds a bounded,
+content-free discovery pass. It preserves this specification's explicit-write
+boundary: only the existing audited `relate` and `challenge` operations can
+apply a human decision.
+
 ## Problem Statement
 
 The dangerous failure mode is a stale or weakly-attributed memory that sounds

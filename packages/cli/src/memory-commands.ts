@@ -63,6 +63,7 @@ import {
 import type { CliIO } from "./cli-io.js";
 import { cliExitCodes, withErrorHandling } from "./errors.js";
 import { registerSemanticCommands } from "./semantic-commands.js";
+import { formatRelationGovernanceReview } from "./relation-governance.js";
 import {
   inferExportFormat,
   parseAuditEventType,
@@ -472,6 +473,35 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
             renderUntrustedInlineText(item.content),
           ].join("\t"));
         }
+      } finally {
+        database.close();
+      }
+    }));
+
+  memory
+    .command("review-relations")
+    .description("Report bounded relation-governance candidates without changing the store.")
+    .option("--include-archived", "Include archived memories as review subjects.", false)
+    .option("--needs-review", "Only review memories whose review_after or expires_at is due.", false)
+    .option("--limit <number>", "Maximum number of candidate pairs (1-200).", parsePositiveInteger)
+    .option("--json", "Print content-free JSON output for scripting.", false)
+    .action(withErrorHandling(io, async (commandOptions: {
+      includeArchived: boolean;
+      needsReview: boolean;
+      limit?: number;
+      json: boolean;
+    }) => {
+      const options = memory.opts<GlobalOptions>();
+      const database = openDatabase(options);
+      try {
+        const service = createService(database);
+        const report = await service.reviewRelations({
+          scope: resolveScope(options),
+          includeArchived: commandOptions.includeArchived,
+          needsReview: commandOptions.needsReview,
+          limit: commandOptions.limit ?? 50,
+        });
+        io.stdout(formatRelationGovernanceReview(report, commandOptions.json));
       } finally {
         database.close();
       }

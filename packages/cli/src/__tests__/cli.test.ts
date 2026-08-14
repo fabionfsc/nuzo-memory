@@ -46,6 +46,20 @@ function inspectFtsCount(path: string): number {
   }
 }
 
+function snapshotStoreRows(path: string): Record<string, unknown[]> {
+  const database = new SQLiteMemoryDatabase({ path, readonly: true });
+  try {
+    return Object.fromEntries(
+      ["memories", "memory_relations", "memory_events"].map((table) => [
+        table,
+        database.database.prepare(`SELECT * FROM ${table} ORDER BY id`).all(),
+      ]),
+    );
+  } finally {
+    database.close();
+  }
+}
+
 async function runCli(
   args: string[],
   env: NodeJS.ProcessEnv = {},
@@ -936,6 +950,74 @@ describe("nuzo memory cli", () => {
         `Primary memory: ${memoryId}`,
       ].join("\n"),
     ]);
+  });
+
+  it("reports content-free relation governance candidates without changing SQLite state", async () => {
+    const store = createStorePath();
+    const previous = await runCli([
+      "memory", "--store", store, "--scope", "project:nuzo", "remember",
+      "Final answers should be concise for routine status updates.",
+      "--kind", "preference", "--tag", "response", "style",
+    ]);
+    const current = await runCli([
+      "memory", "--store", store, "--scope", "project:nuzo", "remember",
+      "Final answers should now be detailed instead of concise for routine status updates.",
+      "--kind", "preference", "--tag", "response", "style",
+    ]);
+    const previousId = previous.stdout[0] ?? "";
+    const currentId = current.stdout[0] ?? "";
+    await runCli([
+      "memory", "--store", store, "relate", currentId,
+      "--target", previousId, "--relation", "supersedes",
+    ]);
+    const before = snapshotStoreRows(store);
+
+    const jsonReview = await runCli([
+      "memory", "--store", store, "--scope", "project:nuzo",
+      "review-relations", "--limit", "20", "--json",
+    ]);
+    const output = JSON.parse(jsonReview.stdout[0] ?? "{}") as {
+      version: number;
+      mode: string;
+      memory_writes: boolean;
+      relation_writes: boolean;
+      lifecycle_writes: boolean;
+      audit_writes: boolean;
+      candidates: Array<{
+        primary_memory_id: string;
+        candidate_memory_id: string;
+        relationship: string;
+        reason_codes: string[];
+        state: string;
+      }>;
+    };
+    expect(output).toMatchObject({
+      version: 1,
+      mode: "read_only",
+      memory_writes: false,
+      relation_writes: false,
+      lifecycle_writes: false,
+      audit_writes: false,
+      candidates: [expect.objectContaining({
+        primary_memory_id: currentId,
+        candidate_memory_id: previousId,
+        relationship: "update_candidate",
+        reason_codes: expect.arrayContaining(["possible_revision", "shared_tags", "shared_terms"]),
+        state: "already_related",
+      })],
+    });
+    expect(jsonReview.stdout[0]).not.toContain("Final answers");
+    expect(snapshotStoreRows(store)).toEqual(before);
+
+    const humanReview = await runCli([
+      "memory", "--store", store, "--scope", "project:nuzo", "review-relations",
+    ]);
+    expect(humanReview.stderr).toEqual([]);
+    expect(humanReview.stdout[0]).toContain("Relation governance review (read-only)");
+    expect(humanReview.stdout[0]).toContain(`candidate=${previousId}`);
+    expect(humanReview.stdout[0]).toContain("No changes were made.");
+    expect(humanReview.stdout[0]).not.toContain("Final answers");
+    expect(snapshotStoreRows(store)).toEqual(before);
   });
 
   it("applies confirmed capture decisions from the CLI", async () => {

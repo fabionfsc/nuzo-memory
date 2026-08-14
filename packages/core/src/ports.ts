@@ -17,6 +17,7 @@ import type {
 
 export interface CaptureCandidateLookupInput {
   scope: MemoryScope;
+  excludeMemoryId?: string;
   duplicateKey: string;
   query: string;
   tags: readonly string[];

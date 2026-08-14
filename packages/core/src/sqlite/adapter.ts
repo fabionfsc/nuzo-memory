@@ -234,15 +234,22 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
   }
 
   async findCaptureCandidates(input: CaptureCandidateLookupInput): Promise<CaptureCandidateLookupResult> {
+    const exclusionSql = input.excludeMemoryId === undefined ? "" : "AND id <> @exclude_memory_id";
+    const params = {
+      scope: input.scope,
+      capture_key: input.duplicateKey,
+      ...(input.excludeMemoryId === undefined ? {} : { exclude_memory_id: input.excludeMemoryId }),
+    };
     const duplicateRow = this.database.prepare(`
       SELECT *
       FROM memories
       WHERE scope = @scope
         AND archived_at IS NULL
         AND capture_key = @capture_key
+        ${exclusionSql}
       ORDER BY id ASC
       LIMIT 1
-    `).get({ scope: input.scope, capture_key: input.duplicateKey }) as MemoryRow | undefined;
+    `).get(params) as MemoryRow | undefined;
     const duplicate = duplicateRow ? fromMemoryRow(duplicateRow) : null;
     if (!input.includeCandidates || duplicate !== null) {
       return { duplicate, candidates: [], searchExhaustive: true };
@@ -252,14 +259,16 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
       SELECT COUNT(*) AS count
       FROM memories
       WHERE scope = @scope AND archived_at IS NULL
-    `).get({ scope: input.scope }) as { count: number | bigint }).count);
+        ${exclusionSql}
+    `).get(params) as { count: number | bigint }).count);
     if (activeCount <= input.exhaustiveScanLimit) {
       const rows = this.database.prepare(`
         SELECT *
         FROM memories
         WHERE scope = @scope AND archived_at IS NULL
+          ${exclusionSql}
         ORDER BY id ASC
-      `).all({ scope: input.scope }) as MemoryRow[];
+      `).all(params) as MemoryRow[];
       return { duplicate: null, candidates: rows.map(fromMemoryRow), searchExhaustive: true };
     }
 
@@ -274,9 +283,10 @@ export class SQLiteMemoryDatabase implements MemoryStore, SearchIndex, AuditLog,
       WHERE memories_fts MATCH @query
         AND m.scope = @scope
         AND m.archived_at IS NULL
+        ${input.excludeMemoryId === undefined ? "" : "AND m.id <> @exclude_memory_id"}
       ORDER BY bm25(memories_fts, 0.0, 0.0, 1.0, 5.0), m.id ASC
       LIMIT @limit
-    `).all({ query, scope: input.scope, limit: input.candidateLimit }) as MemoryRow[];
+    `).all({ ...params, query, limit: input.candidateLimit }) as MemoryRow[];
     return { duplicate: null, candidates: rows.map(fromMemoryRow), searchExhaustive: false };
   }
 

@@ -16,6 +16,10 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
   one authorized core batch use case. A deterministic sparse/dense SQLite
   benchmark proves equivalent ordering and reduces 50-200 relation queries to
   one without weakening endpoint scope checks.
+- Local administrators can run a bounded, content-free `review-relations`
+  report over legacy stores. It reuses capture classification, distinguishes
+  unreviewed from already-related pairs, supports lifecycle filters, and has no
+  inferred apply or write path.
 
 ### Changed
 

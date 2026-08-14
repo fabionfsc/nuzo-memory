@@ -88,6 +88,12 @@ responses keep the original content. See
 | `RelateMemoriesInput` | Explicit memory relation write input. |
 | `ListMemoryRelationsBatchInput` | Bounded authorized relation hydration input for up to 200 primary memories. |
 | `ListMemoryRelationsInput` | Relation list input. |
+| `ReviewMemoryRelationsInput` | Explicit-scope, lifecycle-filtered input for the bounded read-only relation governance report. |
+| `RelationGovernanceReview` | Content-free read-only governance report and bound/write diagnostics. |
+| `RelationGovernanceCandidate` | One authorized candidate pair with IDs, revisions, scopes, lifecycle, reason codes, and explicit relation state. |
+| `RelationGovernanceExistingRelation` | Existing relation ID, type, and direction for a candidate pair. |
+| `RelationGovernanceLifecycleState` | Content-free active, archived, expired, or review-due state. |
+| `RelationGovernanceReasonCode` | Stable content-free evidence-code union for relation review. |
 | `ForgetMemoryRelationInput` | Relation removal input. |
 | `MemoryHistoryInput` | Per-memory audit history pagination input. |
 | `UpdateMemoryInput` | Update input. |
@@ -134,6 +140,12 @@ semantics, newest-first ordering, and visible per-memory limit as
 unauthorized primary memories still fail closed, while relations with an
 unauthorized endpoint are omitted before the visible limit is applied.
 
+`MemoryService.reviewRelations(...)` reuses the bounded capture classifier and
+authorized storage ports to inspect at most 200 primary memories and return at
+most 200 content-free candidate pairs. It never writes memory, relation,
+lifecycle, or audit state. See
+[Relation Governance Review](relation-governance-review.md).
+
 ## Advanced Public Exports
 
 These exports are public for integrations that own storage, policy, dependency
@@ -160,7 +172,7 @@ injection, or runtime packaging.
 | `schemaVersion` | Advanced public | Current SQLite schema version. |
 | `migrate` | Advanced public | Apply SQLite migrations to a database handle. |
 | `MemoryStore` | Advanced public | Storage port. |
-| `CaptureCandidateLookupInput` | Advanced public | Optional storage-prefilter request for deterministic duplicate lookup and bounded relationship candidates. |
+| `CaptureCandidateLookupInput` | Advanced public | Optional storage-prefilter request for deterministic duplicate lookup and bounded relationship candidates; `excludeMemoryId` supports self-exclusion when reviewing stored memory. |
 | `CaptureCandidateLookupResult` | Advanced public | Duplicate, bounded candidates, and explicit search-completeness result returned by a storage prefilter. |
 | `SearchIndex` | Advanced public | Search port. |
 | `AuditLog` | Advanced public | Audit-log port. |

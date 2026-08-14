@@ -151,6 +151,19 @@ candidate/evidence bounds, latency, and zero memory or audit writes. The
 bounded profile shipped in `0.6.0` and remains the regression gate for that
 contract.
 
+Relation read and governance changes should also run:
+
+```bash
+npm run benchmark:relations
+npm run benchmark:governance
+```
+
+The first gate proves ordered response equivalence while bounding relation
+query growth at recall/list limits 50 and 200. The second repeats a content-free
+read-only governance report over sparse and relation-dense stores, checking
+stable ordering, bounded latency, expected candidate counts, and unchanged
+memory, relation, and audit-event counts.
+
 Optional-semantics work should also run:
 
 ```bash
@@ -195,6 +208,8 @@ npm run build
 npm run benchmark:recall
 npm run benchmark:capture
 npm run benchmark:capture -- --expect bounded
+npm run benchmark:relations
+npm run benchmark:governance
 npm run benchmark:semantics
 npm run benchmark:semantics -- --store-size medium
 npm run package:plugins
@@ -308,6 +323,10 @@ protects the canonical FTS relevance envelope before host lifecycle tests reuse
 recall results. The capture benchmark runs twice in CI: the default baseline
 profile preserves the historical exact-duplicate behavior, while
 `--expect bounded` is the current bounded relationship contract gate.
+The relation hydration and governance benchmarks independently gate query
+growth, output equivalence, deterministic content-free candidate ordering,
+bounded dense-store latency, and proof that the governance report writes no
+store state.
 
 The host hook continuity smoke uses an isolated SQLite store populated only
 with synthetic data. Its `0.2.1` matrix covers 75 memories and 53 scenarios,
