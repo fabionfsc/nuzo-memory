@@ -4,6 +4,12 @@
 
 Nuzo stores memory locally by default.
 
+Local does not mean encrypted. Nuzo's final storage contract uses owner-only
+SQLite files; the [Encrypted Local Stores Decision](../architecture/encrypted-local-stores.md)
+recommends OS-managed disk or volume encryption when at-rest protection is
+required and documents why no built-in passphrase, keychain, or SQLCipher mode
+ships in `1.2.0`.
+
 The default configuration must not:
 
 - send memories to a remote server;
@@ -104,6 +110,10 @@ into an issue or diagnostic log.
 Nuzo-created databases, SQLite sidecars, config files, and exports are
 owner-readable/writable only (`0600`). Nuzo-created memory, export, and log
 directories use `0700`.
+
+These modes are access controls, not encryption at rest. They do not protect an
+unlocked process, same-user malware, an administrator, copied plaintext
+exports, or storage outside the encrypted OS boundary.
 
 Project `.nuzo/config.json` cannot redirect storage to an absolute path,
 traverse outside the project, or resolve through a symlinked `.nuzo` path.

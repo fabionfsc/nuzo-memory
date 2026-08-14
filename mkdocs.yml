@@ -91,6 +91,8 @@ nav:
       - Memory Trust Boundary: architecture/memory-trust-boundary.md
       - Agent Host Compatibility: architecture/agent-host-compatibility.md
       - Storage: architecture/storage.md
+      - Encrypted Local Stores Decision: architecture/encrypted-local-stores.md
+      - Capture Confirmation Binding Decision: architecture/capture-confirmation-binding.md
       - Repository Layout: architecture/repository-layout.md
   - Specification:
       - Memory Model: spec/memory-model.md

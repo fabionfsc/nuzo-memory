@@ -39,9 +39,11 @@ Use separate stores and operating-system controls when projects, hosts, users,
 machines, or trust levels should not share process-level access. Do not rely on
 one shared store to isolate mutually untrusted agents.
 
-Optional encrypted stores remain a future design area. Until that exists, treat
-device compromise, same-user malware, and uncontrolled backups as out of scope
-for Nuzo's protection model.
+The final [Encrypted Local Stores Decision](../architecture/encrypted-local-stores.md)
+does not add application-managed encryption. Use an OS-managed encrypted disk,
+home directory, or volume when protection for powered-off storage and detached
+backups is required. Device compromise, same-user malware, unlocked processes,
+and uncontrolled plaintext backups remain outside Nuzo's protection model.
 
 ## Agent Memory Governance
 

@@ -49,7 +49,10 @@ requesting help from third parties.
 ## Deferred Work Disposition
 
 The final audit deliberately does not add optional encrypted stores, automatic
-relation mutation, or capture-confirmation tokens. It does include
+relation mutation, stable topic-key upserts, or capture-confirmation tokens.
+The encryption and confirmation decisions include explicit threat models,
+option comparisons, and executable confirmation-binding evidence rather than
+being deferred as an implied roadmap. The release does include
 benchmark-proven relation-query batching, a bounded read-only governance
 report, and explicit backed-up project-scope rehoming. Existing explicit export/import,
 backup/restore, relation, challenge, inspection, and scope controls remain the

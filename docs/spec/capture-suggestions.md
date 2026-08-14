@@ -364,6 +364,11 @@ cryptographically bind confirmation to an earlier `memory.suggest_capture`
 response. Core policy, authorization, revision, and duplicate checks therefore
 remain mandatory at confirmation time.
 
+The final [Capture Confirmation Binding Decision](../architecture/capture-confirmation-binding.md)
+records the bounded threat model, stateless digest and minimal-state HMAC
+prototypes, replay/mutation/multi-process evidence, and the decision to keep
+this host-attested boundary instead of implying authenticated human consent.
+
 ## Scope Rules
 
 Choose the narrowest useful scope.
