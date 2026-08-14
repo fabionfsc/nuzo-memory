@@ -12,6 +12,10 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
   drift repair, with validated backup and post-repair integrity evidence.
 - Human-readable output now uses shared untrusted-text renderers for terminal
   rows and Markdown exports while keeping JSON data lossless.
+- MCP recall, list, and read-only recall hooks hydrate visible relations through
+  one authorized core batch use case. A deterministic sparse/dense SQLite
+  benchmark proves equivalent ordering and reduces 50-200 relation queries to
+  one without weakening endpoint scope checks.
 
 ### Changed
 

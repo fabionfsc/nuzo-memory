@@ -86,6 +86,7 @@ responses keep the original content. See
 | `ChallengeMemoryInput` | Challenge/review input. |
 | `ChallengeMemoryResult` | Challenge/review result. |
 | `RelateMemoriesInput` | Explicit memory relation write input. |
+| `ListMemoryRelationsBatchInput` | Bounded authorized relation hydration input for up to 200 primary memories. |
 | `ListMemoryRelationsInput` | Relation list input. |
 | `ForgetMemoryRelationInput` | Relation removal input. |
 | `MemoryHistoryInput` | Per-memory audit history pagination input. |
@@ -125,6 +126,13 @@ and `MemoryExportItem` include nullable review lifecycle metadata:
 `reviewAfter` / `review_after` and `expiresAt` / `expires_at`. These fields are
 optional for inputs and export imports, and `null` means no review or expiry
 timestamp is set.
+
+`MemoryService.relationsBatch(...)` returns one map entry per unique requested
+memory ID. It preserves the same endpoint authorization, reverse-relation
+semantics, newest-first ordering, and visible per-memory limit as
+`MemoryService.relations(...)`. The batch is limited to 200 primary memories;
+unauthorized primary memories still fail closed, while relations with an
+unauthorized endpoint are omitted before the visible limit is applied.
 
 ## Advanced Public Exports
 

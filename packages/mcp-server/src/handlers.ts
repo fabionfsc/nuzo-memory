@@ -565,16 +565,18 @@ export function createMemoryToolHandlers(
         retrievalMode: input.retrieval_mode ?? "fts",
         ...(input.semantic_fallback === undefined ? {} : { semanticFallback: input.semantic_fallback }),
       });
+      const relations = await service.relationsBatch({
+        memoryIds: response.results.map((result) => result.memory.id),
+        includeReverse: true,
+        limitPerMemory: 10,
+      });
 
       const output: Awaited<ReturnType<MemoryToolHandlers["recall"]>> = {
-        results: await Promise.all(response.results.map(async (result) => ({
+        results: response.results.map((result) => ({
           ...toRecallOutput(result),
-          relations: (await service.relations({
-            memoryId: result.memory.id,
-            includeReverse: true,
-            limit: 10,
-          })).map((relation) => toToolRelation(relation, result.memory.id)),
-        }))),
+          relations: (relations.get(result.memory.id) ?? [])
+            .map((relation) => toToolRelation(relation, result.memory.id)),
+        })),
       };
       if ((input.retrieval_mode ?? "fts") !== "fts") {
         output.retrieval = {
@@ -597,6 +599,11 @@ export function createMemoryToolHandlers(
         includeGlobal: true,
         recordUsage: false,
       });
+      const relations = await service.relationsBatch({
+        memoryIds: results.map((result) => result.memory.id),
+        includeReverse: true,
+        limitPerMemory: 10,
+      });
 
       return {
         mode: "read_only",
@@ -606,14 +613,11 @@ export function createMemoryToolHandlers(
         scope,
         include_global: true,
         limit,
-        results: await Promise.all(results.map(async (result) => ({
+        results: results.map((result) => ({
           ...toRecallOutput(result),
-          relations: (await service.relations({
-            memoryId: result.memory.id,
-            includeReverse: true,
-            limit: 10,
-          })).map((relation) => toToolRelation(relation, result.memory.id)),
-        }))),
+          relations: (relations.get(result.memory.id) ?? [])
+            .map((relation) => toToolRelation(relation, result.memory.id)),
+        })),
       };
     },
 
@@ -742,15 +746,17 @@ export function createMemoryToolHandlers(
 
       const memories = await service.list(listInput);
       const page = memories.slice(0, input.limit);
+      const relations = await service.relationsBatch({
+        memoryIds: page.map((memory) => memory.id),
+        includeReverse: true,
+        limitPerMemory: 10,
+      });
       return {
-        memories: await Promise.all(page.map(async (memory) => ({
+        memories: page.map((memory) => ({
           ...toToolRecord(memory),
-          relations: (await service.relations({
-            memoryId: memory.id,
-            includeReverse: true,
-            limit: 10,
-          })).map((relation) => toToolRelation(relation, memory.id)),
-        }))),
+          relations: (relations.get(memory.id) ?? [])
+            .map((relation) => toToolRelation(relation, memory.id)),
+        })),
         next_cursor: memories.length > input.limit && page.length > 0
           ? encodeMemoryListCursor(page[page.length - 1]!)
           : null,
