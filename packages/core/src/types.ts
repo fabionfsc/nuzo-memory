@@ -109,6 +109,7 @@ export type MemoryEventType =
   | "memory.imported"
   | "memory.exported"
   | "memory.recalled"
+  | "memory.scope.rehomed"
   | "memory.challenged"
   | "memory.relation.created"
   | "memory.relation.deleted";
@@ -121,6 +122,7 @@ export const memoryEventTypes = [
   "memory.imported",
   "memory.exported",
   "memory.recalled",
+  "memory.scope.rehomed",
   "memory.challenged",
   "memory.relation.created",
   "memory.relation.deleted",

@@ -19,7 +19,9 @@ import {
   DefaultPolicyEngine,
   backupSQLiteMemoryStore,
   inspectSQLiteMemoryStore,
+  planSQLiteProjectScopeRehome,
   planSQLiteFtsRepair,
+  rehomeSQLiteProjectScope,
   repairSQLiteFtsIndex,
   type MemoryExportDocument,
   type MemoryRecord,
@@ -899,6 +901,282 @@ describe("SQLiteMemoryDatabase", () => {
     expect(await reopenedService.relations({ memoryId: current.id })).toEqual([]);
 
     database.close();
+  });
+
+  it("plans and atomically rehomes an explicit project scope through a validated WAL-safe backup", async () => {
+    const { database, directory, service } = createTempDatabase();
+    const sourceScope = "project:old-location" as const;
+    const targetScope = "project:new-location" as const;
+    const first = await service.remember({
+      content: "Scope rehome preserves the first canonical record.",
+      kind: "project_decision",
+      scope: sourceScope,
+      tags: ["rehome"],
+      source: "test",
+      reviewAfter: new Date("2027-01-01T00:00:00.000Z"),
+    });
+    const second = await service.remember({
+      content: "Scope rehome preserves relations and lifecycle state.",
+      kind: "note",
+      scope: sourceScope,
+      tags: ["rehome", "relations"],
+      source: "test",
+    });
+    const archived = await service.remember({
+      content: "Archived scope rehome fixture.",
+      kind: "note",
+      scope: sourceScope,
+      source: "test",
+    });
+    await service.forget({ id: archived.id, mode: "archive", actor: "test" });
+    const existingTarget = await service.remember({
+      content: "Existing target-scope memory remains unchanged.",
+      kind: "note",
+      scope: targetScope,
+      source: "test",
+    });
+    await service.relate({
+      sourceMemoryId: first.id,
+      targetMemoryId: second.id,
+      relation: "related_to",
+      actor: "test",
+    });
+    await service.relate({
+      sourceMemoryId: second.id,
+      targetMemoryId: existingTarget.id,
+      relation: "related_to",
+      actor: "test",
+    });
+    const sourcePath = join(directory, "memories.sqlite");
+    const backupPath = join(directory, "before-rehome.sqlite");
+    const before = snapshotCanonicalRows(database.database);
+    const sourceBefore = database.database.prepare(
+      "SELECT * FROM memories WHERE scope = ? ORDER BY id",
+    ).all(sourceScope) as Array<Record<string, unknown>>;
+
+    const plan = planSQLiteProjectScopeRehome({ sourcePath, sourceScope, targetScope });
+    expect(plan).toMatchObject({
+      version: 1,
+      dryRun: true,
+      applicable: true,
+      memoryCount: 3,
+      activeMemoryCount: 2,
+      archivedMemoryCount: 1,
+      targetMemoryCount: 1,
+      affectedRelationCount: 2,
+      historicalEventsRewritten: 0,
+      collisionCount: 0,
+      integrity: { ok: true, ftsOk: true },
+    });
+    expect(plan.planHash).toMatch(/^[a-f0-9]{64}$/u);
+    expect(snapshotCanonicalRows(database.database)).toEqual(before);
+    database.close();
+
+    const result = await rehomeSQLiteProjectScope({
+      sourcePath,
+      backupPath,
+      sourceScope,
+      targetScope,
+      actor: "nuzo:cli",
+      confirm: true,
+    });
+    expect(result).toMatchObject({
+      version: 1,
+      applied: true,
+      sourceScope,
+      targetScope,
+      planHash: plan.planHash,
+      memoryCount: 3,
+      activeMemoryCount: 2,
+      archivedMemoryCount: 1,
+      affectedRelationCount: 2,
+      historicalEventsRewritten: 0,
+      revisionsPreserved: true,
+      backup: { ok: true },
+      after: { ok: true, ftsOk: true },
+    });
+
+    const backup = new Database(backupPath, { readonly: true, fileMustExist: true });
+    expect(snapshotCanonicalRows(backup)).toEqual(before);
+    backup.close();
+    const reopened = new SQLiteMemoryDatabase({ path: sourcePath });
+    expect(reopened.database.prepare("SELECT COUNT(*) AS count FROM memories WHERE scope = ?")
+      .get(sourceScope)).toEqual({ count: 0 });
+    const moved = reopened.database.prepare(
+      "SELECT * FROM memories WHERE id IN (?, ?, ?) ORDER BY id",
+    ).all(first.id, second.id, archived.id) as Array<Record<string, unknown>>;
+    expect(moved.map(({ scope: _scope, ...row }) => row)).toEqual(
+      sourceBefore.map(({ scope: _scope, ...row }) => row),
+    );
+    expect(moved.every((row) => row.scope === targetScope)).toBe(true);
+    expect(reopened.database.prepare("SELECT * FROM memory_relations ORDER BY id").all())
+      .toEqual(before.memory_relations);
+    const historicalEvents = reopened.database.prepare(
+      "SELECT * FROM memory_events WHERE event_type <> 'memory.scope.rehomed' ORDER BY id",
+    ).all();
+    expect(historicalEvents).toEqual(before.memory_events);
+    const rehomeEvent = reopened.database.prepare(
+      "SELECT * FROM memory_events WHERE event_type = 'memory.scope.rehomed'",
+    ).get() as { id: string; memory_id: null; actor: string; payload: string };
+    expect(rehomeEvent).toMatchObject({ id: result.eventId, memory_id: null, actor: "nuzo:cli" });
+    expect(JSON.parse(rehomeEvent.payload)).toMatchObject({
+      scope: targetScope,
+      originalScope: sourceScope,
+      memoryCount: 3,
+      historicalEventsRewritten: 0,
+      revisionsPreserved: true,
+      planHash: plan.planHash,
+    });
+    expect(reopened.database.prepare(
+      "SELECT COUNT(*) AS count FROM memories_fts WHERE scope = ?",
+    ).get(targetScope)).toEqual({ count: 3 });
+    const reopenedService = createServiceForDatabase(
+      reopened,
+      new PrefixedIdGenerator("rehome_audit"),
+    );
+    await expect(reopenedService.audit({
+      scope: sourceScope,
+      eventTypes: ["memory.scope.rehomed"],
+    })).resolves.toMatchObject([{ id: result.eventId }]);
+    await expect(reopenedService.audit({
+      scope: targetScope,
+      eventTypes: ["memory.scope.rehomed"],
+    })).resolves.toMatchObject([{ id: result.eventId }]);
+    reopened.close();
+  });
+
+  it("fails project-scope rehome collisions before backup or canonical mutation", async () => {
+    const { database, directory, service } = createTempDatabase();
+    const sourceScope = "project:collision-source" as const;
+    const targetScope = "project:collision-target" as const;
+    await service.remember({
+      content: "The same normalized active memory.",
+      kind: "note",
+      scope: sourceScope,
+      source: "test",
+    });
+    await service.remember({
+      content: "  the SAME normalized active memory.  ",
+      kind: "note",
+      scope: targetScope,
+      source: "test",
+    });
+    const sourcePath = join(directory, "memories.sqlite");
+    const backupPath = join(directory, "collision-backup.sqlite");
+    const before = snapshotCanonicalRows(database.database);
+    expect(() => planSQLiteProjectScopeRehome({
+      sourcePath,
+      sourceScope: "user:default",
+      targetScope,
+    })).toThrowError(expect.objectContaining({ code: "MEMORY_SCOPE_REHOME_SCOPE_INVALID" }));
+    expect(() => planSQLiteProjectScopeRehome({
+      sourcePath,
+      sourceScope: "project:auto",
+      targetScope,
+    })).toThrowError(expect.objectContaining({ code: "MEMORY_SCOPE_REHOME_SCOPE_INVALID" }));
+    expect(() => planSQLiteProjectScopeRehome({
+      sourcePath,
+      sourceScope,
+      targetScope: sourceScope,
+    })).toThrowError(expect.objectContaining({ code: "MEMORY_SCOPE_REHOME_SCOPE_CONFLICT" }));
+    const plan = planSQLiteProjectScopeRehome({ sourcePath, sourceScope, targetScope });
+    expect(plan).toMatchObject({ applicable: false, collisionCount: 1 });
+    expect(snapshotCanonicalRows(database.database)).toEqual(before);
+    database.close();
+
+    await expect(rehomeSQLiteProjectScope({
+      sourcePath,
+      backupPath,
+      sourceScope,
+      targetScope,
+      actor: "nuzo:cli",
+      confirm: true,
+    })).rejects.toMatchObject({ code: "MEMORY_SCOPE_REHOME_COLLISION" });
+    expect(existsSync(backupPath)).toBe(false);
+    const unchanged = new Database(sourcePath, { readonly: true, fileMustExist: true });
+    expect(snapshotCanonicalRows(unchanged)).toEqual(before);
+    unchanged.close();
+  });
+
+  it.skipIf(process.platform === "win32")("refuses symbolic-link source and backup files for project-scope rehome", async () => {
+    const { database, directory, service } = createTempDatabase();
+    const sourceScope = "project:symlink-source" as const;
+    const targetScope = "project:symlink-target" as const;
+    await service.remember({
+      content: "Scope rehome must not follow symbolic-link files.",
+      kind: "note",
+      scope: sourceScope,
+      source: "test",
+    });
+    const sourcePath = join(directory, "memories.sqlite");
+    database.close();
+    const sourceLink = join(directory, "linked-source.sqlite");
+    symlinkSync(sourcePath, sourceLink);
+    expect(() => planSQLiteProjectScopeRehome({
+      sourcePath: sourceLink,
+      sourceScope,
+      targetScope,
+    })).toThrowError(expect.objectContaining({ code: "MEMORY_SCOPE_REHOME_PATH_UNSAFE" }));
+
+    const backupLink = join(directory, "linked-backup.sqlite");
+    symlinkSync(join(directory, "missing-backup.sqlite"), backupLink);
+    await expect(rehomeSQLiteProjectScope({
+      sourcePath,
+      backupPath: backupLink,
+      sourceScope,
+      targetScope,
+      actor: "nuzo:cli",
+      confirm: true,
+    })).rejects.toMatchObject({ code: "MEMORY_SCOPE_REHOME_PATH_UNSAFE" });
+  });
+
+  it("rolls back project-scope rehome failures and retains the validated recovery backup", async () => {
+    const { database, directory, service } = createTempDatabase();
+    const sourceScope = "project:rollback-source" as const;
+    const targetScope = "project:rollback-target" as const;
+    const first = await service.remember({
+      content: "First rollback fixture.",
+      kind: "note",
+      scope: sourceScope,
+      source: "test",
+    });
+    const second = await service.remember({
+      content: "Second rollback fixture.",
+      kind: "note",
+      scope: sourceScope,
+      source: "test",
+    });
+    const sourcePath = join(directory, "memories.sqlite");
+    const backupPath = join(directory, "rollback-backup.sqlite");
+    const before = snapshotCanonicalRows(database.database);
+    database.database.exec(`
+      CREATE TRIGGER fail_scope_rehome
+      BEFORE UPDATE OF scope ON memories
+      WHEN OLD.id = '${second.id}'
+      BEGIN
+        SELECT RAISE(ABORT, 'simulated scope rehome failure');
+      END;
+    `);
+    database.close();
+
+    await expect(rehomeSQLiteProjectScope({
+      sourcePath,
+      backupPath,
+      sourceScope,
+      targetScope,
+      actor: "nuzo:cli",
+      confirm: true,
+    })).rejects.toMatchObject({
+      code: "MEMORY_SCOPE_REHOME_FAILED",
+      details: { backupPath },
+    });
+    expect(existsSync(backupPath)).toBe(true);
+    expect(inspectSQLiteMemoryStore(sourcePath)).toMatchObject({ ok: true, ftsOk: true });
+    const unchanged = new Database(sourcePath, { readonly: true, fileMustExist: true });
+    expect(snapshotCanonicalRows(unchanged)).toEqual(before);
+    expect(unchanged.prepare("SELECT scope FROM memories WHERE id = ?").get(first.id))
+      .toEqual({ scope: sourceScope });
+    unchanged.close();
   });
 
   it("creates a WAL-safe SQLite backup and restores it after validation", async () => {

@@ -71,6 +71,7 @@ nuzo memory suggest-capture "The user prefers concise final answers." --kind pre
 nuzo memory recall "local storage"
 nuzo memory list --all-scopes
 nuzo memory --scope project:auto review-relations --limit 50
+nuzo memory rehome-scope --from project:old --to project:new --dry-run
 nuzo memory manage
 nuzo memory export --path ./memories.memory.export.json
 nuzo memory history mem_01HZY
@@ -134,6 +135,13 @@ existing relations from unreviewed pairs. Use `--needs-review`,
 command has no apply mode and writes no memory, relation, lifecycle, or audit
 state. See [Relation Governance Review](../spec/relation-governance-review.md)
 for the output and explicit `show`, `relate`, and `challenge` follow-up flow.
+
+`rehome-scope` moves canonical memories between two literal project scopes
+after a content-free plan, explicit `--apply --yes`, and a new
+`--backup-path`. The core holds a writer reservation while producing and
+validating the WAL-safe backup, then changes canonical scope and FTS state in
+one transaction. IDs, revisions, lifecycle, relations, and historical audit
+payloads are preserved. See [Project Scope Rehome](../spec/project-scope-rehome.md).
 
 `memory history <id>` shows audit events for one memory ID. `memory audit`
 shows bounded store-wide audit events, including global events such as exports

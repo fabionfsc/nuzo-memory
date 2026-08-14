@@ -158,6 +158,8 @@ injection, or runtime packaging.
 | `inspectSQLiteMemoryStore` | Advanced public | Inspect a SQLite memory store for schema, integrity, count, and FTS consistency diagnostics. |
 | `planSQLiteFtsRepair` | Advanced public | Produce a content-free, non-mutating FTS drift and repairability plan. |
 | `repairSQLiteFtsIndex` | Advanced public | Create and validate a recovery backup, then transactionally rebuild derived FTS rows after explicit confirmation. |
+| `planSQLiteProjectScopeRehome` | Advanced public | Produce a content-free, non-mutating plan and collision count for two explicit project scopes. |
+| `rehomeSQLiteProjectScope` | Advanced public | Lock, back up, validate, and atomically rehome canonical project memory and FTS scope after confirmation. |
 | `inspectRuntimeFileSafety` | Advanced public | Inspect known Nuzo runtime paths for unsafe modes, ownership, symlinks, stale artifacts, and unexpected files without changing them. |
 | `InspectRuntimeFileSafetyInput` | Advanced public | Store, project, and home roots selected for file-safety inspection. |
 | `RuntimeFileSafetyFinding` | Advanced public | Content-free unsafe-path finding. |
@@ -167,6 +169,8 @@ injection, or runtime packaging.
 | `SQLiteIntegrityReport` | Advanced public | Content-free SQLite store integrity report. |
 | `SQLiteFtsRepairPlan` | Advanced public | FTS drift plan with canonical and FTS precondition diagnostics. |
 | `SQLiteFtsRepairResult` | Advanced public | FTS repair result with before, backup, and after integrity reports. |
+| `SQLiteProjectScopeRehomePlan` | Advanced public | Versioned rehome plan, hash, counts, collision state, and integrity evidence. |
+| `SQLiteProjectScopeRehomeResult` | Advanced public | Applied rehome result with preserved-revision, backup, audit-event, and post-integrity evidence. |
 | `SQLiteBackupResult` | Advanced public | SQLite backup result with snapshot integrity diagnostics. |
 | `SQLiteRestoreResult` | Advanced public | SQLite restore result with target integrity diagnostics. |
 | `schemaVersion` | Advanced public | Current SQLite schema version. |

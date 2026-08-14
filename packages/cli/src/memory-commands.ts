@@ -7,7 +7,9 @@ import {
   backupSQLiteMemoryStore,
   NuzoMemoryError,
   inspectSQLiteMemoryStore,
+  planSQLiteProjectScopeRehome,
   planSQLiteFtsRepair,
+  rehomeSQLiteProjectScope,
   repairSQLiteFtsIndex,
   restoreSQLiteMemoryStore,
   semanticIndexPathFor,
@@ -64,6 +66,7 @@ import type { CliIO } from "./cli-io.js";
 import { cliExitCodes, withErrorHandling } from "./errors.js";
 import { registerSemanticCommands } from "./semantic-commands.js";
 import { formatRelationGovernanceReview } from "./relation-governance.js";
+import { formatScopeRehomePlan, formatScopeRehomeResult } from "./scope-rehome.js";
 import {
   inferExportFormat,
   parseAuditEventType,
@@ -1129,6 +1132,72 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
       io.stdout(`FTS index is already healthy: ${result.sourcePath}`);
     }
   }));
+
+  memory
+    .command("rehome-scope")
+    .description("Plan or apply an explicit project-scope move with a validated backup.")
+    .requiredOption("--from <scope>", "Explicit source project scope.")
+    .requiredOption("--to <scope>", "Explicit target project scope.")
+    .option("--dry-run", "Print the read-only plan. This is the default.", false)
+    .option("--apply", "Apply the reviewed plan.", false)
+    .option("--yes", "Explicitly confirm the scope mutation.", false)
+    .option("--backup-path <path>", "New destination for the required WAL-safe backup.")
+    .option("--json", "Print content-free JSON output for scripting.", false)
+    .action(withErrorHandling(io, async (commandOptions: {
+      from: MemoryScope;
+      to: MemoryScope;
+      dryRun: boolean;
+      apply: boolean;
+      yes: boolean;
+      backupPath?: string;
+      json: boolean;
+    }) => {
+      if (commandOptions.dryRun && commandOptions.apply) {
+        throw new NuzoMemoryError(
+          "MEMORY_SCOPE_REHOME_MODE_CONFLICT",
+          "Choose either --dry-run or --apply, not both.",
+        );
+      }
+      if (commandOptions.yes && !commandOptions.apply) {
+        throw new NuzoMemoryError(
+          "MEMORY_SCOPE_REHOME_CONFIRMATION_WITHOUT_APPLY",
+          "--yes requires --apply.",
+        );
+      }
+      if (commandOptions.backupPath !== undefined && !commandOptions.apply) {
+        throw new NuzoMemoryError(
+          "MEMORY_SCOPE_REHOME_BACKUP_WITHOUT_APPLY",
+          "--backup-path requires --apply.",
+        );
+      }
+      const options = memory.opts<GlobalOptions>();
+      const sourcePath = resolveStorePath(options);
+      if (!commandOptions.apply) {
+        const plan = planSQLiteProjectScopeRehome({
+          sourcePath,
+          sourceScope: commandOptions.from,
+          targetScope: commandOptions.to,
+        });
+        io.stdout(formatScopeRehomePlan(plan, commandOptions.json));
+        if (!plan.applicable) process.exitCode = cliExitCodes.operationalError;
+        return;
+      }
+      if (commandOptions.backupPath === undefined) {
+        throw new NuzoMemoryError(
+          "MEMORY_SCOPE_REHOME_BACKUP_REQUIRED",
+          "--apply requires a new --backup-path.",
+        );
+      }
+      const result = await rehomeSQLiteProjectScope({
+        sourcePath,
+        backupPath: resolve(commandOptions.backupPath),
+        sourceScope: commandOptions.from,
+        targetScope: commandOptions.to,
+        actor: "nuzo:cli",
+        confirm: commandOptions.yes,
+      });
+      io.stdout(formatScopeRehomeResult(result, commandOptions.json));
+    }));
 
   memory
     .command("backup")

@@ -161,6 +161,7 @@ Every write operation creates an event:
 - `memory.imported`
 - `memory.exported`
 - `memory.recalled`
+- `memory.scope.rehomed`
 - `memory.challenged`
 - `memory.relation.created`
 - `memory.relation.deleted`
