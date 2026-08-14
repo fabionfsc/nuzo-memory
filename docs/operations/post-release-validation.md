@@ -249,6 +249,60 @@ public-artifact audit on 2026-08-14 passed the exact published CLI, MCP,
 Registry, and default semantic-fallback smokes. It used temporary synthetic
 data only.
 
+## Published 1.2.0 Verification
+
+The final `1.2.0` release was published from commit
+`558a0c2ca21e609b5f74c04d72846877229e1b22` through the GitHub Release
+[`v1.2.0`](https://github.com/fabionfsc/nuzo-memory/releases/tag/v1.2.0).
+The retained npm dry run passed in
+[workflow run 31842978125](https://github.com/fabionfsc/nuzo-memory/actions/runs/31842978125),
+then trusted publishing completed in
+[workflow run 31843149690](https://github.com/fabionfsc/nuzo-memory/actions/runs/31843149690).
+
+The live workflow verified and published the exact candidates from retained
+artifact `9234920042`, named
+`nuzo-npm-1.2.0-558a0c2ca21e609b5f74c04d72846877229e1b22`. Its
+`artifact-manifest.json` SHA-256 is
+`0ba5a53011f7fb7a4e0ba910c53ce609f2ca2f41e10d64a7ae7663e5083c04c9`.
+The manifest binds these public package bytes:
+
+- `@nuzo/memory-core@1.2.0`: tarball SHA-256
+  `213de4b7cf084262715fd773009ff027cfc341d6fea621662b1ecb8c62b4f3e8`,
+  npm integrity
+  `sha512-gD0Hgyq/ofl58T/ST/CjfRh/AFy8teq5lGJjKI5f0d1hpV/H+/XqqgjEgG8FUYYCwTdJ7iUAazutP4yCgkoqow==`;
+- `@nuzo/memory@1.2.0`: tarball SHA-256
+  `a720d08997b64184b39f0bef78cd88646b1b26e9b299ab00ed05eb276665be35`,
+  npm integrity
+  `sha512-0ySNEztgXwcwSEIs54rEJ0f0CMgwe17IxETWbmJbUywZrjiYjHaOOKHAkUhengJ5nrlxhKwf2WxNMj5IuO3xGA==`;
+- `@nuzo/memory-mcp@1.2.0`: tarball SHA-256
+  `c05cc205fcb23b5472262900d79227c1c0c1401d86ab84145eb7972d8aa22689`,
+  npm integrity
+  `sha512-MGkqzcVl+Q4ntV/wOSIE+c+TVdvk29i7W2m2W0KLmlpyZcUIG693HPLD1/WUNsfJyne/OY8hUkc5uk35YcZcHQ==`.
+
+All three packages have the `latest` dist-tag and npm SLSA provenance. A clean
+consumer installation verified 132 registry signatures, 16 attestations, and
+zero npm vulnerabilities. The MCP Registry lists and serves
+[`io.github.fabionfsc/nuzo-memory@1.2.0`](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.fabionfsc%2Fnuzo-memory/versions/1.2.0)
+through the exact `@nuzo/memory-mcp@1.2.0` package.
+
+Post-publication validation passed for the exact public CLI, MCP server,
+Registry entry, default semantic fallback, Codex plugin, Claude Code plugin,
+and cross-host session-continuity canary. Native marketplace checks installed
+`nuzo@nuzo-memory@1.2.0` through Codex and Claude Code. The public installer
+passed nine clean Docker scenarios, including real pinned installs on Node.js
+22 Debian and Node.js 24 Alpine. Every validation used temporary synthetic
+memory data.
+
+The final independent Opus/max audit first reproduced and blocked release on a
+WAL-unsafe restore and a backup-permission exposure window. The corrected
+candidate restored all 200 WAL-only probe memories, kept all 52 sampled backup
+modes at `0600`, passed 342 automated tests, and received the final verdict
+`NO RELEASE-BLOCKING FINDINGS`. The final security fixes and affected package
+ranges are public in
+[GHSA-qfv8-fjq7-36g2](https://github.com/fabionfsc/nuzo-memory/security/advisories/GHSA-qfv8-fjq7-36g2)
+and
+[GHSA-cvcw-gqcj-398w](https://github.com/fabionfsc/nuzo-memory/security/advisories/GHSA-cvcw-gqcj-398w).
+
 ## Real Flow To Prove
 
 The canonical post-release smoke is:
