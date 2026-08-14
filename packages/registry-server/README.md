@@ -17,7 +17,7 @@ nuzo setup
 MCP clients and registry integrations can run this package directly:
 
 ```bash
-npx --yes @nuzo/memory-mcp@1.1.0
+npx --yes @nuzo/memory-mcp@1.2.0
 ```
 
 The server uses stdio, stores memory locally, performs no telemetry, and makes

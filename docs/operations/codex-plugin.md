@@ -15,7 +15,7 @@ Prerequisites: Node.js 22 or 24, npm 10 or newer, and a current Codex CLI.
 Recommended path:
 
 ```bash
-npm install --global @nuzo/memory@1.1.0
+npm install --global @nuzo/memory@1.2.0
 nuzo setup --codex
 ```
 
@@ -169,13 +169,13 @@ package to the same version as the plugin:
   "mcpServers": {
     "nuzo": {
       "command": "npm",
-      "args": ["exec", "--yes", "--package=@nuzo/memory@1.1.0", "--", "nuzo-mcp-server"]
+      "args": ["exec", "--yes", "--package=@nuzo/memory@1.2.0", "--", "nuzo-mcp-server"]
     }
   }
 }
 ```
 
-`1.1.0` matches the current release. Future packaging uses the actual shared
+`1.2.0` matches the current release. Future packaging uses the actual shared
 package version and rejects version drift.
 
 The first launch may need npm registry access. Nuzo does not use `latest` and
@@ -257,8 +257,8 @@ codex
 8. Start a new thread. `SessionStart` loads bounded `autoload` memory and
    `UserPromptSubmit` recalls topic matches from content and tags.
 
-The generated `1.1.0` config resolves the matching public
-`@nuzo/memory@1.1.0` package. The release gate installs the artifact through
+The generated `1.2.0` config resolves the matching public
+`@nuzo/memory@1.2.0` package. The release gate installs the artifact through
 an isolated local Codex marketplace and validates the shared NUZO-37
 SessionStart canary without writing memory from hooks.
 
@@ -268,7 +268,7 @@ If marketplace installation is unavailable, configure Codex directly against
 the published runtime:
 
 ```bash
-codex mcp add nuzo -- npm exec --yes --package=@nuzo/memory@1.1.0 -- nuzo-mcp-server
+codex mcp add nuzo -- npm exec --yes --package=@nuzo/memory@1.2.0 -- nuzo-mcp-server
 ```
 
 This exposes MCP tools but does not install the Nuzo skill or lifecycle hooks.

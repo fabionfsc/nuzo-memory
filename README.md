@@ -8,7 +8,7 @@
 <p align="center">
   <a href="https://github.com/fabionfsc/nuzo-memory/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/fabionfsc/nuzo-memory/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/fabionfsc/nuzo-memory/actions/workflows/pages.yml"><img alt="Docs" src="https://github.com/fabionfsc/nuzo-memory/actions/workflows/pages.yml/badge.svg"></a>
-  <a href="https://github.com/fabionfsc/nuzo-memory/releases/tag/v1.1.0"><img alt="Release 1.1.0" src="https://img.shields.io/badge/release-v1.1.0-22c55e"></a>
+  <a href="https://github.com/fabionfsc/nuzo-memory/releases/tag/v1.2.0"><img alt="Release 1.2.0" src="https://img.shields.io/badge/release-v1.2.0-22c55e"></a>
   <a href="#license"><img alt="Apache 2.0 license" src="https://img.shields.io/badge/license-Apache--2.0-64748b"></a>
 </p>
 
@@ -36,7 +36,7 @@ drafts until you confirm them; recalled content remains untrusted data.
 Use Node.js 22 LTS or 24 LTS with npm 10 or newer:
 
 ```bash
-npm install --global @nuzo/memory@1.1.0
+npm install --global @nuzo/memory@1.2.0
 nuzo setup
 ```
 

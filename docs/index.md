@@ -17,7 +17,7 @@ hide:
       <a class="nuzo-text-link" href="getting-started/">Install Nuzo <span aria-hidden="true">↗</span></a>
     </div>
     <div class="nuzo-signal" role="list" aria-label="Nuzo release facts">
-      <span role="listitem"><strong>v1.1.0</strong> stable</span>
+      <span role="listitem"><strong>v1.2.0</strong> stable</span>
       <span role="listitem"><strong>19</strong> MCP tools</span>
       <span role="listitem"><strong>0</strong> silent inferred writes</span>
     </div>
@@ -136,7 +136,7 @@ hide:
   </div>
   <div class="nuzo-command" data-nuzo-command>
     <div class="nuzo-command__bar"><span>terminal</span><button type="button" data-copy-command aria-describedby="copy-status">Copy</button></div>
-    <pre><code>npm install --global @nuzo/memory@1.1.0
+    <pre><code>npm install --global @nuzo/memory@1.2.0
 nuzo setup</code></pre>
     <span class="nuzo-copy-status" id="copy-status" role="status" aria-live="polite"></span>
   </div>

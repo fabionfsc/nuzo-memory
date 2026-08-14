@@ -6,7 +6,7 @@
     the [end-of-maintenance notice](../operations/end-of-maintenance.md) before
     adopting it for a new workflow.
 
-Nuzo `1.1.0` is the current public release. For Codex and Claude Code, use the
+Nuzo `1.2.0` is the current public release. For Codex and Claude Code, use the
 global npm package first. It installs the local management CLI and lets Nuzo
 configure supported host plugins from one place.
 
@@ -21,7 +21,7 @@ Prerequisites: Node.js 22 LTS or 24 LTS, npm 10 or newer, and a current Codex
 or Claude Code CLI when configuring a host plugin.
 
 ```bash
-npm install --global @nuzo/memory@1.1.0
+npm install --global @nuzo/memory@1.2.0
 nuzo setup
 ```
 
@@ -128,7 +128,7 @@ Continue with the [local CLI guide](../operations/local-cli.md).
 Configure the following as a stdio MCP server:
 
 ```bash
-npm exec --yes --package=@nuzo/memory@1.1.0 -- nuzo-mcp-server
+npm exec --yes --package=@nuzo/memory@1.2.0 -- nuzo-mcp-server
 ```
 
 The server exposes the [19 Nuzo memory tools](../spec/tools.md). A host should

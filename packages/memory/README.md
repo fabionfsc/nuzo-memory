@@ -20,7 +20,7 @@ contract.
 ## Install Once
 
 ```bash
-npm install --global @nuzo/memory@1.1.0
+npm install --global @nuzo/memory@1.2.0
 nuzo setup
 ```
 

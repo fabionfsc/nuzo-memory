@@ -12,7 +12,7 @@ Semantic Versioning across the contracts listed below.
 Packages currently use:
 
 ```text
-1.1.0
+1.2.0
 ```
 
 Development commits keep the last released version until an explicit release
