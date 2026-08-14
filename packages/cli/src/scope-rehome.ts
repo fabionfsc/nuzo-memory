@@ -1,6 +1,7 @@
 import {
   escapeUntrustedControlCharacters,
   renderUntrustedInlineText,
+  stringifyUntrustedJson,
   type SQLiteProjectScopeRehomePlan,
   type SQLiteProjectScopeRehomeResult,
 } from "@nuzo/memory-core";
@@ -8,7 +9,7 @@ import { toIntegrityOutput } from "./doctor.js";
 
 export function formatScopeRehomePlan(plan: SQLiteProjectScopeRehomePlan, json: boolean): string {
   const output = toScopeRehomePlanOutput(plan);
-  if (json) return JSON.stringify(output, null, 2);
+  if (json) return stringifyUntrustedJson(output, 2);
   return [
     "Project scope rehome plan (read-only)",
     `Store: ${escapeUntrustedControlCharacters(plan.sourcePath)}`,
@@ -27,7 +28,7 @@ export function formatScopeRehomePlan(plan: SQLiteProjectScopeRehomePlan, json: 
 
 export function formatScopeRehomeResult(result: SQLiteProjectScopeRehomeResult, json: boolean): string {
   const output = toScopeRehomeResultOutput(result);
-  if (json) return JSON.stringify(output, null, 2);
+  if (json) return stringifyUntrustedJson(output, 2);
   return [
     `Rehomed ${result.memoryCount} memories from ${renderUntrustedInlineText(result.sourceScope)} to ${renderUntrustedInlineText(result.targetScope)}`,
     `Validated backup: ${escapeUntrustedControlCharacters(result.backupPath)}`,

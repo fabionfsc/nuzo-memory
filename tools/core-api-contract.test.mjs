@@ -49,6 +49,7 @@ const runtimeExports = [
   "rebuildSemanticIndex",
   "renderUntrustedInlineText",
   "renderUntrustedMarkdownBlock",
+  "stringifyUntrustedJson",
   "resolveAutomaticScope",
   "resolveNuzoRuntimeConfig",
   "restoreSQLiteMemoryStore",

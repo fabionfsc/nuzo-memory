@@ -51,11 +51,12 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 - Restricted relation reads no longer disclose relation metadata for a target
   memory outside the authorized scope.
-- CLI inspection, recall, list, audit, capture, and interactive-manager views
-  visibly escape untrusted terminal controls and row/column separators.
-  Markdown exports contain stored content in dynamically sized inert fences,
-  preventing stored HTML, headings, lists, tables, links, or backticks from
-  becoming export structure.
+- CLI inspection, recall, list, audit, capture, interactive-manager, and JSON
+  views visibly or losslessly escape untrusted terminal controls,
+  bidirectional formatting, and row/column separators. Markdown exports
+  contain stored content in dynamically sized inert fences, preventing stored
+  HTML, headings, lists, tables, links, or backticks from becoming export
+  structure.
 
 ## [1.1.0] - 2026-07-14
 

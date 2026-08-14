@@ -16,6 +16,7 @@ import {
   resolveAutomaticScope,
   escapeUntrustedControlCharacters,
   renderUntrustedInlineText,
+  stringifyUntrustedJson,
   type MemoryKind,
   type ListMemoriesInput,
   type ConfirmCaptureDecision,
@@ -344,7 +345,7 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
         });
 
         if (commandOptions.json) {
-          io.stdout(JSON.stringify(response, null, 2));
+          io.stdout(stringifyUntrustedJson(response, 2));
         } else {
           for (const result of response.results) {
             const relations = await service.relations({
@@ -663,7 +664,7 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
           relation: result.relation === null ? null : toCliRelation(result.relation, result.memory.id),
         };
         if (commandOptions.json) {
-          io.stdout(JSON.stringify(output, null, 2));
+          io.stdout(stringifyUntrustedJson(output, 2));
         } else {
           const relation = output.relation === null ? "" : ` relation=${output.relation.id}:${output.relation.relation}->${output.relation.target_memory_id}`;
           io.stdout(`Challenged\t${output.id}\toutcome=${output.outcome}\trev=${output.revision}\tconfidence_state=${output.confidence_state ?? "none"}\treview_after=${output.review_after ?? "none"}${relation}`);
@@ -1017,7 +1018,7 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
       const options = memory.opts<GlobalOptions>();
       const report = inspectSQLiteMemoryStore(resolveStorePath(options));
       if (commandOptions.json) {
-        io.stdout(JSON.stringify(toIntegrityOutput(report), null, 2));
+        io.stdout(stringifyUntrustedJson(toIntegrityOutput(report), 2));
       } else {
         io.stdout(formatIntegrityReport(report));
       }
@@ -1064,7 +1065,7 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
     if (!commandOptions.apply) {
       const plan = planSQLiteFtsRepair(sourcePath);
       if (commandOptions.json) {
-        io.stdout(JSON.stringify({
+        io.stdout(stringifyUntrustedJson({
           mode: "preview",
           status: !plan.repairable
             ? "blocked"
@@ -1078,7 +1079,7 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
           before: toIntegrityOutput(plan.report),
           backup: null,
           after: null,
-        }, null, 2));
+        }, 2));
       } else {
         io.stdout("FTS repair preview (no changes made)");
         io.stdout(`Store: ${plan.sourcePath}`);
@@ -1109,7 +1110,7 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
       confirm: commandOptions.yes,
     });
     if (commandOptions.json) {
-      io.stdout(JSON.stringify({
+      io.stdout(stringifyUntrustedJson({
         mode: "apply",
         status: result.repaired ? "repaired" : "not_needed",
         source_path: result.sourcePath,
@@ -1123,7 +1124,7 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
         before: toIntegrityOutput(result.before),
         backup: result.backup === null ? null : toIntegrityOutput(result.backup),
         after: toIntegrityOutput(result.after),
-      }, null, 2));
+      }, 2));
     } else if (result.repaired) {
       io.stdout(`Repaired ${result.after.ftsRowCount} FTS row(s) in ${result.sourcePath}`);
       io.stdout(`Validated backup: ${result.backupPath}`);
@@ -1217,13 +1218,13 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
         overwrite: commandOptions.overwrite,
       });
       if (commandOptions.json) {
-        io.stdout(JSON.stringify({
+        io.stdout(stringifyUntrustedJson({
           source_path: result.sourcePath,
           backup_path: result.backupPath,
           pages: result.pages,
           remaining_pages: result.remainingPages,
           integrity: toIntegrityOutput(result.report),
-        }, null, 2));
+        }, 2));
       } else {
         io.stdout(`Backed up ${result.report.memoryCount} memories to ${result.backupPath}`);
         io.stdout(`Integrity: ${result.report.ok ? "ok" : "failed"}`);
@@ -1247,11 +1248,11 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
         overwrite: commandOptions.yes,
       });
       if (commandOptions.json) {
-        io.stdout(JSON.stringify({
+        io.stdout(stringifyUntrustedJson({
           backup_path: result.backupPath,
           target_path: result.targetPath,
           integrity: toIntegrityOutput(result.report),
-        }, null, 2));
+        }, 2));
       } else {
         io.stdout(`Restored ${result.report.memoryCount} memories to ${result.targetPath}`);
         io.stdout(`Integrity: ${result.report.ok ? "ok" : "failed"}`);
@@ -1269,12 +1270,12 @@ export function registerMemoryCommands(program: Command, io: CliIO): void {
       const report = await createDoctorReport(options, commandOptions.scanSecrets);
       if (commandOptions.privacy) {
         io.stdout(commandOptions.json
-          ? JSON.stringify(toPrivacyDoctorOutput(report), null, 2)
+          ? stringifyUntrustedJson(toPrivacyDoctorOutput(report), 2)
           : formatPrivacyDoctorReport(report));
         return;
       }
       if (commandOptions.json) {
-        io.stdout(JSON.stringify(toDoctorOutput(report), null, 2));
+        io.stdout(stringifyUntrustedJson(toDoctorOutput(report), 2));
         return;
       }
       io.stdout(`Store: ${report.storePath}`);
@@ -1346,7 +1347,7 @@ function formatMemoryInspection(inspection: MemoryInspection, json: boolean): st
     events: inspection.events.map(toCliEvent),
   };
   if (json) {
-    return JSON.stringify(output, null, 2);
+    return stringifyUntrustedJson(output, 2);
   }
   const memory = inspection.memory;
   const lines = [

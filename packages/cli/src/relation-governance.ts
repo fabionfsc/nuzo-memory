@@ -1,5 +1,6 @@
 import {
   renderUntrustedInlineText,
+  stringifyUntrustedJson,
   type RelationGovernanceReview,
 } from "@nuzo/memory-core";
 
@@ -8,7 +9,7 @@ export function formatRelationGovernanceReview(
   json: boolean,
 ): string {
   if (json) {
-    return JSON.stringify(toRelationGovernanceOutput(report), null, 2);
+    return stringifyUntrustedJson(toRelationGovernanceOutput(report), 2);
   }
 
   const lines = [

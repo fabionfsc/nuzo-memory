@@ -10,6 +10,7 @@ import {
   provisionLocalTransformersModel,
   rebuildSemanticIndex,
   semanticIndexPathFor,
+  stringifyUntrustedJson,
 } from "@nuzo/memory-core";
 import type { CliIO } from "./cli-io.js";
 import { withErrorHandling } from "./errors.js";
@@ -34,7 +35,7 @@ export function registerSemanticCommands(memory: Command, io: CliIO): void {
           database,
         );
         const output = { model, index };
-        if (commandOptions.json) io.stdout(JSON.stringify(output, null, 2));
+        if (commandOptions.json) io.stdout(stringifyUntrustedJson(output, 2));
         else {
           io.stdout(`Model: ${model.state} (${model.path})`);
           io.stdout(`Index: ${index.state} (${index.path})`);
@@ -65,7 +66,7 @@ export function registerSemanticCommands(memory: Command, io: CliIO): void {
         ...(commandOptions.modelPath === undefined ? {} : { path: commandOptions.modelPath }),
         allowNetwork: commandOptions.allowNetwork,
       });
-      if (commandOptions.json) io.stdout(JSON.stringify(result, null, 2));
+      if (commandOptions.json) io.stdout(stringifyUntrustedJson(result, 2));
       else {
         io.stdout(result.downloaded ? "Semantic model provisioned" : "Semantic model already ready");
         io.stdout(`Path: ${result.path}`);
@@ -91,7 +92,7 @@ export function registerSemanticCommands(memory: Command, io: CliIO): void {
           provider,
           memories: await createService(database).list({ includeArchived: false }),
         });
-        if (commandOptions.json) io.stdout(JSON.stringify(result, null, 2));
+        if (commandOptions.json) io.stdout(stringifyUntrustedJson(result, 2));
         else {
           io.stdout("Semantic index rebuilt");
           io.stdout(`Path: ${result.path}`);
